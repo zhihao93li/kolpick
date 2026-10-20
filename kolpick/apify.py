@@ -24,15 +24,31 @@ ACTORS = {
 }
 
 
+def load_dotenv(path: str = ".env") -> None:
+    """Read KEY=VALUE lines from a .env file into os.environ (existing variables win)."""
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+    except FileNotFoundError:
+        pass
+
+
 class BudgetExceeded(RuntimeError):
     pass
 
 
 class Apify:
     def __init__(self, token: str | None = None, max_spend: float = 20.0, dry_run: bool = False):
+        load_dotenv()
         token = token or os.environ.get("APIFY_TOKEN")
         if not token and not dry_run:
-            raise SystemExit("APIFY_TOKEN is not set. Copy it from Apify Console > Settings > API & Integrations.")
+            raise SystemExit("找不到 APIFY_TOKEN。把 .env.example 复制成 .env，填上 Apify 令牌"
+                             "（Apify Console > Settings > API & Integrations）。")
         self.client = ApifyClient(token) if token else None
         self.max_spend = max_spend
         self.spent = 0.0

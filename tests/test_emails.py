@@ -18,3 +18,13 @@ def test_split_field_handles_strings_and_lists():
     assert emails.split_field("a@b.co, c@d.tw") == ["a@b.co", "c@d.tw"]
     assert emails.split_field(["a@b.co", ""]) == ["a@b.co"]
     assert emails.split_field(None) == []
+
+
+def test_load_dotenv(tmp_path, monkeypatch):
+    from kolpick.apify import load_dotenv
+    monkeypatch.delenv("APIFY_TOKEN", raising=False)
+    env = tmp_path / ".env"
+    env.write_text('# comment\nAPIFY_TOKEN="abc123"\n', encoding="utf-8")
+    load_dotenv(str(env))
+    import os
+    assert os.environ["APIFY_TOKEN"] == "abc123"

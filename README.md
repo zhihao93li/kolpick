@@ -16,10 +16,9 @@
 
 ```bash
 pip install -r requirements.txt
-export APIFY_TOKEN=...   # Apify Console > Settings > API & Integrations
 ```
 
-令牌只从环境变量读取，不要写进代码或提交到仓库。
+然后把 `.env.example` 复制一份改名为 `.env`，把里面的 `APIFY_TOKEN=` 后面换成自己的 Apify 令牌（Apify Console > Settings > API & Integrations）。`.env` 已在 `.gitignore` 里，不会被提交；也可以照常用系统环境变量 `APIFY_TOKEN`，两者都有时以环境变量为准。
 
 ## 用法
 
