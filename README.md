@@ -1,89 +1,68 @@
-# kolpick
+# kolpick · KOL 平台
 
-批量找 KOL 并查联系邮箱的脚本，支持 Instagram、YouTube、TikTok，底层调用 Apify 上的现成 actor。
+给多个项目共用的 KOL 平台：在后台按项目找 KOL、查联系邮箱、存进总库，运营在网页上审核名单。底层调用 Apify 上的现成 actor，支持 Instagram、YouTube、TikTok。
 
-每个平台的步骤和顺序来自 2026-10-20 对 150 人名单的实测：
+方案文档见 [KOL 邮箱批量查找：技术方案设计](https://claude.ai/code/artifact/c7eb3650-c9dc-484b-80b7-322d68f2bae0)。现在是第一阶段（库和找人）；agent 工具和发信在后两个阶段。
 
-| 平台 | 找人 | 查邮箱（从便宜到贵，找到就停） |
-| --- | --- | --- |
-| Instagram | 相似账号（种子账号扩展）+ 短关键词搜索 | 旧 actor 读商业号联系邮箱字段和简介 → 简介外链页面 |
-| YouTube | 频道关键词搜索（结果自带简介） | 简介 → 外链页面 → 隐藏商务邮箱（可选，找到一个约 12 美分） |
-| TikTok | 用户关键词搜索 | 简介 → 外链页面 |
+## 现在能做什么
 
-实测结论：TikTok 按关键词搜出来的人混杂度很高（日本、大陆、小号都有），有邮箱的很少，建议 TikTok 主要用 `--handles-file` 直接查已知账号。
+- **项目**：每个项目有自己的地区、语言、找人默认条件、飞书通知群。新项目在后台新建，不用改代码。
+- **找人任务**：选平台，填关键词、种子账号（Instagram）或已知账号，提交后在后台排队运行。花费到预算上限就停，已找到的照样保存。服务重启后任务会接着跑，已经跑完的 Apify 步骤不会重复付费。
+- **查邮箱**：按实测定下的顺序，从便宜到贵，找到就停：
 
-## 安装
+  | 平台 | 找人 | 查邮箱 |
+  | --- | --- | --- |
+  | Instagram | 相似账号（种子扩展）+ 短关键词搜索 | 商业号联系邮箱字段和简介 → 简介外链页面 |
+  | YouTube | 频道关键词搜索 | 简介 → 外链页面 → 隐藏商务邮箱（可选，找到一个约 12 美分） |
+  | TikTok | 用户关键词搜索（效果差，建议直接填已知账号） | 简介 → 外链页面 |
+
+  每个邮箱都记来源、来源链接和发现时间，并做免费的基础检查（格式和对方域名能否收信）。
+- **KOL 总库**：同一个账号只存一份，所有项目共用；项目只记自己的状态。同一个项目里已有的人，再跑任务时不会重复花钱去查。
+- **名单审核**：按状态、平台、有无邮箱筛选，勾选后批量通过或排除，记录审核人。可以导出 CSV（Excel 直接打开）。
+- **飞书通知**：任务完成或失败时发到项目的飞书群。
+
+## 部署到 Zeabur
+
+1. 在 Zeabur 里新建一个项目，添加 **PostgreSQL** 服务。
+2. 再添加一个服务，选 GitHub 里的 `kolpick` 仓库。Zeabur 会用仓库里的 `Dockerfile` 构建。以后代码推到这个分支，Zeabur 会自动重新部署。
+3. 在这个服务的「环境变量」里填：
+
+   | 变量 | 填什么 |
+   | --- | --- |
+   | `DATABASE_URL` | `${POSTGRES_CONNECTION_STRING}`（原样填，Zeabur 会换成数据库地址） |
+   | `ADMIN_PASSWORD_HASH` | 登录密码的哈希：本地运行 `npm run hash-password -- '你的密码'`，把输出整行填进来 |
+   | `SESSION_SECRET` | 一串足够长的随机字符 |
+   | `APIFY_TOKEN` | Apify Console > Settings > API & Integrations 里的令牌 |
+   | `PUBLIC_URL` | 网站地址，例如 `https://kol.zeabur.app`，飞书通知里的链接会用到 |
+
+4. 在服务的「网络」里绑一个域名，打开就能登录。数据库表会在启动时自动建好。
+
+飞书群机器人：群设置 > 群机器人 > 添加自定义机器人，复制 Webhook 地址填到项目设置里。如果开了安全设置，选「自定义关键词」并填 `KOL`（每条通知都以它开头），不要选「签名校验」。
+
+## 本地开发
+
+需要 Node.js 22 和一个 PostgreSQL。
 
 ```bash
-pip install -r requirements.txt
+npm install
+cp .env.example .env   # 填好里面的值；本地可以用 ADMIN_PASSWORD=明文密码 代替哈希
+npm run dev            # http://localhost:8080
 ```
 
-然后把 `.env.example` 复制一份改名为 `.env`，把里面的 `APIFY_TOKEN=` 后面换成自己的 Apify 令牌（Apify Console > Settings > API & Integrations）。`.env` 已在 `.gitignore` 里，不会被提交；也可以照常用系统环境变量 `APIFY_TOKEN`，两者都有时以环境变量为准。
-
-## 用法
+测试：
 
 ```bash
-# Instagram：用 10 个种子扩相似账号，再加关键词搜索，只要 3000 粉以上
-python -m kolpick --platform instagram \
-  --seeds fly_to_tang kikimakeup37 hanah.hk \
-  --keywords 新秘 婚禮攝影 親子 \
-  --min-followers 3000 --max-followers 300000 \
-  --exclude contacted.csv \
-  --max-spend 10
-
-# YouTube：台湾区关键词搜频道，简介里没有邮箱的再查隐藏邮箱
-python -m kolpick --platform youtube --keywords 新秘 婚禮攝影 親子 --youtube-hidden
-
-# TikTok：直接查一批已知账号
-python -m kolpick --platform tiktok --handles-file tiktok.txt
-
-# 先看会花多少钱，不实际调用
-python -m kolpick --platform instagram --seeds a b c --keywords 新秘 --dry-run
+npm test                                                           # 不需要数据库的部分
+TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/kolpick_test npm test   # 全部（会清空这个库）
+npm run typecheck
 ```
 
-常用参数：
+## 代码结构
 
-- `--handles` / `--handles-file`：直接查这些账号。文件可以是一行一个账号，也可以是带 `handle` 列的 CSV（有 `platform` 列时只取对应平台的行）。
-- `--exclude`：已经联系过的人，CSV 里有 `handle` 或 `email` 列即可，可以给多个文件。
-- `--per-seed`、`--per-keyword`：每个种子、每个关键词最多取多少人。
-- `--chinese-only`：去掉名字和简介里没有中文（或带日文假名）的账号。
-- `--no-link-pages`：不爬简介外链页面。
-- `--max-spend`：本次最多花多少美元，达到后停止启动新任务，已找到的结果照样写出。
-
-## 输出
-
-默认写到 `output/<平台>-<时间>.csv`（UTF-8 带 BOM，Excel 可直接打开），有邮箱的排前面，按粉丝数从高到低：
-
-| 列 | 说明 |
+| 位置 | 内容 |
 | --- | --- |
-| email / email_source | 首选邮箱及来源：`platform_field`（IG 商业号联系邮箱）、`bio`（简介）、`link_page`（外链页面）、`youtube_hidden`（YouTube 隐藏邮箱） |
-| all_emails | 找到的所有邮箱 |
-| status | `has_email`、`no_email`、`filtered:<原因>`（私人账号、粉丝数不符、非中文）、`excluded:email_already_contacted` |
-| discovered_by | `related`（相似账号）、`search:<关键词>`、`input`（自己给的名单） |
-
-同目录下的 `.runs.json` 记录每次调用的 actor、run ID、dataset ID 和估算花费，方便回到 Apify 后台查原始数据。
-
-## 花费参考（Bronze 档）
-
-- Instagram：相似账号约 0.3 美分/人，查邮箱 0.45 美分/人 + 每次 4 美分启动费；实测每个找到的邮箱 1.5～2 美分。
-- YouTube：搜索 0.07 美分/频道；隐藏邮箱 12 美分/个（找不到不收费）。
-- TikTok：搜索 0.5 美分/人，查主页约 0.2 美分/人。
-
-价格写在 `kolpick/apify.py` 的 `ACTORS` 里，用来估算和设置每次调用的花费上限；Apify 调价后改这里即可。
-
-## 测试
-
-```bash
-python -m pytest -q
-```
-
-## 给同事用：部署成 Apify 上的 actor
-
-部署后同事在 Apify 后台填表就能跑，不用装 Python，也不用拿令牌，费用记在部署它的账号上。
-
-1. 打开 Apify Console，左侧 **Actors** > **Develop new**（或 Create new），选 **Link Git repository**。
-2. 选 GitHub 上的 `zhihao93li/kolpick`，分支填 `claude/project-thread-pfqosy`（合并后改成主分支），然后点 **Build**。
-3. 构建完成后在 **Input** 页填平台、关键词等，点 **Start**。结果在 **Output** 里，可以导出 Excel/CSV；同样的 CSV 也存在 Key-value store 的 `results.csv`。
-4. 给同事用：在 Apify 的 **Organization** 里把同事加进来，他们就能在同一个账号下运行这个 actor。
-
-相关文件：`.actor/actor.json`、`.actor/input_schema.json`（表单）、`Dockerfile`、`kolpick/actor_main.py`。
+| `src/discovery/` | 找人和查邮箱：actor 列表和价格（`apify.ts`）、各平台步骤（`pipeline.ts`）、整体流程（`run.ts`） |
+| `src/jobs.ts` | 后台任务队列（pg-boss，用同一个 PostgreSQL） |
+| `src/store.ts` | 把结果写进 KOL 总库和项目名单 |
+| `src/web/` | 后台网页（服务端渲染，没有前端构建步骤） |
+| `migrations/` | 数据库表结构，按文件名顺序自动执行 |
