@@ -1,0 +1,24 @@
+{
+  "actorSpecification": 1,
+  "name": "kolpick",
+  "title": "KOL 邮箱批量查找",
+  "description": "按关键词或种子账号找 Instagram、YouTube、TikTok 的 KOL，并查联系邮箱。",
+  "version": "0.1",
+  "buildTag": "latest",
+  "input": "./input_schema.json",
+  "dockerfile": "../Dockerfile",
+  "storages": {
+    "dataset": {
+      "actorSpecification": 1,
+      "views": {
+        "overview": {
+          "title": "结果",
+          "transformation": {
+            "fields": ["platform", "handle", "name", "followers", "email", "email_source", "status", "discovered_by", "profile_url", "all_emails"]
+          },
+          "display": {"component": "table"}
+        }
+      }
+    }
+  }
+}

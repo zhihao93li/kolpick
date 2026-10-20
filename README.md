@@ -76,3 +76,14 @@ python -m kolpick --platform instagram --seeds a b c --keywords 新秘 --dry-run
 ```bash
 python -m pytest -q
 ```
+
+## 给同事用：部署成 Apify 上的 actor
+
+部署后同事在 Apify 后台填表就能跑，不用装 Python，也不用拿令牌，费用记在部署它的账号上。
+
+1. 打开 Apify Console，左侧 **Actors** > **Develop new**（或 Create new），选 **Link Git repository**。
+2. 选 GitHub 上的 `zhihao93li/kolpick`，分支填 `claude/project-thread-pfqosy`（合并后改成主分支），然后点 **Build**。
+3. 构建完成后在 **Input** 页填平台、关键词等，点 **Start**。结果在 **Output** 里，可以导出 Excel/CSV；同样的 CSV 也存在 Key-value store 的 `results.csv`。
+4. 给同事用：在 Apify 的 **Organization** 里把同事加进来，他们就能在同一个账号下运行这个 actor。
+
+相关文件：`.actor/actor.json`、`.actor/input_schema.json`（表单）、`Dockerfile`、`kolpick/actor_main.py`。

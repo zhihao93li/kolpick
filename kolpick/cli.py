@@ -57,7 +57,8 @@ def read_exclusions(paths: list[str]) -> tuple[set[str], set[str]]:
     return handles, mails
 
 
-def run(args: argparse.Namespace) -> list[tuple[Creator, str]]:
+def run(args: argparse.Namespace) -> tuple[list[tuple[Creator, str]], Path]:
+    """Run the pipeline and write the CSV; returns the rows and the CSV path."""
     api = Apify(max_spend=args.max_spend, dry_run=args.dry_run)
     platform = args.platform
     given = [Creator(platform, h, discovered_by="input") for h in read_handles(args.handles_file, platform)]
@@ -105,8 +106,9 @@ def run(args: argparse.Namespace) -> list[tuple[Creator, str]]:
         else:
             status = "no_email"
         results.append((c, status))
-    _write(args, api, results)
-    return results
+    order = {"has_email": 0, "no_email": 1}
+    results.sort(key=lambda r: (order.get(r[1], 2), -(r[0].followers or 0)))
+    return results, _write(args, api, results)
 
 
 def _dedupe(creators: list[Creator]) -> list[Creator]:
@@ -123,20 +125,21 @@ def _drop_excluded(creators: list[Creator], handles: set[str]) -> list[Creator]:
     return kept
 
 
-def _write(args, api: Apify, results: list[tuple[Creator, str]]) -> None:
+def row(c: Creator, status: str) -> list:
+    return [c.platform, c.handle, c.profile_url, c.name, c.followers if c.followers is not None else "",
+            "" if c.is_business is None else c.is_business, c.email, c.email_source,
+            "; ".join(c.all_emails), status, c.discovered_by, c.external_url, c.bio.replace("\n", " ")[:300]]
+
+
+def _write(args, api: Apify, results: list[tuple[Creator, str]]) -> Path:
     out = Path(args.out or f"output/{args.platform}-{datetime.now():%Y%m%d-%H%M}.csv")
     out.parent.mkdir(parents=True, exist_ok=True)
-    order = {"has_email": 0, "no_email": 1}
-    results = sorted(results, key=lambda r: (order.get(r[1], 2), -(r[0].followers or 0)))
     # utf-8-sig so Excel opens Chinese text correctly.
     with out.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
         w.writerow(COLUMNS)
         for c, status in results:
-            w.writerow([c.platform, c.handle, c.profile_url, c.name, c.followers if c.followers is not None else "",
-                        "" if c.is_business is None else c.is_business, c.email, c.email_source,
-                        "; ".join(c.all_emails), status, c.discovered_by, c.external_url,
-                        c.bio.replace("\n", " ")[:300]])
+            w.writerow(row(c, status))
     counts: dict[str, int] = {}
     for _, status in results:
         counts[status] = counts.get(status, 0) + 1
@@ -147,6 +150,7 @@ def _write(args, api: Apify, results: list[tuple[Creator, str]]) -> None:
         log.info("dry run: estimated cost ~$%.2f (placeholder rows written to %s)", api.spent, out)
     else:
         log.info("wrote %s: %s, ~$%.2f spent", out, counts, api.spent)
+    return out
 
 
 def build_parser() -> argparse.ArgumentParser:
