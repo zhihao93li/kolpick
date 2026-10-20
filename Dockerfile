@@ -1,5 +1,17 @@
-FROM apify/actor-python:3.13
-COPY requirements.txt actor-requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt -r actor-requirements.txt
-COPY . ./
-CMD ["python", "-m", "kolpick.actor_main"]
+FROM node:22-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build && npm prune --omit=dev
+
+FROM node:22-slim
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY package.json ./
+COPY migrations ./migrations
+EXPOSE 8080
+CMD ["node", "dist/main.js"]
