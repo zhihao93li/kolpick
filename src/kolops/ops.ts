@@ -1,0 +1,145 @@
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { Base, dayOf, linkIds, option, type Fields } from "./base.js";
+import type { Config } from "./config.js";
+import type { Lark } from "./lark.js";
+
+export function dataDir(): string {
+  const dir = process.env.KOL_DATA_DIR || join(homedir(), ".kol-ops");
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+/** "YYYY-MM-DD HH:mm" in the base's offset, the format Base accepts for date and datetime cells. */
+export function stamp(ms = Date.now(), tz = "+08:00"): string {
+  const sign = tz.startsWith("-") ? -1 : 1;
+  const [h, m] = tz.slice(1).split(":").map(Number);
+  return new Date(ms + sign * (h * 60 + (m || 0)) * 60_000).toISOString().slice(0, 16).replace("T", " ");
+}
+
+export function today(cfg: Config, ms = Date.now()): string {
+  return dayOf(ms, cfg.timezone);
+}
+
+export interface Me {
+  id: string;
+  name: string;
+}
+
+export async function whoami(lark: Lark): Promise<Me> {
+  const data = await lark.json(["contact", "+get-user", "--as", "user", "--format", "json"]);
+  const u = data?.user ?? data;
+  return { id: String(u?.open_id ?? u?.user_id ?? ""), name: String(u?.name ?? u?.en_name ?? "") };
+}
+
+/**
+ * A local record of every send, written before the mail goes out. If a run dies between sending and
+ * writing back to the base, the next run finds the "sending" entry and stops instead of sending again.
+ */
+export class Journal {
+  private file = join(dataDir(), "sends.jsonl");
+  private entries = new Map<string, { state: string; messageId?: string }>();
+
+  constructor() {
+    if (!existsSync(this.file)) return;
+    for (const line of readFileSync(this.file, "utf8").split("\n")) {
+      if (!line.trim()) continue;
+      const e = JSON.parse(line);
+      this.entries.set(e.key, e);
+    }
+  }
+
+  get(key: string) {
+    return this.entries.get(key);
+  }
+
+  mark(key: string, state: "sending" | "sent" | "recorded" | "failed", messageId?: string): void {
+    const e = { key, state, messageId, at: new Date().toISOString() };
+    this.entries.set(key, e);
+    appendFileSync(this.file, JSON.stringify(e) + "\n");
+  }
+}
+
+/** Today's outbound counts from 接触记录, shared by everyone's runs because they all write there. */
+export interface SendCounts {
+  byChannel: Map<string, Set<string>>;
+  all: Set<string>;
+}
+
+export async function todaysSends(base: Base, cfg: Config): Promise<SendCounts> {
+  const rows = await base.records(cfg.tables.contacts, {
+    filter: { logic: "and", conditions: [["方向", "intersects", ["发出"]], ["日期", "==", `ExactDate(${today(cfg)})`]] },
+    fields: ["渠道", "KOL", "方向", "日期"],
+  });
+  const counts: SendCounts = { byChannel: new Map(), all: new Set() };
+  for (const r of rows) {
+    const who = linkIds(r["KOL"])[0] ?? r.record_id;
+    const ch = option(r["渠道"]);
+    if (!counts.byChannel.has(ch)) counts.byChannel.set(ch, new Set());
+    counts.byChannel.get(ch)!.add(who);
+    counts.all.add(who);
+  }
+  return counts;
+}
+
+export async function paused(base: Base, cfg: Config): Promise<boolean> {
+  const rows = await base.records(cfg.tables.control);
+  return rows.some((r) => r["暂停所有发送"] === true);
+}
+
+/** One 运行记录 row per command run, with its 操作日志 rows linked to it. */
+export class Run {
+  id = "";
+  counts = { 处理来信: 0, 发出邮件: 0, 新增待审: 0 };
+  notes: string[] = [];
+  private ops: Fields[] = [];
+
+  constructor(private base: Base, private cfg: Config, private title: string, private me: Me, private scheduled: boolean) {}
+
+  async start(): Promise<void> {
+    [this.id] = await this.base.create(this.cfg.tables.runs, [{
+      运行: `${this.title}（${this.me.name || "未知"}）`,
+      方式: [this.scheduled ? "定时任务" : "对话中手动"],
+      结果: ["进行中"],
+      开始时间: stamp(Date.now(), this.cfg.timezone),
+    }]);
+  }
+
+  op(o: { type: string; result: string; action: string; detail?: string; followup?: string; recipients?: string; body?: string; sent?: number }): void {
+    this.ops.push({
+      类型: [o.type],
+      结果: [o.result],
+      操作: o.action,
+      说明: `${o.detail ?? ""}${o.detail ? "\n" : ""}执行人：${this.me.name || this.me.id}`,
+      ...(o.recipients ? { 收件人明细: o.recipients } : {}),
+      ...(o.body ? { 邮件正文: o.body.slice(0, 5000) } : {}),
+      ...(o.sent != null ? { 发送数: o.sent } : {}),
+      时间: stamp(Date.now(), this.cfg.timezone),
+      ...(o.followup ? { KOL: [{ id: o.followup }] } : {}),
+      ...(this.id ? { 所属运行: [{ id: this.id }] } : {}),
+    });
+  }
+
+  /** Writes queued 操作日志 rows; called after each batch so a crash loses little. */
+  async flush(): Promise<void> {
+    if (!this.ops.length) return;
+    const batch = this.ops.splice(0);
+    await this.base.create(this.cfg.tables.oplog, batch);
+  }
+
+  async finish(result: "完成" | "部分完成" | "失败"): Promise<void> {
+    await this.flush();
+    if (!this.id) return;
+    await this.base.update(this.cfg.tables.runs, {
+      [this.id]: {
+        结果: [result],
+        结束时间: stamp(Date.now(), this.cfg.timezone),
+        处理来信: this.counts.处理来信,
+        发出邮件: this.counts.发出邮件,
+        新增待审: this.counts.新增待审,
+        ...(this.notes.length ? { 问题与备注: this.notes.join("\n").slice(0, 5000) } : {}),
+      },
+    });
+  }
+}

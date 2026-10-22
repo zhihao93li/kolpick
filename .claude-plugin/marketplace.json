@@ -1,0 +1,11 @@
+{
+  "name": "kolpick",
+  "owner": { "name": "TAFU" },
+  "plugins": [
+    {
+      "name": "kol-ops",
+      "source": "./plugins/kol-ops",
+      "description": "KOL 运营：找人、邀约、收信、批准发信、催信，数据都在飞书「tafu 台湾 KOL 总表」"
+    }
+  ]
+}
