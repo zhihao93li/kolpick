@@ -53,7 +53,8 @@ export function parseDiscovery(body: Body): DiscoveryDefaults {
     linkPages: str(body, "linkPages") === "on",
     youtubeHidden: str(body, "youtubeHidden") === "on",
     country: str(body, "country") || DEFAULT_PARAMS.country,
-    language: str(body, "language") || DEFAULT_PARAMS.language,
+    // "ytLanguage", not "language": the project settings form has its own language field.
+    language: str(body, "ytLanguage") || DEFAULT_PARAMS.language,
     maxSpend: num(body, "maxSpend") ?? DEFAULT_PARAMS.maxSpend,
   };
 }

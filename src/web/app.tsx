@@ -2,43 +2,22 @@ import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Config } from "../config.js";
 import type { Sql } from "../db.js";
-import { estimate } from "../discovery/apify.js";
-import { PLATFORMS } from "../discovery/models.js";
-import { DEFAULT_PARAMS, type DiscoveryParams } from "../discovery/run.js";
 import type { Queue } from "../jobs.js";
 import { notifyFeishu } from "../notify.js";
 import { checkPassword, LoginLimiter, makeSession, readSession } from "./auth.js";
-import { parseDiscovery, parseJob, splitList, str, strs, type Body, type DiscoveryDefaults } from "./forms.js";
-import { Layout } from "./layout.js";
+import { parseDiscovery, parseJob, splitList, str, strs, type Body } from "./forms.js";
+import { Layout, type Nav } from "./layout.js";
+import {
+  HomePage, JobFormPage, JobPage, JobsPage, KolsPage, LoginPage, OverviewPage, ProjectForm,
+  PAGE_SIZE, STATUS_NAMES, type JobRow, type KolRow, type ListFilters, type Project, type ProjectCard, type RunRow,
+} from "./pages.js";
+
+export { STATUS_NAMES };
 
 const COOKIE = "kol_session";
+const REVIEW_STATUSES = ["candidate", "approved", "rejected"];
 
 type Env = { Variables: { operator: string } };
-
-const PLATFORM_NAMES: Record<string, string> = { instagram: "Instagram", youtube: "YouTube", tiktok: "TikTok" };
-export const STATUS_NAMES: Record<string, string> = {
-  candidate: "待审核", approved: "已通过", rejected: "已排除", contacted: "已联系",
-  replied: "已回复", agreed: "已合作", declined: "已拒绝",
-};
-const JOB_STATUS: Record<string, string> = { queued: "排队中", running: "运行中", done: "完成", failed: "失败" };
-const SOURCE_NAMES: Record<string, string> = {
-  platform_field: "商业号邮箱", bio: "简介", link_page: "外链页面", youtube_hidden: "YouTube 隐藏邮箱",
-  import: "导入", manual: "手动",
-};
-const CHECK_NAMES: Record<string, string> = { discovered: "未检查", basic_ok: "基础检查通过", unknown: "未知", invalid: "无效" };
-
-interface Project {
-  id: number;
-  slug: string;
-  name: string;
-  region: string;
-  language: string;
-  brand_brief: string;
-  writing_guide: string;
-  discovery: DiscoveryDefaults;
-  feishu_webhook: string;
-  reviewers: string[];
-}
 
 export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDiscovery">) {
   const app = new Hono<Env>();
@@ -60,7 +39,7 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
     const operator = str(body, "operator");
     if (!checkPassword(str(body, "password"), { hash: cfg.adminPasswordHash, plain: cfg.adminPassword })) {
       limiter.fail(ip);
-      return c.html(<LoginPage error="密码不对" />, 401);
+      return c.html(<LoginPage error="密码不对" operator={operator} />, 401);
     }
     if (!operator) return c.html(<LoginPage error="请填你的名字，审核记录会用到" />, 400);
     setCookie(c, COOKIE, makeSession(cfg.sessionSecret, operator), {
@@ -86,8 +65,8 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
     await next();
   });
 
-  const page = (c: Context<Env>, title: string, body: any, status: 200 | 400 | 404 = 200) =>
-    c.html(<Layout title={title} operator={c.get("operator")}>{body}</Layout>, status);
+  const page = (c: Context<Env>, title: string, body: any, nav?: Nav, status: 200 | 400 | 404 = 200) =>
+    c.html(<Layout title={title} operator={c.get("operator")} nav={nav}>{body}</Layout>, status);
 
   async function loadProject(id: string): Promise<Project | null> {
     if (!/^\d+$/.test(id)) return null;
@@ -95,28 +74,25 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
     return p ?? null;
   }
 
+  async function nav(p: Project, tab: Nav["tab"]): Promise<Nav> {
+    const [{ n }] = await sql<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM project_kols WHERE project_id = ${p.id} AND status = 'candidate'`;
+    return { project: { id: p.id, name: p.name }, tab, pending: n };
+  }
+
   // ------------------------------------------------------------ projects
 
   app.get("/", async (c) => {
-    const projects = await sql<(Project & { total: number; pending: number })[]>`
-      SELECT p.*, count(pk.kol_id)::int AS total, count(pk.kol_id) FILTER (WHERE pk.status = 'candidate')::int AS pending
+    const projects = await sql<ProjectCard[]>`
+      SELECT p.id, p.name, p.region, p.language,
+             count(pk.kol_id)::int AS total,
+             count(pk.kol_id) FILTER (WHERE pk.status = 'candidate')::int AS pending,
+             count(pk.kol_id) FILTER (WHERE pk.status = 'approved')::int AS approved,
+             count(pk.kol_id) FILTER (WHERE EXISTS (SELECT 1 FROM kol_emails e WHERE e.kol_id = pk.kol_id))::int AS with_email,
+             (SELECT max(created_at) FROM discovery_jobs j WHERE j.project_id = p.id) AS last_job_at,
+             (SELECT count(*) FROM discovery_jobs j WHERE j.project_id = p.id AND j.status IN ('queued', 'running'))::int AS running
       FROM projects p LEFT JOIN project_kols pk ON pk.project_id = p.id GROUP BY p.id ORDER BY p.id`;
-    return page(c, "项目", (
-      <>
-        <div class="row"><h1>项目</h1><a href="/projects/new">新建项目</a></div>
-        {projects.length === 0 ? <p class="muted">还没有项目，先新建一个。</p> : (
-          <table>
-            <tr><th>项目</th><th>地区</th><th>语言</th><th>KOL 数</th><th>待审核</th></tr>
-            {projects.map((p) => (
-              <tr>
-                <td><a href={`/projects/${p.id}`}>{p.name}</a></td>
-                <td>{p.region}</td><td>{p.language}</td><td>{p.total}</td><td>{p.pending}</td>
-              </tr>
-            ))}
-          </table>
-        )}
-      </>
-    ));
+    return page(c, "项目", <HomePage projects={projects} />);
   });
 
   app.get("/projects/new", (c) => page(c, "新建项目", <ProjectForm />));
@@ -125,7 +101,7 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
     const body = (await c.req.parseBody({ all: true })) as Body;
     const slug = str(body, "slug").toLowerCase();
     if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug) || !str(body, "name")) {
-      return page(c, "新建项目", <ProjectForm error="请填项目名称和英文代号（小写字母、数字、横线）" />, 400);
+      return page(c, "新建项目", <ProjectForm error="请填项目名称和英文代号（小写字母、数字、横线）" />, undefined, 400);
     }
     const [{ id }] = await sql<{ id: number }[]>`
       INSERT INTO projects ${sql(projectFields(body, slug))} RETURNING id`;
@@ -135,7 +111,7 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
   app.get("/projects/:id/settings", async (c) => {
     const p = await loadProject(c.req.param("id"));
     if (!p) return c.notFound();
-    return page(c, `${p.name} 设置`, <ProjectForm project={p} flash={c.req.query("flash")} />);
+    return page(c, `${p.name} 设置`, <ProjectForm project={p} flash={c.req.query("flash")} />, await nav(p, "settings"));
   });
 
   app.post("/projects/:id/settings", async (c) => {
@@ -157,40 +133,45 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
   app.get("/projects/:id", async (c) => {
     const p = await loadProject(c.req.param("id"));
     if (!p) return c.notFound();
-    const counts = await sql<{ status: string; n: number }[]>`
-      SELECT status, count(*)::int AS n FROM project_kols WHERE project_id = ${p.id} GROUP BY status`;
-    const jobs = await sql<JobRow[]>`
-      SELECT * FROM discovery_jobs WHERE project_id = ${p.id} ORDER BY id DESC LIMIT 20`;
-    const by = Object.fromEntries(counts.map((r) => [r.status, r.n]));
+    const [counts, jobs, [totals]] = await Promise.all([
+      statusCounts(sql, p.id),
+      sql<JobRow[]>`SELECT * FROM discovery_jobs WHERE project_id = ${p.id} ORDER BY id DESC LIMIT 6`,
+      sql<{ with_email: number; pending_with_email: number; spent: string }[]>`
+        SELECT count(*) FILTER (WHERE has)::int AS with_email,
+               count(*) FILTER (WHERE has AND status = 'candidate')::int AS pending_with_email,
+               (SELECT COALESCE(sum(spent_usd), 0) FROM discovery_jobs WHERE project_id = ${p.id}) AS spent
+        FROM (SELECT pk.status, EXISTS (SELECT 1 FROM kol_emails e WHERE e.kol_id = pk.kol_id) AS has
+              FROM project_kols pk WHERE pk.project_id = ${p.id}) x`,
+    ]);
+    const active = jobs.filter((j) => j.status === "queued" || j.status === "running");
+    const runs = active.length ? await jobRuns(sql, active.map((j) => j.id)) : [];
     return page(c, p.name, (
-      <>
-        <div class="row">
-          <h1>{p.name}</h1>
-          <a href={`/projects/${p.id}/kols`}>KOL 名单</a>
-          <a href={`/projects/${p.id}/settings`}>项目设置</a>
-        </div>
-        {c.req.query("flash") && <div class="flash">{c.req.query("flash")}</div>}
-        <div class="cards">
-          {Object.entries(STATUS_NAMES).map(([key, label]) => (
-            <a class="card" href={`/projects/${p.id}/kols?status=${key}`}><b>{by[key] ?? 0}</b>{label}</a>
-          ))}
-        </div>
-        <h2>找人</h2>
-        <JobForm project={p} />
-        <h2>最近的任务</h2>
-        <JobTable projectId={p.id} jobs={jobs} />
-      </>
-    ));
+      <OverviewPage project={p} counts={counts} jobs={jobs} runs={runs} withEmail={totals.with_email}
+                    pendingWithEmail={totals.pending_with_email} spent={Number(totals.spent)} flash={c.req.query("flash")} />
+    ), await nav(p, "overview"));
   });
 
   // ------------------------------------------------------------ discovery jobs
+
+  app.get("/projects/:id/jobs", async (c) => {
+    const p = await loadProject(c.req.param("id"));
+    if (!p) return c.notFound();
+    const jobs = await sql<JobRow[]>`SELECT * FROM discovery_jobs WHERE project_id = ${p.id} ORDER BY id DESC LIMIT 200`;
+    return page(c, `${p.name} 找人任务`, <JobsPage project={p} jobs={jobs} />, await nav(p, "jobs"));
+  });
+
+  app.get("/projects/:id/jobs/new", async (c) => {
+    const p = await loadProject(c.req.param("id"));
+    if (!p) return c.notFound();
+    return page(c, "新建找人任务", <JobFormPage project={p} error={c.req.query("flash")} />, await nav(p, "jobs"));
+  });
 
   app.post("/projects/:id/jobs", async (c) => {
     const p = await loadProject(c.req.param("id"));
     if (!p) return c.notFound();
     const body = (await c.req.parseBody({ all: true })) as Body;
     const params = parseJob(body);
-    if (typeof params === "string") return c.redirect(`/projects/${p.id}?flash=${encodeURIComponent(params)}`);
+    if (typeof params === "string") return c.redirect(`/projects/${p.id}/jobs/new?flash=${encodeURIComponent(params)}`);
     const [{ id }] = await sql<{ id: number }[]>`
       INSERT INTO discovery_jobs (project_id, platform, params, created_by)
       VALUES (${p.id}, ${params.platform}, ${sql.json(params as any)}, ${c.get("operator")}) RETURNING id`;
@@ -204,45 +185,12 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
     if (!p || !/^\d+$/.test(jobId)) return c.notFound();
     const [job] = await sql<JobRow[]>`SELECT * FROM discovery_jobs WHERE id = ${jobId} AND project_id = ${p.id}`;
     if (!job) return c.notFound();
-    const runs = await sql<{ step: string; actor: string; run_id: string; status: string; items: number | null; cost_usd: string | null }[]>`
-      SELECT step, actor, run_id, status, items, cost_usd FROM apify_runs WHERE job_id = ${job.id} ORDER BY id`;
-    const params = job.params;
-    return page(c, `任务 #${job.id}`, (
-      <>
-        <h1>{p.name} · 找人任务 #{job.id}</h1>
-        {(job.status === "queued" || job.status === "running") && <meta http-equiv="refresh" content="15" />}
-        <p>
-          {PLATFORM_NAMES[job.platform]} · <JobStatus job={job} /> · {job.created_by} 于 {fmt(job.created_at)} 提交
-          {job.message && <> · <span class={job.status === "failed" ? "bad" : "muted"}>{job.message}</span></>}
-        </p>
-        <div class="cards">
-          <div class="card"><b>{job.found}</b>找到</div>
-          <div class="card"><b>{job.with_email}</b>有邮箱</div>
-          <div class="card"><b>{job.new_to_project}</b>新增待审核</div>
-          <div class="card"><b>${Number(job.spent_usd).toFixed(2)}</b>约花费</div>
-        </div>
-        <p><a href={`/projects/${p.id}/kols?job=${job.id}`}>查看这次找到的人</a></p>
-        <h2>参数</h2>
-        <table>
-          <tr><th>关键词</th><td>{params.keywords.join("、") || "—"}</td></tr>
-          <tr><th>种子账号</th><td>{params.seeds.join("、") || "—"}</td></tr>
-          <tr><th>已知账号</th><td>{params.handles.length ? `${params.handles.length} 个` : "—"}</td></tr>
-          <tr><th>粉丝范围</th><td>{params.minFollowers ?? "不限"} – {params.maxFollowers ?? "不限"}</td></tr>
-          <tr><th>预算</th><td>${params.maxSpend}</td></tr>
-        </table>
-        <h2>Apify 运行记录</h2>
-        <table>
-          <tr><th>步骤</th><th>actor</th><th>状态</th><th>条数</th><th>费用</th></tr>
-          {runs.map((r) => (
-            <tr>
-              <td>{r.step}</td>
-              <td><a href={`https://console.apify.com/actors/runs/${r.run_id}`} target="_blank">{r.actor}</a></td>
-              <td>{r.status}</td><td>{r.items ?? ""}</td><td>{r.cost_usd ? `$${Number(r.cost_usd).toFixed(3)}` : ""}</td>
-            </tr>
-          ))}
-        </table>
-      </>
-    ));
+    const [runs, [{ pending }]] = await Promise.all([
+      jobRuns(sql, [job.id]),
+      sql<{ pending: number }[]>`SELECT count(*)::int AS pending FROM project_kols
+                                 WHERE project_id = ${p.id} AND job_id = ${job.id} AND status = 'candidate'`,
+    ]);
+    return page(c, `任务 #${job.id}`, <JobPage project={p} job={job} runs={runs} pending={pending} />, await nav(p, "jobs"));
   });
 
   // ------------------------------------------------------------ KOL list and review
@@ -251,69 +199,18 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
     const p = await loadProject(c.req.param("id"));
     if (!p) return c.notFound();
     const f = listFilters(c);
-    const rows = await listKols(sql, p.id, f, 200);
-    const qs = new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][]);
+    const pageNo = Math.max(1, Number(c.req.query("page")) || 1);
+    const [rows, counts, [{ total }]] = await Promise.all([
+      listKols(sql, p.id, f, PAGE_SIZE, (pageNo - 1) * PAGE_SIZE),
+      statusCounts(sql, p.id, { ...f, status: "" }),
+      countKols(sql, p.id, f),
+    ]);
+    const jobs = await sql<{ id: number; platform: string; created_at: Date }[]>`
+      SELECT id, platform, created_at FROM discovery_jobs WHERE project_id = ${p.id} AND new_to_project > 0 ORDER BY id DESC LIMIT 20`;
     return page(c, `${p.name} 名单`, (
-      <>
-        <div class="row"><h1>{p.name} · KOL 名单</h1><a href={`/projects/${p.id}`}>返回项目</a></div>
-        {c.req.query("flash") && <div class="flash">{c.req.query("flash")}</div>}
-        <form method="get" class="row">
-          <select name="status" style="width:auto">
-            <option value="">全部状态</option>
-            {Object.entries(STATUS_NAMES).map(([k, v]) => <option value={k} selected={f.status === k}>{v}</option>)}
-          </select>
-          <select name="platform" style="width:auto">
-            <option value="">全部平台</option>
-            {PLATFORMS.map((k) => <option value={k} selected={f.platform === k}>{PLATFORM_NAMES[k]}</option>)}
-          </select>
-          <select name="email" style="width:auto">
-            <option value="">有无邮箱都看</option>
-            <option value="yes" selected={f.email === "yes"}>只看有邮箱</option>
-            <option value="no" selected={f.email === "no"}>只看没邮箱</option>
-          </select>
-          <input type="text" name="q" value={f.q} placeholder="搜账号、名字、简介" style="width:200px" />
-          {f.job && <input type="hidden" name="job" value={f.job} />}
-          <button>筛选</button>
-          <a href={`/projects/${p.id}/kols.csv?${qs}`}>导出 CSV</a>
-        </form>
-        <form method="post" action={`/projects/${p.id}/kols/review?${qs}`}>
-          <p class="row">
-            <span class="muted">显示 {rows.length} 人{rows.length === 200 ? "（最多 200，用筛选缩小范围）" : ""}，勾选后：</span>
-            <button name="action" value="approved" class="primary">通过</button>
-            <button name="action" value="rejected">排除</button>
-            <button name="action" value="candidate">退回待审核</button>
-          </p>
-          <table>
-            <tr>
-              <th><input type="checkbox" onclick="document.querySelectorAll('input[name=ids]').forEach(x=>x.checked=this.checked)" /></th>
-              <th>平台</th><th>账号</th><th>粉丝</th><th>邮箱</th><th>简介</th><th>状态</th><th>来源</th>
-            </tr>
-            {rows.map((r) => (
-              <tr>
-                <td><input type="checkbox" name="ids" value={String(r.kol_id)} /></td>
-                <td>{PLATFORM_NAMES[r.platform]}</td>
-                <td><a href={r.profile_url} target="_blank">{r.handle}</a><div class="muted">{r.name}</div></td>
-                <td>{r.followers?.toLocaleString() ?? "?"}</td>
-                <td>
-                  {r.emails.map((e) => (
-                    <div>
-                      {e.email} <span class="tag">{SOURCE_NAMES[e.source]}</span>{" "}
-                      <span class={e.check_status === "basic_ok" ? "ok" : e.check_status === "invalid" ? "bad" : "muted"}>
-                        {CHECK_NAMES[e.check_status]}
-                      </span>
-                    </div>
-                  ))}
-                  {r.blocked && <div class="bad">在禁止联系名单里</div>}
-                </td>
-                <td class="bio">{r.bio.slice(0, 160)}</td>
-                <td>{STATUS_NAMES[r.status]}{r.reviewed_by && <div class="muted">{r.reviewed_by}</div>}</td>
-                <td class="muted">{r.discovered_by}</td>
-              </tr>
-            ))}
-          </table>
-        </form>
-      </>
-    ));
+      <KolsPage project={p} rows={rows} filters={f} counts={counts} total={total} page={pageNo} jobs={jobs}
+                flash={c.req.query("flash")} />
+    ), await nav(p, "kols"));
   });
 
   app.post("/projects/:id/kols/review", async (c) => {
@@ -322,12 +219,16 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
     const body = (await c.req.parseBody({ all: true })) as Body;
     const action = str(body, "action");
     const ids = strs(body, "ids").filter((x) => /^\d+$/.test(x)).map(Number);
+    const wantsJson = (c.req.header("accept") ?? "").includes("application/json");
     const back = `/projects/${p.id}/kols?${new URLSearchParams(c.req.query())}`;
-    if (!["approved", "rejected", "candidate"].includes(action) || !ids.length) return c.redirect(back);
+    if (!REVIEW_STATUSES.includes(action) || !ids.length) {
+      return wantsJson ? c.json({ error: "bad request" }, 400) : c.redirect(back);
+    }
     // Review only moves people between candidate / approved / rejected; it never undoes outreach state.
     const updated = await sql`
       UPDATE project_kols SET status = ${action}, reviewed_by = ${c.get("operator")}, reviewed_at = now(), updated_at = now()
-      WHERE project_id = ${p.id} AND kol_id IN ${sql(ids)} AND status IN ('candidate', 'approved', 'rejected')`;
+      WHERE project_id = ${p.id} AND kol_id IN ${sql(ids)} AND status IN ${sql(REVIEW_STATUSES)}`;
+    if (wantsJson) return c.json({ updated: updated.count, counts: await statusCounts(sql, p.id) });
     const sep = back.includes("?") ? "&" : "?";
     return c.redirect(`${back}${sep}flash=${encodeURIComponent(`已更新 ${updated.count} 人`)}`);
   });
@@ -335,7 +236,7 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
   app.get("/projects/:id/kols.csv", async (c) => {
     const p = await loadProject(c.req.param("id"));
     if (!p) return c.notFound();
-    const rows = await listKols(sql, p.id, listFilters(c), 100_000);
+    const rows = await listKols(sql, p.id, listFilters(c), 100_000, 0);
     const header = ["platform", "handle", "name", "followers", "email", "email_source", "all_emails", "status",
                     "profile_url", "external_url", "discovered_by", "bio"];
     const lines = rows.map((r) => [
@@ -354,49 +255,28 @@ export function createApp(sql: Sql, cfg: Config, queue: Pick<Queue, "enqueueDisc
 
 // ------------------------------------------------------------ queries
 
-interface JobRow {
-  id: number;
-  platform: string;
-  params: DiscoveryParams;
-  status: string;
-  created_by: string;
-  message: string;
-  spent_usd: string;
-  found: number;
-  with_email: number;
-  new_to_project: number;
-  created_at: Date;
-}
-
-interface KolRow {
-  kol_id: number;
-  platform: string;
-  handle: string;
-  name: string;
-  followers: number | null;
-  bio: string;
-  profile_url: string;
-  external_url: string;
-  status: string;
-  discovered_by: string;
-  reviewed_by: string;
-  emails: { email: string; source: string; check_status: string }[];
-  blocked: boolean;
-}
-
-type ListFilters = { status: string; platform: string; email: string; q: string; job: string };
-
 function listFilters(c: Context): ListFilters {
   const q = (k: string) => (c.req.query(k) ?? "").trim();
   const status = c.req.query("status") === undefined ? "candidate" : q("status");
   return { status, platform: q("platform"), email: q("email"), q: q("q"), job: /^\d+$/.test(q("job")) ? q("job") : "" };
 }
 
-export async function listKols(sql: Sql, projectId: number, f: ListFilters, limit: number): Promise<KolRow[]> {
+function kolWhere(sql: Sql, projectId: number, f: ListFilters) {
   const like = `%${f.q.replace(/[%_\\]/g, (m) => `\\${m}`)}%`;
+  const hasEmail = sql`EXISTS (SELECT 1 FROM kol_emails e WHERE e.kol_id = k.id)`;
+  return sql`
+    WHERE pk.project_id = ${projectId}
+      ${f.status ? sql`AND pk.status = ${f.status}` : sql``}
+      ${f.platform ? sql`AND k.platform = ${f.platform}` : sql``}
+      ${f.job ? sql`AND pk.job_id = ${Number(f.job)}` : sql``}
+      ${f.email === "yes" ? sql`AND ${hasEmail}` : f.email === "no" ? sql`AND NOT ${hasEmail}` : sql``}
+      ${f.q ? sql`AND (k.handle ILIKE ${like} OR k.name ILIKE ${like} OR k.bio ILIKE ${like})` : sql``}`;
+}
+
+export async function listKols(sql: Sql, projectId: number, f: ListFilters, limit: number, offset: number): Promise<KolRow[]> {
   return sql<KolRow[]>`
-    SELECT k.id AS kol_id, k.platform, k.handle, k.name, k.followers, k.bio, k.profile_url, k.external_url,
-           pk.status, pk.discovered_by, pk.reviewed_by,
+    SELECT k.id AS kol_id, k.platform, k.handle, k.name, k.followers, k.bio, k.profile_url, k.external_url, k.is_business,
+           pk.status, pk.discovered_by, pk.reviewed_by, pk.reviewed_at,
            COALESCE(e.emails, '[]') AS emails,
            EXISTS (SELECT 1 FROM do_not_contact d
                    WHERE (d.project_id IS NULL OR d.project_id = ${projectId})
@@ -411,14 +291,28 @@ export async function listKols(sql: Sql, projectId: number, f: ListFilters, limi
                                found_at) AS emails
       FROM kol_emails WHERE kol_id = k.id
     ) e ON true
-    WHERE pk.project_id = ${projectId}
-      ${f.status ? sql`AND pk.status = ${f.status}` : sql``}
-      ${f.platform ? sql`AND k.platform = ${f.platform}` : sql``}
-      ${f.job ? sql`AND pk.job_id = ${Number(f.job)}` : sql``}
-      ${f.email === "yes" ? sql`AND e.emails IS NOT NULL` : f.email === "no" ? sql`AND e.emails IS NULL` : sql``}
-      ${f.q ? sql`AND (k.handle ILIKE ${like} OR k.name ILIKE ${like} OR k.bio ILIKE ${like})` : sql``}
+    ${kolWhere(sql, projectId, f)}
     ORDER BY (e.emails IS NOT NULL) DESC, k.followers DESC NULLS LAST, k.id
-    LIMIT ${limit}`;
+    LIMIT ${limit} OFFSET ${offset}`;
+}
+
+function countKols(sql: Sql, projectId: number, f: ListFilters) {
+  return sql<{ total: number }[]>`
+    SELECT count(*)::int AS total FROM project_kols pk JOIN kols k ON k.id = pk.kol_id ${kolWhere(sql, projectId, f)}`;
+}
+
+/** People per review status, under the same platform / email / search filters as the list. */
+async function statusCounts(sql: Sql, projectId: number,
+                            f: ListFilters = { status: "", platform: "", email: "", q: "", job: "" }): Promise<Record<string, number>> {
+  const rows = await sql<{ status: string; n: number }[]>`
+    SELECT pk.status, count(*)::int AS n FROM project_kols pk JOIN kols k ON k.id = pk.kol_id
+    ${kolWhere(sql, projectId, { ...f, status: "" })} GROUP BY pk.status`;
+  return Object.fromEntries(rows.map((r) => [r.status, r.n]));
+}
+
+function jobRuns(sql: Sql, jobIds: number[]) {
+  return sql<RunRow[]>`
+    SELECT job_id, step, actor, run_id, status, items, cost_usd FROM apify_runs WHERE job_id IN ${sql(jobIds)} ORDER BY id`;
 }
 
 function projectFields(body: Body, slug: string) {
@@ -440,134 +334,4 @@ function csvCell(v: unknown): string {
   // Leading = + - @ would run as a formula in Excel.
   const safe = /^[=+\-@]/.test(s) ? `'${s}` : s;
   return /[",\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
-}
-
-function fmt(d: Date): string {
-  return new Date(d).toLocaleString("zh-CN", { timeZone: "Asia/Taipei", hour12: false });
-}
-
-// ------------------------------------------------------------ views
-
-function LoginPage(props: { error?: string }) {
-  return (
-    <Layout title="登录">
-      <h1>KOL 平台</h1>
-      {props.error && <div class="flash">{props.error}</div>}
-      <form method="post" action="/login" class="stack">
-        <label>你的名字（审核记录用）</label>
-        <input type="text" name="operator" required />
-        <label>密码</label>
-        <input type="password" name="password" required />
-        <p><button class="primary">登录</button></p>
-      </form>
-    </Layout>
-  );
-}
-
-function ProjectForm(props: { project?: Project; error?: string; flash?: string }) {
-  const p = props.project;
-  return (
-    <>
-      <h1>{p ? `${p.name} · 设置` : "新建项目"}</h1>
-      {(props.error || props.flash) && <div class="flash">{props.error || props.flash}</div>}
-      <form method="post" action={p ? `/projects/${p.id}/settings` : "/projects"} class="stack">
-        <label>项目名称</label>
-        <input type="text" name="name" value={p?.name} required />
-        {!p && (<><label>英文代号（小写字母、数字、横线，建好后不能改）</label><input type="text" name="slug" required /></>)}
-        <label>目标地区</label>
-        <input type="text" name="region" value={p?.region} placeholder="台湾" />
-        <label>沟通语言</label>
-        <input type="text" name="language" value={p?.language} placeholder="繁体中文" />
-        <label>品牌介绍（第二阶段写信用）</label>
-        <textarea name="brand_brief">{p?.brand_brief}</textarea>
-        <label>写信要求（第二阶段写信用）</label>
-        <textarea name="writing_guide">{p?.writing_guide}</textarea>
-        <label>审核人（逗号分隔）</label>
-        <input type="text" name="reviewers" value={p?.reviewers.join("，")} />
-        <label>飞书群机器人 Webhook</label>
-        <input type="text" name="feishu_webhook" value={p?.feishu_webhook} placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..." />
-        <h2>找人默认条件</h2>
-        <p class="muted">新建任务时会预先填好，每次可以改。</p>
-        <DiscoveryFields d={p?.discovery ?? {}} />
-        <p><button class="primary">保存</button></p>
-      </form>
-      {p && (
-        <form method="post" action={`/projects/${p.id}/test-notify`}><button>发一条测试通知到飞书群</button></form>
-      )}
-    </>
-  );
-}
-
-function DiscoveryFields(props: { d: DiscoveryDefaults }) {
-  const d = { ...DEFAULT_PARAMS, ...props.d };
-  return (
-    <>
-      <label>关键词（每行一个，或用逗号分隔；短词效果更好）</label>
-      <textarea name="keywords">{d.keywords.join("\n")}</textarea>
-      <label>种子账号（只用于 Instagram：找跟这些账号相似的人）</label>
-      <textarea name="seeds">{d.seeds.join("\n")}</textarea>
-      <div class="row">
-        <span>每个关键词最多 <input type="number" name="perKeyword" value={String(d.perKeyword)} style="width:90px" /> 人</span>
-        <span>每个种子最多 <input type="number" name="perSeed" value={String(d.perSeed)} style="width:90px" /> 人</span>
-      </div>
-      <div class="row">
-        <span>粉丝 <input type="number" name="minFollowers" value={d.minFollowers?.toString() ?? ""} style="width:110px" /> 到{" "}
-          <input type="number" name="maxFollowers" value={d.maxFollowers?.toString() ?? ""} style="width:110px" />（空着不限）</span>
-      </div>
-      <div class="row">
-        <label style="margin:0"><input type="checkbox" name="chineseOnly" checked={d.chineseOnly} /> 只要中文账号</label>
-        <label style="margin:0"><input type="checkbox" name="linkPages" checked={d.linkPages} /> 爬简介外链页面找邮箱</label>
-        <label style="margin:0"><input type="checkbox" name="youtubeHidden" checked={d.youtubeHidden} /> YouTube 查隐藏商务邮箱（找到一个约 $0.12）</label>
-      </div>
-      <div class="row">
-        <span>YouTube 地区 <input type="text" name="country" value={d.country} style="width:70px" /></span>
-        <span>语言 <input type="text" name="language" value={d.language} style="width:70px" /></span>
-        <span>每次预算上限 $ <input type="number" step="0.5" name="maxSpend" value={String(d.maxSpend)} style="width:90px" /></span>
-      </div>
-    </>
-  );
-}
-
-function JobForm(props: { project: Project }) {
-  const p = props.project;
-  const d = { ...DEFAULT_PARAMS, ...p.discovery };
-  // Rough worst case for the search step alone, to set expectations before submitting.
-  const igGuess = estimate("ig_search", d.keywords.length * d.perKeyword) + estimate("ig_email", d.keywords.length * d.perKeyword);
-  return (
-    <form method="post" action={`/projects/${p.id}/jobs`} class="stack">
-      <label>平台</label>
-      <select name="platform" style="width:auto">
-        {PLATFORMS.map((k) => <option value={k}>{PLATFORM_NAMES[k]}</option>)}
-      </select>
-      <DiscoveryFields d={p.discovery} />
-      <label>已知账号（直接查这些人；每行一个，账号或主页链接都行。TikTok 建议用这种方式）</label>
-      <textarea name="handles" />
-      <p class="muted">参考：Instagram 按当前关键词搜索加查邮箱，大约 ${igGuess.toFixed(2)}。花费超过预算上限就停，已找到的照样保存。</p>
-      <p><button class="primary">开始找人</button></p>
-    </form>
-  );
-}
-
-function JobStatus(props: { job: JobRow }) {
-  const cls = props.job.status === "failed" ? "bad" : props.job.status === "done" ? "ok" : "muted";
-  return <span class={cls}>{JOB_STATUS[props.job.status]}</span>;
-}
-
-function JobTable(props: { projectId: number; jobs: JobRow[] }) {
-  if (!props.jobs.length) return <p class="muted">还没有任务。</p>;
-  return (
-    <table>
-      <tr><th>#</th><th>平台</th><th>状态</th><th>找到</th><th>有邮箱</th><th>新增</th><th>花费</th><th>提交</th></tr>
-      {props.jobs.map((j) => (
-        <tr>
-          <td><a href={`/projects/${props.projectId}/jobs/${j.id}`}>{j.id}</a></td>
-          <td>{PLATFORM_NAMES[j.platform]}</td>
-          <td><JobStatus job={j} /></td>
-          <td>{j.found}</td><td>{j.with_email}</td><td>{j.new_to_project}</td>
-          <td>${Number(j.spent_usd).toFixed(2)}</td>
-          <td class="muted">{j.created_by} {fmt(j.created_at)}</td>
-        </tr>
-      ))}
-    </table>
-  );
 }
