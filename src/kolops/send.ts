@@ -31,7 +31,7 @@ export interface Outgoing {
   oncePerDay: boolean;
   kind: "回复" | "邀约" | "催信";
   /** Base updates to make once the mail is out. */
-  after?: { review?: string; followup?: Record<string, unknown> };
+  after?: { review?: string; followup?: Record<string, unknown>; createFollowup?: Record<string, unknown> };
 }
 
 export interface Skipped {
@@ -138,6 +138,10 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
     counts.byChannel.get(o.mailbox.channel)!.add(o.followupId);
 
     const now = stamp(Date.now(), ctx.cfg.timezone);
+    if (o.after?.createFollowup) {
+      // A first invitation: the followup row exists only once the mail is out.
+      [o.followupId] = await ctx.base.create(t.followups, [o.after.createFollowup]);
+    }
     await ctx.base.create(t.contacts, [{
       方向: ["发出"],
       渠道: [o.mailbox.channel],
@@ -147,9 +151,11 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
       日期: now,
       KOL: [{ id: o.followupId }],
     }]);
-    await ctx.base.update(t.followups, {
-      [o.followupId]: { 最近联系日期: now, 当前轮到谁: ["KOL"], ...(o.after?.followup ?? {}) },
-    });
+    if (!o.after?.createFollowup) {
+      await ctx.base.update(t.followups, {
+        [o.followupId]: { 最近联系日期: now, 当前轮到谁: ["KOL"], ...(o.after?.followup ?? {}) },
+      });
+    }
     if (o.after?.review) {
       await ctx.base.update(t.reviews, {
         [o.after.review]: { 状态: ["已执行"], 执行时间: now, 执行结果: `已从 ${o.mailbox.address} 发给 ${o.recipient}（${sent.messageId}）` },

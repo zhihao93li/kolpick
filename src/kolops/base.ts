@@ -10,6 +10,22 @@ export class Base {
     return this.lark.records(table, opts);
   }
 
+  /** Option names of a select field, or null when the field can't be found. */
+  async fieldOptions(table: string, field: string): Promise<string[] | null> {
+    const data = await this.lark.json(["base", "+field-list", "--base-token", this.token, "--table-id", table, "--format", "json", "--as", "user"]);
+    let found: string[] | null = null;
+    const walk = (v: any) => {
+      if (found || !v || typeof v !== "object") return;
+      if (!Array.isArray(v) && v.name === field && (v.options || v.property?.options)) {
+        found = (v.options ?? v.property.options).map((o: any) => String(o.name ?? o));
+        return;
+      }
+      Object.values(v).forEach(walk);
+    };
+    walk(data);
+    return found;
+  }
+
   async create(table: string, rows: Fields[]): Promise<string[]> {
     const ids: string[] = [];
     for (let i = 0; i < rows.length; i += 200) {

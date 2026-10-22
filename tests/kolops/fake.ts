@@ -6,6 +6,7 @@ export class FakeLark implements Lark {
   inbox: Record<string, { message_id: string; from: string; subject: string; date: string; thread_id?: string }[]> = {};
   sent: { args: string[] }[] = [];
   failSend: Error | null = null;
+  options: Record<string, string[]> = { 邀约批次: ["第三十九批·新版"], 入库批次: ["第三十批"] };
   private n = 0;
 
   table(name: string): Row[] {
@@ -36,6 +37,9 @@ export class FakeLark implements Lark {
         Object.assign(row, f);
       }
       return {};
+    }
+    if (svc === "base" && cmd === "+field-list") {
+      return { fields: Object.entries(this.options).map(([name, opts]) => ({ name, type: "select", options: opts.map((o) => ({ name: o })) })) };
     }
     if (svc === "mail" && cmd === "+triage") {
       const filter = JSON.parse(flag("--filter"));
