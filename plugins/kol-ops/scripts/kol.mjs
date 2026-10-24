@@ -60071,7 +60071,7 @@ function stamp(ms = Date.now(), tz = "+08:00") {
 function today(cfg, ms = Date.now()) {
   return dayOf(ms, cfg.timezone);
 }
-var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E" };
+var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65" };
 var SENDING_RUNS = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 var LOCK_MINUTES = 30;
 async function otherSendingRun(base, cfg, selfId) {
@@ -61915,6 +61915,81 @@ async function postMetrics(ctx, o) {
   return report;
 }
 
+// src/kolops/codes.ts
+var BATCH = 200;
+async function lookupCodes(url, key, codes, fetchImpl = fetch) {
+  const out = /* @__PURE__ */ new Map();
+  for (let i = 0; i < codes.length; i += BATCH) {
+    const res = await fetchImpl(`${url.replace(/\/+$/, "")}/codes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ codes: codes.slice(i, i + BATCH) })
+    });
+    if (res.status === 401) throw new Error("\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u62D2\u7EDD\u4E86\u5BC6\u94A5\uFF08401\uFF09\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u786E\u8BA4\u540E\u7528 kol project set-key \u91CD\u65B0\u4FDD\u5B58");
+    if (!res.ok) throw new Error(`\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u51FA\u9519\uFF08${res.status}\uFF09\uFF0C\u8FD9\u6B21\u5148\u4E0D\u540C\u6B65`);
+    const data = await res.json();
+    for (const c of data?.codes ?? []) out.set(String(c.code).toLowerCase(), c);
+  }
+  return out;
+}
+async function syncCodes(ctx, o) {
+  const cfg = ctx.cfg;
+  if (!cfg.dataApi) throw new Error("\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\uFF0C\u8FD9\u4E2A\u9879\u76EE\u6CA1\u6CD5\u540C\u6B65\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801");
+  const key = listProjects().find((p) => p.name === cfg.project)?.dataApiKey;
+  if (!key) throw new Error(`\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u9879\u76EE\u300C${cfg.project}\u300D\u7684\u63A5\u53E3\u5BC6\u94A5\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u8981\uFF0C\u7136\u540E\u8FD0\u884C kol project set-key ${cfg.project} <\u5BC6\u94A5>`);
+  const s = await loadSnapshot(ctx.base, cfg);
+  const rows = await ctx.base.records(cfg.tables.followups, {
+    fields: ["\u8D26\u53F7\u540D\u79F0", "\u6863\u6848", "\u9636\u6BB5", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u4E0A\u9650", "\u4F53\u9A8C\u7801\u5DF2\u7528", "\u4F53\u9A8C\u7801\u5230\u671F", "\u6D3B\u52A8\u7801"]
+  });
+  const open = rows.filter((f) => option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848" && (text(f["\u4F53\u9A8C\u7801"]) || text(f["\u6D3B\u52A8\u7801"])));
+  const codes = [...new Set(open.flatMap((f) => [text(f["\u4F53\u9A8C\u7801"]), text(f["\u6D3B\u52A8\u7801"])]).filter(Boolean))];
+  const info = await lookupCodes(cfg.dataApi, key, codes, o.fetchImpl);
+  const soon = Date.now() + 3 * 864e5;
+  const report = {
+    \u67E5\u4E86: codes.length,
+    \u66F4\u65B0: 0,
+    \u627E\u4E0D\u5230\u7684\u7801: [],
+    \u4F53\u9A8C\u7801\u7528\u4E86\u4E00\u90E8\u5206: [],
+    \u4F53\u9A8C\u7801\u4E09\u5929\u5185\u5230\u671F: [],
+    \u6D3B\u52A8\u7801: [],
+    \u8BD5\u8DD1: o.dryRun || void 0
+  };
+  const changes = {};
+  for (const f of open) {
+    const name = s.followups.has(f.record_id) ? displayName(s, s.followups.get(f.record_id)) : text(f["\u8D26\u53F7\u540D\u79F0"]);
+    const trial = text(f["\u4F53\u9A8C\u7801"]);
+    const t = trial ? info.get(trial.toLowerCase()) : void 0;
+    if (trial && !t?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${trial}`);
+    if (t?.found) {
+      const change = {};
+      if (typeof t.used === "number" && t.used !== f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) change.\u4F53\u9A8C\u7801\u5DF2\u7528 = t.used;
+      if (t.maxUses != null && t.maxUses !== f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) change.\u4F53\u9A8C\u7801\u4E0A\u9650 = t.maxUses;
+      const expires = t.expiresAt ? Date.parse(t.expiresAt) : null;
+      if (expires != null && !Number.isNaN(expires) && cellTime(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) !== expires) {
+        change.\u4F53\u9A8C\u7801\u5230\u671F = stamp(expires, cfg.timezone);
+      }
+      if (Object.keys(change).length) changes[f.record_id] = change;
+      const used = t.used ?? 0;
+      if (t.maxUses && used > 0 && used < t.maxUses) report.\u4F53\u9A8C\u7801\u7528\u4E86\u4E00\u90E8\u5206.push({ name, \u4F53\u9A8C\u7801: trial, \u5DF2\u7528: used, \u4E0A\u9650: t.maxUses });
+      if (expires != null && expires >= Date.now() && expires <= soon && (!t.maxUses || used < t.maxUses)) {
+        report.\u4F53\u9A8C\u7801\u4E09\u5929\u5185\u5230\u671F.push({ name, \u4F53\u9A8C\u7801: trial, \u5230\u671F: stamp(expires, cfg.timezone).slice(0, 10), \u5DF2\u7528: used });
+      }
+    }
+    const partner = text(f["\u6D3B\u52A8\u7801"]);
+    const p = partner ? info.get(partner.toLowerCase()) : void 0;
+    if (partner && !p?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${partner}`);
+    if (p?.found) {
+      report.\u6D3B\u52A8\u7801.push({ name, \u6D3B\u52A8\u7801: partner, \u4ED8\u6B3E\u8BA2\u5355: p.paidOrders ?? 0, \u9000\u6B3E\u8BA2\u5355: p.refundedOrders ?? 0, \u8BBF\u5BA2: p.visitors ?? 0 });
+    }
+  }
+  report.\u66F4\u65B0 = Object.keys(changes).length;
+  if (!o.dryRun && report.\u66F4\u65B0) {
+    await ctx.base.update(cfg.tables.followups, changes);
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u540C\u6B65\u4F53\u9A8C\u7801 ${report.\u66F4\u65B0} \u6761` });
+  }
+  return report;
+}
+
 // src/kolops/notify.ts
 import { readFileSync as readFileSync6 } from "node:fs";
 var MAX_CHARS = 4e3;
@@ -62011,6 +62086,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   classify --apply \u6587\u4EF6.json     \u6309\u6587\u4EF6\u5199\u5165\u4E0A\u9762\u8FD9\u51E0\u4E2A\u5B57\u6BB5\uFF08{"rec\u2026": {"\u5E02\u573A": "\u53F0\u6E7E", \u2026}}\uFF09\uFF0C\u6709\u4E00\u4E2A\u503C\u4E0D\u5BF9\u5C31\u4E00\u6761\u90FD\u4E0D\u5199
   metrics [--budget 2]          \u53D1\u5E03\u540E\u7B2C 1/3/7/30 \u5929\uFF0C\u6293 Instagram\u3001YouTube\u3001TikTok \u5E16\u5B50\u7684\u64AD\u653E\u548C\u4E92\u52A8\u6570\u586B\u8FDB\u300C\u53D1\u5E03\u5185\u5BB9\u300D\uFF08\u82B1 Apify \u7684\u94B1\uFF09
   notify  --file \u6587\u672C\u6587\u4EF6        \u628A\u4E00\u6BB5\u6587\u5B57\u53D1\u5230\u9879\u76EE\u7684\u98DE\u4E66\u7FA4\uFF08\u300C\u8BBE\u7F6E\u300D\u91CC\u586B\u4E86\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\u624D\u53D1\uFF09
+  codes                         \u4ECE\u9879\u76EE\u7684\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u540C\u6B65\u4F53\u9A8C\u7801\u5DF2\u7528\u6B21\u6570\u3001\u4E0A\u9650\u548C\u5230\u671F\u65E5\uFF0C\u5217\u51FA\u7528\u4E86\u4E00\u90E8\u5206\u3001\u5FEB\u5230\u671F\u7684\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801\u6982\u51B5
   whoami                        \u770B\u5F53\u524D\u767B\u5F55\u7684\u98DE\u4E66\u8D26\u53F7
   check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\u3001\u9879\u76EE\u7684\u98DE\u4E66\u8868\u7F3A\u4E0D\u7F3A\u8868\u548C\u5B57\u6BB5\uFF0C\u4EE5\u53CA\u600E\u4E48\u8865
 
@@ -62074,6 +62150,7 @@ var COMMANDS = {
     }
   },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
+  codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
   notify: {
     title: "",
     writes: false,

@@ -14,6 +14,7 @@ import { sendApproved } from "./send.js";
 import { checkBase, setupBase } from "./setup.js";
 import { applyClassification, toClassify } from "./classify.js";
 import { postMetrics } from "./metrics.js";
+import { syncCodes } from "./codes.js";
 import { notifyGroup } from "./notify.js";
 import { syncInbox } from "./sync.js";
 import { todayLists } from "./today.js";
@@ -34,6 +35,7 @@ const HELP = `kol <命令> [选项]
   classify --apply 文件.json     按文件写入上面这几个字段（{"rec…": {"市场": "台湾", …}}），有一个值不对就一条都不写
   metrics [--budget 2]          发布后第 1/3/7/30 天，抓 Instagram、YouTube、TikTok 帖子的播放和互动数填进「发布内容」（花 Apify 的钱）
   notify  --file 文本文件        把一段文字发到项目的飞书群（「设置」里填了飞书群机器人才发）
+  codes                         从项目的业务数据接口同步体验码已用次数、上限和到期日，列出用了一部分、快到期的体验码和活动码概况
   whoami                        看当前登录的飞书账号
   check                         检查飞书授权是否齐全、项目的飞书表缺不缺表和字段，以及怎么补
 
@@ -88,6 +90,7 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
     },
   },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
+  codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
   notify: {
     title: "", writes: false,
     run: (ctx, v) => {
