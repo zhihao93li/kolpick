@@ -73,3 +73,18 @@ describe("remind", () => {
     await expect(remind(ctx, { dryRun: true })).rejects.toThrow(/自动催信起始日/);
   });
 });
+
+it("sends a reminder as a fresh mail even when that address wrote to us about something else before", async () => {
+  process.env.KOL_DATA_DIR = mkdtempSync(join(tmpdir(), "kol-test-"));
+  const lark = new FakeLark();
+  const c = seedProject(lark);
+  const pid = lark.add(T.profiles, { 账号名称: "老朋友", 称呼: "老朋友", 公开邮箱: "old@example.com", 联系许可: ["可联系"] });
+  const now = stamp(Date.now(), c.timezone);
+  lark.add(T.followups, { 账号名称: "老朋友", 档案: [{ id: pid }], 阶段: ["已邀约"], 当前轮到谁: ["KOL"], 联系渠道: ["hello@tafu.me"], 级别: ["B"], 首次邀约日期: now, 下次跟进日期: now });
+  lark.inbox["hello@tafu.me"] = [{ message_id: "old-thread", from: "old@example.com", subject: "測試", date: "2026-09-18T13:26:19Z" }];
+  const ctx = makeCtx(c, lark, { id: "ou", name: "测试" }, "催信和结案", true, async () => {});
+  const r = await remind(ctx, { dryRun: false });
+  expect(r.send.sent).toHaveLength(1);
+  expect(lark.sent[0].args).toContain("+send");
+  expect(lark.sent[0].args).not.toContain("old-thread");
+});

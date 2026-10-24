@@ -70,6 +70,7 @@ export class FakeLark implements Lark {
       const filter = JSON.parse(flag("--filter"));
       let list = this.inbox[flag("--mailbox")] ?? [];
       if (filter.from) list = list.filter((m) => filter.from.includes(m.from.replace(/.*</, "").replace(">", "")));
+      if (filter.time_range?.start_time) list = list.filter((m) => Date.parse(m.date) >= Date.parse(filter.time_range.start_time));
       return { messages: list };
     }
     if (svc === "mail" && cmd === "+messages") {

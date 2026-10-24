@@ -105,13 +105,16 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
     }
 
     const senders = new Set<string>();
-    if (!o.replyTo) {
+    if (o.replyTo) senders.add(o.recipient);
+    else if (o.kind === "回复") {
+      // Only an answer threads onto the KOL's latest mail. Invitations and reminders go to people who haven't
+      // written back, so any older mail from that address belongs to another conversation and must not be quoted.
       const latest = await ctx.mail.latestFrom(o.mailbox.address, o.recipient).catch(() => undefined);
       if (latest) {
         o.replyTo = latest.message_id;
         senders.add(o.recipient);
       }
-    } else senders.add(o.recipient);
+    }
 
     let reason = bouncePaused(o.mailbox, bounces) || checkOne(o, s, counts, senders);
     if (!reason && companyFull(ctx, counts, o.followupId)) reason = `全公司今天的外部收件人额度（${ctx.cfg.companyDailyExternal} 人）已用完`;

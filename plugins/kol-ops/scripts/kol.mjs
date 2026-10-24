@@ -61198,13 +61198,14 @@ async function deliver(ctx, items, s, dryRun) {
       continue;
     }
     const senders = /* @__PURE__ */ new Set();
-    if (!o.replyTo) {
+    if (o.replyTo) senders.add(o.recipient);
+    else if (o.kind === "\u56DE\u590D") {
       const latest = await ctx.mail.latestFrom(o.mailbox.address, o.recipient).catch(() => void 0);
       if (latest) {
         o.replyTo = latest.message_id;
         senders.add(o.recipient);
       }
-    } else senders.add(o.recipient);
+    }
     let reason = bouncePaused(o.mailbox, bounces) || checkOne(o, s, counts, senders);
     if (!reason && companyFull(ctx, counts, o.followupId)) reason = `\u5168\u516C\u53F8\u4ECA\u5929\u7684\u5916\u90E8\u6536\u4EF6\u4EBA\u989D\u5EA6\uFF08${ctx.cfg.companyDailyExternal} \u4EBA\uFF09\u5DF2\u7528\u5B8C`;
     if (reason) {
