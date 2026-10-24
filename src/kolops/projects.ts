@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { Lark } from "./lark.js";
 import { dataDir } from "./ops.js";
 
 /**
@@ -39,15 +40,28 @@ export function baseTokenFrom(input: string): string {
   const m = input.match(/\/base\/([A-Za-z0-9]+)/);
   const token = m ? m[1] : input.trim();
   if (!/^[A-Za-z0-9]{10,}$/.test(token)) {
-    throw new Error(`「${input}」看起来不是飞书多维表格的链接。请在飞书里打开这张表，复制浏览器地址栏里带 /base/ 的链接`);
+    throw new Error(`「${input}」看起来不是飞书多维表格的链接。请在飞书里打开这张表，复制浏览器地址栏里的链接（带 /base/ 或 /wiki/ 的都可以）`);
   }
   return token;
 }
 
-export function addProject(name: string, base: string): Project {
+/**
+ * The base token behind a link. A knowledge-base (/wiki/) link names a wiki page, not the table, so it is
+ * looked up first; the page has to hold a 多维表格.
+ */
+export async function resolveBaseLink(lark: Lark, input: string): Promise<string> {
+  if (!/\/wiki\//.test(input)) return baseTokenFrom(input);
+  const node = await lark.json(["wiki", "+node-get", "--node-token", input.trim(), "--as", "user", "--format", "json"]);
+  if (node?.obj_type !== "bitable" || !node?.obj_token) {
+    throw new Error(`这个知识库页面「${node?.title ?? input}」不是多维表格（是 ${node?.obj_type ?? "未知"}），请给项目 KOL 总表的链接`);
+  }
+  return String(node.obj_token);
+}
+
+export function addProject(name: string, baseToken: string): Project {
   if (!name.trim()) throw new Error("项目名不能是空的");
   const r = load();
-  r.projects[name] = { ...r.projects[name], baseToken: baseTokenFrom(base) };
+  r.projects[name] = { ...r.projects[name], baseToken: baseTokenFrom(baseToken) };
   r.default ??= name;
   save(r);
   return { name, ...r.projects[name] };

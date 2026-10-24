@@ -61054,14 +61054,22 @@ function baseTokenFrom(input) {
   const m = input.match(/\/base\/([A-Za-z0-9]+)/);
   const token = m ? m[1] : input.trim();
   if (!/^[A-Za-z0-9]{10,}$/.test(token)) {
-    throw new Error(`\u300C${input}\u300D\u770B\u8D77\u6765\u4E0D\u662F\u98DE\u4E66\u591A\u7EF4\u8868\u683C\u7684\u94FE\u63A5\u3002\u8BF7\u5728\u98DE\u4E66\u91CC\u6253\u5F00\u8FD9\u5F20\u8868\uFF0C\u590D\u5236\u6D4F\u89C8\u5668\u5730\u5740\u680F\u91CC\u5E26 /base/ \u7684\u94FE\u63A5`);
+    throw new Error(`\u300C${input}\u300D\u770B\u8D77\u6765\u4E0D\u662F\u98DE\u4E66\u591A\u7EF4\u8868\u683C\u7684\u94FE\u63A5\u3002\u8BF7\u5728\u98DE\u4E66\u91CC\u6253\u5F00\u8FD9\u5F20\u8868\uFF0C\u590D\u5236\u6D4F\u89C8\u5668\u5730\u5740\u680F\u91CC\u7684\u94FE\u63A5\uFF08\u5E26 /base/ \u6216 /wiki/ \u7684\u90FD\u53EF\u4EE5\uFF09`);
   }
   return token;
 }
-function addProject(name, base) {
+async function resolveBaseLink(lark, input) {
+  if (!/\/wiki\//.test(input)) return baseTokenFrom(input);
+  const node = await lark.json(["wiki", "+node-get", "--node-token", input.trim(), "--as", "user", "--format", "json"]);
+  if (node?.obj_type !== "bitable" || !node?.obj_token) {
+    throw new Error(`\u8FD9\u4E2A\u77E5\u8BC6\u5E93\u9875\u9762\u300C${node?.title ?? input}\u300D\u4E0D\u662F\u591A\u7EF4\u8868\u683C\uFF08\u662F ${node?.obj_type ?? "\u672A\u77E5"}\uFF09\uFF0C\u8BF7\u7ED9\u9879\u76EE KOL \u603B\u8868\u7684\u94FE\u63A5`);
+  }
+  return String(node.obj_token);
+}
+function addProject(name, baseToken) {
   if (!name.trim()) throw new Error("\u9879\u76EE\u540D\u4E0D\u80FD\u662F\u7A7A\u7684");
   const r = load();
-  r.projects[name] = { ...r.projects[name], baseToken: baseTokenFrom(base) };
+  r.projects[name] = { ...r.projects[name], baseToken: baseTokenFrom(baseToken) };
   r.default ??= name;
   save(r);
   return { name, ...r.projects[name] };
@@ -62169,11 +62177,11 @@ var COMMANDS = {
   project: { title: "", writes: false, run: async () => null },
   "setup-base": { title: "", writes: false, run: async () => null }
 };
-function projectCommand(args) {
+async function projectCommand(args) {
   const [sub, a, b] = args;
   if (sub === "add") {
     if (!a || !b) throw new Error("\u7528\u6CD5\uFF1Akol project add <\u9879\u76EE\u540D> <\u98DE\u4E66\u8868\u94FE\u63A5>");
-    return addProject(a, b);
+    return addProject(a, await resolveBaseLink(new LarkCli(""), b));
   }
   if (sub === "default" && a) return setDefaultProject(a), { \u9ED8\u8BA4\u9879\u76EE: a };
   if (sub === "remove" && a) return removeProject(a), { \u5DF2\u5220\u9664: a };
@@ -62235,7 +62243,7 @@ async function main() {
   let ctx;
   const logged = cmd.writes && !values["dry-run"] && !(name === "classify" && !values.apply);
   try {
-    if (name === "project") return print(projectCommand(positionals.slice(1)));
+    if (name === "project") return print(await projectCommand(positionals.slice(1)));
     if (name === "check") {
       let project2;
       try {

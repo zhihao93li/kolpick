@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { configFrom } from "../../src/kolops/config.js";
-import { addProject, baseTokenFrom, removeProject, resolveProject } from "../../src/kolops/projects.js";
+import { addProject, baseTokenFrom, removeProject, resolveBaseLink, resolveProject } from "../../src/kolops/projects.js";
 import { BASE, MAILBOXES, SETTINGS } from "./project.js";
 
 describe("configFrom", () => {
@@ -39,5 +39,18 @@ describe("projects", () => {
     removeProject("tafu");
     expect(resolveProject().name).toBe("other");
     expect(() => resolveProject("nope")).toThrow(/没有登记/);
+  });
+});
+
+describe("resolveBaseLink", () => {
+  const lark = (node: object) => ({ json: async () => node, records: async () => [] });
+  it("looks up the table behind a knowledge-base link", async () => {
+    const wiki = "https://amt94r69je.feishu.cn/wiki/A86LwOfAKiYAuok6v4fcmLT3nBe?from=from_copylink";
+    expect(await resolveBaseLink(lark({ obj_type: "bitable", obj_token: "AHdmbtvomaBhXrsZbfMcJr5An0g" }), wiki)).toBe("AHdmbtvomaBhXrsZbfMcJr5An0g");
+    await expect(resolveBaseLink(lark({ obj_type: "docx", obj_token: "Doc123456789", title: "说明" }), wiki)).rejects.toThrow(/不是多维表格（是 docx）/);
+  });
+  it("takes a /base/ link without asking Feishu", async () => {
+    const never = { json: async () => { throw new Error("should not be called"); }, records: async () => [] };
+    expect(await resolveBaseLink(never, "https://x.feishu.cn/base/Vmdjb70JKaWLm8sO2jGc1jdbnBd?table=t")).toBe("Vmdjb70JKaWLm8sO2jGc1jdbnBd");
   });
 });

@@ -8,7 +8,7 @@ import { find } from "./find.js";
 import { invite } from "./invite.js";
 import { LarkCli } from "./lark.js";
 import { checkAuth, RUN_TITLES, whoami } from "./ops.js";
-import { addProject, listProjects, removeProject, resolveProject, setDataApiKey, setDefaultProject, type Project } from "./projects.js";
+import { addProject, listProjects, removeProject, resolveBaseLink, resolveProject, setDataApiKey, setDefaultProject, type Project } from "./projects.js";
 import { remind } from "./remind.js";
 import { sendApproved } from "./send.js";
 import { checkBase, setupBase } from "./setup.js";
@@ -105,11 +105,11 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
   "setup-base": { title: "", writes: false, run: async () => null },
 };
 
-function projectCommand(args: string[]): unknown {
+async function projectCommand(args: string[]): Promise<unknown> {
   const [sub, a, b] = args;
   if (sub === "add") {
     if (!a || !b) throw new Error("用法：kol project add <项目名> <飞书表链接>");
-    return addProject(a, b);
+    return addProject(a, await resolveBaseLink(new LarkCli(""), b));
   }
   if (sub === "default" && a) return setDefaultProject(a), { 默认项目: a };
   if (sub === "remove" && a) return removeProject(a), { 已删除: a };
@@ -156,7 +156,7 @@ async function main(): Promise<number> {
   // Listing what to classify only reads; only --apply belongs in 运行记录.
   const logged = cmd.writes && !values["dry-run"] && !(name === "classify" && !values.apply);
   try {
-    if (name === "project") return print(projectCommand(positionals.slice(1)));
+    if (name === "project") return print(await projectCommand(positionals.slice(1)));
     if (name === "check") {
       // Runs before whoami, which itself needs a scope a fresh login may lack.
       let project: Project | undefined;
