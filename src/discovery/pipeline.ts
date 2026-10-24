@@ -162,8 +162,9 @@ export async function ytDiscover(api: ActorRunner, keywords: string[], perKeywor
                                  minFollowers: number | null, maxFollowers: number | null,
                                  country: string, language: string): Promise<Creator[]> {
   if (!keywords.length) return [];
-  const input: Item = { discoveryMode: "both", searchTerms: keywords, maxChannelsPerSearchTerm: perKeyword,
-                        countryHint: country, languageHint: language };
+  const input: Item = { discoveryMode: "both", searchTerms: keywords, maxChannelsPerSearchTerm: perKeyword };
+  if (country) input.countryHint = country;
+  if (language) input.languageHint = language;
   // The actor drops channels with a hidden subscriber count when a min/max is set, so
   // only pass the bounds through when the caller asked for them.
   if (minFollowers) input.minSubscribers = minFollowers;

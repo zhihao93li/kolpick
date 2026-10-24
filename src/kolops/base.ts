@@ -1,13 +1,34 @@
-import type { Lark, Row } from "./lark.js";
+import type { Lark, RecordQuery, Row } from "./lark.js";
 
 export type Fields = Record<string, unknown>;
 
 /** Writes to one Base. Batches are capped at 200 and sent one after another, as lark-cli requires per table. */
 export class Base {
-  constructor(public lark: Lark, private token: string) {}
+  constructor(public lark: Lark, public token: string) {}
 
-  records(table: string, opts?: { filter?: object; fields?: string[] }): Promise<Row[]> {
-    return this.lark.records(table, opts);
+  records(table: string, opts: Omit<RecordQuery, "baseToken"> = {}): Promise<Row[]> {
+    return this.lark.records(table, { ...opts, baseToken: this.token });
+  }
+
+  /** Names of a table's fields, or null when the base has no such table. Other errors (login, network) are thrown. */
+  async fieldNames(table: string): Promise<string[] | null> {
+    let data: any;
+    try {
+      data = await this.lark.json(["base", "+field-list", "--base-token", this.token, "--table-id", table, "--format", "json", "--as", "user"]);
+    } catch (err: any) {
+      if (/not_found|not found/i.test(String(err?.message))) return null;
+      throw err;
+    }
+    const names: string[] = [];
+    const walk = (v: any) => {
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === "object") {
+        if (typeof v.name === "string" && (v.type || v.field_id || v.id)) names.push(v.name);
+        else Object.values(v).forEach(walk);
+      }
+    };
+    walk(data);
+    return names;
   }
 
   /** Option names of a select field, or null when the field can't be found. */

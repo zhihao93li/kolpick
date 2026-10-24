@@ -8,7 +8,14 @@ export interface Lark {
   /** Runs `lark-cli <args>` and returns the parsed JSON payload (the envelope's `data` when there is one). */
   json(args: string[]): Promise<any>;
   /** Reads every record of a table that matches `filter`, following pagination. */
-  records(table: string, opts?: { filter?: object; fields?: string[] }): Promise<Row[]>;
+  records(table: string, opts?: RecordQuery): Promise<Row[]>;
+}
+
+export interface RecordQuery {
+  filter?: object;
+  fields?: string[];
+  /** Which base to read; defaults to the one the client was made for. */
+  baseToken?: string;
 }
 
 /** One Base record as NDJSON gives it: field name -> value, plus `record_id`. */
@@ -46,11 +53,11 @@ export class LarkCli implements Lark {
     return unwrap(out, args);
   }
 
-  async records(table: string, opts: { filter?: object; fields?: string[] } = {}): Promise<Row[]> {
+  async records(table: string, opts: RecordQuery = {}): Promise<Row[]> {
     // JSON pages of 200 work on every lark-cli version in use (1.0.73 has no NDJSON export).
     const rows: Row[] = [];
     for (let offset = 0; ; offset += 200) {
-      const args = ["base", "+record-list", "--base-token", this.baseToken, "--table-id", table,
+      const args = ["base", "+record-list", "--base-token", opts.baseToken ?? this.baseToken, "--table-id", table,
         "--format", "json", "--limit", "200", "--offset", String(offset), "--as", "user"];
       if (opts.filter) args.push("--filter-json", JSON.stringify(opts.filter));
       for (const f of opts.fields ?? []) args.push("--field-id", f);

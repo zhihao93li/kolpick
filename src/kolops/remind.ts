@@ -1,15 +1,14 @@
-import { join } from "node:path";
 import { addDays, day, linkIds, option, text } from "./base.js";
-import { mailboxFor, pluginRoot, type Config } from "./config.js";
+import { mailboxFor, type Config } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, loadSnapshot, profileEmails, profileOf, type Snapshot } from "./data.js";
 import type { Row } from "./lark.js";
 import { today } from "./ops.js";
 import { deliver, type Outgoing, type SendReport, type Skipped } from "./send.js";
 import { syncInbox, type SyncReport } from "./sync.js";
-import { loadTemplates, MissingValue, render } from "./templates.js";
+import { loadTemplates, MissingValue, pickTemplate, render } from "./templates.js";
 
-export const REMIND_TEMPLATES = ["催信-1", "催信-2"];
+export const REMIND_PURPOSES = ["催信 1", "催信 2"];
 
 export type Step = { kind: "remind"; n: 1 | 2 } | { kind: "close" } | { kind: "skip"; reason: string } | { kind: "wait" };
 
@@ -20,6 +19,7 @@ export type Step = { kind: "remind"; n: 1 | 2 } | { kind: "close" } | { kind: "s
 export function nextStep(cfg: Config, f: Row, reminders: number, todayStr: string): Step {
   const r = cfg.followup;
   if (option(f["阶段"]) !== "已邀约") return { kind: "skip", reason: "不在「已邀约」阶段" };
+  if (!r.onlyInvitedOnOrAfter) return { kind: "skip", reason: "「设置」里没填自动催信起始日，不自动催" };
   const invited = day(f["首次邀约日期"], cfg.timezone);
   if (!invited || invited < r.onlyInvitedOnOrAfter) return { kind: "skip", reason: `${r.onlyInvitedOnOrAfter} 之前邀约的不自动催` };
   const lastIn = day(f["最后来信日期"], cfg.timezone);
@@ -49,9 +49,10 @@ export interface RemindReport {
 export async function remind(ctx: Ctx, o: { dryRun: boolean }): Promise<RemindReport> {
   const cfg = ctx.cfg;
   const t = cfg.tables;
-  const templates = loadTemplates(join(pluginRoot(), cfg.templatesDir));
-  const missing = REMIND_TEMPLATES.filter((n) => !templates.has(n));
-  if (missing.length) throw new Error(`催信模板还没批准：${missing.join("、")}。批准后放进插件的 templates 文件夹才能自动催`);
+  if (!cfg.followup.onlyInvitedOnOrAfter) throw new Error("「设置」表里没填「自动催信起始日」，所以不自动催。填上之后，这天及以后发出的邀约才会自动催");
+  const templates = await loadTemplates(ctx.base, cfg);
+  const missing = REMIND_PURPOSES.filter((purpose) => !pickTemplate(templates, purpose));
+  if (missing.length) throw new Error(`「模板」表里还没有已批准的${missing.map((m) => `「${m}」`).join("")}模板，批准后才能自动催`);
 
   const sync = await syncInbox(ctx, { dryRun: o.dryRun });
   const s = await loadSnapshot(ctx.base, cfg);
@@ -86,7 +87,7 @@ export async function remind(ctx: Ctx, o: { dryRun: boolean }): Promise<RemindRe
     const p = profileOf(s, f);
     let mail;
     try {
-      mail = render(templates.get(`催信-${step.n}`)!, { 稱呼: text(p?.["称呼"]) || name, 称呼: text(p?.["称呼"]) || name, 账号名称: name });
+      mail = render(pickTemplate(templates, `催信 ${step.n}`, text(p?.["語言"]))!, { 稱呼: text(p?.["称呼"]) || name, 称呼: text(p?.["称呼"]) || name, 账号名称: name });
     } catch (err) {
       if (!(err instanceof MissingValue)) throw err;
       report.notChased.push({ key: f.record_id, name, reason: err.message });

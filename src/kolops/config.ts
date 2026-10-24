@@ -1,21 +1,22 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { cellTime, dayOf, option, text } from "./base.js";
+import type { Lark, Row } from "./lark.js";
+import { SETTING_DEFAULTS, TABLES } from "./schema.js";
 
 export interface Mailbox {
   address: string;
   /** The option name this mailbox has in the 渠道 / 联系渠道 / 发送渠道 selects. */
   channel: string;
   dailyExternal: number;
+  /** Bounce rate (percent) at which this mailbox stops sending. */
+  bouncePause: number;
 }
 
+/** One project's settings, read from its base's 设置 and 发信邮箱 tables at the start of each command. */
 export interface Config {
+  project: string;
   baseToken: string;
   timezone: string;
-  tables: {
-    profiles: string; followups: string; contacts: string; reviews: string;
-    oplog: string; runs: string; control: string; posts: string; settlements: string;
-  };
+  tables: typeof TABLES;
   mailboxes: Mailbox[];
   companyDailyExternal: number;
   perMinute: number;
@@ -23,26 +24,83 @@ export interface Config {
     firstAfterDays: number;
     secondAfterDays: number;
     closeAfterDays: number;
-    /** Only invitations sent on or after this day are chased automatically. */
+    /** Only invitations sent on or after this day are chased automatically; "" chases none. */
     onlyInvitedOnOrAfter: string;
     skipLevels: string[];
     skipDemands: string[];
     skipChannels: string[];
   };
-  templatesDir: string;
+  /** Skip inviting an address another project contacted within this many days. */
+  crossProjectCooldownDays: number;
+  discovery: { country: string; language: string };
+  webhook: string;
+  dataApi: string;
 }
 
-/** The plugin root: the bundled script lives in <root>/scripts/, the sources in src/kolops/. */
-export function pluginRoot(): string {
-  if (process.env.KOL_PLUGIN_ROOT) return process.env.KOL_PLUGIN_ROOT;
-  const here = dirname(fileURLToPath(import.meta.url));
-  return here.endsWith("scripts") ? dirname(here) : join(here, "..", "..", "plugins", "kol-ops");
+// Not on spaces: option names such as 「IG 私信」 contain them.
+const listOf = (v: unknown) => text(v).split(/[,，、;；\n]+/).map((s) => s.trim()).filter(Boolean);
+
+function num(v: unknown, fallback: number): number {
+  const n = typeof v === "number" ? v : Number(text(v));
+  return text(v) === "" || Number.isNaN(n) ? fallback : n;
 }
 
-export function loadConfig(root = pluginRoot()): Config {
-  return JSON.parse(readFileSync(join(root, "config.json"), "utf8"));
+export async function loadConfig(lark: Lark, project: string, baseToken: string): Promise<Config> {
+  let settings: Row[], mailboxes: Row[];
+  try {
+    [settings, mailboxes] = await Promise.all([
+      lark.records(TABLES.settings, { baseToken }),
+      lark.records(TABLES.mailboxes, { baseToken }),
+    ]);
+  } catch (err: any) {
+    if (/auth|授权|权限/i.test(String(err?.message))) throw err;
+    throw new Error(`读不到项目「${project}」飞书表里的「${TABLES.settings}」或「${TABLES.mailboxes}」表。`
+      + `这张表还没升级的话，先运行 kol setup-base（会先试跑）。原始错误：${err?.message ?? err}`);
+  }
+  if (!settings.length) throw new Error(`项目「${project}」的「${TABLES.settings}」表是空的。运行 kol setup-base 会写入一行默认设置`);
+  return configFrom(project, baseToken, settings[0], mailboxes);
+}
+
+/** Pure: the settings row and mailbox rows as a Config, with defaults for empty cells. */
+export function configFrom(project: string, baseToken: string, s: Row, mailboxRows: Row[]): Config {
+  const timezone = text(s["时区"]) || SETTING_DEFAULTS.时区;
+  const pause = num(s["退信率暂停线"], SETTING_DEFAULTS.退信率暂停线);
+  const startAt = cellTime(s["自动催信起始日"], timezone);
+  return {
+    project, baseToken, timezone, tables: TABLES,
+    mailboxes: mailboxRows
+      .filter((m) => m["启用"] === true && text(m["邮箱"]))
+      .map((m) => ({
+        address: text(m["邮箱"]).toLowerCase(),
+        channel: text(m["渠道名"]) || text(m["邮箱"]).toLowerCase(),
+        dailyExternal: num(m["每日上限"], 50),
+        bouncePause: num(m["退信率暂停线"], pause),
+      })),
+    companyDailyExternal: num(s["全公司每日上限"], SETTING_DEFAULTS.全公司每日上限),
+    perMinute: num(s["每分钟上限"], SETTING_DEFAULTS.每分钟上限),
+    followup: {
+      firstAfterDays: num(s["第一次催信天数"], SETTING_DEFAULTS.第一次催信天数),
+      secondAfterDays: num(s["第二次催信天数"], SETTING_DEFAULTS.第二次催信天数),
+      closeAfterDays: num(s["结案天数"], SETTING_DEFAULTS.结案天数),
+      onlyInvitedOnOrAfter: startAt == null ? "" : dayOf(startAt, timezone),
+      skipLevels: listOf(s["不催级别"]),
+      skipDemands: listOf(s["不催的对方要求"]),
+      skipChannels: listOf(s["不催渠道"]),
+    },
+    crossProjectCooldownDays: num(s["跨项目冷却天数"], SETTING_DEFAULTS.跨项目冷却天数),
+    discovery: { country: text(s["找人国家"]), language: text(s["找人语言"]) },
+    webhook: text(s["飞书群机器人"]),
+    dataApi: text(s["业务数据接口"]),
+  };
 }
 
 export function mailboxFor(cfg: Config, channel: string): Mailbox | undefined {
-  return cfg.mailboxes.find((m) => m.channel === channel || m.address === channel);
+  const c = channel.trim().toLowerCase();
+  return cfg.mailboxes.find((m) => m.channel.toLowerCase() === c || m.address === c);
+}
+
+/** Whether 暂停所有发送 is ticked right now; read fresh before sending, not from the Config. */
+export async function sendingPaused(lark: Lark, baseToken: string): Promise<boolean> {
+  const rows = await lark.records(TABLES.settings, { baseToken, fields: ["暂停所有发送"] });
+  return rows.some((r) => r["暂停所有发送"] === true || option(r["暂停所有发送"]) === "true");
 }

@@ -118,11 +118,6 @@ export async function todaysSends(base: Base, cfg: Config): Promise<SendCounts> 
   return counts;
 }
 
-export async function paused(base: Base, cfg: Config): Promise<boolean> {
-  const rows = await base.records(cfg.tables.control);
-  return rows.some((r) => r["暂停所有发送"] === true);
-}
-
 /** One 运行记录 row per command run, with its 操作日志 rows linked to it. */
 export class Run {
   id = "";

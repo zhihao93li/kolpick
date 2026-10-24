@@ -1,10 +1,10 @@
 import { emailsIn, linkIds, option, text } from "./base.js";
-import { mailboxFor, type Mailbox } from "./config.js";
+import { mailboxFor, sendingPaused, type Mailbox } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import { blockedReason, displayName, followupEmails, loadSnapshot, type Snapshot } from "./data.js";
 import { LarkError, type Row } from "./lark.js";
 import { MailBlocked, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
-import { otherSendingRun, paused, stamp, todaysSends, type SendCounts } from "./ops.js";
+import { otherSendingRun, stamp, todaysSends, type SendCounts } from "./ops.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
 
@@ -75,8 +75,8 @@ export interface SendReport {
  */
 export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: boolean): Promise<SendReport> {
   const report: SendReport = { sent: [], skipped: [], failed: [], dryRun };
-  if (await paused(ctx.base, ctx.cfg)) {
-    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "控制表的「暂停所有发送」开着" })));
+  if (await sendingPaused(ctx.base.lark, ctx.cfg.baseToken)) {
+    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "「设置」表的「暂停所有发送」勾上了" })));
     return report;
   }
   const busy = !dryRun && items.length ? await otherSendingRun(ctx.base, ctx.cfg, ctx.run.id) : "";

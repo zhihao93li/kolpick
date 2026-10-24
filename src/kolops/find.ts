@@ -74,6 +74,8 @@ export async function find(ctx: Ctx, o: FindOpts) {
   const params: DiscoveryParams = {
     ...DEFAULT_PARAMS, platform: o.platform, keywords: o.keywords, seeds: o.seeds, handles: o.handles,
     minFollowers: o.minFollowers, maxFollowers: o.maxFollowers, youtubeHidden: o.youtubeHidden, maxSpend: o.budget,
+    // Search hints for YouTube; empty in 设置 means no country or language bias.
+    country: ctx.cfg.discovery.country, language: ctx.cfg.discovery.language,
   };
   if (o.dryRun) {
     return { 试跑: true, 已在库里的账号: handles.size, 参数: params, 说明: `正式运行最多花 $${o.budget}，到上限就停，已找到的照样入库` };

@@ -2,13 +2,15 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
-import { loadConfig } from "../../src/kolops/config.js";
 import { makeCtx, type Ctx } from "../../src/kolops/ctx.js";
 import { syncInbox } from "../../src/kolops/sync.js";
 import { FakeLark } from "./fake.js";
+import { seedProject } from "./project.js";
+import { TABLES } from "../../src/kolops/schema.js";
+import type { Config } from "../../src/kolops/config.js";
 
-const cfg = loadConfig(join(import.meta.dirname, "../../plugins/kol-ops"));
-const T = cfg.tables;
+const T = TABLES;
+let cfg: Config;
 let lark: FakeLark;
 let ctx: Ctx;
 let fid: string;
@@ -16,6 +18,7 @@ let fid: string;
 beforeEach(() => {
   process.env.KOL_DATA_DIR = mkdtempSync(join(tmpdir(), "kol-test-"));
   lark = new FakeLark();
+  cfg = seedProject(lark);
   const pid = lark.add(T.profiles, { 账号名称: "小鹿與阿哲", 公开邮箱: "Deer@Example.com", 联系许可: ["可联系"] });
   fid = lark.add(T.followups, { 账号名称: "小鹿與阿哲", 档案: [{ id: pid }], 阶段: ["已邀约"], 当前轮到谁: ["KOL"] });
   lark.inbox["hello@tafu.me"] = [

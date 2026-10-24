@@ -1,11 +1,11 @@
 import { addDays, linkIds, option, text } from "./base.js";
-import { mailboxFor, pluginRoot } from "./config.js";
+import { mailboxFor } from "./config.js";
+import { contactedElsewhere } from "./crossproject.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, loadSnapshot, profileEmails } from "./data.js";
 import { stamp, today } from "./ops.js";
 import { deliver, type Outgoing, type SendReport, type Skipped } from "./send.js";
 import { loadTemplates, MissingValue, render } from "./templates.js";
-import { join } from "node:path";
 
 export interface InviteOpts {
   batch: string;
@@ -33,9 +33,12 @@ export function decisionApproved(r: Record<string, any>): boolean {
 export async function invite(ctx: Ctx, o: InviteOpts): Promise<SendReport & { batch: string }> {
   const t = ctx.cfg.tables;
   const mailbox = mailboxFor(ctx.cfg, o.mailbox);
-  if (!mailbox) throw new Error(`${o.mailbox} 不在插件配置的发信邮箱里`);
-  const tpl = loadTemplates(join(pluginRoot(), ctx.cfg.templatesDir)).get(o.template);
-  if (!tpl) throw new Error(`没有叫「${o.template}」的已批准模板`);
+  if (!mailbox) throw new Error(`${o.mailbox} 不在「发信邮箱」表里，或者没有勾「启用」`);
+  const approved = (await loadTemplates(ctx.base, ctx.cfg)).filter((x) => x.purpose === "邀约");
+  const tpl = approved.find((x) => x.name === o.template);
+  if (!tpl) {
+    throw new Error(`「模板」表里没有叫「${o.template}」的已批准邀约模板。已批准的邀约模板：${approved.map((x) => x.name).join("、") || "（没有）"}`);
+  }
 
   const approval = (await ctx.base.records(t.reviews)).find((r) => r.record_id === o.approval);
   if (!approval) throw new Error(`审核队列里找不到 ${o.approval}`);
@@ -50,7 +53,7 @@ export async function invite(ctx: Ctx, o: InviteOpts): Promise<SendReport & { ba
     throw new Error(`「${o.batch}」还不是「邀约批次」的选项。请先在飞书里加上这个选项，或用已有的批次名`);
   }
 
-  const s = await loadSnapshot(ctx.base, ctx.cfg);
+  const [s, elsewhereProjects] = await Promise.all([loadSnapshot(ctx.base, ctx.cfg), contactedElsewhere(ctx)]);
   const day = today(ctx.cfg);
   const items: Outgoing[] = [];
   const skipped: Skipped[] = [];
@@ -76,6 +79,11 @@ export async function invite(ctx: Ctx, o: InviteOpts): Promise<SendReport & { ba
     const elsewhere = emails.flatMap((e) => s.followupsByEmail.get(e) ?? [])[0];
     if (elsewhere) {
       skipped.push({ key: pid, name, reason: `邮箱已经在「${displayName(s, s.followups.get(elsewhere)!)}」的跟进记录里，联系过了` });
+      continue;
+    }
+    const otherProject = emails.map((e) => elsewhereProjects.get(e)).find(Boolean);
+    if (otherProject) {
+      skipped.push({ key: pid, name, reason: otherProject });
       continue;
     }
     if (emails.some((e) => inThisBatch.has(e))) {

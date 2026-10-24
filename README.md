@@ -8,8 +8,8 @@
 
 | 位置 | 内容 |
 | --- | --- |
-| `plugins/kol-ops/` | 插件本体：技能（`skills/`）、共同规则和字段说明（`reference/`）、邮件模板、配置，以及打包好的脚本 `scripts/kol.mjs` |
-| `src/kolops/` | `kol.mjs` 的源码：各个命令（`today`、`sync`、`send`、`invite`、`remind`、`find`、`check`）和发信前的检查 |
+| `plugins/kol-ops/` | 插件本体：技能（`skills/`）、共同规则和字段说明（`reference/`），以及打包好的脚本 `scripts/kol.mjs`。项目专属的设置、发信邮箱和邮件模板不在这里，在各项目的飞书表里 |
+| `src/kolops/` | `kol.mjs` 的源码：各个命令（`today`、`sync`、`send`、`invite`、`remind`、`find`、`check`、`project`、`setup-base`）、发信前的检查，以及项目飞书表的标准结构（`schema.ts`） |
 | `src/discovery/` | 找人和查邮箱：actor 列表和价格（`apify.ts`）、各平台步骤（`pipeline.ts`）、整体流程（`run.ts`） |
 | `src/scripts/build-plugin.ts` | 把 `src/kolops/cli.ts` 打包成 `plugins/kol-ops/scripts/kol.mjs` |
 | `.claude-plugin/marketplace.json` | 让 `/plugin marketplace add zhihao93li/kolpick` 能找到插件 |

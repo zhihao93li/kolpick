@@ -2,14 +2,16 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, expect, it } from "vitest";
-import { loadConfig } from "../../src/kolops/config.js";
 import { makeCtx, type Ctx } from "../../src/kolops/ctx.js";
 import { invite } from "../../src/kolops/invite.js";
 import { FakeLark } from "./fake.js";
+import { BASE, seedProject } from "./project.js";
+import { addProject } from "../../src/kolops/projects.js";
+import { TABLES } from "../../src/kolops/schema.js";
+import type { Config } from "../../src/kolops/config.js";
 
-process.env.KOL_PLUGIN_ROOT = join(import.meta.dirname, "../../plugins/kol-ops");
-const cfg = loadConfig();
-const T = cfg.tables;
+const T = TABLES;
+let cfg: Config;
 let lark: FakeLark;
 let ctx: Ctx;
 let ok: string, dnc: string, noMail: string, approval: string;
@@ -17,7 +19,7 @@ let ok: string, dnc: string, noMail: string, approval: string;
 beforeEach(() => {
   process.env.KOL_DATA_DIR = mkdtempSync(join(tmpdir(), "kol-test-"));
   lark = new FakeLark();
-  lark.add(T.control, { 暂停所有发送: false });
+  cfg = seedProject(lark);
   ok = lark.add(T.profiles, { 账号名称: "77夫妻", 称呼: "77", 公开邮箱: "77@example.com", 联系许可: ["可联系"] });
   dnc = lark.add(T.profiles, { 账号名称: "狄嘉", 公开邮箱: "dj@example.com", 联系许可: ["永不联系"], 联系许可原因: "拒绝" });
   noMail = lark.add(T.profiles, { 账号名称: "无邮箱", 联系许可: ["可联系"] });
@@ -65,4 +67,24 @@ it("skips an address that already has a followup under another profile, or appea
   const reasons = r.skipped.map((x) => `${x.name}：${x.reason}`).join("\n");
   expect(reasons).toMatch(/77夫妻：邮箱已经在「77夫妻 YouTube」的跟进记录里/);
   expect(reasons).toMatch(/雙胞胎 TikTok：这一批里已经有人用同一个邮箱/);
+});
+
+it("only sends a template approved in the 模板 table", async () => {
+  await expect(invite(ctx, { ...opts(), template: "邀约-草稿" })).rejects.toThrow(/已批准的邀约模板：邀约-新版-伴侶/);
+});
+
+it("skips someone another project on this computer contacted recently, but not long ago", async () => {
+  const other = new FakeLark();
+  const recent = other.add(T.profiles, { 公开邮箱: "77@example.com" });
+  other.add(T.followups, { 档案: [{ id: recent }], 最近联系日期: Date.now() - 10 * 86_400_000 });
+  const old = other.add(T.profiles, { 公开邮箱: "dj-old@example.com" });
+  other.add(T.followups, { 档案: [{ id: old }], 最近联系日期: Date.now() - 200 * 86_400_000 });
+  lark.others.OtherBaseToken0001 = other;
+  addProject("测试项目", BASE);
+  addProject("另一个项目", "OtherBaseToken0001");
+  const fresh = lark.add(T.profiles, { 账号名称: "老朋友", 称呼: "老朋友", 公开邮箱: "dj-old@example.com", 联系许可: ["可联系"] });
+
+  const r = await invite(ctx, { ...opts(), profiles: [ok, fresh] });
+  expect(r.sent.map((x) => x.name)).toEqual(["老朋友"]);
+  expect(r.skipped[0].reason).toMatch(/项目「另一个项目」.*90 天内不重复联系/);
 });

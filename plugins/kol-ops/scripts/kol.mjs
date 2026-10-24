@@ -5945,7 +5945,7 @@ var require_lib = __commonJS({
         function bail(err) {
           reject(err || new Error("Aborted"));
         }
-        function onError(err, num2) {
+        function onError(err, num3) {
           if (err.bail) {
             bail(err);
             return;
@@ -5953,19 +5953,19 @@ var require_lib = __commonJS({
           if (!op.retry(err)) {
             reject(op.mainError());
           } else if (options.onRetry) {
-            options.onRetry(err, num2);
+            options.onRetry(err, num3);
           }
         }
-        function runAttempt(num2) {
+        function runAttempt(num3) {
           var val;
           try {
-            val = fn(bail, num2);
+            val = fn(bail, num3);
           } catch (err) {
-            onError(err, num2);
+            onError(err, num3);
             return;
           }
           Promise.resolve(val).then(resolve).catch(function catchIt(err) {
-            onError(err, num2);
+            onError(err, num3);
           });
         }
         op.attempt(runAttempt);
@@ -16545,8 +16545,8 @@ var require_common = __commonJS({
 var require_browser = __commonJS({
   "node_modules/debug/src/browser.js"(exports, module) {
     exports.formatArgs = formatArgs;
-    exports.save = save;
-    exports.load = load;
+    exports.save = save2;
+    exports.load = load2;
     exports.useColors = useColors;
     exports.storage = localstorage();
     exports.destroy = /* @__PURE__ */ (() => {
@@ -16672,7 +16672,7 @@ var require_browser = __commonJS({
     }
     exports.log = console.debug || console.log || (() => {
     });
-    function save(namespaces) {
+    function save2(namespaces) {
       try {
         if (namespaces) {
           exports.storage.setItem("debug", namespaces);
@@ -16682,7 +16682,7 @@ var require_browser = __commonJS({
       } catch (error) {
       }
     }
-    function load() {
+    function load2() {
       let r;
       try {
         r = exports.storage.getItem("debug") || exports.storage.getItem("DEBUG");
@@ -16719,8 +16719,8 @@ var require_node = __commonJS({
     exports.init = init;
     exports.log = log;
     exports.formatArgs = formatArgs;
-    exports.save = save;
-    exports.load = load;
+    exports.save = save2;
+    exports.load = load2;
     exports.useColors = useColors;
     exports.destroy = util.deprecate(
       () => {
@@ -16855,14 +16855,14 @@ var require_node = __commonJS({
     function log(...args) {
       return process.stderr.write(util.formatWithOptions(exports.inspectOpts, ...args) + "\n");
     }
-    function save(namespaces) {
+    function save2(namespaces) {
       if (namespaces) {
         process.env.DEBUG = namespaces;
       } else {
         delete process.env.DEBUG;
       }
     }
-    function load() {
+    function load2() {
       return process.env.DEBUG;
     }
     function init(debug) {
@@ -31029,7 +31029,7 @@ var require_file = __commonJS({
     var notmodified_1 = __importDefault2(require_notmodified());
     var url_1 = __require("url");
     var debug = (0, debug_1.default)("get-uri:file");
-    var file = async ({ href: uri }, opts = {}) => {
+    var file2 = async ({ href: uri }, opts = {}) => {
       const {
         cache,
         flags = "r",
@@ -31060,7 +31060,7 @@ var require_file = __commonJS({
         throw err;
       }
     };
-    exports.file = file;
+    exports.file = file2;
     function isNotModified(prev, curr) {
       return +prev.mtime === +curr.mtime;
     }
@@ -31577,17 +31577,17 @@ var require_parseListDOS = __commonJS({
       if (name === "." || name === "..") {
         return void 0;
       }
-      const file = new FileInfo_1.FileInfo(name);
+      const file2 = new FileInfo_1.FileInfo(name);
       const fileType = groups[3];
       if (fileType === "<DIR>") {
-        file.type = FileInfo_1.FileType.Directory;
-        file.size = 0;
+        file2.type = FileInfo_1.FileType.Directory;
+        file2.size = 0;
       } else {
-        file.type = FileInfo_1.FileType.File;
-        file.size = parseInt(groups[4], 10);
+        file2.type = FileInfo_1.FileType.File;
+        file2.size = parseInt(groups[4], 10);
       }
-      file.rawModifiedAt = groups[1] + " " + groups[2];
-      return file;
+      file2.rawModifiedAt = groups[1] + " " + groups[2];
+      return file2;
     }
     function transformList(files) {
       return files;
@@ -31620,46 +31620,46 @@ var require_parseListUnix = __commonJS({
       if (name === "." || name === "..") {
         return void 0;
       }
-      const file = new FileInfo_1.FileInfo(name);
-      file.size = parseInt(groups[18], 10);
-      file.user = groups[16];
-      file.group = groups[17];
-      file.hardLinkCount = parseInt(groups[15], 10);
-      file.rawModifiedAt = groups[19] + " " + groups[20];
-      file.permissions = {
+      const file2 = new FileInfo_1.FileInfo(name);
+      file2.size = parseInt(groups[18], 10);
+      file2.user = groups[16];
+      file2.group = groups[17];
+      file2.hardLinkCount = parseInt(groups[15], 10);
+      file2.rawModifiedAt = groups[19] + " " + groups[20];
+      file2.permissions = {
         user: parseMode(groups[4], groups[5], groups[6]),
         group: parseMode(groups[8], groups[9], groups[10]),
         world: parseMode(groups[12], groups[13], groups[14])
       };
       switch (groups[1].charAt(0)) {
         case "d":
-          file.type = FileInfo_1.FileType.Directory;
+          file2.type = FileInfo_1.FileType.Directory;
           break;
         case "e":
-          file.type = FileInfo_1.FileType.SymbolicLink;
+          file2.type = FileInfo_1.FileType.SymbolicLink;
           break;
         case "l":
-          file.type = FileInfo_1.FileType.SymbolicLink;
+          file2.type = FileInfo_1.FileType.SymbolicLink;
           break;
         case "b":
         case "c":
-          file.type = FileInfo_1.FileType.File;
+          file2.type = FileInfo_1.FileType.File;
           break;
         case "f":
         case "-":
-          file.type = FileInfo_1.FileType.File;
+          file2.type = FileInfo_1.FileType.File;
           break;
         default:
-          file.type = FileInfo_1.FileType.Unknown;
+          file2.type = FileInfo_1.FileType.Unknown;
       }
-      if (file.isSymbolicLink) {
+      if (file2.isSymbolicLink) {
         const end = name.indexOf(" -> ");
         if (end !== -1) {
-          file.name = name.substring(0, end);
-          file.link = name.substring(end + 4);
+          file2.name = name.substring(0, end);
+          file2.link = name.substring(end + 4);
         }
       }
-      return file;
+      return file2;
     }
     function transformList(files) {
       return files;
@@ -31805,22 +31805,22 @@ var require_parseListMLSD = __commonJS({
     }
     function transformList(files) {
       const nonLinksByID = /* @__PURE__ */ new Map();
-      for (const file of files) {
-        if (!file.isSymbolicLink && file.uniqueID !== void 0) {
-          nonLinksByID.set(file.uniqueID, file);
+      for (const file2 of files) {
+        if (!file2.isSymbolicLink && file2.uniqueID !== void 0) {
+          nonLinksByID.set(file2.uniqueID, file2);
         }
       }
       const resolvedFiles = [];
-      for (const file of files) {
-        if (file.isSymbolicLink && file.uniqueID !== void 0 && file.link === void 0) {
-          const target = nonLinksByID.get(file.uniqueID);
+      for (const file2 of files) {
+        if (file2.isSymbolicLink && file2.uniqueID !== void 0 && file2.link === void 0) {
+          const target = nonLinksByID.get(file2.uniqueID);
           if (target !== void 0) {
-            file.link = target.name;
+            file2.link = target.name;
           }
         }
-        const isPartOfDirectory = !file.name.includes("/");
+        const isPartOfDirectory = !file2.name.includes("/");
         if (isPartOfDirectory) {
-          resolvedFiles.push(file);
+          resolvedFiles.push(file2);
         }
       }
       return resolvedFiles;
@@ -32801,14 +32801,14 @@ var require_Client = __commonJS({
        * the working directory itself.
        */
       async clearWorkingDir() {
-        for (const file of await this.list()) {
-          if (file.isDirectory) {
-            await this.cd(file.name);
+        for (const file2 of await this.list()) {
+          if (file2.isDirectory) {
+            await this.cd(file2.name);
             await this.clearWorkingDir();
             await this.cdup();
-            await this.removeEmptyDir(file.name);
+            await this.removeEmptyDir(file2.name);
           } else {
-            await this.remove(file.name);
+            await this.remove(file2.name);
           }
         }
       }
@@ -32837,13 +32837,13 @@ var require_Client = __commonJS({
        */
       async _uploadToWorkingDir(localDirPath) {
         const files = await fsReadDir(localDirPath);
-        for (const file of files) {
-          const fullPath = (0, path_1.join)(localDirPath, file);
+        for (const file2 of files) {
+          const fullPath = (0, path_1.join)(localDirPath, file2);
           const stats = await fsStat(fullPath);
           if (stats.isFile()) {
-            await this.uploadFrom(fullPath, file);
+            await this.uploadFrom(fullPath, file2);
           } else if (stats.isDirectory()) {
-            await this._openDir(file);
+            await this._openDir(file2);
             await this._uploadToWorkingDir(fullPath);
             await this.cdup();
           }
@@ -32868,20 +32868,20 @@ var require_Client = __commonJS({
        */
       async _downloadFromWorkingDir(localDirPath) {
         await ensureLocalDirectory(localDirPath);
-        for (const file of await this.list()) {
-          const hasInvalidName = !file.name || (0, path_1.basename)(file.name) !== file.name;
+        for (const file2 of await this.list()) {
+          const hasInvalidName = !file2.name || (0, path_1.basename)(file2.name) !== file2.name;
           if (hasInvalidName) {
-            const safeName = JSON.stringify(file.name);
+            const safeName = JSON.stringify(file2.name);
             this.ftp.log(`Invalid filename from server listing, will skip file. (${safeName})`);
             continue;
           }
-          const localPath = (0, path_1.join)(localDirPath, file.name);
-          if (file.isDirectory) {
-            await this.cd(file.name);
+          const localPath = (0, path_1.join)(localDirPath, file2.name);
+          if (file2.isDirectory) {
+            await this.cd(file2.name);
             await this._downloadFromWorkingDir(localPath);
             await this.cdup();
-          } else if (file.isFile) {
-            await this.downloadTo(localPath, file.name);
+          } else if (file2.isFile) {
+            await this.downloadTo(localPath, file2.name);
           }
         }
       }
@@ -34296,11 +34296,11 @@ var require_keyword = __commonJS({
         return (lead - 55296) * 1024 + (trail - 56320) + 65536;
       }
       function isIdentifierNameES6(id) {
-        var i, iz, ch, lowCh, check;
+        var i, iz, ch, lowCh, check2;
         if (id.length === 0) {
           return false;
         }
-        check = code.isIdentifierStartES6;
+        check2 = code.isIdentifierStartES6;
         for (i = 0, iz = id.length; i < iz; ++i) {
           ch = id.charCodeAt(i);
           if (55296 <= ch && ch <= 56319) {
@@ -34314,10 +34314,10 @@ var require_keyword = __commonJS({
             }
             ch = decodeUtf16(ch, lowCh);
           }
-          if (!check(ch)) {
+          if (!check2(ch)) {
             return false;
           }
-          check = code.isIdentifierPartES6;
+          check2 = code.isIdentifierPartES6;
         }
         return true;
       }
@@ -34537,7 +34537,7 @@ var require_util2 = __commonJS({
       return path;
     }
     exports.normalize = normalize;
-    function join7(aRoot, aPath) {
+    function join5(aRoot, aPath) {
       if (aRoot === "") {
         aRoot = ".";
       }
@@ -34569,7 +34569,7 @@ var require_util2 = __commonJS({
       }
       return joined;
     }
-    exports.join = join7;
+    exports.join = join5;
     exports.isAbsolute = function(aPath) {
       return aPath.charAt(0) === "/" || urlRegexp.test(aPath);
     };
@@ -34742,7 +34742,7 @@ var require_util2 = __commonJS({
             parsed.path = parsed.path.substring(0, index + 1);
           }
         }
-        sourceURL = join7(urlGenerate(parsed), sourceURL);
+        sourceURL = join5(urlGenerate(parsed), sourceURL);
       }
       return normalize(sourceURL);
     }
@@ -35364,7 +35364,7 @@ var require_source_map_consumer = __commonJS({
       var sourceRoot = util.getArg(sourceMap, "sourceRoot", null);
       var sourcesContent = util.getArg(sourceMap, "sourcesContent", null);
       var mappings = util.getArg(sourceMap, "mappings");
-      var file = util.getArg(sourceMap, "file", null);
+      var file2 = util.getArg(sourceMap, "file", null);
       if (version != this._version) {
         throw new Error("Unsupported version: " + version);
       }
@@ -35383,7 +35383,7 @@ var require_source_map_consumer = __commonJS({
       this.sourcesContent = sourcesContent;
       this._mappings = mappings;
       this._sourceMapURL = aSourceMapURL;
-      this.file = file;
+      this.file = file2;
     }
     BasicSourceMapConsumer.prototype = Object.create(SourceMapConsumer.prototype);
     BasicSourceMapConsumer.prototype.consumer = SourceMapConsumer;
@@ -36283,10 +36283,10 @@ var require_escodegen = __commonJS({
           sourceCode: null
         };
       }
-      function stringRepeat(str, num2) {
+      function stringRepeat(str, num3) {
         var result = "";
-        for (num2 |= 0; num2 > 0; num2 >>>= 1, str += str) {
-          if (num2 & 1) {
+        for (num3 |= 0; num3 > 0; num3 >>>= 1, str += str) {
+          if (num3 & 1) {
             result += str;
           }
         }
@@ -36544,7 +36544,7 @@ var require_escodegen = __commonJS({
       function noEmptySpace() {
         return space ? space : " ";
       }
-      function join7(left, right) {
+      function join5(left, right) {
         var leftSource, rightSource, leftCharCode, rightCharCode;
         leftSource = toSourceNodeWhenNeeded(left).toString();
         if (leftSource.length === 0) {
@@ -36633,9 +36633,9 @@ var require_escodegen = __commonJS({
         return "/*" + comment.value + "*/";
       }
       function addComments(stmt, result) {
-        var i, len, comment, save, tailingToStatement, specialBase, fragment, extRange, range, prevRange, prefix, infix, suffix, count;
+        var i, len, comment, save2, tailingToStatement, specialBase, fragment, extRange, range, prevRange, prefix, infix, suffix, count;
         if (stmt.leadingComments && stmt.leadingComments.length > 0) {
-          save = result;
+          save2 = result;
           if (preserveBlankLines) {
             comment = stmt.leadingComments[0];
             result = [];
@@ -36682,7 +36682,7 @@ var require_escodegen = __commonJS({
               result.push(addIndent(fragment));
             }
           }
-          result.push(addIndent(save));
+          result.push(addIndent(save2));
         }
         if (stmt.trailingComments) {
           if (preserveBlankLines) {
@@ -36875,8 +36875,8 @@ var require_escodegen = __commonJS({
           } else {
             result.push(that.generateExpression(stmt.left, Precedence.Call, E_TTT));
           }
-          result = join7(result, operator);
-          result = [join7(
+          result = join5(result, operator);
+          result = [join5(
             result,
             that.generateExpression(stmt.right, Precedence.Assignment, E_TTT)
           ), ")"];
@@ -37019,11 +37019,11 @@ var require_escodegen = __commonJS({
           var result, fragment;
           result = ["class"];
           if (stmt.id) {
-            result = join7(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
+            result = join5(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
           }
           if (stmt.superClass) {
-            fragment = join7("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
-            result = join7(result, fragment);
+            fragment = join5("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
+            result = join5(result, fragment);
           }
           result.push(space);
           result.push(this.generateStatement(stmt.body, S_TFFT));
@@ -37036,9 +37036,9 @@ var require_escodegen = __commonJS({
           return escapeDirective(stmt.directive) + this.semicolon(flags);
         },
         DoWhileStatement: function(stmt, flags) {
-          var result = join7("do", this.maybeBlock(stmt.body, S_TFFF));
+          var result = join5("do", this.maybeBlock(stmt.body, S_TFFF));
           result = this.maybeBlockSuffix(stmt.body, result);
-          return join7(result, [
+          return join5(result, [
             "while" + space + "(",
             this.generateExpression(stmt.test, Precedence.Sequence, E_TTT),
             ")" + this.semicolon(flags)
@@ -37074,11 +37074,11 @@ var require_escodegen = __commonJS({
         ExportDefaultDeclaration: function(stmt, flags) {
           var result = ["export"], bodyFlags;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
-          result = join7(result, "default");
+          result = join5(result, "default");
           if (isStatement(stmt.declaration)) {
-            result = join7(result, this.generateStatement(stmt.declaration, bodyFlags));
+            result = join5(result, this.generateStatement(stmt.declaration, bodyFlags));
           } else {
-            result = join7(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
+            result = join5(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
           }
           return result;
         },
@@ -37086,15 +37086,15 @@ var require_escodegen = __commonJS({
           var result = ["export"], bodyFlags, that = this;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
           if (stmt.declaration) {
-            return join7(result, this.generateStatement(stmt.declaration, bodyFlags));
+            return join5(result, this.generateStatement(stmt.declaration, bodyFlags));
           }
           if (stmt.specifiers) {
             if (stmt.specifiers.length === 0) {
-              result = join7(result, "{" + space + "}");
+              result = join5(result, "{" + space + "}");
             } else if (stmt.specifiers[0].type === Syntax.ExportBatchSpecifier) {
-              result = join7(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
+              result = join5(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
             } else {
-              result = join7(result, "{");
+              result = join5(result, "{");
               withIndent(function(indent2) {
                 var i, iz;
                 result.push(newline);
@@ -37112,7 +37112,7 @@ var require_escodegen = __commonJS({
               result.push(base + "}");
             }
             if (stmt.source) {
-              result = join7(result, [
+              result = join5(result, [
                 "from" + space,
                 // ModuleSpecifier
                 this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -37200,7 +37200,7 @@ var require_escodegen = __commonJS({
           ];
           cursor = 0;
           if (stmt.specifiers[cursor].type === Syntax.ImportDefaultSpecifier) {
-            result = join7(result, [
+            result = join5(result, [
               this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
             ]);
             ++cursor;
@@ -37210,7 +37210,7 @@ var require_escodegen = __commonJS({
               result.push(",");
             }
             if (stmt.specifiers[cursor].type === Syntax.ImportNamespaceSpecifier) {
-              result = join7(result, [
+              result = join5(result, [
                 space,
                 this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
               ]);
@@ -37239,7 +37239,7 @@ var require_escodegen = __commonJS({
               }
             }
           }
-          result = join7(result, [
+          result = join5(result, [
             "from" + space,
             // ModuleSpecifier
             this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -37293,7 +37293,7 @@ var require_escodegen = __commonJS({
           return result;
         },
         ThrowStatement: function(stmt, flags) {
-          return [join7(
+          return [join5(
             "throw",
             this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
           ), this.semicolon(flags)];
@@ -37304,7 +37304,7 @@ var require_escodegen = __commonJS({
           result = this.maybeBlockSuffix(stmt.block, result);
           if (stmt.handlers) {
             for (i = 0, iz = stmt.handlers.length; i < iz; ++i) {
-              result = join7(result, this.generateStatement(stmt.handlers[i], S_TFFF));
+              result = join5(result, this.generateStatement(stmt.handlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(stmt.handlers[i].body, result);
               }
@@ -37312,7 +37312,7 @@ var require_escodegen = __commonJS({
           } else {
             guardedHandlers = stmt.guardedHandlers || [];
             for (i = 0, iz = guardedHandlers.length; i < iz; ++i) {
-              result = join7(result, this.generateStatement(guardedHandlers[i], S_TFFF));
+              result = join5(result, this.generateStatement(guardedHandlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(guardedHandlers[i].body, result);
               }
@@ -37320,13 +37320,13 @@ var require_escodegen = __commonJS({
             if (stmt.handler) {
               if (Array.isArray(stmt.handler)) {
                 for (i = 0, iz = stmt.handler.length; i < iz; ++i) {
-                  result = join7(result, this.generateStatement(stmt.handler[i], S_TFFF));
+                  result = join5(result, this.generateStatement(stmt.handler[i], S_TFFF));
                   if (stmt.finalizer || i + 1 !== iz) {
                     result = this.maybeBlockSuffix(stmt.handler[i].body, result);
                   }
                 }
               } else {
-                result = join7(result, this.generateStatement(stmt.handler, S_TFFF));
+                result = join5(result, this.generateStatement(stmt.handler, S_TFFF));
                 if (stmt.finalizer) {
                   result = this.maybeBlockSuffix(stmt.handler.body, result);
                 }
@@ -37334,7 +37334,7 @@ var require_escodegen = __commonJS({
             }
           }
           if (stmt.finalizer) {
-            result = join7(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
+            result = join5(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
           }
           return result;
         },
@@ -37368,7 +37368,7 @@ var require_escodegen = __commonJS({
           withIndent(function() {
             if (stmt.test) {
               result = [
-                join7("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
+                join5("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
                 ":"
               ];
             } else {
@@ -37416,9 +37416,9 @@ var require_escodegen = __commonJS({
             result.push(this.maybeBlock(stmt.consequent, S_TFFF));
             result = this.maybeBlockSuffix(stmt.consequent, result);
             if (stmt.alternate.type === Syntax.IfStatement) {
-              result = join7(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
+              result = join5(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
             } else {
-              result = join7(result, join7("else", this.maybeBlock(stmt.alternate, bodyFlags)));
+              result = join5(result, join5("else", this.maybeBlock(stmt.alternate, bodyFlags)));
             }
           } else {
             result.push(this.maybeBlock(stmt.consequent, bodyFlags));
@@ -37519,7 +37519,7 @@ var require_escodegen = __commonJS({
         },
         ReturnStatement: function(stmt, flags) {
           if (stmt.argument) {
-            return [join7(
+            return [join5(
               "return",
               this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
             ), this.semicolon(flags)];
@@ -37608,14 +37608,14 @@ var require_escodegen = __commonJS({
           if (leftSource.charCodeAt(leftSource.length - 1) === 47 && esutils.code.isIdentifierPartES5(expr.operator.charCodeAt(0))) {
             result = [fragment, noEmptySpace(), expr.operator];
           } else {
-            result = join7(fragment, expr.operator);
+            result = join5(fragment, expr.operator);
           }
           fragment = this.generateExpression(expr.right, rightPrecedence, flags);
           if (expr.operator === "/" && fragment.toString().charAt(0) === "/" || expr.operator.slice(-1) === "<" && fragment.toString().slice(0, 3) === "!--") {
             result.push(noEmptySpace());
             result.push(fragment);
           } else {
-            result = join7(result, fragment);
+            result = join5(result, fragment);
           }
           if (expr.operator === "in" && !(flags & F_ALLOW_IN)) {
             return ["(", result, ")"];
@@ -37655,7 +37655,7 @@ var require_escodegen = __commonJS({
           var result, length, i, iz, itemFlags;
           length = expr["arguments"].length;
           itemFlags = flags & F_ALLOW_UNPARATH_NEW && !parentheses && length === 0 ? E_TFT : E_TFF;
-          result = join7(
+          result = join5(
             "new",
             this.generateExpression(expr.callee, Precedence.New, itemFlags)
           );
@@ -37705,11 +37705,11 @@ var require_escodegen = __commonJS({
           var result, fragment, rightCharCode, leftSource, leftCharCode;
           fragment = this.generateExpression(expr.argument, Precedence.Unary, E_TTT);
           if (space === "") {
-            result = join7(expr.operator, fragment);
+            result = join5(expr.operator, fragment);
           } else {
             result = [expr.operator];
             if (expr.operator.length > 2) {
-              result = join7(result, fragment);
+              result = join5(result, fragment);
             } else {
               leftSource = toSourceNodeWhenNeeded(result).toString();
               leftCharCode = leftSource.charCodeAt(leftSource.length - 1);
@@ -37732,7 +37732,7 @@ var require_escodegen = __commonJS({
             result = "yield";
           }
           if (expr.argument) {
-            result = join7(
+            result = join5(
               result,
               this.generateExpression(expr.argument, Precedence.Yield, E_TTT)
             );
@@ -37740,7 +37740,7 @@ var require_escodegen = __commonJS({
           return parenthesize(result, Precedence.Yield, precedence);
         },
         AwaitExpression: function(expr, precedence, flags) {
-          var result = join7(
+          var result = join5(
             expr.all ? "await*" : "await",
             this.generateExpression(expr.argument, Precedence.Await, E_TTT)
           );
@@ -37823,11 +37823,11 @@ var require_escodegen = __commonJS({
           var result, fragment;
           result = ["class"];
           if (expr.id) {
-            result = join7(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
+            result = join5(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
           }
           if (expr.superClass) {
-            fragment = join7("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
-            result = join7(result, fragment);
+            fragment = join5("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
+            result = join5(result, fragment);
           }
           result.push(space);
           result.push(this.generateStatement(expr.body, S_TFFT));
@@ -37842,7 +37842,7 @@ var require_escodegen = __commonJS({
           }
           if (expr.kind === "get" || expr.kind === "set") {
             fragment = [
-              join7(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
+              join5(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
               this.generateFunctionBody(expr.value)
             ];
           } else {
@@ -37852,7 +37852,7 @@ var require_escodegen = __commonJS({
               this.generateFunctionBody(expr.value)
             ];
           }
-          return join7(result, fragment);
+          return join5(result, fragment);
         },
         Property: function(expr, precedence, flags) {
           if (expr.kind === "get" || expr.kind === "set") {
@@ -38047,7 +38047,7 @@ var require_escodegen = __commonJS({
               for (i = 0, iz = expr.blocks.length; i < iz; ++i) {
                 fragment = that.generateExpression(expr.blocks[i], Precedence.Sequence, E_TTT);
                 if (i > 0 || extra.moz.comprehensionExpressionStartsWithAssignment) {
-                  result = join7(result, fragment);
+                  result = join5(result, fragment);
                 } else {
                   result.push(fragment);
                 }
@@ -38055,13 +38055,13 @@ var require_escodegen = __commonJS({
             });
           }
           if (expr.filter) {
-            result = join7(result, "if" + space);
+            result = join5(result, "if" + space);
             fragment = this.generateExpression(expr.filter, Precedence.Sequence, E_TTT);
-            result = join7(result, ["(", fragment, ")"]);
+            result = join5(result, ["(", fragment, ")"]);
           }
           if (!extra.moz.comprehensionExpressionStartsWithAssignment) {
             fragment = this.generateExpression(expr.body, Precedence.Assignment, E_TTT);
-            result = join7(result, fragment);
+            result = join5(result, fragment);
           }
           result.push(expr.type === Syntax.GeneratorExpression ? ")" : "]");
           return result;
@@ -38077,8 +38077,8 @@ var require_escodegen = __commonJS({
           } else {
             fragment = this.generateExpression(expr.left, Precedence.Call, E_TTT);
           }
-          fragment = join7(fragment, expr.of ? "of" : "in");
-          fragment = join7(fragment, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
+          fragment = join5(fragment, expr.of ? "of" : "in");
+          fragment = join5(fragment, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
           return ["for" + space + "(", fragment, ")"];
         },
         SpreadElement: function(expr, precedence, flags) {
@@ -43457,14 +43457,14 @@ var require_esprima = __commonJS({
                 };
               };
               Scanner2.prototype.scanHexLiteral = function(start) {
-                var num2 = "";
+                var num3 = "";
                 while (!this.eof()) {
                   if (!character_1.Character.isHexDigit(this.source.charCodeAt(this.index))) {
                     break;
                   }
-                  num2 += this.source[this.index++];
+                  num3 += this.source[this.index++];
                 }
-                if (num2.length === 0) {
+                if (num3.length === 0) {
                   this.throwUnexpectedToken();
                 }
                 if (character_1.Character.isIdentifierStart(this.source.charCodeAt(this.index))) {
@@ -43472,7 +43472,7 @@ var require_esprima = __commonJS({
                 }
                 return {
                   type: 6,
-                  value: parseInt("0x" + num2, 16),
+                  value: parseInt("0x" + num3, 16),
                   lineNumber: this.lineNumber,
                   lineStart: this.lineStart,
                   start,
@@ -43480,16 +43480,16 @@ var require_esprima = __commonJS({
                 };
               };
               Scanner2.prototype.scanBinaryLiteral = function(start) {
-                var num2 = "";
+                var num3 = "";
                 var ch;
                 while (!this.eof()) {
                   ch = this.source[this.index];
                   if (ch !== "0" && ch !== "1") {
                     break;
                   }
-                  num2 += this.source[this.index++];
+                  num3 += this.source[this.index++];
                 }
-                if (num2.length === 0) {
+                if (num3.length === 0) {
                   this.throwUnexpectedToken();
                 }
                 if (!this.eof()) {
@@ -43500,7 +43500,7 @@ var require_esprima = __commonJS({
                 }
                 return {
                   type: 6,
-                  value: parseInt(num2, 2),
+                  value: parseInt(num3, 2),
                   lineNumber: this.lineNumber,
                   lineStart: this.lineStart,
                   start,
@@ -43508,11 +43508,11 @@ var require_esprima = __commonJS({
                 };
               };
               Scanner2.prototype.scanOctalLiteral = function(prefix, start) {
-                var num2 = "";
+                var num3 = "";
                 var octal = false;
                 if (character_1.Character.isOctalDigit(prefix.charCodeAt(0))) {
                   octal = true;
-                  num2 = "0" + this.source[this.index++];
+                  num3 = "0" + this.source[this.index++];
                 } else {
                   ++this.index;
                 }
@@ -43520,9 +43520,9 @@ var require_esprima = __commonJS({
                   if (!character_1.Character.isOctalDigit(this.source.charCodeAt(this.index))) {
                     break;
                   }
-                  num2 += this.source[this.index++];
+                  num3 += this.source[this.index++];
                 }
-                if (!octal && num2.length === 0) {
+                if (!octal && num3.length === 0) {
                   this.throwUnexpectedToken();
                 }
                 if (character_1.Character.isIdentifierStart(this.source.charCodeAt(this.index)) || character_1.Character.isDecimalDigit(this.source.charCodeAt(this.index))) {
@@ -43530,7 +43530,7 @@ var require_esprima = __commonJS({
                 }
                 return {
                   type: 6,
-                  value: parseInt(num2, 8),
+                  value: parseInt(num3, 8),
                   octal,
                   lineNumber: this.lineNumber,
                   lineStart: this.lineStart,
@@ -43554,11 +43554,11 @@ var require_esprima = __commonJS({
                 var start = this.index;
                 var ch = this.source[start];
                 assert_1.assert(character_1.Character.isDecimalDigit(ch.charCodeAt(0)) || ch === ".", "Numeric literal must start with a decimal digit or a decimal point");
-                var num2 = "";
+                var num3 = "";
                 if (ch !== ".") {
-                  num2 = this.source[this.index++];
+                  num3 = this.source[this.index++];
                   ch = this.source[this.index];
-                  if (num2 === "0") {
+                  if (num3 === "0") {
                     if (ch === "x" || ch === "X") {
                       ++this.index;
                       return this.scanHexLiteral(start);
@@ -43577,26 +43577,26 @@ var require_esprima = __commonJS({
                     }
                   }
                   while (character_1.Character.isDecimalDigit(this.source.charCodeAt(this.index))) {
-                    num2 += this.source[this.index++];
+                    num3 += this.source[this.index++];
                   }
                   ch = this.source[this.index];
                 }
                 if (ch === ".") {
-                  num2 += this.source[this.index++];
+                  num3 += this.source[this.index++];
                   while (character_1.Character.isDecimalDigit(this.source.charCodeAt(this.index))) {
-                    num2 += this.source[this.index++];
+                    num3 += this.source[this.index++];
                   }
                   ch = this.source[this.index];
                 }
                 if (ch === "e" || ch === "E") {
-                  num2 += this.source[this.index++];
+                  num3 += this.source[this.index++];
                   ch = this.source[this.index];
                   if (ch === "+" || ch === "-") {
-                    num2 += this.source[this.index++];
+                    num3 += this.source[this.index++];
                   }
                   if (character_1.Character.isDecimalDigit(this.source.charCodeAt(this.index))) {
                     while (character_1.Character.isDecimalDigit(this.source.charCodeAt(this.index))) {
-                      num2 += this.source[this.index++];
+                      num3 += this.source[this.index++];
                     }
                   } else {
                     this.throwUnexpectedToken();
@@ -43607,7 +43607,7 @@ var require_esprima = __commonJS({
                 }
                 return {
                   type: 6,
-                  value: parseFloat(num2),
+                  value: parseFloat(num3),
                   lineNumber: this.lineNumber,
                   lineStart: this.lineStart,
                   start,
@@ -44380,11 +44380,11 @@ var require_esprima = __commonJS({
                   case "}":
                     regex = false;
                     if (this.values[this.curly - 3] === "function") {
-                      var check = this.values[this.curly - 4];
-                      regex = check ? !this.beforeFunctionExpression(check) : false;
+                      var check2 = this.values[this.curly - 4];
+                      regex = check2 ? !this.beforeFunctionExpression(check2) : false;
                     } else if (this.values[this.curly - 4] === "function") {
-                      var check = this.values[this.curly - 5];
-                      regex = check ? !this.beforeFunctionExpression(check) : true;
+                      var check2 = this.values[this.curly - 5];
+                      regex = check2 ? !this.beforeFunctionExpression(check2) : true;
                     }
                     break;
                   default:
@@ -49391,8 +49391,8 @@ var require_context = __commonJS({
       /**
        * Converts a Javascript number into a QuickJS value.
        */
-      newNumber(num2) {
-        return this.memory.heapValueHandle(this.ffi.QTS_NewFloat64(this.ctx.value, num2));
+      newNumber(num3) {
+        return this.memory.heapValueHandle(this.ffi.QTS_NewFloat64(this.ctx.value, num3));
       }
       /**
        * Create a QuickJS [string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String) value.
@@ -49422,14 +49422,14 @@ var require_context = __commonJS({
       /**
        * Create a QuickJS [bigint](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt) value.
        */
-      newBigInt(num2) {
+      newBigInt(num3) {
         if (!this._BigInt) {
           const bigIntHandle2 = this.getProp(this.global, "BigInt");
           this.memory.manage(bigIntHandle2);
           this._BigInt = new lifetime_1.StaticLifetime(bigIntHandle2.value, this.runtime);
         }
         const bigIntHandle = this._BigInt;
-        const asString = String(num2);
+        const asString = String(num3);
         return this.newString(asString).consume((handle) => this.unwrapResult(this.callFunction(bigIntHandle, this.undefined, handle)));
       }
       /**
@@ -53639,7 +53639,7 @@ var require_cjs3 = __commonJS({
       const minutes = date.getMinutes();
       const seconds = date.getSeconds();
       const millis = date.getMilliseconds();
-      const pad = /* @__PURE__ */ __name((num2) => num2 < 10 ? `0${num2}` : num2, "pad");
+      const pad = /* @__PURE__ */ __name((num3) => num3 < 10 ? `0${num3}` : num3, "pad");
       const datePart = `${year}-${pad(month)}-${pad(day2)}`;
       const millisPart = millis < 10 ? `00${millis}` : millis < 100 ? `0${millis}` : millis;
       const timePart = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${millisPart}`;
@@ -53657,9 +53657,9 @@ var require_cjs3 = __commonJS({
       return str;
     }
     __name(truncate, "truncate");
-    function getOrdinalSuffix(num2) {
+    function getOrdinalSuffix(num3) {
       const s = ["th", "st", "nd", "rd"];
-      const v = num2 % 100;
+      const v = num3 % 100;
       return s[(v - 20) % 10] || s[v] || s[0];
     }
     __name(getOrdinalSuffix, "getOrdinalSuffix");
@@ -55086,7 +55086,7 @@ var require_cjs3 = __commonJS({
           mongoDbWriteTestRemoveOlderThanSecs = 15
         } = options;
         if (!Array.isArray(checks)) throw new Error('Parameter "check" must be an array');
-        checks.map((check) => this._validateCheck(check));
+        checks.map((check2) => this._validateCheck(check2));
         this.checks = checks;
         this.redisPrefix = redisPrefix;
         this.redisTtlSecs = redisTtlSecs;
@@ -55095,34 +55095,34 @@ var require_cjs3 = __commonJS({
         this.mongoDbWriteTestRemoveOlderThanSecs = mongoDbWriteTestRemoveOlderThanSecs;
       }
       async ensureIsHealthy() {
-        for (const check of this.checks) {
+        for (const check2 of this.checks) {
           try {
-            const checkPromise = this._performCheck(check);
+            const checkPromise = this._performCheck(check2);
             await timeoutPromise(checkPromise, this.checkTimeoutMillis, "Check has timed-out");
           } catch (_err) {
             const err = _err;
-            throw new Error(`Health check test "${check.type}" failed with an error: ${err.message}"`);
+            throw new Error(`Health check test "${check2.type}" failed with an error: ${err.message}"`);
           }
         }
       }
-      _validateCheck(check) {
-        if (!(check.type in CHECK_TYPES)) throw new Error(`Check type "${check.type}" is invalid`);
-        if (typeof check.client !== "object")
-          throw new Error(`Check client must be an object got "${typeof check.client}" instead`);
+      _validateCheck(check2) {
+        if (!(check2.type in CHECK_TYPES)) throw new Error(`Check type "${check2.type}" is invalid`);
+        if (typeof check2.client !== "object")
+          throw new Error(`Check client must be an object got "${typeof check2.client}" instead`);
       }
-      async _performCheck(check) {
-        switch (check.type) {
+      async _performCheck(check2) {
+        switch (check2.type) {
           case "MONGODB_PING":
-            return this._testMongoDbPing(check);
+            return this._testMongoDbPing(check2);
           case "MONGODB_READ":
-            return this._testMongoDbRead(check);
+            return this._testMongoDbRead(check2);
           case "MONGODB_WRITE":
-            return this._testMongoDbWrite(check);
+            return this._testMongoDbWrite(check2);
           case "REDIS_PING":
-            return this._testRedisPing(check);
+            return this._testRedisPing(check2);
           case "REDIS":
           case "REDIS_WRITE":
-            return this._testRedisWrite(check);
+            return this._testRedisWrite(check2);
           default:
             throw new Error("Unknown check type");
         }
@@ -55548,14 +55548,14 @@ var require_cjs3 = __commonJS({
     var CodeHashManager = _CodeHashManager;
     var import_node_crypto4 = __toESM2(__require("crypto"));
     var CHARSET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-    function encodeBase62(num2) {
-      if (num2 === 0n) {
+    function encodeBase62(num3) {
+      if (num3 === 0n) {
         return CHARSET[0];
       }
       let res = "";
-      while (num2 > 0n) {
-        res = CHARSET[Number(num2 % 62n)] + res;
-        num2 /= 62n;
+      while (num3 > 0n) {
+        res = CHARSET[Number(num3 % 62n)] + res;
+        num3 /= 62n;
       }
       return res;
     }
@@ -59534,22 +59534,6 @@ var require_dist19 = __commonJS({
 import { readFileSync as readFileSync5 } from "node:fs";
 import { parseArgs } from "node:util";
 
-// src/kolops/config.ts
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-function pluginRoot() {
-  if (process.env.KOL_PLUGIN_ROOT) return process.env.KOL_PLUGIN_ROOT;
-  const here = dirname(fileURLToPath(import.meta.url));
-  return here.endsWith("scripts") ? dirname(here) : join(here, "..", "..", "plugins", "kol-ops");
-}
-function loadConfig(root = pluginRoot()) {
-  return JSON.parse(readFileSync(join(root, "config.json"), "utf8"));
-}
-function mailboxFor(cfg, channel) {
-  return cfg.mailboxes.find((m) => m.channel === channel || m.address === channel);
-}
-
 // src/kolops/base.ts
 var Base = class {
   constructor(lark, token) {
@@ -59558,8 +59542,28 @@ var Base = class {
   }
   lark;
   token;
-  records(table, opts) {
-    return this.lark.records(table, opts);
+  records(table, opts = {}) {
+    return this.lark.records(table, { ...opts, baseToken: this.token });
+  }
+  /** Names of a table's fields, or null when the base has no such table. Other errors (login, network) are thrown. */
+  async fieldNames(table) {
+    let data;
+    try {
+      data = await this.lark.json(["base", "+field-list", "--base-token", this.token, "--table-id", table, "--format", "json", "--as", "user"]);
+    } catch (err) {
+      if (/not_found|not found/i.test(String(err?.message))) return null;
+      throw err;
+    }
+    const names = [];
+    const walk = (v) => {
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === "object") {
+        if (typeof v.name === "string" && (v.type || v.field_id || v.id)) names.push(v.name);
+        else Object.values(v).forEach(walk);
+      }
+    };
+    walk(data);
+    return names;
   }
   /** Option names of a select field, or null when the field can't be found. */
   async fieldOptions(table, field) {
@@ -59662,6 +59666,195 @@ function emailsIn(v) {
   return (text(v).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []).map((e) => e.toLowerCase());
 }
 
+// src/kolops/schema.ts
+var TABLES = {
+  profiles: "KOL \u6863\u6848",
+  followups: "KOL \u8DDF\u8FDB",
+  contacts: "\u63A5\u89E6\u8BB0\u5F55",
+  reviews: "\u5BA1\u6838\u961F\u5217",
+  oplog: "\u64CD\u4F5C\u65E5\u5FD7",
+  runs: "\u8FD0\u884C\u8BB0\u5F55",
+  posts: "\u53D1\u5E03\u5185\u5BB9",
+  settlements: "\u6708\u5EA6\u7ED3\u7B97",
+  settings: "\u8BBE\u7F6E",
+  mailboxes: "\u53D1\u4FE1\u90AE\u7BB1",
+  templates: "\u6A21\u677F"
+};
+var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u5176\u4ED6"];
+var TEMPLATE_STATES = ["\u8349\u7A3F", "\u5F85\u5BA1\u6838", "\u5DF2\u6279\u51C6", "\u505C\u7528"];
+var SETTINGS_TABLES = {
+  settings: [
+    { name: "\u9879\u76EE\u540D\u79F0", type: "text" },
+    { name: "\u6682\u505C\u6240\u6709\u53D1\u9001", type: "checkbox" },
+    { name: "\u65F6\u533A", type: "text" },
+    { name: "\u627E\u4EBA\u56FD\u5BB6", type: "text" },
+    { name: "\u627E\u4EBA\u8BED\u8A00", type: "text" },
+    { name: "\u5168\u516C\u53F8\u6BCF\u65E5\u4E0A\u9650", type: "number" },
+    { name: "\u6BCF\u5206\u949F\u4E0A\u9650", type: "number" },
+    { name: "\u9000\u4FE1\u7387\u6682\u505C\u7EBF", type: "number" },
+    { name: "\u7B2C\u4E00\u6B21\u50AC\u4FE1\u5929\u6570", type: "number" },
+    { name: "\u7B2C\u4E8C\u6B21\u50AC\u4FE1\u5929\u6570", type: "number" },
+    { name: "\u7ED3\u6848\u5929\u6570", type: "number" },
+    { name: "\u81EA\u52A8\u50AC\u4FE1\u8D77\u59CB\u65E5", type: "datetime" },
+    { name: "\u4E0D\u50AC\u7EA7\u522B", type: "text" },
+    { name: "\u4E0D\u50AC\u7684\u5BF9\u65B9\u8981\u6C42", type: "text" },
+    { name: "\u4E0D\u50AC\u6E20\u9053", type: "text" },
+    { name: "\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570", type: "number" },
+    { name: "\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA", type: "text" },
+    { name: "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3", type: "text" },
+    { name: "\u8BF4\u660E", type: "text" }
+  ],
+  mailboxes: [
+    { name: "\u90AE\u7BB1", type: "text" },
+    { name: "\u6E20\u9053\u540D", type: "text" },
+    { name: "\u6BCF\u65E5\u4E0A\u9650", type: "number" },
+    { name: "\u542F\u7528", type: "checkbox" },
+    { name: "\u9000\u4FE1\u7387\u6682\u505C\u7EBF", type: "number" },
+    { name: "\u8BF4\u660E", type: "text" }
+  ],
+  templates: [
+    { name: "\u540D\u79F0", type: "text" },
+    { name: "\u7528\u9014", type: "select", options: [...TEMPLATE_PURPOSES], multiple: false },
+    { name: "\u65B9\u5411", type: "text" },
+    { name: "\u8BED\u8A00", type: "text" },
+    { name: "\u4E3B\u65E8", type: "text" },
+    { name: "\u6B63\u6587", type: "text" },
+    { name: "\u72B6\u6001", type: "select", options: [...TEMPLATE_STATES], multiple: false },
+    { name: "\u5BA1\u6838\u4EBA", type: "user", multiple: false },
+    { name: "\u5BA1\u6838\u65F6\u95F4", type: "datetime" },
+    { name: "\u5907\u6CE8", type: "text" }
+  ]
+};
+var SETTING_DEFAULTS = {
+  \u65F6\u533A: "+08:00",
+  \u5168\u516C\u53F8\u6BCF\u65E5\u4E0A\u9650: 450,
+  \u6BCF\u5206\u949F\u4E0A\u9650: 30,
+  \u9000\u4FE1\u7387\u6682\u505C\u7EBF: 6,
+  \u7B2C\u4E00\u6B21\u50AC\u4FE1\u5929\u6570: 5,
+  \u7B2C\u4E8C\u6B21\u50AC\u4FE1\u5929\u6570: 7,
+  \u7ED3\u6848\u5929\u6570: 7,
+  \u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570: 90
+};
+var REQUIRED_FIELDS = {
+  profiles: [
+    "\u8D26\u53F7",
+    "\u8D26\u53F7\u540D\u79F0",
+    "\u79F0\u547C",
+    "\u4E3B\u9875\u94FE\u63A5",
+    "\u516C\u5F00\u90AE\u7BB1",
+    "\u5176\u4ED6\u90AE\u7BB1",
+    "\u8054\u7CFB\u8BB8\u53EF",
+    "\u8054\u7CFB\u8BB8\u53EF\u539F\u56E0",
+    "\u7C89\u4E1D\u6570",
+    "\u4E3B\u8981\u5E73\u53F0",
+    "\u5185\u5BB9\u7C7B\u578B",
+    "\u5E02\u573A",
+    "\u8A9E\u8A00",
+    "\u5408\u4F5C\u9080\u7EA6\u65B9\u5411",
+    "\u5165\u5E93\u6279\u6B21",
+    "\u8DDF\u8FDB\u8BB0\u5F55",
+    "\u5907\u6CE8"
+  ],
+  followups: [
+    "\u8D26\u53F7\u540D\u79F0",
+    "\u6863\u6848",
+    "\u9636\u6BB5",
+    "\u5F53\u524D\u8F6E\u5230\u8C01",
+    "\u7EA7\u522B",
+    "\u5BF9\u65B9\u8981\u6C42",
+    "\u8054\u7CFB\u6E20\u9053",
+    "\u9080\u7EA6\u6279\u6B21",
+    "\u9996\u6B21\u9080\u7EA6\u65E5\u671F",
+    "\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F",
+    "\u6700\u8FD1\u8054\u7CFB\u65E5\u671F",
+    "\u6700\u540E\u6765\u4FE1\u65E5\u671F",
+    "\u4E0B\u4E00\u6B65",
+    "\u7ED3\u6848\u539F\u56E0"
+  ],
+  contacts: ["\u65B9\u5411", "\u6E20\u9053", "Message ID", "\u6458\u8981", "\u5185\u5BB9", "\u65E5\u671F", "\u5F85\u5904\u7406", "KOL"],
+  reviews: [
+    "\u7C7B\u578B",
+    "\u72B6\u6001",
+    "\u5904\u7406",
+    "\u5BA1\u6838\u7ED3\u679C",
+    "\u786E\u8BA4\u53D1\u51FA",
+    "KOL",
+    "\u6536\u4EF6\u4EBA",
+    "\u53D1\u9001\u6E20\u9053",
+    "\u90AE\u4EF6\u8349\u7A3F",
+    "\u5BA1\u6838\u9879",
+    "\u8981\u4F60\u5B9A\u4EC0\u4E48",
+    "\u6267\u884C\u65F6\u95F4",
+    "\u6267\u884C\u7ED3\u679C"
+  ],
+  oplog: ["\u7C7B\u578B", "\u7ED3\u679C", "\u64CD\u4F5C", "\u8BF4\u660E", "\u6536\u4EF6\u4EBA\u660E\u7EC6", "\u90AE\u4EF6\u6B63\u6587", "\u53D1\u9001\u6570", "\u65F6\u95F4", "KOL", "\u6240\u5C5E\u8FD0\u884C"],
+  runs: ["\u8FD0\u884C", "\u65B9\u5F0F", "\u7ED3\u679C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u675F\u65F6\u95F4", "\u5904\u7406\u6765\u4FE1", "\u53D1\u51FA\u90AE\u4EF6", "\u65B0\u589E\u5F85\u5BA1", "\u95EE\u9898\u4E0E\u5907\u6CE8"],
+  settings: SETTINGS_TABLES.settings.map((f) => f.name),
+  mailboxes: SETTINGS_TABLES.mailboxes.map((f) => f.name),
+  templates: SETTINGS_TABLES.templates.map((f) => f.name)
+};
+
+// src/kolops/config.ts
+var listOf = (v) => text(v).split(/[,，、;；\n]+/).map((s) => s.trim()).filter(Boolean);
+function num(v, fallback) {
+  const n = typeof v === "number" ? v : Number(text(v));
+  return text(v) === "" || Number.isNaN(n) ? fallback : n;
+}
+async function loadConfig(lark, project, baseToken) {
+  let settings, mailboxes;
+  try {
+    [settings, mailboxes] = await Promise.all([
+      lark.records(TABLES.settings, { baseToken }),
+      lark.records(TABLES.mailboxes, { baseToken })
+    ]);
+  } catch (err) {
+    if (/auth|授权|权限/i.test(String(err?.message))) throw err;
+    throw new Error(`\u8BFB\u4E0D\u5230\u9879\u76EE\u300C${project}\u300D\u98DE\u4E66\u8868\u91CC\u7684\u300C${TABLES.settings}\u300D\u6216\u300C${TABLES.mailboxes}\u300D\u8868\u3002\u8FD9\u5F20\u8868\u8FD8\u6CA1\u5347\u7EA7\u7684\u8BDD\uFF0C\u5148\u8FD0\u884C kol setup-base\uFF08\u4F1A\u5148\u8BD5\u8DD1\uFF09\u3002\u539F\u59CB\u9519\u8BEF\uFF1A${err?.message ?? err}`);
+  }
+  if (!settings.length) throw new Error(`\u9879\u76EE\u300C${project}\u300D\u7684\u300C${TABLES.settings}\u300D\u8868\u662F\u7A7A\u7684\u3002\u8FD0\u884C kol setup-base \u4F1A\u5199\u5165\u4E00\u884C\u9ED8\u8BA4\u8BBE\u7F6E`);
+  return configFrom(project, baseToken, settings[0], mailboxes);
+}
+function configFrom(project, baseToken, s, mailboxRows) {
+  const timezone = text(s["\u65F6\u533A"]) || SETTING_DEFAULTS.\u65F6\u533A;
+  const pause = num(s["\u9000\u4FE1\u7387\u6682\u505C\u7EBF"], SETTING_DEFAULTS.\u9000\u4FE1\u7387\u6682\u505C\u7EBF);
+  const startAt = cellTime(s["\u81EA\u52A8\u50AC\u4FE1\u8D77\u59CB\u65E5"], timezone);
+  return {
+    project,
+    baseToken,
+    timezone,
+    tables: TABLES,
+    mailboxes: mailboxRows.filter((m) => m["\u542F\u7528"] === true && text(m["\u90AE\u7BB1"])).map((m) => ({
+      address: text(m["\u90AE\u7BB1"]).toLowerCase(),
+      channel: text(m["\u6E20\u9053\u540D"]) || text(m["\u90AE\u7BB1"]).toLowerCase(),
+      dailyExternal: num(m["\u6BCF\u65E5\u4E0A\u9650"], 50),
+      bouncePause: num(m["\u9000\u4FE1\u7387\u6682\u505C\u7EBF"], pause)
+    })),
+    companyDailyExternal: num(s["\u5168\u516C\u53F8\u6BCF\u65E5\u4E0A\u9650"], SETTING_DEFAULTS.\u5168\u516C\u53F8\u6BCF\u65E5\u4E0A\u9650),
+    perMinute: num(s["\u6BCF\u5206\u949F\u4E0A\u9650"], SETTING_DEFAULTS.\u6BCF\u5206\u949F\u4E0A\u9650),
+    followup: {
+      firstAfterDays: num(s["\u7B2C\u4E00\u6B21\u50AC\u4FE1\u5929\u6570"], SETTING_DEFAULTS.\u7B2C\u4E00\u6B21\u50AC\u4FE1\u5929\u6570),
+      secondAfterDays: num(s["\u7B2C\u4E8C\u6B21\u50AC\u4FE1\u5929\u6570"], SETTING_DEFAULTS.\u7B2C\u4E8C\u6B21\u50AC\u4FE1\u5929\u6570),
+      closeAfterDays: num(s["\u7ED3\u6848\u5929\u6570"], SETTING_DEFAULTS.\u7ED3\u6848\u5929\u6570),
+      onlyInvitedOnOrAfter: startAt == null ? "" : dayOf(startAt, timezone),
+      skipLevels: listOf(s["\u4E0D\u50AC\u7EA7\u522B"]),
+      skipDemands: listOf(s["\u4E0D\u50AC\u7684\u5BF9\u65B9\u8981\u6C42"]),
+      skipChannels: listOf(s["\u4E0D\u50AC\u6E20\u9053"])
+    },
+    crossProjectCooldownDays: num(s["\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570"], SETTING_DEFAULTS.\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570),
+    discovery: { country: text(s["\u627E\u4EBA\u56FD\u5BB6"]), language: text(s["\u627E\u4EBA\u8BED\u8A00"]) },
+    webhook: text(s["\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA"]),
+    dataApi: text(s["\u4E1A\u52A1\u6570\u636E\u63A5\u53E3"])
+  };
+}
+function mailboxFor(cfg, channel) {
+  const c = channel.trim().toLowerCase();
+  return cfg.mailboxes.find((m) => m.channel.toLowerCase() === c || m.address === c);
+}
+async function sendingPaused(lark, baseToken) {
+  const rows = await lark.records(TABLES.settings, { baseToken, fields: ["\u6682\u505C\u6240\u6709\u53D1\u9001"] });
+  return rows.some((r) => r["\u6682\u505C\u6240\u6709\u53D1\u9001"] === true || option(r["\u6682\u505C\u6240\u6709\u53D1\u9001"]) === "true");
+}
+
 // src/kolops/mail.ts
 var MailBlocked = class extends Error {
 };
@@ -59743,9 +59936,9 @@ function splitDraft(draft) {
 }
 
 // src/kolops/ops.ts
-import { appendFileSync, existsSync, mkdirSync, readFileSync as readFileSync2 } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join as join2 } from "node:path";
+import { join } from "node:path";
 
 // src/kolops/lark.ts
 import { execFile } from "node:child_process";
@@ -59796,7 +59989,7 @@ var LarkCli = class {
         "base",
         "+record-list",
         "--base-token",
-        this.baseToken,
+        opts.baseToken ?? this.baseToken,
         "--table-id",
         table,
         "--format",
@@ -59863,7 +60056,7 @@ function unwrap(stdout, args = []) {
 
 // src/kolops/ops.ts
 function dataDir() {
-  const dir = process.env.KOL_DATA_DIR || join2(homedir(), ".kol-ops");
+  const dir = process.env.KOL_DATA_DIR || join(homedir(), ".kol-ops");
   mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -59904,11 +60097,11 @@ async function checkAuth(lark) {
   };
 }
 var Journal = class {
-  file = join2(dataDir(), "sends.jsonl");
+  file = join(dataDir(), "sends.jsonl");
   entries = /* @__PURE__ */ new Map();
   constructor() {
     if (!existsSync(this.file)) return;
-    for (const line of readFileSync2(this.file, "utf8").split("\n")) {
+    for (const line of readFileSync(this.file, "utf8").split("\n")) {
       if (!line.trim()) continue;
       const e = JSON.parse(line);
       this.entries.set(e.key, e);
@@ -59937,10 +60130,6 @@ async function todaysSends(base, cfg) {
     counts.all.add(who);
   }
   return counts;
-}
-async function paused(base, cfg) {
-  const rows = await base.records(cfg.tables.control);
-  return rows.some((r) => r["\u6682\u505C\u6240\u6709\u53D1\u9001"] === true);
 }
 var Run = class {
   constructor(base, cfg, title, me, scheduled) {
@@ -60018,8 +60207,8 @@ function makeCtx(cfg, lark, me, title, scheduled, sleep) {
 }
 
 // src/kolops/find.ts
-import { existsSync as existsSync2, readFileSync as readFileSync3, writeFileSync } from "node:fs";
-import { join as join3 } from "node:path";
+import { existsSync as existsSync2, readFileSync as readFileSync2, writeFileSync } from "node:fs";
+import { join as join2 } from "node:path";
 
 // node_modules/apify-client/dist/index.mjs
 var import_index = __toESM(require_dist19(), 1);
@@ -60383,13 +60572,9 @@ function ytHandle(value) {
 }
 async function ytDiscover(api, keywords, perKeyword, minFollowers, maxFollowers, country, language) {
   if (!keywords.length) return [];
-  const input = {
-    discoveryMode: "both",
-    searchTerms: keywords,
-    maxChannelsPerSearchTerm: perKeyword,
-    countryHint: country,
-    languageHint: language
-  };
+  const input = { discoveryMode: "both", searchTerms: keywords, maxChannelsPerSearchTerm: perKeyword };
+  if (country) input.countryHint = country;
+  if (language) input.languageHint = language;
   if (minFollowers) input.minSubscribers = minFollowers;
   if (maxFollowers) input.maxSubscribers = maxFollowers;
   const items = await api.run("yt_search", input, keywords.length * perKeyword);
@@ -60643,8 +60828,8 @@ var FileLedger = class {
   file;
   data;
   constructor(job) {
-    this.file = join3(dataDir(), `find-${job.replace(/[^\w一-鿿-]/g, "_")}.json`);
-    this.data = existsSync2(this.file) ? JSON.parse(readFileSync3(this.file, "utf8")) : {};
+    this.file = join2(dataDir(), `find-${job.replace(/[^\w一-鿿-]/g, "_")}.json`);
+    this.data = existsSync2(this.file) ? JSON.parse(readFileSync2(this.file, "utf8")) : {};
   }
   async find(step) {
     return this.data[step] ?? null;
@@ -60660,9 +60845,9 @@ var FileLedger = class {
 };
 function apifyToken() {
   if (process.env.APIFY_TOKEN) return process.env.APIFY_TOKEN;
-  const file = join3(dataDir(), "apify-token");
-  if (existsSync2(file)) return readFileSync3(file, "utf8").trim();
-  throw new Error(`\u6CA1\u6709 Apify token\u3002\u628A token \u5B58\u8FDB ${file}\uFF08\u53EA\u653E\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09\uFF0C\u6216\u8BBE\u7F6E\u73AF\u5883\u53D8\u91CF APIFY_TOKEN`);
+  const file2 = join2(dataDir(), "apify-token");
+  if (existsSync2(file2)) return readFileSync2(file2, "utf8").trim();
+  throw new Error(`\u6CA1\u6709 Apify token\u3002\u628A token \u5B58\u8FDB ${file2}\uFF08\u53EA\u653E\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09\uFF0C\u6216\u8BBE\u7F6E\u73AF\u5883\u53D8\u91CF APIFY_TOKEN`);
 }
 async function find(ctx, o) {
   const t = ctx.cfg.tables;
@@ -60685,7 +60870,10 @@ async function find(ctx, o) {
     minFollowers: o.minFollowers,
     maxFollowers: o.maxFollowers,
     youtubeHidden: o.youtubeHidden,
-    maxSpend: o.budget
+    maxSpend: o.budget,
+    // Search hints for YouTube; empty in 设置 means no country or language bias.
+    country: ctx.cfg.discovery.country,
+    language: ctx.cfg.discovery.language
   };
   if (o.dryRun) {
     return { \u8BD5\u8DD1: true, \u5DF2\u5728\u5E93\u91CC\u7684\u8D26\u53F7: handles.size, \u53C2\u6570: params, \u8BF4\u660E: `\u6B63\u5F0F\u8FD0\u884C\u6700\u591A\u82B1 $${o.budget}\uFF0C\u5230\u4E0A\u9650\u5C31\u505C\uFF0C\u5DF2\u627E\u5230\u7684\u7167\u6837\u5165\u5E93` };
@@ -60736,6 +60924,98 @@ function handleOf(s) {
   return normalizeHandle(m ? m[1] : s.includes("/") ? "" : s);
 }
 
+// src/kolops/projects.ts
+import { existsSync as existsSync3, readFileSync as readFileSync3, writeFileSync as writeFileSync2 } from "node:fs";
+import { join as join3 } from "node:path";
+function file() {
+  return join3(dataDir(), "projects.json");
+}
+function load() {
+  return existsSync3(file()) ? JSON.parse(readFileSync3(file(), "utf8")) : { projects: {} };
+}
+function save(r) {
+  writeFileSync2(file(), JSON.stringify(r, null, 2));
+}
+function listProjects() {
+  return Object.entries(load().projects).map(([name, p]) => ({ name, ...p }));
+}
+function baseTokenFrom(input) {
+  const m = input.match(/\/base\/([A-Za-z0-9]+)/);
+  const token = m ? m[1] : input.trim();
+  if (!/^[A-Za-z0-9]{10,}$/.test(token)) {
+    throw new Error(`\u300C${input}\u300D\u770B\u8D77\u6765\u4E0D\u662F\u98DE\u4E66\u591A\u7EF4\u8868\u683C\u7684\u94FE\u63A5\u3002\u8BF7\u5728\u98DE\u4E66\u91CC\u6253\u5F00\u8FD9\u5F20\u8868\uFF0C\u590D\u5236\u6D4F\u89C8\u5668\u5730\u5740\u680F\u91CC\u5E26 /base/ \u7684\u94FE\u63A5`);
+  }
+  return token;
+}
+function addProject(name, base) {
+  if (!name.trim()) throw new Error("\u9879\u76EE\u540D\u4E0D\u80FD\u662F\u7A7A\u7684");
+  const r = load();
+  r.projects[name] = { ...r.projects[name], baseToken: baseTokenFrom(base) };
+  r.default ??= name;
+  save(r);
+  return { name, ...r.projects[name] };
+}
+function setDefaultProject(name) {
+  const r = load();
+  if (!r.projects[name]) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${name}\u300D\u7684\u9879\u76EE`);
+  r.default = name;
+  save(r);
+}
+function removeProject(name) {
+  const r = load();
+  if (!r.projects[name]) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${name}\u300D\u7684\u9879\u76EE`);
+  delete r.projects[name];
+  if (r.default === name) r.default = Object.keys(r.projects)[0];
+  save(r);
+}
+function setDataApiKey(name, key) {
+  const r = load();
+  if (!r.projects[name]) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${name}\u300D\u7684\u9879\u76EE`);
+  r.projects[name].dataApiKey = key.trim();
+  save(r);
+}
+function resolveProject(name) {
+  const r = load();
+  const names = Object.keys(r.projects);
+  if (!names.length) {
+    throw new Error("\u8FD9\u53F0\u7535\u8111\u8FD8\u6CA1\u6709\u767B\u8BB0\u9879\u76EE\u3002\u8BF7\u8FD0\u884C kol project add <\u9879\u76EE\u540D> <\u98DE\u4E66\u8868\u94FE\u63A5>\uFF0C\u94FE\u63A5\u662F\u8FD9\u4E2A\u9879\u76EE\u7684 KOL \u603B\u8868");
+  }
+  const chosen = name ?? r.default ?? (names.length === 1 ? names[0] : void 0);
+  if (!chosen) throw new Error(`\u767B\u8BB0\u4E86\u597D\u51E0\u4E2A\u9879\u76EE\uFF08${names.join("\u3001")}\uFF09\uFF0C\u8BF7\u7528 --project \u6307\u5B9A\u7528\u54EA\u4E2A`);
+  const p = r.projects[chosen];
+  if (!p) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${chosen}\u300D\u7684\u9879\u76EE\u3002\u5DF2\u767B\u8BB0\u7684\uFF1A${names.join("\u3001")}`);
+  return { name: chosen, ...p };
+}
+
+// src/kolops/crossproject.ts
+async function contactedElsewhere(ctx) {
+  const out = /* @__PURE__ */ new Map();
+  const cutoff = Date.now() - ctx.cfg.crossProjectCooldownDays * 864e5;
+  for (const p of listProjects()) {
+    if (p.baseToken === ctx.cfg.baseToken) continue;
+    const other = new Base(ctx.base.lark, p.baseToken);
+    let profiles, followups;
+    try {
+      [profiles, followups] = await Promise.all([
+        other.records(TABLES.profiles, { fields: ["\u516C\u5F00\u90AE\u7BB1", "\u5176\u4ED6\u90AE\u7BB1"] }),
+        other.records(TABLES.followups, { fields: ["\u6863\u6848", "\u6700\u8FD1\u8054\u7CFB\u65E5\u671F", "\u9996\u6B21\u9080\u7EA6\u65E5\u671F"] })
+      ]);
+    } catch (err) {
+      throw new Error(`\u8BFB\u4E0D\u5230\u9879\u76EE\u300C${p.name}\u300D\u7684\u98DE\u4E66\u8868\uFF0C\u6CA1\u6CD5\u68C0\u67E5\u8DE8\u9879\u76EE\u8054\u7CFB\u8BB0\u5F55\u3002\u5982\u679C\u8FD9\u4E2A\u9879\u76EE\u5DF2\u7ECF\u4E0D\u7528\u4E86\uFF0C\u8FD0\u884C kol project remove ${p.name}\u3002\u539F\u59CB\u9519\u8BEF\uFF1A${err?.message ?? err}`);
+    }
+    const byId = new Map(profiles.map((r) => [r.record_id, r]));
+    for (const f of followups) {
+      const last = cellTime(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], ctx.cfg.timezone) ?? cellTime(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], ctx.cfg.timezone);
+      if (last != null && last < cutoff) continue;
+      const when = last == null ? "\u8054\u7CFB\u8FC7\uFF08\u6CA1\u6709\u65E5\u671F\uFF09" : `${dayOf(last, ctx.cfg.timezone)} \u8054\u7CFB\u8FC7`;
+      for (const e of profileEmails(byId.get(linkIds(f["\u6863\u6848"])[0] ?? ""))) {
+        if (!out.has(e)) out.set(e, `\u9879\u76EE\u300C${p.name}\u300D${when}\uFF0C${ctx.cfg.crossProjectCooldownDays} \u5929\u5185\u4E0D\u91CD\u590D\u8054\u7CFB`);
+      }
+    }
+  }
+  return out;
+}
+
 // src/kolops/send.ts
 var SENDING_TYPES = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"];
 function isApproved(r) {
@@ -60766,8 +61046,8 @@ function companyFull(ctx, counts, followupId) {
 }
 async function deliver(ctx, items, s, dryRun) {
   const report = { sent: [], skipped: [], failed: [], dryRun };
-  if (await paused(ctx.base, ctx.cfg)) {
-    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "\u63A7\u5236\u8868\u7684\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D\u5F00\u7740" })));
+  if (await sendingPaused(ctx.base.lark, ctx.cfg.baseToken)) {
+    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "\u300C\u8BBE\u7F6E\u300D\u8868\u7684\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D\u52FE\u4E0A\u4E86" })));
     return report;
   }
   const busy = !dryRun && items.length ? await otherSendingRun(ctx.base, ctx.cfg, ctx.run.id) : "";
@@ -60926,22 +61206,22 @@ async function sendApproved(ctx, opts) {
 }
 
 // src/kolops/templates.ts
-import { existsSync as existsSync3, readdirSync, readFileSync as readFileSync4 } from "node:fs";
-import { join as join4 } from "node:path";
-function loadTemplates(dir) {
-  const out = /* @__PURE__ */ new Map();
-  if (!existsSync3(dir)) return out;
-  for (const file of readdirSync(dir)) {
-    if (!file.endsWith(".txt")) continue;
-    const raw = readFileSync4(join4(dir, file), "utf8").replace(/\r\n/g, "\n");
-    const m = raw.match(/^\s*(?:主旨|主题|Subject)\s*[:：]\s*(.+)\n/i);
-    out.set(file.slice(0, -4), {
-      name: file.slice(0, -4),
-      subject: m ? m[1].trim() : "",
-      body: (m ? raw.slice(m[0].length) : raw).trim()
-    });
-  }
-  return out;
+async function loadTemplates(base, cfg) {
+  const rows = await base.records(cfg.tables.templates, {
+    filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5DF2\u6279\u51C6"]]] }
+  });
+  return rows.filter((r) => option(r["\u72B6\u6001"]) === "\u5DF2\u6279\u51C6" && text(r["\u6B63\u6587"])).map((r) => ({
+    name: text(r["\u540D\u79F0"]),
+    purpose: option(r["\u7528\u9014"]),
+    direction: text(r["\u65B9\u5411"]),
+    language: text(r["\u8BED\u8A00"]),
+    subject: text(r["\u4E3B\u65E8"]),
+    body: text(r["\u6B63\u6587"]).replace(/\r\n/g, "\n")
+  }));
+}
+function pickTemplate(all, purpose, language = "") {
+  const fit = all.filter((t) => t.purpose === purpose);
+  return fit.find((t) => language && t.language && language.includes(t.language)) ?? fit.find((t) => !t.language) ?? fit[0];
 }
 var MissingValue = class extends Error {
 };
@@ -60953,9 +61233,13 @@ function render(t, values) {
   });
   return { subject: fill(t.subject), body: fill(t.body) };
 }
+function parseTemplateFile(raw) {
+  const s = raw.replace(/\r\n/g, "\n");
+  const m = s.match(/^\s*(?:主旨|主题|Subject)\s*[:：]\s*(.+)\n/i);
+  return { subject: m ? m[1].trim() : "", body: (m ? s.slice(m[0].length) : s).trim() };
+}
 
 // src/kolops/invite.ts
-import { join as join5 } from "node:path";
 function decisionApproved(r) {
   const p = option(r["\u5904\u7406"]);
   const res = option(r["\u5BA1\u6838\u7ED3\u679C"]);
@@ -60966,9 +61250,12 @@ function decisionApproved(r) {
 async function invite(ctx, o) {
   const t = ctx.cfg.tables;
   const mailbox = mailboxFor(ctx.cfg, o.mailbox);
-  if (!mailbox) throw new Error(`${o.mailbox} \u4E0D\u5728\u63D2\u4EF6\u914D\u7F6E\u7684\u53D1\u4FE1\u90AE\u7BB1\u91CC`);
-  const tpl = loadTemplates(join5(pluginRoot(), ctx.cfg.templatesDir)).get(o.template);
-  if (!tpl) throw new Error(`\u6CA1\u6709\u53EB\u300C${o.template}\u300D\u7684\u5DF2\u6279\u51C6\u6A21\u677F`);
+  if (!mailbox) throw new Error(`${o.mailbox} \u4E0D\u5728\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u8868\u91CC\uFF0C\u6216\u8005\u6CA1\u6709\u52FE\u300C\u542F\u7528\u300D`);
+  const approved = (await loadTemplates(ctx.base, ctx.cfg)).filter((x) => x.purpose === "\u9080\u7EA6");
+  const tpl = approved.find((x) => x.name === o.template);
+  if (!tpl) {
+    throw new Error(`\u300C\u6A21\u677F\u300D\u8868\u91CC\u6CA1\u6709\u53EB\u300C${o.template}\u300D\u7684\u5DF2\u6279\u51C6\u9080\u7EA6\u6A21\u677F\u3002\u5DF2\u6279\u51C6\u7684\u9080\u7EA6\u6A21\u677F\uFF1A${approved.map((x) => x.name).join("\u3001") || "\uFF08\u6CA1\u6709\uFF09"}`);
+  }
   const approval = (await ctx.base.records(t.reviews)).find((r) => r.record_id === o.approval);
   if (!approval) throw new Error(`\u5BA1\u6838\u961F\u5217\u91CC\u627E\u4E0D\u5230 ${o.approval}`);
   if (!decisionApproved(approval)) throw new Error("\u8FD9\u6279\u9080\u7EA6\u5728\u5BA1\u6838\u961F\u5217\u91CC\u8FD8\u6CA1\u6709\u88AB\u6279\u51C6");
@@ -60980,7 +61267,7 @@ ${text(approval["\u8981\u4F60\u5B9A\u4EC0\u4E48"])}`;
   if (!batches.includes(o.batch)) {
     throw new Error(`\u300C${o.batch}\u300D\u8FD8\u4E0D\u662F\u300C\u9080\u7EA6\u6279\u6B21\u300D\u7684\u9009\u9879\u3002\u8BF7\u5148\u5728\u98DE\u4E66\u91CC\u52A0\u4E0A\u8FD9\u4E2A\u9009\u9879\uFF0C\u6216\u7528\u5DF2\u6709\u7684\u6279\u6B21\u540D`);
   }
-  const s = await loadSnapshot(ctx.base, ctx.cfg);
+  const [s, elsewhereProjects] = await Promise.all([loadSnapshot(ctx.base, ctx.cfg), contactedElsewhere(ctx)]);
   const day2 = today(ctx.cfg);
   const items = [];
   const skipped = [];
@@ -61005,6 +61292,11 @@ ${text(approval["\u8981\u4F60\u5B9A\u4EC0\u4E48"])}`;
     const elsewhere = emails.flatMap((e) => s.followupsByEmail.get(e) ?? [])[0];
     if (elsewhere) {
       skipped.push({ key: pid, name, reason: `\u90AE\u7BB1\u5DF2\u7ECF\u5728\u300C${displayName(s, s.followups.get(elsewhere))}\u300D\u7684\u8DDF\u8FDB\u8BB0\u5F55\u91CC\uFF0C\u8054\u7CFB\u8FC7\u4E86` });
+      continue;
+    }
+    const otherProject = emails.map((e) => elsewhereProjects.get(e)).find(Boolean);
+    if (otherProject) {
+      skipped.push({ key: pid, name, reason: otherProject });
       continue;
     }
     if (emails.some((e) => inThisBatch.has(e))) {
@@ -61053,9 +61345,6 @@ ${text(approval["\u8981\u4F60\u5B9A\u4EC0\u4E48"])}`;
   report.skipped.unshift(...skipped);
   return { ...report, batch: o.batch };
 }
-
-// src/kolops/remind.ts
-import { join as join6 } from "node:path";
 
 // src/kolops/sync.ts
 var BOUNCE_SENDER = /mailer-daemon|postmaster|mail-noreply.*bounce|delivery-?status/i;
@@ -61200,10 +61489,11 @@ async function handleBounce(ctx, s, mailbox, m, when, report, changes) {
 }
 
 // src/kolops/remind.ts
-var REMIND_TEMPLATES = ["\u50AC\u4FE1-1", "\u50AC\u4FE1-2"];
+var REMIND_PURPOSES = ["\u50AC\u4FE1 1", "\u50AC\u4FE1 2"];
 function nextStep(cfg, f, reminders, todayStr) {
   const r = cfg.followup;
   if (option(f["\u9636\u6BB5"]) !== "\u5DF2\u9080\u7EA6") return { kind: "skip", reason: "\u4E0D\u5728\u300C\u5DF2\u9080\u7EA6\u300D\u9636\u6BB5" };
+  if (!r.onlyInvitedOnOrAfter) return { kind: "skip", reason: "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u81EA\u52A8\u50AC\u4FE1\u8D77\u59CB\u65E5\uFF0C\u4E0D\u81EA\u52A8\u50AC" };
   const invited = day(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], cfg.timezone);
   if (!invited || invited < r.onlyInvitedOnOrAfter) return { kind: "skip", reason: `${r.onlyInvitedOnOrAfter} \u4E4B\u524D\u9080\u7EA6\u7684\u4E0D\u81EA\u52A8\u50AC` };
   const lastIn = day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], cfg.timezone);
@@ -61220,9 +61510,10 @@ function nextStep(cfg, f, reminders, todayStr) {
 async function remind(ctx, o) {
   const cfg = ctx.cfg;
   const t = cfg.tables;
-  const templates = loadTemplates(join6(pluginRoot(), cfg.templatesDir));
-  const missing = REMIND_TEMPLATES.filter((n) => !templates.has(n));
-  if (missing.length) throw new Error(`\u50AC\u4FE1\u6A21\u677F\u8FD8\u6CA1\u6279\u51C6\uFF1A${missing.join("\u3001")}\u3002\u6279\u51C6\u540E\u653E\u8FDB\u63D2\u4EF6\u7684 templates \u6587\u4EF6\u5939\u624D\u80FD\u81EA\u52A8\u50AC`);
+  if (!cfg.followup.onlyInvitedOnOrAfter) throw new Error("\u300C\u8BBE\u7F6E\u300D\u8868\u91CC\u6CA1\u586B\u300C\u81EA\u52A8\u50AC\u4FE1\u8D77\u59CB\u65E5\u300D\uFF0C\u6240\u4EE5\u4E0D\u81EA\u52A8\u50AC\u3002\u586B\u4E0A\u4E4B\u540E\uFF0C\u8FD9\u5929\u53CA\u4EE5\u540E\u53D1\u51FA\u7684\u9080\u7EA6\u624D\u4F1A\u81EA\u52A8\u50AC");
+  const templates = await loadTemplates(ctx.base, cfg);
+  const missing = REMIND_PURPOSES.filter((purpose) => !pickTemplate(templates, purpose));
+  if (missing.length) throw new Error(`\u300C\u6A21\u677F\u300D\u8868\u91CC\u8FD8\u6CA1\u6709\u5DF2\u6279\u51C6\u7684${missing.map((m) => `\u300C${m}\u300D`).join("")}\u6A21\u677F\uFF0C\u6279\u51C6\u540E\u624D\u80FD\u81EA\u52A8\u50AC`);
   const sync = await syncInbox(ctx, { dryRun: o.dryRun });
   const s = await loadSnapshot(ctx.base, cfg);
   const counts = await reminderCounts(ctx, s);
@@ -61254,7 +61545,7 @@ async function remind(ctx, o) {
     const p = profileOf(s, f);
     let mail;
     try {
-      mail = render(templates.get(`\u50AC\u4FE1-${step.n}`), { \u7A31\u547C: text(p?.["\u79F0\u547C"]) || name, \u79F0\u547C: text(p?.["\u79F0\u547C"]) || name, \u8D26\u53F7\u540D\u79F0: name });
+      mail = render(pickTemplate(templates, `\u50AC\u4FE1 ${step.n}`, text(p?.["\u8A9E\u8A00"])), { \u7A31\u547C: text(p?.["\u79F0\u547C"]) || name, \u79F0\u547C: text(p?.["\u79F0\u547C"]) || name, \u8D26\u53F7\u540D\u79F0: name });
     } catch (err) {
       if (!(err instanceof MissingValue)) throw err;
       report.notChased.push({ key: f.record_id, name, reason: err.message });
@@ -61293,6 +61584,111 @@ async function reminderCounts(ctx, s) {
     for (const id of linkIds(r["KOL"])) if (s.followups.has(id)) counts.set(id, (counts.get(id) ?? 0) + 1);
   }
   return counts;
+}
+
+// src/kolops/setup.ts
+import { existsSync as existsSync4, readdirSync, readFileSync as readFileSync4 } from "node:fs";
+import { join as join4 } from "node:path";
+function fieldJson(f) {
+  return {
+    name: f.name,
+    type: f.type,
+    ...f.options ? { options: f.options.map((name) => ({ name })) } : {},
+    ...f.multiple != null ? { multiple: f.multiple } : {}
+  };
+}
+function purposeOf(fileName) {
+  if (fileName.startsWith("\u9080\u7EA6")) return "\u9080\u7EA6";
+  if (/^催信[-\s]?1/.test(fileName)) return "\u50AC\u4FE1 1";
+  if (/^催信[-\s]?2/.test(fileName)) return "\u50AC\u4FE1 2";
+  if (fileName.startsWith("\u4F53\u9A8C")) return "\u4F53\u9A8C\u8DDF\u8FDB";
+  return "\u5176\u4ED6";
+}
+async function setupBase(base, o) {
+  const report = { dryRun: o.dryRun, \u5EFA\u8868: [], \u52A0\u5B57\u6BB5: [], \u5199\u5165\u9ED8\u8BA4\u8BBE\u7F6E: false, \u5BFC\u5165\u6A21\u677F: [], \u8BF4\u660E: "" };
+  const fresh = /* @__PURE__ */ new Set();
+  for (const [key, defs] of Object.entries(SETTINGS_TABLES)) {
+    const table = TABLES[key];
+    const have = await base.fieldNames(table);
+    if (have == null) {
+      report.\u5EFA\u8868.push(`${table}\uFF08${defs.map((f) => f.name).join("\u3001")}\uFF09`);
+      fresh.add(table);
+      if (!o.dryRun) {
+        await base.lark.json([
+          "base",
+          "+table-create",
+          "--base-token",
+          base.token,
+          "--name",
+          table,
+          "--fields",
+          JSON.stringify(defs.map(fieldJson)),
+          "--as",
+          "user"
+        ]);
+      }
+      continue;
+    }
+    for (const f of defs.filter((d) => !have.includes(d.name))) {
+      report.\u52A0\u5B57\u6BB5.push(`${table}.${f.name}`);
+      if (!o.dryRun) {
+        await base.lark.json([
+          "base",
+          "+field-create",
+          "--base-token",
+          base.token,
+          "--table-id",
+          table,
+          "--json",
+          JSON.stringify(fieldJson(f)),
+          "--as",
+          "user"
+        ]);
+      }
+    }
+  }
+  const settingsRows = fresh.has(TABLES.settings) ? [] : await base.records(TABLES.settings);
+  if (!settingsRows.length) {
+    report.\u5199\u5165\u9ED8\u8BA4\u8BBE\u7F6E = true;
+    if (!o.dryRun) await base.create(TABLES.settings, [{ \u9879\u76EE\u540D\u79F0: o.project, ...SETTING_DEFAULTS }]);
+  }
+  if (o.importDir) {
+    if (!existsSync4(o.importDir)) throw new Error(`\u627E\u4E0D\u5230\u6A21\u677F\u6587\u4EF6\u5939 ${o.importDir}`);
+    const existing = fresh.has(TABLES.templates) ? [] : await base.records(TABLES.templates, { fields: ["\u540D\u79F0"] });
+    const names = new Set(existing.map((r) => text(r["\u540D\u79F0"])));
+    const rows = readdirSync(o.importDir).filter((f) => f.endsWith(".txt")).sort().flatMap((file2) => {
+      const name = file2.slice(0, -4);
+      if (names.has(name)) return [];
+      const { subject, body } = parseTemplateFile(readFileSync4(join4(o.importDir, file2), "utf8"));
+      report.\u5BFC\u5165\u6A21\u677F.push(name);
+      return [{
+        \u540D\u79F0: name,
+        \u7528\u9014: [purposeOf(name)],
+        \u4E3B\u65E8: subject,
+        \u6B63\u6587: body,
+        \u72B6\u6001: ["\u5F85\u5BA1\u6838"],
+        ...o.templateLanguage ? { \u8BED\u8A00: o.templateLanguage } : {}
+      }];
+    });
+    if (!o.dryRun && rows.length) await base.create(TABLES.templates, rows);
+  }
+  report.\u8BF4\u660E = report.\u5199\u5165\u9ED8\u8BA4\u8BBE\u7F6E ? "\u300C\u8BBE\u7F6E\u300D\u91CC\u5199\u4E86\u9ED8\u8BA4\u503C\u3002\u8FD8\u8981\u4EBA\u5DE5\u586B\uFF1A\u627E\u4EBA\u56FD\u5BB6\u3001\u627E\u4EBA\u8BED\u8A00\u3001\u81EA\u52A8\u50AC\u4FE1\u8D77\u59CB\u65E5\u3001\u4E0D\u50AC\u7684\u7EA7\u522B/\u8981\u6C42/\u6E20\u9053\uFF1B\u5728\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u91CC\u52A0\u53D1\u4FE1\u90AE\u7BB1\u5E76\u52FE\u300C\u542F\u7528\u300D\uFF1B\u5728\u300C\u6A21\u677F\u300D\u91CC\u628A\u8981\u7528\u7684\u6A21\u677F\u6539\u6210\u300C\u5DF2\u6279\u51C6\u300D" : "\u5DF2\u6709\u7684\u8BBE\u7F6E\u6CA1\u6709\u6539\u52A8";
+  return report;
+}
+async function checkBase(base) {
+  const out = { \u7F3A\u5C11\u7684\u8868: [], \u7F3A\u5C11\u7684\u5B57\u6BB5: [], \u542F\u7528\u7684\u53D1\u4FE1\u90AE\u7BB1: 0, \u5DF2\u6279\u51C6\u7684\u6A21\u677F: [] };
+  for (const [key, fields] of Object.entries(REQUIRED_FIELDS)) {
+    const have = await base.fieldNames(TABLES[key]);
+    if (have == null) out.\u7F3A\u5C11\u7684\u8868.push(TABLES[key]);
+    else out.\u7F3A\u5C11\u7684\u5B57\u6BB5.push(...fields.filter((f) => !have.includes(f)).map((f) => `${TABLES[key]}.${f}`));
+  }
+  if (!out.\u7F3A\u5C11\u7684\u8868.includes(TABLES.mailboxes)) {
+    out.\u542F\u7528\u7684\u53D1\u4FE1\u90AE\u7BB1 = (await base.records(TABLES.mailboxes)).filter((r) => r["\u542F\u7528"] === true).length;
+  }
+  if (!out.\u7F3A\u5C11\u7684\u8868.includes(TABLES.templates)) {
+    out.\u5DF2\u6279\u51C6\u7684\u6A21\u677F = (await base.records(TABLES.templates)).filter((r) => option(r["\u72B6\u6001"]) === "\u5DF2\u6279\u51C6").map((r) => `${text(r["\u540D\u79F0"])}\uFF08${option(r["\u7528\u9014"])}\uFF09`);
+  }
+  return out;
 }
 
 // src/kolops/today.ts
@@ -61345,13 +61741,19 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
           [--keywords a,b] [--seeds a,b] [--handles a,b] [--min-followers N] [--max-followers N] [--youtube-hidden]
                                 \u627E\u65B0 KOL \u548C\u90AE\u7BB1\uFF0C\u4E0D\u5728\u5E93\u91CC\u7684\u5199\u8FDB\u6863\u6848
   whoami                        \u770B\u5F53\u524D\u767B\u5F55\u7684\u98DE\u4E66\u8D26\u53F7
-  check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\uFF0C\u7F3A\u54EA\u4E9B\u6743\u9650\u3001\u600E\u4E48\u8865
+  check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\u3001\u9879\u76EE\u7684\u98DE\u4E66\u8868\u7F3A\u4E0D\u7F3A\u8868\u548C\u5B57\u6BB5\uFF0C\u4EE5\u53CA\u600E\u4E48\u8865
+
+  project add \u9879\u76EE\u540D \u98DE\u4E66\u8868\u94FE\u63A5  \u767B\u8BB0\u4E00\u4E2A\u9879\u76EE\uFF08\u5B83\u7684 KOL \u603B\u8868\uFF09\uFF1B\u7B2C\u4E00\u4E2A\u767B\u8BB0\u7684\u662F\u9ED8\u8BA4\u9879\u76EE
+  project list | default \u9879\u76EE\u540D | remove \u9879\u76EE\u540D | set-key \u9879\u76EE\u540D \u5BC6\u94A5
+  setup-base [--import-templates \u6587\u4EF6\u5939] [--template-language \u8BED\u8A00]
+                                \u7ED9\u9879\u76EE\u7684\u98DE\u4E66\u8868\u8865\u4E0A\u300C\u8BBE\u7F6E\u300D\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u300C\u6A21\u677F\u300D\u8868\u548C\u7F3A\u7684\u5B57\u6BB5\uFF0C\u6CA1\u6709\u8BBE\u7F6E\u5C31\u5199\u4E00\u884C\u9ED8\u8BA4\u503C\uFF1B
+                                \u53EF\u628A\u6587\u4EF6\u5939\u91CC\u7684 .txt \u6A21\u677F\u5BFC\u5165\u6210\u300C\u5F85\u5BA1\u6838\u300D\u3002\u53EA\u52A0\u4E0D\u6539\uFF0C\u5148\u7528 --dry-run \u770B\u4F1A\u505A\u4EC0\u4E48
 
 \u6BCF\u5C01\u4FE1\u53D1\u51FA\u524D\u90FD\u4F1A\u68C0\u67E5\uFF1A\u6682\u505C\u5F00\u5173\u3001\u6C38\u4E0D\u8054\u7CFB\u3001\u6536\u4EF6\u4EBA\u662F\u4E0D\u662F\u8FD9\u4F4D KOL\u3001\u5F53\u5929\u989D\u5EA6\u3001\u662F\u5426\u91CD\u590D\u3002
-\u901A\u7528\u9009\u9879\uFF1A--dry-run \u53EA\u68C0\u67E5\u3001\u5217\u51FA\u4F1A\u505A\u4EC0\u4E48\uFF0C\u4E0D\u53D1\u4FE1\u4E5F\u4E0D\u6539\u8868\uFF1B--scheduled \u7531\u5B9A\u65F6\u4EFB\u52A1\u8C03\u7528\u3002
+\u901A\u7528\u9009\u9879\uFF1A--project \u9879\u76EE\u540D \u9009\u9879\u76EE\uFF08\u4E0D\u5199\u5C31\u7528\u9ED8\u8BA4\u9879\u76EE\uFF09\uFF1B--dry-run \u53EA\u68C0\u67E5\u3001\u5217\u51FA\u4F1A\u505A\u4EC0\u4E48\uFF0C\u4E0D\u53D1\u4FE1\u4E5F\u4E0D\u6539\u8868\uFF1B--scheduled \u7531\u5B9A\u65F6\u4EFB\u52A1\u8C03\u7528\u3002
 \u7ED3\u679C\u4EE5 JSON \u6253\u5370\u5230\u6807\u51C6\u8F93\u51FA\u3002`;
 var list = (v) => v ? String(v).split(",").map((x) => x.trim()).filter(Boolean) : [];
-var num = (v) => v == null || v === "" ? null : Number(v);
+var num2 = (v) => v == null || v === "" ? null : Number(v);
 function need(v, ...keys) {
   const missing = keys.filter((k) => !v[k]);
   if (missing.length) throw new Error(`\u7F3A\u5C11\u53C2\u6570\uFF1A${missing.map((k) => `--${k}`).join(" ")}`);
@@ -61381,8 +61783,8 @@ var COMMANDS = {
         keywords: list(v.keywords),
         seeds: list(v.seeds),
         handles: list(v.handles),
-        minFollowers: num(v["min-followers"]),
-        maxFollowers: num(v["max-followers"]),
+        minFollowers: num2(v["min-followers"]),
+        maxFollowers: num2(v["max-followers"]),
         budget: Number(v.budget),
         batch: v.batch,
         job: v.job,
@@ -61392,9 +61794,34 @@ var COMMANDS = {
     }
   },
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
-  // Handled in main() before anything else, since it must work without the scopes the others need.
-  check: { title: "", writes: false, run: async () => null }
+  // These three are handled in main(): they must work before the project's settings can be read.
+  check: { title: "", writes: false, run: async () => null },
+  project: { title: "", writes: false, run: async () => null },
+  "setup-base": { title: "", writes: false, run: async () => null }
 };
+function projectCommand(args) {
+  const [sub, a, b] = args;
+  if (sub === "add") {
+    if (!a || !b) throw new Error("\u7528\u6CD5\uFF1Akol project add <\u9879\u76EE\u540D> <\u98DE\u4E66\u8868\u94FE\u63A5>");
+    return addProject(a, b);
+  }
+  if (sub === "default" && a) return setDefaultProject(a), { \u9ED8\u8BA4\u9879\u76EE: a };
+  if (sub === "remove" && a) return removeProject(a), { \u5DF2\u5220\u9664: a };
+  if (sub === "set-key" && a && b) return setDataApiKey(a, b), { \u5DF2\u4FDD\u5B58: `${a} \u7684\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u5BC6\u94A5\uFF08\u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09` };
+  if (!sub || sub === "list") {
+    const all = listProjects();
+    const def = all.length ? resolveProject().name : "";
+    return all.map((p) => ({ \u9879\u76EE: p.name, \u9ED8\u8BA4: p.name === def, \u98DE\u4E66\u8868: p.baseToken, \u6709\u63A5\u53E3\u5BC6\u94A5: !!p.dataApiKey }));
+  }
+  throw new Error("\u7528\u6CD5\uFF1Akol project add|list|default|remove|set-key \u2026");
+}
+async function check(project) {
+  const lark = new LarkCli(project?.baseToken ?? "");
+  const auth = await checkAuth(lark);
+  if (!project) return { ...auth, \u9879\u76EE: "\u8FD9\u53F0\u7535\u8111\u8FD8\u6CA1\u6709\u767B\u8BB0\u9879\u76EE\uFF08kol project add <\u9879\u76EE\u540D> <\u98DE\u4E66\u8868\u94FE\u63A5>\uFF09" };
+  if (!auth.\u6743\u9650\u9F50\u5168) return { ...auth, \u9879\u76EE: project.name, \u98DE\u4E66\u8868: "\u6388\u6743\u8865\u9F50\u540E\u518D\u68C0\u67E5" };
+  return { ...auth, \u9879\u76EE: project.name, \u98DE\u4E66\u8868: await checkBase(new Base(lark, project.baseToken)) };
+}
 async function main() {
   const str = { type: "string" };
   const { values, positionals } = parseArgs({
@@ -61419,7 +61846,10 @@ async function main() {
       seeds: str,
       handles: str,
       "min-followers": str,
-      "max-followers": str
+      "max-followers": str,
+      project: str,
+      "import-templates": str,
+      "template-language": str
     }
   });
   const name = positionals[0];
@@ -61428,26 +61858,34 @@ async function main() {
     console.log(HELP);
     return cmd || values.help ? 0 : 1;
   }
-  const cfg = loadConfig();
-  const lark = new LarkCli(cfg.baseToken);
-  if (name === "check") {
-    try {
-      console.log(JSON.stringify(await checkAuth(lark), null, 2));
-      return 0;
-    } catch (err) {
-      console.error(`\u51FA\u9519\uFF1A${err?.message ?? err}`);
-      return 2;
-    }
-  }
   let ctx;
   const logged = cmd.writes && !values["dry-run"];
   try {
+    if (name === "project") return print(projectCommand(positionals.slice(1)));
+    if (name === "check") {
+      let project2;
+      try {
+        project2 = resolveProject(values.project);
+      } catch {
+      }
+      return print(await check(project2));
+    }
+    const project = resolveProject(values.project);
+    const lark = new LarkCli(project.baseToken);
+    if (name === "setup-base") {
+      return print(await setupBase(new Base(lark, project.baseToken), {
+        project: project.name,
+        dryRun: !!values["dry-run"],
+        importDir: values["import-templates"],
+        templateLanguage: values["template-language"]
+      }));
+    }
+    const cfg = await loadConfig(lark, project.name, project.baseToken);
     ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
     if (logged) await ctx.run.start();
     const result = await cmd.run(ctx, values);
     if (logged) await ctx.run.finish(hasFailures(result) ? "\u90E8\u5206\u5B8C\u6210" : "\u5B8C\u6210");
-    console.log(JSON.stringify(result, null, 2));
-    return 0;
+    return print(result);
   } catch (err) {
     if (logged && ctx) {
       ctx.run.notes.push(String(err?.message ?? err));
@@ -61457,6 +61895,10 @@ async function main() {
     console.error(`\u51FA\u9519\uFF1A${err?.message ?? err}`);
     return 2;
   }
+}
+function print(result) {
+  console.log(JSON.stringify(result, null, 2));
+  return 0;
 }
 function hasFailures(result) {
   return [result?.failed, result?.send?.failed].some((f) => Array.isArray(f) && f.length > 0);

@@ -2,14 +2,16 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { loadConfig } from "../../src/kolops/config.js";
 import { makeCtx, type Ctx } from "../../src/kolops/ctx.js";
 import { isApproved, sendApproved } from "../../src/kolops/send.js";
 import { LarkError } from "../../src/kolops/lark.js";
 import { FakeLark } from "./fake.js";
+import { seedProject } from "./project.js";
+import { TABLES } from "../../src/kolops/schema.js";
+import type { Config } from "../../src/kolops/config.js";
 
-const cfg = loadConfig(join(import.meta.dirname, "../../plugins/kol-ops"));
-const T = cfg.tables;
+const T = TABLES;
+let cfg: Config;
 
 let lark: FakeLark;
 let ctx: Ctx;
@@ -25,7 +27,7 @@ function review(fields: Record<string, any> = {}): string {
 beforeEach(() => {
   process.env.KOL_DATA_DIR = mkdtempSync(join(tmpdir(), "kol-test-"));
   lark = new FakeLark();
-  lark.add(T.control, { 暂停所有发送: false });
+  cfg = seedProject(lark);
   const pid = lark.add(T.profiles, { 账号名称: "安安媽咪日常", 公开邮箱: "anan@example.com", 联系许可: ["可联系"] });
   fid = lark.add(T.followups, { 账号名称: "安安媽咪日常", 档案: [{ id: pid }], 阶段: ["已回复"], 联系渠道: ["hello@tafu.me"] });
   lark.inbox["hello@tafu.me"] = [{ message_id: "in1", from: "呂爸 <anan@example.com>", subject: "合作", date: "2026-10-20T22:14:00+08:00" }];
@@ -80,7 +82,7 @@ describe("sendApproved", () => {
   });
 
   it("stops everything when the pause switch is on", async () => {
-    lark.table(T.control)[0]["暂停所有发送"] = true;
+    lark.table(T.settings)[0]["暂停所有发送"] = true;
     review();
     const r = await sendApproved(ctx, { dryRun: false });
     expect(r.sent).toHaveLength(0);

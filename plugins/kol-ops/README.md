@@ -1,6 +1,8 @@
 # KOL 运营插件（kol-ops）
 
-给运营同事装在 Claude 桌面版里用。数据在飞书「tafu 台湾 KOL 总表」，发信用飞书邮箱，都经过本机的 lark-cli。
+给运营同事装在 Claude 桌面版里用，做 KOL 外联：找人、邀约、收信、审核后发信、催信和结案。
+
+可以给多个项目用。每个项目一张飞书多维表格（它的 KOL 总表），项目自己的发信规则、发信邮箱和邮件模板也都放在这张表的「设置」「发信邮箱」「模板」里，插件里不写任何项目专属的内容。发信用飞书邮箱，所有读写都经过本机的 lark-cli。
 
 ## 安装
 
@@ -8,7 +10,7 @@
 
 - 电脑上装好 Node.js 22 或更新的版本（终端里 `node --version` 能看到 v22 以上）。
 - 电脑上装好 lark-cli，并用公司飞书账号登录过。
-- 你的 GitHub 账号能访问私有仓库 zhihao93li/kolpick，没有权限就找 Emma 加。
+- 你的 GitHub 账号能访问私有仓库 zhihao93li/kolpick，没有权限就找项目负责人加。
 
 ### 管理员先开通权限（整个公司只做一次）
 
@@ -19,7 +21,7 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
 - 通讯录：`contact:user.basic_profile:readonly`
 - 邮箱：`mail:user_mailbox:readonly`、`mail:user_mailbox.message:readonly`、`mail:user_mailbox.message.address:read`、`mail:user_mailbox.message.subject:read`、`mail:user_mailbox.message.body:read`、`mail:user_mailbox.message:modify`、`mail:user_mailbox.message:send`
 
-用插件发信的同事，还要在飞书邮箱里有 hello@tafu.me 和 mei@tafu.me 这两个公共邮箱的权限。
+用插件发信的同事，还要在飞书邮箱里有项目「发信邮箱」表里那些邮箱的权限（TAFU 是 hello@tafu.me 和 mei@tafu.me）。
 
 ### 每位同事
 
@@ -34,7 +36,18 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
    /plugin install kol-ops@kolpick
    ```
    以前按 `zhihao93li/kolpick#claude/project-thread-eps57k` 装过的，先用 `/plugin marketplace remove kolpick` 删掉旧的，再运行上面两条。
-3. 新开一个会话试一下：对 Claude 说「今天有什么事」。插件只在新会话里生效。如果它说飞书授权缺少权限，就照它给的提示补，或者让它跑一下 `kol.mjs check`，看缺了哪些。
+3. 新开一个会话（插件只在新会话里生效），对 Claude 说「登记项目 TAFU，飞书表是 <链接>」。链接就是在飞书里打开这个项目 KOL 总表时浏览器地址栏里带 `/base/` 的那个。这一步每台电脑每个项目做一次。
+4. 试一下：对 Claude 说「今天有什么事」。如果它说飞书授权缺少权限，就照它给的提示补，或者让它跑一下 `kol.mjs check`，看缺了哪些。
+
+### 接入一个新项目
+
+1. 在飞书里打开一个现有项目的 KOL 总表，用「创建副本」复制一份，不带记录。
+2. 按上面第 3 步登记新项目，然后让 Claude 跑 `kol.mjs setup-base --dry-run --project <新项目名>`。表是从现有项目复制来的话，通常什么都不用加；缺「设置」「发信邮箱」「模板」时它会列出来，同意后去掉 `--dry-run` 就会加上，并写一行默认设置。这一步要求登录的账号有建表权限（`base:table:create`、`base:field:create`）。
+3. 在新表里填好：
+   - 「设置」：找人国家和语言、催信规则、自动催信起始日；
+   - 「发信邮箱」：每个邮箱一行，勾「启用」；
+   - 「模板」：邀约和催信模板，状态改成「已批准」。
+4. 让 Claude 跑 `kol.mjs check --project <新项目名>`，没有缺的表和字段、有启用的邮箱和已批准的模板，就可以用了。
 
 ## 能做的事
 
@@ -51,4 +64,4 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
 
 ## 改动
 
-脚本源码在仓库的 `src/kolops/`。改完先运行 `npm run build:plugin`，重新打包 `scripts/kol.mjs`；再运行 `npm test`，测试里会直接运行打包后的脚本，确认它能正常启动。然后把 `plugin.json` 的版本号加一，同事那边更新插件就能拿到。邮件模板直接改 `templates/` 里的文本文件。
+脚本源码在仓库的 `src/kolops/`。改完先运行 `npm run build:plugin`，重新打包 `scripts/kol.mjs`；再运行 `npm test`，测试里会直接运行打包后的脚本，确认它能正常启动。然后把 `plugin.json` 的版本号加一，同事那边更新插件就能拿到。发信规则和邮件模板不在插件里，在每个项目飞书表的「设置」「发信邮箱」「模板」表里，改那里就行。

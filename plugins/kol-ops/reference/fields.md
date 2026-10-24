@@ -1,8 +1,10 @@
-# 飞书「tafu 台湾 KOL 总表」字段参考
+# 项目飞书表的字段参考
 
-base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必须和下面完全一致（包括全角符号）；选项值写成数组，如 `["已回复"]`。
+每个项目一张飞书多维表格，表名和字段名都是下面这套。当前项目的 base token 用 `node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" project list` 查。
 
-## KOL 档案（tblFJMzgckFudSOw）
+写入时字段名、选项名必须和下面完全一致（包括全角符号）；选项值写成数组，如 `["已回复"]`。批次、标签、渠道这类选项每个项目不一样，也会不断加新的，下面列的是 TAFU 项目的例子；写之前用 `lark-cli base +field-list --base-token <token> --table-id <表名> --as user` 读当前的选项。
+
+## KOL 档案
 
 - **账号名称**（text）
 - **其他邮箱**（text）
@@ -28,7 +30,7 @@ base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必�
 - **合作要求**（text）
 - **录入时间**（created_at）
 
-## KOL 跟进（tbl7ulwAktAZKFSM）
+## KOL 跟进
 
 - **最近联系日期**（datetime）
 - **下次跟进日期**（datetime）
@@ -62,7 +64,7 @@ base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必�
 - **交付清单**（select，多选）：协议已发 / 协议已签 / 素材已发 / 链接已发 / 发布说明已发
 - **邀约批次**（select）：第二批 / 第三批 / 第一批 / 第九批 / 第六批 / 第八批 / 第七批 / 第四批 / 第五批 / 第十批 / 第十一批 / 第十二批 / 第十三批 / 第十四批 / 第十五批 / 第十六批 / 第十七批 / 第十八批 / 第十九批 / 第二十批 / 第二十一批 / 第二十二批 / 第二十三批 / 第二十四批 / 第二十五批 / 第二十六批 / 第二十七批 / 第二十八批 / 第二十九批·旧版 / 第二十九批·新版 / 第三十批·新版 / 第三十批·旧版 / 第三十一批·新版 / 第三十一批·旧版 / 第三十二批·新版 / 第三十二批·旧版 / 第三十三批·新版 / 第三十三批·旧版 / 第三十四批·新版 / 第三十四批·旧版 / 第三十五批·新版 / 第三十五批·旧版 / 第三十六批·新版 / 第三十六批·旧版 / 第三十七批·新版 / 第三十七批·旧版 / 第三十八批·新版 / 第三十八批·旧版
 
-## 接触记录（tbl25E9o3tT419wt）
+## 接触记录
 
 - **待处理**（checkbox）
 - **内容**（text）
@@ -75,7 +77,7 @@ base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必�
 - **日期**（datetime）
 - **方向**（select）：发出 / 收到 / 存档
 
-## 审核队列（tblzQGOqEgctqvbV）
+## 审核队列
 
 - **我的判断和建议**（text）
 - **执行时间**（datetime）
@@ -95,7 +97,7 @@ base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必�
 - **类型**（select）：回复邮件 / 模板审批 / 决定 / 协议 / 待办
 - **提交检查**（formula）
 
-## 操作日志（tblJcgxjwhmdGs5a）
+## 操作日志
 
 - **收件人明细**（text）
 - **发送数**（number）
@@ -112,7 +114,7 @@ base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必�
 - **有问题**（checkbox）
 - **说明**（text）
 
-## 运行记录（tblBs6r2hzcNwkZ4）
+## 运行记录
 
 - **处理来信**（number）
 - **新增待审**（number）
@@ -126,13 +128,7 @@ base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必�
 - **运行**（text）
 - **结果**（select）：完成 / 部分完成 / 失败 / 进行中
 
-## 控制（tbl92rGuadpQtJff）
-
-- **暂停所有发送**（checkbox）
-- **说明**（text）
-- **项目**（text）
-
-## 发布内容（tblOBBBQEylJebJm）
+## 发布内容
 
 - **链接已放置**（checkbox）
 - **第30天互动**（number）
@@ -151,7 +147,7 @@ base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必�
 - **平台**（select）：Instagram / YouTube / Facebook / Threads / TikTok / Podcast / 其他
 - **KOL**（link）：关联「KOL 跟进」
 
-## 月度结算（tblvUsOG0tUXJ5py）
+## 月度结算
 
 - **账单**（text）
 - **订单**（number）
@@ -168,3 +164,37 @@ base token：`XzwFbW2znaAqoSsQewGckSdTn5e`。写入时字段名、选项名必�
 - **累计有效订单**（number）
 - **付款日期**（datetime）
 - **备注**（text）
+
+## 设置（只有一行）
+
+插件每次运行都从这里读这个项目的规则。改规则直接改这一行，不用改插件。
+
+- **项目名称**（text）
+- **暂停所有发送**（checkbox）：勾上后任何命令都不发信
+- **时区**（text）：如 `+08:00`
+- **找人国家**、**找人语言**（text）：找人时给 YouTube 的提示，如 `TW`、`zh`
+- **全公司每日上限**、**每分钟上限**（number）
+- **退信率暂停线**（number）：百分比，如 6
+- **第一次催信天数**、**第二次催信天数**、**结案天数**（number）
+- **自动催信起始日**（datetime）：这天及以后发出的邀约才自动催；空着就不自动催
+- **不催级别**、**不催的对方要求**、**不催渠道**（text）：多个用「、」隔开
+- **跨项目冷却天数**（number）：别的项目这么多天内联系过的邮箱，这个项目先不邀约
+- **飞书群机器人**、**业务数据接口**、**说明**（text）
+
+## 发信邮箱
+
+- **邮箱**（text）
+- **渠道名**（text）：这个邮箱在各表「渠道」「联系渠道」「发送渠道」选项里的名字，空着就用邮箱地址
+- **每日上限**（number）：每天最多发给几位外部收件人
+- **启用**（checkbox）：没勾的不收信也不发信
+- **退信率暂停线**（number）：空着就用「设置」里的
+- **说明**（text）
+
+## 模板
+
+- **名称**（text）：邀约时 `--template` 用的就是这个名字
+- **用途**（select）：邀约 / 催信 1 / 催信 2 / 体验跟进 / 其他
+- **方向**、**语言**（text）：催信会优先用和 KOL「語言」一致的模板
+- **主旨**、**正文**（text）：占位符写成 `{稱呼}`、`{账号名称}`，缺值的不会发
+- **状态**（select）：草稿 / 待审核 / 已批准 / 停用。只有「已批准」的会被插件用
+- **审核人**（user）、**审核时间**（datetime）、**备注**（text）

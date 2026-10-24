@@ -1,4 +1,4 @@
-import type { Lark, Row } from "../../src/kolops/lark.js";
+import type { Lark, RecordQuery, Row } from "../../src/kolops/lark.js";
 
 /** An in-memory base and mailbox behind the same lark-cli argument shapes the commands use. */
 export class FakeLark implements Lark {
@@ -9,6 +9,11 @@ export class FakeLark implements Lark {
   /** How many sends fail with `failSend` before they start working again. */
   failSendTimes = Infinity;
   options: Record<string, string[]> = { 邀约批次: ["第三十九批·新版"], 入库批次: ["第三十批"] };
+  /** When set, only these tables exist (name -> field names), and table/field creation changes them. */
+  schemas: Record<string, string[]> | null = null;
+  /** Other projects' bases, by token, for reads that name one. */
+  others: Record<string, FakeLark> = {};
+  created: string[][] = [];
   private n = 0;
 
   table(name: string): Row[] {
@@ -21,7 +26,8 @@ export class FakeLark implements Lark {
     return id;
   }
 
-  async records(table: string, opts: { filter?: any; fields?: string[] } = {}): Promise<Row[]> {
+  async records(table: string, opts: RecordQuery & { filter?: any } = {}): Promise<Row[]> {
+    if (opts.baseToken && this.others[opts.baseToken]) return this.others[opts.baseToken].records(table, { ...opts, baseToken: undefined });
     return this.table(table).filter((r) => matches(r, opts.filter)).map((r) => ({ ...r }));
   }
 
@@ -38,6 +44,21 @@ export class FakeLark implements Lark {
         if (!row) throw new Error(`no record ${id}`);
         Object.assign(row, f);
       }
+      return {};
+    }
+    if (svc === "base" && cmd === "+field-list" && this.schemas) {
+      const fields = this.schemas[flag("--table-id")];
+      if (!fields) throw new Error(`table ${flag("--table-id")} not found`);
+      return { fields: fields.map((name) => ({ name, type: "text" })) };
+    }
+    if (svc === "base" && cmd === "+table-create") {
+      this.created.push(args);
+      (this.schemas ??= {})[flag("--name")] = JSON.parse(flag("--fields")).map((f: any) => f.name);
+      return {};
+    }
+    if (svc === "base" && cmd === "+field-create") {
+      this.created.push(args);
+      this.schemas![flag("--table-id")].push(JSON.parse(flag("--json")).name);
       return {};
     }
     if (svc === "base" && cmd === "+field-list") {
