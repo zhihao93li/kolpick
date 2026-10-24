@@ -58,3 +58,16 @@ it("refreshes trial usage and expiry, and lists partial use, expiring trials and
   expect(r.活动码).toEqual([{ name: "Amy", 活动码: "AMY-TAFU", 付款订单: 40, 退款订单: 2, 访客: 1830 }]);
   expect(r.找不到的码).toEqual(["打错码：GONE"]);
 });
+
+it("keeps a trial and a partner code with the same name apart", async () => {
+  addProject("测试项目", BASE);
+  setDataApiKey("测试项目", "k");
+  lark.add(T.followups, { 账号名称: "同名", 阶段: ["体验中"], 体验码: "SAME", 活动码: "same" });
+  const both = (async () => new Response(JSON.stringify({ codes: [
+    { code: "SAME", found: true, kind: "trial", maxUses: 3, used: 2, expiresAt: null },
+    { code: "same", found: true, kind: "partner", maxUses: null, used: 9, paidOrders: 9, refundedOrders: 0, visitors: 50 },
+  ] }))) as typeof fetch;
+  const r = await syncCodes(ctx, { dryRun: true, fetchImpl: both });
+  expect(r.体验码用了一部分).toEqual([{ name: "同名", 体验码: "SAME", 已用: 2, 上限: 3 }]);
+  expect(r.活动码).toEqual([{ name: "同名", 活动码: "same", 付款订单: 9, 退款订单: 0, 访客: 50 }]);
+});

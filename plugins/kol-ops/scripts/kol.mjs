@@ -61928,7 +61928,7 @@ async function lookupCodes(url, key, codes, fetchImpl = fetch) {
     if (res.status === 401) throw new Error("\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u62D2\u7EDD\u4E86\u5BC6\u94A5\uFF08401\uFF09\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u786E\u8BA4\u540E\u7528 kol project set-key \u91CD\u65B0\u4FDD\u5B58");
     if (!res.ok) throw new Error(`\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u51FA\u9519\uFF08${res.status}\uFF09\uFF0C\u8FD9\u6B21\u5148\u4E0D\u540C\u6B65`);
     const data = await res.json();
-    for (const c of data?.codes ?? []) out.set(String(c.code).toLowerCase(), c);
+    for (const c of data?.codes ?? []) if (c.found) out.set(`${c.kind}:${String(c.code).toLowerCase()}`, c);
   }
   return out;
 }
@@ -61958,7 +61958,7 @@ async function syncCodes(ctx, o) {
   for (const f of open) {
     const name = s.followups.has(f.record_id) ? displayName(s, s.followups.get(f.record_id)) : text(f["\u8D26\u53F7\u540D\u79F0"]);
     const trial = text(f["\u4F53\u9A8C\u7801"]);
-    const t = trial ? info.get(trial.toLowerCase()) : void 0;
+    const t = trial ? info.get(`trial:${trial.toLowerCase()}`) : void 0;
     if (trial && !t?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${trial}`);
     if (t?.found) {
       const change = {};
@@ -61976,7 +61976,7 @@ async function syncCodes(ctx, o) {
       }
     }
     const partner = text(f["\u6D3B\u52A8\u7801"]);
-    const p = partner ? info.get(partner.toLowerCase()) : void 0;
+    const p = partner ? info.get(`partner:${partner.toLowerCase()}`) : void 0;
     if (partner && !p?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${partner}`);
     if (p?.found) {
       report.\u6D3B\u52A8\u7801.push({ name, \u6D3B\u52A8\u7801: partner, \u4ED8\u6B3E\u8BA2\u5355: p.paidOrders ?? 0, \u9000\u6B3E\u8BA2\u5355: p.refundedOrders ?? 0, \u8BBF\u5BA2: p.visitors ?? 0 });

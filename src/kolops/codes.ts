@@ -8,7 +8,7 @@ import { listProjects } from "./projects.js";
 export interface CodeInfo {
   code: string;
   found: boolean;
-  kind?: "trial" | "partner";
+  kind?: "trial" | "partner" | "other";
   active?: boolean;
   maxUses?: number | null;
   used?: number;
@@ -20,7 +20,10 @@ export interface CodeInfo {
 
 const BATCH = 200;
 
-/** Asks the project's API about codes, 200 at a time. Never sends anything but the codes themselves. */
+/**
+ * Asks the project's API about codes, 200 at a time, keyed "kind:code" in lower case: a trial and a partner
+ * code may share a name, and each followup field wants its own kind. Never sends anything but the codes.
+ */
 export async function lookupCodes(url: string, key: string, codes: string[], fetchImpl: typeof fetch = fetch): Promise<Map<string, CodeInfo>> {
   const out = new Map<string, CodeInfo>();
   for (let i = 0; i < codes.length; i += BATCH) {
@@ -32,7 +35,7 @@ export async function lookupCodes(url: string, key: string, codes: string[], fet
     if (res.status === 401) throw new Error("业务数据接口拒绝了密钥（401）。请向项目负责人确认后用 kol project set-key 重新保存");
     if (!res.ok) throw new Error(`业务数据接口出错（${res.status}），这次先不同步`);
     const data: any = await res.json();
-    for (const c of data?.codes ?? []) out.set(String(c.code).toLowerCase(), c);
+    for (const c of data?.codes ?? []) if (c.found) out.set(`${c.kind}:${String(c.code).toLowerCase()}`, c);
   }
   return out;
 }
@@ -67,7 +70,7 @@ export async function syncCodes(ctx: Ctx, o: { dryRun: boolean; fetchImpl?: type
   for (const f of open) {
     const name = s.followups.has(f.record_id) ? displayName(s, s.followups.get(f.record_id)!) : text(f["账号名称"]);
     const trial = text(f["体验码"]);
-    const t = trial ? info.get(trial.toLowerCase()) : undefined;
+    const t = trial ? info.get(`trial:${trial.toLowerCase()}`) : undefined;
     if (trial && !t?.found) report.找不到的码.push(`${name}：${trial}`);
     if (t?.found) {
       const change: Record<string, unknown> = {};
@@ -85,7 +88,7 @@ export async function syncCodes(ctx: Ctx, o: { dryRun: boolean; fetchImpl?: type
       }
     }
     const partner = text(f["活动码"]);
-    const p = partner ? info.get(partner.toLowerCase()) : undefined;
+    const p = partner ? info.get(`partner:${partner.toLowerCase()}`) : undefined;
     if (partner && !p?.found) report.找不到的码.push(`${name}：${partner}`);
     if (p?.found) {
       report.活动码.push({ name, 活动码: partner, 付款订单: p.paidOrders ?? 0, 退款订单: p.refundedOrders ?? 0, 访客: p.visitors ?? 0 });

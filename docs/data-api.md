@@ -54,7 +54,7 @@
 
 | 字段 | 说明 |
 | --- | --- |
-| `kind` | `trial`：送给 KOL 自己用的体验码。`partner`：KOL 分享给粉丝、带分润的活动码 |
+| `kind` | `trial`：送给 KOL 自己用的体验码。`partner`：KOL 分享给粉丝、带分润的活动码。`other`：其他码，插件不用。体验码和活动码可以同名，同名时各返回一条，插件按 `kind` 分别对应「体验码」「活动码」字段 |
 | `maxUses` | 最多能用几次，`null` 表示不限 |
 | `used` | 已经用掉的次数，包括已付款和占用中的订单，以项目自己的口径为准 |
 | `paidOrders`、`refundedOrders`、`visitors` | 只有 `partner` 有：累计付款订单、退款订单、访客数（按访客去重） |
@@ -83,6 +83,10 @@
 ```
 
 `status` 是 `estimated`（这个月还没封账）或 `sealed`（已封账，数字不会再变）。
+
+## 已实现的项目
+
+- TAFU：`POST /codes` 已实现（tafu-nodejs `apps/api/src/routes/kol-data.ts`，密钥是环境变量 `KOL_DATA_API_KEY`）；`GET /settlements` 还没做。
 
 ## 错误
 
