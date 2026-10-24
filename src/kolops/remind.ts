@@ -1,4 +1,4 @@
-import { addDays, day, linkIds, option, text } from "./base.js";
+import { addDays, day, linkIds, onOrAfter, option, text } from "./base.js";
 import { mailboxFor, type Config } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, loadSnapshot, profileEmails, profileOf, type Snapshot } from "./data.js";
@@ -113,12 +113,12 @@ export async function remind(ctx: Ctx, o: { dryRun: boolean }): Promise<RemindRe
 /** 催信 the plugin already sent, per followup, read from 接触记录 so every colleague's runs count. */
 async function reminderCounts(ctx: Ctx, s: Snapshot): Promise<Map<string, number>> {
   const rows = await ctx.base.records(ctx.cfg.tables.contacts, {
-    filter: { logic: "and", conditions: [["方向", "intersects", ["发出"]], ["日期", ">=", `ExactDate(${ctx.cfg.followup.onlyInvitedOnOrAfter})`]] },
+    filter: { logic: "and", conditions: [["方向", "intersects", ["发出"]], onOrAfter("日期", ctx.cfg.followup.onlyInvitedOnOrAfter)] },
     fields: ["摘要", "KOL", "方向", "日期"],
   });
   const counts = new Map<string, number>();
   for (const r of rows) {
-    if (!text(r["摘要"]).startsWith("[催信]")) continue;
+    if (!text(r["摘要"]).startsWith("[催信]") || day(r["日期"], ctx.cfg.timezone) < ctx.cfg.followup.onlyInvitedOnOrAfter) continue;
     for (const id of linkIds(r["KOL"])) if (s.followups.has(id)) counts.set(id, (counts.get(id) ?? 0) + 1);
   }
   return counts;

@@ -59665,6 +59665,9 @@ function addDays(dayStr, n) {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
+function onOrAfter(field, dayStr) {
+  return [field, ">", `ExactDate(${addDays(dayStr, -1)})`];
+}
 function emailsIn(v) {
   return (text(v).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []).map((e) => e.toLowerCase());
 }
@@ -60089,11 +60092,12 @@ var BOUNCE_MIN_SENT = 20;
 async function bounceStats(base, cfg) {
   const since = dayOf(Date.now() - BOUNCE_WINDOW_DAYS * 864e5, cfg.timezone);
   const rows = await base.records(cfg.tables.contacts, {
-    filter: { logic: "and", conditions: [["\u65E5\u671F", ">=", `ExactDate(${since})`]] },
+    filter: { logic: "and", conditions: [onOrAfter("\u65E5\u671F", since)] },
     fields: ["\u65B9\u5411", "\u6E20\u9053", "\u6458\u8981", "\u65E5\u671F"]
   });
   const stats = /* @__PURE__ */ new Map();
   for (const r of rows) {
+    if (day(r["\u65E5\u671F"], cfg.timezone) < since) continue;
     const ch = option(r["\u6E20\u9053"]);
     const s = stats.get(ch) ?? { sent: 0, bounced: 0 };
     if (option(r["\u65B9\u5411"]) === "\u53D1\u51FA") s.sent++;
@@ -61467,7 +61471,7 @@ async function syncInbox(ctx, opts) {
   const sinceIso = new Date(since).toISOString().replace("Z", "+00:00");
   const s = await loadSnapshot(ctx.base, ctx.cfg);
   const known = await ctx.base.records(t.contacts, {
-    filter: { logic: "and", conditions: [["\u65E5\u671F", ">=", `ExactDate(${day(since - 864e5, ctx.cfg.timezone)})`]] },
+    filter: { logic: "and", conditions: [onOrAfter("\u65E5\u671F", day(since - 864e5, ctx.cfg.timezone))] },
     fields: ["Message ID"]
   });
   const seen = new Set(known.map((r) => text(r["Message ID"])).filter(Boolean));
@@ -61692,12 +61696,12 @@ async function remind(ctx, o) {
 }
 async function reminderCounts(ctx, s) {
   const rows = await ctx.base.records(ctx.cfg.tables.contacts, {
-    filter: { logic: "and", conditions: [["\u65B9\u5411", "intersects", ["\u53D1\u51FA"]], ["\u65E5\u671F", ">=", `ExactDate(${ctx.cfg.followup.onlyInvitedOnOrAfter})`]] },
+    filter: { logic: "and", conditions: [["\u65B9\u5411", "intersects", ["\u53D1\u51FA"]], onOrAfter("\u65E5\u671F", ctx.cfg.followup.onlyInvitedOnOrAfter)] },
     fields: ["\u6458\u8981", "KOL", "\u65B9\u5411", "\u65E5\u671F"]
   });
   const counts = /* @__PURE__ */ new Map();
   for (const r of rows) {
-    if (!text(r["\u6458\u8981"]).startsWith("[\u50AC\u4FE1]")) continue;
+    if (!text(r["\u6458\u8981"]).startsWith("[\u50AC\u4FE1]") || day(r["\u65E5\u671F"], ctx.cfg.timezone) < ctx.cfg.followup.onlyInvitedOnOrAfter) continue;
     for (const id of linkIds(r["KOL"])) if (s.followups.has(id)) counts.set(id, (counts.get(id) ?? 0) + 1);
   }
   return counts;

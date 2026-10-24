@@ -86,13 +86,17 @@ export class FakeLark implements Lark {
   }
 }
 
+const dayOfCell = (v: unknown) => (typeof v === "number" ? new Date(v + 8 * 3600_000).toISOString().slice(0, 10) : String(v ?? "").slice(0, 10));
+
 function matches(r: Row, filter: any): boolean {
   if (!filter) return true;
   return filter.conditions.every(([field, op, value]: [string, string, any]) => {
     const v = r[field];
+    // Like Feishu: ">=" on a date is rejected outright, and ">" compares whole days.
+    if (op === ">=" && typeof value === "string" && value.startsWith("ExactDate(")) throw new Error("800010506 invalid_request: >= is not supported on dates");
+    if (op === ">" && typeof value === "string" && value.startsWith("ExactDate(")) return dayOfCell(v) > value.slice(10, 20);
     if (op === "intersects") return (Array.isArray(v) ? v : [v]).some((x) => value.includes(x));
-    if (op === "==" && typeof value === "string" && value.startsWith("ExactDate(")) return String(v ?? "").slice(0, 10) === value.slice(10, 20);
-    if (op === ">=" && typeof value === "string" && value.startsWith("ExactDate(")) return String(v ?? "").slice(0, 10) >= value.slice(10, 20);
+    if (op === "==" && typeof value === "string" && value.startsWith("ExactDate(")) return dayOfCell(v) === value.slice(10, 20);
     if (op === "==") return v === value || (Array.isArray(v) && v.includes(value));
     return true;
   });

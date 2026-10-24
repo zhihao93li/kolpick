@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { Base, cellTime, dayOf, linkIds, option, type Fields } from "./base.js";
+import { Base, cellTime, day, dayOf, linkIds, onOrAfter, option, type Fields } from "./base.js";
 import type { Config } from "./config.js";
 import { authHint, REQUIRED_SCOPES, type Lark } from "./lark.js";
 
@@ -54,11 +54,12 @@ const BOUNCE_MIN_SENT = 20;
 export async function bounceStats(base: Base, cfg: Config): Promise<Map<string, { sent: number; bounced: number }>> {
   const since = dayOf(Date.now() - BOUNCE_WINDOW_DAYS * 86_400_000, cfg.timezone);
   const rows = await base.records(cfg.tables.contacts, {
-    filter: { logic: "and", conditions: [["日期", ">=", `ExactDate(${since})`]] },
+    filter: { logic: "and", conditions: [onOrAfter("日期", since)] },
     fields: ["方向", "渠道", "摘要", "日期"],
   });
   const stats = new Map<string, { sent: number; bounced: number }>();
   for (const r of rows) {
+    if (day(r["日期"], cfg.timezone) < since) continue;
     const ch = option(r["渠道"]);
     const s = stats.get(ch) ?? { sent: 0, bounced: 0 };
     if (option(r["方向"]) === "发出") s.sent++;

@@ -130,6 +130,15 @@ export function addDays(dayStr: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * A filter condition for "on or after this day". Feishu rejects ">=" on date fields and doesn't document
+ * where ">" puts the boundary, so this asks for everything after the day before; callers that need the exact
+ * boundary also check `day(cell) >= dayStr` themselves.
+ */
+export function onOrAfter(field: string, dayStr: string): [string, string, string] {
+  return [field, ">", `ExactDate(${addDays(dayStr, -1)})`];
+}
+
 /** Days from `a` to `b`, both YYYY-MM-DD. */
 export function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);

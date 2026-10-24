@@ -1,4 +1,4 @@
-import { cellTime, day, emailsIn, option, text } from "./base.js";
+import { cellTime, day, emailsIn, onOrAfter, option, text } from "./base.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, loadSnapshot, type Snapshot } from "./data.js";
 import { addressOf, type MailSummary } from "./mail.js";
@@ -38,7 +38,7 @@ export async function syncInbox(ctx: Ctx, opts: { days?: number; dryRun: boolean
   const sinceIso = new Date(since).toISOString().replace("Z", "+00:00");
   const s = await loadSnapshot(ctx.base, ctx.cfg);
   const known = await ctx.base.records(t.contacts, {
-    filter: { logic: "and", conditions: [["日期", ">=", `ExactDate(${day(since - 86_400_000, ctx.cfg.timezone)})`]] },
+    filter: { logic: "and", conditions: [onOrAfter("日期", day(since - 86_400_000, ctx.cfg.timezone))] },
     fields: ["Message ID"],
   });
   const seen = new Set(known.map((r) => text(r["Message ID"])).filter(Boolean));
