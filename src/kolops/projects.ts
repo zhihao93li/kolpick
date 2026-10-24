@@ -64,7 +64,8 @@ export function addProject(name: string, baseToken: string): Project {
   r.projects[name] = { ...r.projects[name], baseToken: baseTokenFrom(baseToken) };
   r.default ??= name;
   save(r);
-  return { name, ...r.projects[name] };
+  // Never echo the stored API key: this result is printed and read back in conversations.
+  return { name, baseToken: r.projects[name].baseToken };
 }
 
 export function setDefaultProject(name: string): void {

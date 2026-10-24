@@ -36,6 +36,9 @@ describe("bundled kol.mjs", () => {
 
   it("explains a missing lark-cli instead of crashing", () => {
     expect(kol("project", "add", "tafu", "https://x.feishu.cn/base/XzwFbW2znaAqoSsQewGckSdTn5e").status).toBe(0);
+    expect(kol("project", "set-key", "tafu", "secret-key-value").stdout).not.toContain("secret-key-value");
+    expect(kol("project", "add", "tafu", "https://x.feishu.cn/base/XzwFbW2znaAqoSsQewGckSdTn5e").stdout).not.toContain("secret-key-value");
+    expect(kol("project", "list").stdout).not.toContain("secret-key-value");
     const r = kol("today");
     expect(r.status).toBe(2);
     expect(r.stderr).toContain("找不到 lark-cli");

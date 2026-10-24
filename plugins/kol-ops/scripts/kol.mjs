@@ -61072,7 +61072,7 @@ function addProject(name, baseToken) {
   r.projects[name] = { ...r.projects[name], baseToken: baseTokenFrom(baseToken) };
   r.default ??= name;
   save(r);
-  return { name, ...r.projects[name] };
+  return { name, baseToken: r.projects[name].baseToken };
 }
 function setDefaultProject(name) {
   const r = load();
