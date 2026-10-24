@@ -1,0 +1,31 @@
+import { spawnSync } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+// The plugin runs the bundled scripts/kol.mjs, not these sources, so a bundling mistake only shows up here.
+const script = join(import.meta.dirname, "../../plugins/kol-ops/scripts/kol.mjs");
+
+function kol(...args: string[]) {
+  return spawnSync(process.execPath, [script, ...args], {
+    encoding: "utf8",
+    env: { ...process.env, KOL_LARK_CLI: "/nonexistent/lark-cli", KOL_DATA_DIR: mkdtempSync(join(tmpdir(), "kol-bundle-")) },
+  });
+}
+
+describe("bundled kol.mjs", () => {
+  it("starts and prints help", () => {
+    const r = kol("--help");
+    expect(r.stderr).toBe("");
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("kol <命令>");
+  });
+
+  it("explains a missing lark-cli instead of crashing", () => {
+    const r = kol("today");
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain("找不到 lark-cli");
+    expect(r.stderr).not.toContain("    at ");
+  });
+});

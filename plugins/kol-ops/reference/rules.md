@@ -8,7 +8,10 @@
 node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" <命令> [选项]
 ```
 
-命令：`today`、`sync`、`send`、`invite`、`remind`、`find`、`whoami`。`--help` 看完整参数。
+命令：`today`、`sync`、`send`、`invite`、`remind`、`find`、`whoami`、`check`。`--help` 看完整参数。
+
+脚本报「飞书授权缺少权限」时，先跑 `check`，把缺哪些权限、怎么补讲给同事，不要自己去登录或改授权。
+
 结果是 JSON，读完用中文、按人名讲给同事听，不要把 JSON 原样贴出来。
 
 ## 先试跑，再正式跑

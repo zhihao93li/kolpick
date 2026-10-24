@@ -6,7 +6,7 @@ import { makeCtx, type Ctx } from "./ctx.js";
 import { find } from "./find.js";
 import { invite } from "./invite.js";
 import { LarkCli } from "./lark.js";
-import { whoami } from "./ops.js";
+import { checkAuth, whoami } from "./ops.js";
 import { remind } from "./remind.js";
 import { sendApproved } from "./send.js";
 import { syncInbox } from "./sync.js";
@@ -24,6 +24,7 @@ const HELP = `kol <命令> [选项]
           [--keywords a,b] [--seeds a,b] [--handles a,b] [--min-followers N] [--max-followers N] [--youtube-hidden]
                                 找新 KOL 和邮箱，不在库里的写进档案
   whoami                        看当前登录的飞书账号
+  check                         检查飞书授权是否齐全，缺哪些权限、怎么补
 
 每封信发出前都会检查：暂停开关、永不联系、收件人是不是这位 KOL、当天额度、是否重复。
 通用选项：--dry-run 只检查、列出会做什么，不发信也不改表；--scheduled 由定时任务调用。
@@ -62,6 +63,8 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
     },
   },
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
+  // Handled in main() before anything else, since it must work without the scopes the others need.
+  check: { title: "", writes: false, run: async () => null },
 };
 
 async function main(): Promise<number> {
@@ -84,17 +87,27 @@ async function main(): Promise<number> {
 
   const cfg = loadConfig();
   const lark = new LarkCli(cfg.baseToken);
-  const me = await whoami(lark);
-  const ctx = makeCtx(cfg, lark, me, cmd.title, !!values.scheduled);
+  if (name === "check") {
+    // Runs before whoami, which itself needs a scope a fresh login may lack.
+    try {
+      console.log(JSON.stringify(await checkAuth(lark), null, 2));
+      return 0;
+    } catch (err: any) {
+      console.error(`出错：${err?.message ?? err}`);
+      return 2;
+    }
+  }
+  let ctx: Ctx | undefined;
   const logged = cmd.writes && !values["dry-run"];
   try {
+    ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
     if (logged) await ctx.run.start();
     const result = await cmd.run(ctx, values);
     if (logged) await ctx.run.finish(hasFailures(result) ? "部分完成" : "完成");
     console.log(JSON.stringify(result, null, 2));
     return 0;
   } catch (err: any) {
-    if (logged) {
+    if (logged && ctx) {
       ctx.run.notes.push(String(err?.message ?? err));
       await ctx.run.finish("失败").catch(() => {});
     }

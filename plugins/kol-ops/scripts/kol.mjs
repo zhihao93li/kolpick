@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { createRequire as __kolCreateRequire } from "node:module";
+const require = __kolCreateRequire(import.meta.url);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -11,11 +13,20 @@ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require
   if (typeof require !== "undefined") return require.apply(this, arguments);
   throw Error('Dynamic require of "' + x + '" is not supported');
 });
-var __esm = (fn, res) => function __init() {
-  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+var __esm = (fn, res, err) => function __init() {
+  if (err) throw err[0];
+  try {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  } catch (e) {
+    throw err = [e], e;
+  }
 };
 var __commonJS = (cb, mod2) => function __require2() {
-  return mod2 || (0, cb[__getOwnPropNames(cb)[0]])((mod2 = { exports: {} }).exports, mod2), mod2.exports;
+  try {
+    return mod2 || (0, cb[__getOwnPropNames(cb)[0]])((mod2 = { exports: {} }).exports, mod2), mod2.exports;
+  } catch (e) {
+    throw mod2 = 0, e;
+  }
 };
 var __export = (target, all) => {
   for (var name in all)
@@ -1171,7 +1182,7 @@ var require_base_predicate = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.isPredicate = exports.testSymbol = void 0;
-    exports.testSymbol = Symbol("test");
+    exports.testSymbol = /* @__PURE__ */ Symbol("test");
     var isPredicate = (value) => Boolean(value[exports.testSymbol]);
     exports.isPredicate = isPredicate;
   }
@@ -1224,7 +1235,7 @@ var require_predicate = __commonJS({
     var not_1 = require_not();
     var base_predicate_1 = require_base_predicate();
     var generate_argument_error_message_1 = require_generate_argument_error_message();
-    exports.validatorSymbol = Symbol("validators");
+    exports.validatorSymbol = /* @__PURE__ */ Symbol("validators");
     var Predicate = class {
       constructor(type, options = {}) {
         Object.defineProperty(this, "type", {
@@ -15244,7 +15255,7 @@ var require_shams = __commonJS({
         return true;
       }
       var obj = {};
-      var sym = Symbol("test");
+      var sym = /* @__PURE__ */ Symbol("test");
       var symObj = Object(sym);
       if (typeof sym === "string") {
         return false;
@@ -15303,7 +15314,7 @@ var require_has_symbols = __commonJS({
       if (typeof origSymbol("foo") !== "symbol") {
         return false;
       }
-      if (typeof Symbol("bar") !== "symbol") {
+      if (typeof /* @__PURE__ */ Symbol("bar") !== "symbol") {
         return false;
       }
       return hasSymbolSham();
@@ -18514,7 +18525,7 @@ var require_axios = __commonJS({
       });
       return byteStringHeaders;
     }
-    var $internals$1 = Symbol("internals");
+    var $internals$1 = /* @__PURE__ */ Symbol("internals");
     function normalizeHeader(header) {
       return header && String(header).trim().toLowerCase();
     }
@@ -19199,7 +19210,7 @@ var require_axios = __commonJS({
       }
       return url2;
     }
-    var $internals = Symbol("internals");
+    var $internals = /* @__PURE__ */ Symbol("internals");
     function countHandlers(handlers) {
       return handlers ? handlers.length : 0;
     }
@@ -19795,7 +19806,7 @@ var require_axios = __commonJS({
         }
       });
     }
-    var kInternals = Symbol("internals");
+    var kInternals = /* @__PURE__ */ Symbol("internals");
     var AxiosTransformStream = class extends stream.Transform {
       constructor(options) {
         options = utils$1.toFlatObject(options, {
@@ -20660,15 +20671,15 @@ var require_axios = __commonJS({
       https: httpsFollow
     } = followRedirects;
     var isHttps = /https:?/;
-    var kAxiosSocketListener = Symbol("axios.http.socketListener");
-    var kAxiosCurrentReq = Symbol("axios.http.currentReq");
+    var kAxiosSocketListener = /* @__PURE__ */ Symbol("axios.http.socketListener");
+    var kAxiosCurrentReq = /* @__PURE__ */ Symbol("axios.http.currentReq");
     function handleSocketError(err) {
       const current = this[kAxiosCurrentReq];
       if (current && !current.destroyed) {
         current.destroy(err);
       }
     }
-    var kAxiosInstalledTunnel = Symbol("axios.http.installedTunnel");
+    var kAxiosInstalledTunnel = /* @__PURE__ */ Symbol("axios.http.installedTunnel");
     var tunnelingAgentCache = /* @__PURE__ */ new Map();
     var tunnelingAgentCacheUser = /* @__PURE__ */ new WeakMap();
     var NODE_NATIVE_ENV_PROXY_SUPPORT = {
@@ -24866,7 +24877,7 @@ var require_dist4 = __commonJS({
     var http = __importStar2(__require("http"));
     var https_1 = __require("https");
     __exportStar2(require_helpers(), exports);
-    var INTERNAL = Symbol("AgentBaseInternalState");
+    var INTERNAL = /* @__PURE__ */ Symbol("AgentBaseInternalState");
     var Agent = class extends http.Agent {
       constructor(opts) {
         super(opts);
@@ -25162,7 +25173,7 @@ var require_dist5 = __commonJS({
     var http = __importStar2(__require("http"));
     var https_1 = __require("https");
     __exportStar2(require_helpers2(), exports);
-    var INTERNAL = Symbol("AgentBaseInternalState");
+    var INTERNAL = /* @__PURE__ */ Symbol("AgentBaseInternalState");
     var Agent = class extends http.Agent {
       constructor(opts) {
         super(opts);
@@ -30323,7 +30334,7 @@ var require_dist8 = __commonJS({
     var http = __importStar2(__require("http"));
     var https_1 = __require("https");
     __exportStar2(require_helpers5(), exports);
-    var INTERNAL = Symbol("AgentBaseInternalState");
+    var INTERNAL = /* @__PURE__ */ Symbol("AgentBaseInternalState");
     var Agent = class extends http.Agent {
       constructor(opts) {
         super(opts);
@@ -30742,7 +30753,7 @@ var require_dist10 = __commonJS({
     var http = __importStar2(__require("http"));
     var https_1 = __require("https");
     __exportStar2(require_helpers6(), exports);
-    var INTERNAL = Symbol("AgentBaseInternalState");
+    var INTERNAL = /* @__PURE__ */ Symbol("AgentBaseInternalState");
     var Agent = class extends http.Agent {
       constructor(opts) {
         super(opts);
@@ -49158,8 +49169,7 @@ var require_types2 = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.concat = exports.evalOptionsToFlags = exports.DefaultIntrinsics = void 0;
     var types_ffi_1 = require_types_ffi();
-    var UnstableSymbol = Symbol("Unstable");
-    exports.DefaultIntrinsics = Symbol("DefaultIntrinsics");
+    exports.DefaultIntrinsics = /* @__PURE__ */ Symbol("DefaultIntrinsics");
     function evalOptionsToFlags(evalOptions) {
       if (typeof evalOptions === "number") {
         return evalOptions;
@@ -59546,6 +59556,8 @@ var Base = class {
     this.lark = lark;
     this.token = token;
   }
+  lark;
+  token;
   records(table, opts) {
     return this.lark.records(table, opts);
   }
@@ -59649,6 +59661,7 @@ var Mail = class {
   constructor(lark) {
     this.lark = lark;
   }
+  lark;
   async list(mailbox, filter, max = 400) {
     const data = await this.lark.json([
       "mail",
@@ -59725,6 +59738,122 @@ function splitDraft(draft) {
 import { appendFileSync, existsSync, mkdirSync, readFileSync as readFileSync2 } from "node:fs";
 import { homedir } from "node:os";
 import { join as join2 } from "node:path";
+
+// src/kolops/lark.ts
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+var exec = promisify(execFile);
+var REQUIRED_SCOPES = [
+  "base:record:read",
+  "base:record:create",
+  "base:record:update",
+  "base:field:read",
+  "contact:user.basic_profile:readonly",
+  "mail:user_mailbox:readonly",
+  "mail:user_mailbox.message:readonly",
+  "mail:user_mailbox.message.address:read",
+  "mail:user_mailbox.message.subject:read",
+  "mail:user_mailbox.message.body:read",
+  "mail:user_mailbox.message:modify",
+  "mail:user_mailbox.message:send"
+];
+function authHint(missing) {
+  return `\u98DE\u4E66\u6388\u6743\u7F3A\u5C11\u6743\u9650\uFF1A${missing.join("\u3001")}\u3002
+\u8BF7\u5728\u7EC8\u7AEF\u8FD0\u884C\uFF1Alark-cli auth login --scope "${REQUIRED_SCOPES.join(" ")}"
+\u5B83\u4F1A\u7ED9\u51FA\u4E00\u4E2A\u94FE\u63A5\uFF0C\u5728\u6D4F\u89C8\u5668\u91CC\u6253\u5F00\u5E76\u540C\u610F\u3002\u5982\u679C\u6388\u6743\u9875\u8BF4\u5E94\u7528\u6CA1\u6709\u5F00\u901A\u8FD9\u4E9B\u6743\u9650\uFF0C\u8981\u5148\u8BF7\u98DE\u4E66\u7BA1\u7406\u5458\u5728\u5F00\u653E\u5E73\u53F0\u7ED9 lark-cli \u7528\u7684\u5E94\u7528\u5F00\u901A\u90AE\u7BB1\u548C\u901A\u8BAF\u5F55\u6743\u9650\uFF08\u8BE6\u89C1\u63D2\u4EF6 README\uFF09\u3002`;
+}
+var LarkError = class extends Error {
+  /** True when lark-cli answered with an API error: the call was refused, so nothing happened. */
+  constructor(message, definite = false) {
+    super(message);
+    this.definite = definite;
+  }
+  definite;
+};
+var LarkCli = class {
+  constructor(baseToken, bin = process.env.KOL_LARK_CLI || "lark-cli") {
+    this.baseToken = baseToken;
+    this.bin = bin;
+  }
+  baseToken;
+  bin;
+  async json(args) {
+    const out = await this.raw(args);
+    return unwrap(out, args);
+  }
+  async records(table, opts = {}) {
+    const rows = [];
+    for (let offset = 0; ; offset += 200) {
+      const args = [
+        "base",
+        "+record-list",
+        "--base-token",
+        this.baseToken,
+        "--table-id",
+        table,
+        "--format",
+        "json",
+        "--limit",
+        "200",
+        "--offset",
+        String(offset),
+        "--as",
+        "user"
+      ];
+      if (opts.filter) args.push("--filter-json", JSON.stringify(opts.filter));
+      for (const f of opts.fields ?? []) args.push("--field-id", f);
+      const page = await this.json(args);
+      rows.push(...matrixRows(page));
+      if (!page?.has_more) break;
+    }
+    return rows;
+  }
+  async raw(args, cwd) {
+    try {
+      const { stdout } = await exec(this.bin, args, { cwd, maxBuffer: 64 * 1024 * 1024 });
+      return stdout;
+    } catch (err) {
+      if (err.code === "ENOENT") throw new LarkError("\u8FD9\u53F0\u7535\u8111\u4E0A\u627E\u4E0D\u5230 lark-cli\u3002\u8BF7\u5148\u6309\u63D2\u4EF6 README \u5B89\u88C5\u5E76\u767B\u5F55 lark-cli", true);
+      const detail = (err.stdout || err.stderr || err.message || "").toString().trim();
+      let envelope;
+      for (const out of [err.stdout, err.stderr]) {
+        try {
+          envelope ??= JSON.parse(out);
+        } catch {
+        }
+      }
+      if (envelope?.error?.type === "authorization") {
+        const missing = envelope.error.missing_scopes ?? [];
+        throw new LarkError(missing.length ? authHint(missing) : `\u98DE\u4E66\u767B\u5F55\u6709\u95EE\u9898\uFF1A${envelope.error.message}\u3002\u8BF7\u5728\u7EC8\u7AEF\u8FD0\u884C lark-cli auth login \u91CD\u65B0\u767B\u5F55`, true);
+      }
+      throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${detail.slice(0, 800)}`, envelope?.ok === false);
+    }
+  }
+};
+function matrixRows(page) {
+  const fields = page?.fields ?? [];
+  const ids = page?.record_id_list ?? [];
+  return (page?.data ?? []).map((cells, i) => {
+    const row = { record_id: ids[i] };
+    fields.forEach((f, j) => row[f] = cells[j] ?? null);
+    return row;
+  });
+}
+function unwrap(stdout, args = []) {
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u6CA1\u6709\u8FD4\u56DE JSON\uFF1A${stdout.slice(0, 300)}`);
+  }
+  if (parsed && typeof parsed === "object" && "ok" in parsed) {
+    if (!parsed.ok) throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${JSON.stringify(parsed.error ?? parsed).slice(0, 800)}`, true);
+    return parsed.data ?? {};
+  }
+  return parsed;
+}
+
+// src/kolops/ops.ts
 function dataDir() {
   const dir = process.env.KOL_DATA_DIR || join2(homedir(), ".kol-ops");
   mkdirSync(dir, { recursive: true });
@@ -59742,6 +59871,17 @@ async function whoami(lark) {
   const data = await lark.json(["contact", "+get-user", "--as", "user", "--format", "json"]);
   const u = data?.user ?? data;
   return { id: String(u?.open_id ?? u?.user_id ?? ""), name: String(u?.name ?? u?.en_name ?? "") };
+}
+async function checkAuth(lark) {
+  const status = await lark.json(["auth", "status"]);
+  const user = status?.identities?.user;
+  const granted = new Set(String(user?.scope ?? "").split(/\s+/).filter(Boolean));
+  const missing = REQUIRED_SCOPES.filter((s) => !granted.has(s));
+  return {
+    \u98DE\u4E66\u8D26\u53F7: user?.userName ?? "\uFF08\u6CA1\u6709\u767B\u5F55\uFF09",
+    \u6743\u9650\u9F50\u5168: Boolean(user) && missing.length === 0,
+    ...missing.length ? { \u7F3A\u5C11\u7684\u6743\u9650: missing, \u600E\u4E48\u8865: authHint(missing) } : {}
+  };
 }
 var Journal = class {
   file = join2(dataDir(), "sends.jsonl");
@@ -59790,6 +59930,11 @@ var Run = class {
     this.me = me;
     this.scheduled = scheduled;
   }
+  base;
+  cfg;
+  title;
+  me;
+  scheduled;
   id = "";
   counts = { \u5904\u7406\u6765\u4FE1: 0, \u53D1\u51FA\u90AE\u4EF6: 0, \u65B0\u589E\u5F85\u5BA1: 0 };
   notes = [];
@@ -59923,6 +60068,8 @@ var ApifyRunner = class {
     this.ledger = ledger;
     this.client = new ApifyClient({ token });
   }
+  maxSpend;
+  ledger;
   client;
   spent = 0;
   async run(key, input, expectedItems) {
@@ -59961,6 +60108,8 @@ var Creator = class {
     this.handle = handle;
     Object.assign(this, init);
   }
+  platform;
+  handle;
   profileUrl = "";
   name = "";
   followers = null;
@@ -60567,91 +60716,6 @@ function handleOf(s) {
   return normalizeHandle(m ? m[1] : s.includes("/") ? "" : s);
 }
 
-// src/kolops/lark.ts
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-var exec = promisify(execFile);
-var LarkError = class extends Error {
-  /** True when lark-cli answered with an API error: the call was refused, so nothing happened. */
-  constructor(message, definite = false) {
-    super(message);
-    this.definite = definite;
-  }
-};
-var LarkCli = class {
-  constructor(baseToken, bin = process.env.KOL_LARK_CLI || "lark-cli") {
-    this.baseToken = baseToken;
-    this.bin = bin;
-  }
-  async json(args) {
-    const out = await this.raw(args);
-    return unwrap(out, args);
-  }
-  async records(table, opts = {}) {
-    const rows = [];
-    for (let offset = 0; ; offset += 200) {
-      const args = [
-        "base",
-        "+record-list",
-        "--base-token",
-        this.baseToken,
-        "--table-id",
-        table,
-        "--format",
-        "json",
-        "--limit",
-        "200",
-        "--offset",
-        String(offset),
-        "--as",
-        "user"
-      ];
-      if (opts.filter) args.push("--filter-json", JSON.stringify(opts.filter));
-      for (const f of opts.fields ?? []) args.push("--field-id", f);
-      const page = await this.json(args);
-      rows.push(...matrixRows(page));
-      if (!page?.has_more) break;
-    }
-    return rows;
-  }
-  async raw(args, cwd) {
-    try {
-      const { stdout } = await exec(this.bin, args, { cwd, maxBuffer: 64 * 1024 * 1024 });
-      return stdout;
-    } catch (err) {
-      const detail = (err.stdout || err.stderr || err.message || "").toString().trim();
-      let refused = false;
-      try {
-        refused = JSON.parse(err.stdout).ok === false;
-      } catch {
-      }
-      throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${detail.slice(0, 800)}`, refused);
-    }
-  }
-};
-function matrixRows(page) {
-  const fields = page?.fields ?? [];
-  const ids = page?.record_id_list ?? [];
-  return (page?.data ?? []).map((cells, i) => {
-    const row = { record_id: ids[i] };
-    fields.forEach((f, j) => row[f] = cells[j] ?? null);
-    return row;
-  });
-}
-function unwrap(stdout, args = []) {
-  let parsed;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch {
-    throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u6CA1\u6709\u8FD4\u56DE JSON\uFF1A${stdout.slice(0, 300)}`);
-  }
-  if (parsed && typeof parsed === "object" && "ok" in parsed) {
-    if (!parsed.ok) throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${JSON.stringify(parsed.error ?? parsed).slice(0, 800)}`, true);
-    return parsed.data ?? {};
-  }
-  return parsed;
-}
-
 // src/kolops/send.ts
 var SENDING_TYPES = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"];
 function isApproved(r) {
@@ -61203,6 +61267,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
           [--keywords a,b] [--seeds a,b] [--handles a,b] [--min-followers N] [--max-followers N] [--youtube-hidden]
                                 \u627E\u65B0 KOL \u548C\u90AE\u7BB1\uFF0C\u4E0D\u5728\u5E93\u91CC\u7684\u5199\u8FDB\u6863\u6848
   whoami                        \u770B\u5F53\u524D\u767B\u5F55\u7684\u98DE\u4E66\u8D26\u53F7
+  check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\uFF0C\u7F3A\u54EA\u4E9B\u6743\u9650\u3001\u600E\u4E48\u8865
 
 \u6BCF\u5C01\u4FE1\u53D1\u51FA\u524D\u90FD\u4F1A\u68C0\u67E5\uFF1A\u6682\u505C\u5F00\u5173\u3001\u6C38\u4E0D\u8054\u7CFB\u3001\u6536\u4EF6\u4EBA\u662F\u4E0D\u662F\u8FD9\u4F4D KOL\u3001\u5F53\u5929\u989D\u5EA6\u3001\u662F\u5426\u91CD\u590D\u3002
 \u901A\u7528\u9009\u9879\uFF1A--dry-run \u53EA\u68C0\u67E5\u3001\u5217\u51FA\u4F1A\u505A\u4EC0\u4E48\uFF0C\u4E0D\u53D1\u4FE1\u4E5F\u4E0D\u6539\u8868\uFF1B--scheduled \u7531\u5B9A\u65F6\u4EFB\u52A1\u8C03\u7528\u3002
@@ -61248,7 +61313,9 @@ var COMMANDS = {
       });
     }
   },
-  whoami: { title: "", writes: false, run: async (ctx) => ctx.me }
+  whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
+  // Handled in main() before anything else, since it must work without the scopes the others need.
+  check: { title: "", writes: false, run: async () => null }
 };
 async function main() {
   const str = { type: "string" };
@@ -61285,17 +61352,26 @@ async function main() {
   }
   const cfg = loadConfig();
   const lark = new LarkCli(cfg.baseToken);
-  const me = await whoami(lark);
-  const ctx = makeCtx(cfg, lark, me, cmd.title, !!values.scheduled);
+  if (name === "check") {
+    try {
+      console.log(JSON.stringify(await checkAuth(lark), null, 2));
+      return 0;
+    } catch (err) {
+      console.error(`\u51FA\u9519\uFF1A${err?.message ?? err}`);
+      return 2;
+    }
+  }
+  let ctx;
   const logged = cmd.writes && !values["dry-run"];
   try {
+    ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
     if (logged) await ctx.run.start();
     const result = await cmd.run(ctx, values);
     if (logged) await ctx.run.finish(hasFailures(result) ? "\u90E8\u5206\u5B8C\u6210" : "\u5B8C\u6210");
     console.log(JSON.stringify(result, null, 2));
     return 0;
   } catch (err) {
-    if (logged) {
+    if (logged && ctx) {
       ctx.run.notes.push(String(err?.message ?? err));
       await ctx.run.finish("\u5931\u8D25").catch(() => {
       });

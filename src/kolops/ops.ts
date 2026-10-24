@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { Base, dayOf, linkIds, option, type Fields } from "./base.js";
 import type { Config } from "./config.js";
-import type { Lark } from "./lark.js";
+import { authHint, REQUIRED_SCOPES, type Lark } from "./lark.js";
 
 export function dataDir(): string {
   const dir = process.env.KOL_DATA_DIR || join(homedir(), ".kol-ops");
@@ -31,6 +31,19 @@ export async function whoami(lark: Lark): Promise<Me> {
   const data = await lark.json(["contact", "+get-user", "--as", "user", "--format", "json"]);
   const u = data?.user ?? data;
   return { id: String(u?.open_id ?? u?.user_id ?? ""), name: String(u?.name ?? u?.en_name ?? "") };
+}
+
+/** `kol check`: whether lark-cli is logged in with every scope the commands need. Needs no scope itself. */
+export async function checkAuth(lark: Lark) {
+  const status = await lark.json(["auth", "status"]);
+  const user = status?.identities?.user;
+  const granted = new Set(String(user?.scope ?? "").split(/\s+/).filter(Boolean));
+  const missing = REQUIRED_SCOPES.filter((s) => !granted.has(s));
+  return {
+    飞书账号: user?.userName ?? "（没有登录）",
+    权限齐全: Boolean(user) && missing.length === 0,
+    ...(missing.length ? { 缺少的权限: missing, 怎么补: authHint(missing) } : {}),
+  };
 }
 
 /**
