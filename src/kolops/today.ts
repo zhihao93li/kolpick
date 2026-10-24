@@ -10,15 +10,14 @@ export async function todayLists(ctx: Ctx) {
   const cfg = ctx.cfg;
   const t = cfg.tables;
   const d = today(cfg);
-  const [s, pendingMail, reviews, trials] = await Promise.all([
+  const [s, pendingMail, reviews] = await Promise.all([
     loadSnapshot(ctx.base, cfg),
     ctx.base.records(t.contacts, { filter: { logic: "and", conditions: [["待处理", "==", true], ["方向", "intersects", ["收到"]]] },
       fields: ["摘要", "KOL", "日期", "渠道", "待处理", "方向"] }),
     ctx.base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核"]]] },
       fields: ["审核项", "类型", "提出时间", "KOL", "状态", "发送渠道"] }),
-    ctx.base.records(t.followups, { filter: { logic: "and", conditions: [["阶段", "intersects", ["体验中", "已约发布"]]] },
-      fields: ["账号名称", "阶段", "体验码", "体验码到期", "约定发布日期"] }),
   ]);
+  const trials = [...s.followups.values()].filter((f) => ["体验中", "已约发布"].includes(option(f["阶段"])));
   const name = (fid: string) => {
     const f = s.followups.get(fid);
     return f ? displayName(s, f) : fid;

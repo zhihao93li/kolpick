@@ -49,3 +49,11 @@ it("check lists what a base is missing", async () => {
   expect(r.缺少的表).toEqual(expect.arrayContaining([TABLES.settings, TABLES.mailboxes, TABLES.templates]));
   expect(r.缺少的字段).toEqual([`${TABLES.followups}.下一步`]);
 });
+
+it("adds 更新时间 to 档案 and 跟进 when a base lacks it", async () => {
+  const lark = olderBase();
+  lark.schemas![TABLES.profiles] = lark.schemas![TABLES.profiles].filter((f) => f !== "更新时间");
+  const r = await setupBase(new Base(lark, BASE), { project: "p", dryRun: false });
+  expect(r.加字段).toEqual([`${TABLES.profiles}.更新时间`]);
+  expect(lark.created.at(-1)!.join(" ")).toContain('"type":"updated_at"');
+});

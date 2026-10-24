@@ -1,6 +1,7 @@
 import { Base, cellTime, dayOf, linkIds } from "./base.js";
 import type { Ctx } from "./ctx.js";
-import { profileEmails } from "./data.js";
+import { cachedRecords } from "./cache.js";
+import { FOLLOWUP_FIELDS, PROFILE_FIELDS, profileEmails } from "./data.js";
 import { listProjects } from "./projects.js";
 import { TABLES } from "./schema.js";
 
@@ -18,9 +19,10 @@ export async function contactedElsewhere(ctx: Ctx): Promise<Map<string, string>>
     const other = new Base(ctx.base.lark, p.baseToken);
     let profiles, followups;
     try {
+      // Same fields as the snapshot, so this shares that project's local copy instead of reading it in full.
       [profiles, followups] = await Promise.all([
-        other.records(TABLES.profiles, { fields: ["公开邮箱", "其他邮箱"] }),
-        other.records(TABLES.followups, { fields: ["档案", "最近联系日期", "首次邀约日期"] }),
+        cachedRecords(other, TABLES.profiles, PROFILE_FIELDS, ctx.cfg.timezone),
+        cachedRecords(other, TABLES.followups, FOLLOWUP_FIELDS, ctx.cfg.timezone),
       ]);
     } catch (err: any) {
       throw new Error(`读不到项目「${p.name}」的飞书表，没法检查跨项目联系记录。`

@@ -23,7 +23,7 @@ export type TableKey = keyof typeof TABLES;
 
 export interface FieldDef {
   name: string;
-  type: "text" | "number" | "checkbox" | "datetime" | "select" | "user";
+  type: "text" | "number" | "checkbox" | "datetime" | "select" | "user" | "updated_at";
   options?: string[];
   multiple?: boolean;
 }
@@ -76,6 +76,12 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
   ],
 };
 
+/** System fields the commands rely on in the big tables: 更新时间 lets them read only what changed (cache.ts). */
+export const SYSTEM_FIELDS: Partial<Record<TableKey, FieldDef[]>> = {
+  profiles: [{ name: "更新时间", type: "updated_at" }],
+  followups: [{ name: "更新时间", type: "updated_at" }],
+};
+
 /** Defaults written into a new 设置 row, and used when a cell is left empty. */
 export const SETTING_DEFAULTS = {
   时区: "+08:00",
@@ -91,9 +97,9 @@ export const SETTING_DEFAULTS = {
 /** Fields of the existing tables that the commands can't work without; `kol check` looks for these. */
 export const REQUIRED_FIELDS: Partial<Record<TableKey, string[]>> = {
   profiles: ["账号", "账号名称", "称呼", "主页链接", "公开邮箱", "其他邮箱", "联系许可", "联系许可原因", "粉丝数",
-    "主要平台", "内容类型", "市场", "語言", "合作邀约方向", "入库批次", "跟进记录", "备注"],
+    "主要平台", "内容类型", "市场", "語言", "合作邀约方向", "入库批次", "跟进记录", "备注", "更新时间"],
   followups: ["账号名称", "档案", "阶段", "当前轮到谁", "级别", "对方要求", "联系渠道", "邀约批次", "首次邀约日期",
-    "下次跟进日期", "最近联系日期", "最后来信日期", "下一步", "结案原因"],
+    "下次跟进日期", "最近联系日期", "最后来信日期", "下一步", "结案原因", "更新时间"],
   contacts: ["方向", "渠道", "Message ID", "摘要", "内容", "日期", "待处理", "KOL"],
   reviews: ["类型", "状态", "处理", "审核结果", "确认发出", "KOL", "收件人", "发送渠道", "邮件草稿", "审核项", "要你定什么",
     "执行时间", "执行结果"],

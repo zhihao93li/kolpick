@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { option, text, type Base } from "./base.js";
-import { REQUIRED_FIELDS, SETTING_DEFAULTS, SETTINGS_TABLES, TABLES, type FieldDef, type TableKey } from "./schema.js";
+import { REQUIRED_FIELDS, SETTING_DEFAULTS, SETTINGS_TABLES, SYSTEM_FIELDS, TABLES, type FieldDef, type TableKey } from "./schema.js";
 import { parseTemplateFile } from "./templates.js";
 
 function fieldJson(f: FieldDef): Record<string, unknown> {
@@ -55,6 +55,18 @@ export async function setupBase(base: Base, o: { project: string; dryRun: boolea
       report.加字段.push(`${table}.${f.name}`);
       if (!o.dryRun) {
         await base.lark.json(["base", "+field-create", "--base-token", base.token, "--table-id", table,
+          "--json", JSON.stringify(fieldJson(f)), "--as", "user"]);
+      }
+    }
+  }
+
+  for (const [key, defs] of Object.entries(SYSTEM_FIELDS) as [TableKey, FieldDef[]][]) {
+    const have = await base.fieldNames(TABLES[key]);
+    if (have == null) continue; // a base without this table is reported by check, not created here
+    for (const f of defs.filter((d) => !have.includes(d.name))) {
+      report.加字段.push(`${TABLES[key]}.${f.name}`);
+      if (!o.dryRun) {
+        await base.lark.json(["base", "+field-create", "--base-token", base.token, "--table-id", TABLES[key],
           "--json", JSON.stringify(fieldJson(f)), "--as", "user"]);
       }
     }

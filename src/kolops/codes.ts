@@ -51,9 +51,7 @@ export async function syncCodes(ctx: Ctx, o: { dryRun: boolean; fetchImpl?: type
   if (!key) throw new Error(`这台电脑没有项目「${cfg.project}」的接口密钥。请向项目负责人要，然后运行 kol project set-key ${cfg.project} <密钥>`);
 
   const s = await loadSnapshot(ctx.base, cfg);
-  const rows = await ctx.base.records(cfg.tables.followups, {
-    fields: ["账号名称", "档案", "阶段", "体验码", "体验码上限", "体验码已用", "体验码到期", "活动码"],
-  });
+  const rows = [...s.followups.values()];
   const open = rows.filter((f) => option(f["阶段"]) !== "结案" && (text(f["体验码"]) || text(f["活动码"])));
   const codes = [...new Set(open.flatMap((f) => [text(f["体验码"]), text(f["活动码"])]).filter(Boolean))];
   const info = await lookupCodes(cfg.dataApi, key, codes, o.fetchImpl);

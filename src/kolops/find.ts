@@ -6,7 +6,7 @@ import { DEFAULT_PARAMS, discover, type DiscoveryParams } from "../discovery/run
 import { text } from "./base.js";
 import { withBio } from "./classify.js";
 import type { Ctx } from "./ctx.js";
-import { profileEmails } from "./data.js";
+import { loadSnapshot, profileEmails } from "./data.js";
 import { dataDir } from "./ops.js";
 
 const PLATFORM_OPTION: Record<Platform, string> = { instagram: "Instagram", youtube: "YouTube", tiktok: "TikTok" };
@@ -63,7 +63,7 @@ export async function find(ctx: Ctx, o: FindOpts) {
   const t = ctx.cfg.tables;
   const batches = await ctx.base.fieldOptions(t.profiles, "入库批次");
   if (!batches?.includes(o.batch)) throw new Error(`「${o.batch}」还不是「入库批次」的选项，先在飞书里加上再找人（免得花了钱写不进去）`);
-  const existing = await ctx.base.records(t.profiles, { fields: ["账号", "主页链接", "公开邮箱", "其他邮箱", "联系许可"] });
+  const existing = [...(await loadSnapshot(ctx.base, ctx.cfg)).profiles.values()];
   const handles = new Set<string>();
   const emails = new Set<string>();
   for (const p of existing) {

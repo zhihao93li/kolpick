@@ -1,5 +1,6 @@
 import { Base, day, emailsIn, linkIds, option, text } from "./base.js";
 import type { Config } from "./config.js";
+import { cachedRecords } from "./cache.js";
 import type { Row } from "./lark.js";
 
 /** The parts of the base that most commands need, read once per run. */
@@ -15,13 +16,14 @@ export interface Snapshot {
 export const PROFILE_FIELDS = ["账号", "账号名称", "称呼", "主页链接", "公开邮箱", "其他邮箱", "联系许可", "联系许可原因",
   "粉丝数", "主要平台", "内容类型", "市场", "入库批次", "跟进记录"];
 export const FOLLOWUP_FIELDS = ["账号名称", "档案", "阶段", "当前轮到谁", "级别", "对方要求", "联系渠道", "邀约批次",
-  "首次邀约日期", "下次跟进日期", "最近联系日期", "最后来信日期", "下一步", "结案原因"];
+  "首次邀约日期", "下次跟进日期", "最近联系日期", "最后来信日期", "下一步", "结案原因",
+  "体验码", "体验码上限", "体验码已用", "体验码到期", "活动码", "约定发布日期"];
 
 export async function loadSnapshot(base: Base, cfg: Config): Promise<Snapshot> {
   const t = cfg.tables;
   const [profiles, followups] = await Promise.all([
-    base.records(t.profiles, { fields: PROFILE_FIELDS }),
-    base.records(t.followups, { fields: FOLLOWUP_FIELDS }),
+    cachedRecords(base, t.profiles, PROFILE_FIELDS, cfg.timezone),
+    cachedRecords(base, t.followups, FOLLOWUP_FIELDS, cfg.timezone),
   ]);
   return buildSnapshot(profiles, followups);
 }

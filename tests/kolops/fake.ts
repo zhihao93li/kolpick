@@ -22,9 +22,10 @@ export class FakeLark implements Lark {
     return (this.tables[name] ??= []);
   }
 
+  /** Like Feishu, every create and update stamps the system field 更新时间. */
   add(name: string, fields: Record<string, any>): string {
     const id = `rec${++this.n}`;
-    this.table(name).push({ record_id: id, ...fields });
+    this.table(name).push({ record_id: id, 更新时间: Date.now(), ...fields });
     return id;
   }
 
@@ -44,7 +45,7 @@ export class FakeLark implements Lark {
       for (const [id, f] of Object.entries<any>(JSON.parse(flag("--json")).update_records)) {
         const row = this.table(flag("--table-id")).find((r) => r.record_id === id);
         if (!row) throw new Error(`no record ${id}`);
-        Object.assign(row, f);
+        Object.assign(row, f, { 更新时间: Date.now() });
       }
       return {};
     }

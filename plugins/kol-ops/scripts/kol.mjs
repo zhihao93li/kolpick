@@ -16545,7 +16545,7 @@ var require_common = __commonJS({
 var require_browser = __commonJS({
   "node_modules/debug/src/browser.js"(exports, module) {
     exports.formatArgs = formatArgs;
-    exports.save = save2;
+    exports.save = save3;
     exports.load = load2;
     exports.useColors = useColors;
     exports.storage = localstorage();
@@ -16672,7 +16672,7 @@ var require_browser = __commonJS({
     }
     exports.log = console.debug || console.log || (() => {
     });
-    function save2(namespaces) {
+    function save3(namespaces) {
       try {
         if (namespaces) {
           exports.storage.setItem("debug", namespaces);
@@ -16719,7 +16719,7 @@ var require_node = __commonJS({
     exports.init = init;
     exports.log = log;
     exports.formatArgs = formatArgs;
-    exports.save = save2;
+    exports.save = save3;
     exports.load = load2;
     exports.useColors = useColors;
     exports.destroy = util.deprecate(
@@ -16855,7 +16855,7 @@ var require_node = __commonJS({
     function log(...args) {
       return process.stderr.write(util.formatWithOptions(exports.inspectOpts, ...args) + "\n");
     }
-    function save2(namespaces) {
+    function save3(namespaces) {
       if (namespaces) {
         process.env.DEBUG = namespaces;
       } else {
@@ -34537,7 +34537,7 @@ var require_util2 = __commonJS({
       return path;
     }
     exports.normalize = normalize;
-    function join5(aRoot, aPath) {
+    function join6(aRoot, aPath) {
       if (aRoot === "") {
         aRoot = ".";
       }
@@ -34569,7 +34569,7 @@ var require_util2 = __commonJS({
       }
       return joined;
     }
-    exports.join = join5;
+    exports.join = join6;
     exports.isAbsolute = function(aPath) {
       return aPath.charAt(0) === "/" || urlRegexp.test(aPath);
     };
@@ -34742,7 +34742,7 @@ var require_util2 = __commonJS({
             parsed.path = parsed.path.substring(0, index + 1);
           }
         }
-        sourceURL = join5(urlGenerate(parsed), sourceURL);
+        sourceURL = join6(urlGenerate(parsed), sourceURL);
       }
       return normalize(sourceURL);
     }
@@ -36544,7 +36544,7 @@ var require_escodegen = __commonJS({
       function noEmptySpace() {
         return space ? space : " ";
       }
-      function join5(left, right) {
+      function join6(left, right) {
         var leftSource, rightSource, leftCharCode, rightCharCode;
         leftSource = toSourceNodeWhenNeeded(left).toString();
         if (leftSource.length === 0) {
@@ -36633,9 +36633,9 @@ var require_escodegen = __commonJS({
         return "/*" + comment.value + "*/";
       }
       function addComments(stmt, result) {
-        var i, len, comment, save2, tailingToStatement, specialBase, fragment, extRange, range, prevRange, prefix, infix, suffix, count;
+        var i, len, comment, save3, tailingToStatement, specialBase, fragment, extRange, range, prevRange, prefix, infix, suffix, count;
         if (stmt.leadingComments && stmt.leadingComments.length > 0) {
-          save2 = result;
+          save3 = result;
           if (preserveBlankLines) {
             comment = stmt.leadingComments[0];
             result = [];
@@ -36682,7 +36682,7 @@ var require_escodegen = __commonJS({
               result.push(addIndent(fragment));
             }
           }
-          result.push(addIndent(save2));
+          result.push(addIndent(save3));
         }
         if (stmt.trailingComments) {
           if (preserveBlankLines) {
@@ -36875,8 +36875,8 @@ var require_escodegen = __commonJS({
           } else {
             result.push(that.generateExpression(stmt.left, Precedence.Call, E_TTT));
           }
-          result = join5(result, operator);
-          result = [join5(
+          result = join6(result, operator);
+          result = [join6(
             result,
             that.generateExpression(stmt.right, Precedence.Assignment, E_TTT)
           ), ")"];
@@ -37019,11 +37019,11 @@ var require_escodegen = __commonJS({
           var result, fragment;
           result = ["class"];
           if (stmt.id) {
-            result = join5(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
+            result = join6(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
           }
           if (stmt.superClass) {
-            fragment = join5("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
-            result = join5(result, fragment);
+            fragment = join6("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
+            result = join6(result, fragment);
           }
           result.push(space);
           result.push(this.generateStatement(stmt.body, S_TFFT));
@@ -37036,9 +37036,9 @@ var require_escodegen = __commonJS({
           return escapeDirective(stmt.directive) + this.semicolon(flags);
         },
         DoWhileStatement: function(stmt, flags) {
-          var result = join5("do", this.maybeBlock(stmt.body, S_TFFF));
+          var result = join6("do", this.maybeBlock(stmt.body, S_TFFF));
           result = this.maybeBlockSuffix(stmt.body, result);
-          return join5(result, [
+          return join6(result, [
             "while" + space + "(",
             this.generateExpression(stmt.test, Precedence.Sequence, E_TTT),
             ")" + this.semicolon(flags)
@@ -37074,11 +37074,11 @@ var require_escodegen = __commonJS({
         ExportDefaultDeclaration: function(stmt, flags) {
           var result = ["export"], bodyFlags;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
-          result = join5(result, "default");
+          result = join6(result, "default");
           if (isStatement(stmt.declaration)) {
-            result = join5(result, this.generateStatement(stmt.declaration, bodyFlags));
+            result = join6(result, this.generateStatement(stmt.declaration, bodyFlags));
           } else {
-            result = join5(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
+            result = join6(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
           }
           return result;
         },
@@ -37086,15 +37086,15 @@ var require_escodegen = __commonJS({
           var result = ["export"], bodyFlags, that = this;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
           if (stmt.declaration) {
-            return join5(result, this.generateStatement(stmt.declaration, bodyFlags));
+            return join6(result, this.generateStatement(stmt.declaration, bodyFlags));
           }
           if (stmt.specifiers) {
             if (stmt.specifiers.length === 0) {
-              result = join5(result, "{" + space + "}");
+              result = join6(result, "{" + space + "}");
             } else if (stmt.specifiers[0].type === Syntax.ExportBatchSpecifier) {
-              result = join5(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
+              result = join6(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
             } else {
-              result = join5(result, "{");
+              result = join6(result, "{");
               withIndent(function(indent2) {
                 var i, iz;
                 result.push(newline);
@@ -37112,7 +37112,7 @@ var require_escodegen = __commonJS({
               result.push(base + "}");
             }
             if (stmt.source) {
-              result = join5(result, [
+              result = join6(result, [
                 "from" + space,
                 // ModuleSpecifier
                 this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -37200,7 +37200,7 @@ var require_escodegen = __commonJS({
           ];
           cursor = 0;
           if (stmt.specifiers[cursor].type === Syntax.ImportDefaultSpecifier) {
-            result = join5(result, [
+            result = join6(result, [
               this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
             ]);
             ++cursor;
@@ -37210,7 +37210,7 @@ var require_escodegen = __commonJS({
               result.push(",");
             }
             if (stmt.specifiers[cursor].type === Syntax.ImportNamespaceSpecifier) {
-              result = join5(result, [
+              result = join6(result, [
                 space,
                 this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
               ]);
@@ -37239,7 +37239,7 @@ var require_escodegen = __commonJS({
               }
             }
           }
-          result = join5(result, [
+          result = join6(result, [
             "from" + space,
             // ModuleSpecifier
             this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -37293,7 +37293,7 @@ var require_escodegen = __commonJS({
           return result;
         },
         ThrowStatement: function(stmt, flags) {
-          return [join5(
+          return [join6(
             "throw",
             this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
           ), this.semicolon(flags)];
@@ -37304,7 +37304,7 @@ var require_escodegen = __commonJS({
           result = this.maybeBlockSuffix(stmt.block, result);
           if (stmt.handlers) {
             for (i = 0, iz = stmt.handlers.length; i < iz; ++i) {
-              result = join5(result, this.generateStatement(stmt.handlers[i], S_TFFF));
+              result = join6(result, this.generateStatement(stmt.handlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(stmt.handlers[i].body, result);
               }
@@ -37312,7 +37312,7 @@ var require_escodegen = __commonJS({
           } else {
             guardedHandlers = stmt.guardedHandlers || [];
             for (i = 0, iz = guardedHandlers.length; i < iz; ++i) {
-              result = join5(result, this.generateStatement(guardedHandlers[i], S_TFFF));
+              result = join6(result, this.generateStatement(guardedHandlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(guardedHandlers[i].body, result);
               }
@@ -37320,13 +37320,13 @@ var require_escodegen = __commonJS({
             if (stmt.handler) {
               if (Array.isArray(stmt.handler)) {
                 for (i = 0, iz = stmt.handler.length; i < iz; ++i) {
-                  result = join5(result, this.generateStatement(stmt.handler[i], S_TFFF));
+                  result = join6(result, this.generateStatement(stmt.handler[i], S_TFFF));
                   if (stmt.finalizer || i + 1 !== iz) {
                     result = this.maybeBlockSuffix(stmt.handler[i].body, result);
                   }
                 }
               } else {
-                result = join5(result, this.generateStatement(stmt.handler, S_TFFF));
+                result = join6(result, this.generateStatement(stmt.handler, S_TFFF));
                 if (stmt.finalizer) {
                   result = this.maybeBlockSuffix(stmt.handler.body, result);
                 }
@@ -37334,7 +37334,7 @@ var require_escodegen = __commonJS({
             }
           }
           if (stmt.finalizer) {
-            result = join5(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
+            result = join6(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
           }
           return result;
         },
@@ -37368,7 +37368,7 @@ var require_escodegen = __commonJS({
           withIndent(function() {
             if (stmt.test) {
               result = [
-                join5("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
+                join6("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
                 ":"
               ];
             } else {
@@ -37416,9 +37416,9 @@ var require_escodegen = __commonJS({
             result.push(this.maybeBlock(stmt.consequent, S_TFFF));
             result = this.maybeBlockSuffix(stmt.consequent, result);
             if (stmt.alternate.type === Syntax.IfStatement) {
-              result = join5(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
+              result = join6(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
             } else {
-              result = join5(result, join5("else", this.maybeBlock(stmt.alternate, bodyFlags)));
+              result = join6(result, join6("else", this.maybeBlock(stmt.alternate, bodyFlags)));
             }
           } else {
             result.push(this.maybeBlock(stmt.consequent, bodyFlags));
@@ -37519,7 +37519,7 @@ var require_escodegen = __commonJS({
         },
         ReturnStatement: function(stmt, flags) {
           if (stmt.argument) {
-            return [join5(
+            return [join6(
               "return",
               this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
             ), this.semicolon(flags)];
@@ -37608,14 +37608,14 @@ var require_escodegen = __commonJS({
           if (leftSource.charCodeAt(leftSource.length - 1) === 47 && esutils.code.isIdentifierPartES5(expr.operator.charCodeAt(0))) {
             result = [fragment, noEmptySpace(), expr.operator];
           } else {
-            result = join5(fragment, expr.operator);
+            result = join6(fragment, expr.operator);
           }
           fragment = this.generateExpression(expr.right, rightPrecedence, flags);
           if (expr.operator === "/" && fragment.toString().charAt(0) === "/" || expr.operator.slice(-1) === "<" && fragment.toString().slice(0, 3) === "!--") {
             result.push(noEmptySpace());
             result.push(fragment);
           } else {
-            result = join5(result, fragment);
+            result = join6(result, fragment);
           }
           if (expr.operator === "in" && !(flags & F_ALLOW_IN)) {
             return ["(", result, ")"];
@@ -37655,7 +37655,7 @@ var require_escodegen = __commonJS({
           var result, length, i, iz, itemFlags;
           length = expr["arguments"].length;
           itemFlags = flags & F_ALLOW_UNPARATH_NEW && !parentheses && length === 0 ? E_TFT : E_TFF;
-          result = join5(
+          result = join6(
             "new",
             this.generateExpression(expr.callee, Precedence.New, itemFlags)
           );
@@ -37705,11 +37705,11 @@ var require_escodegen = __commonJS({
           var result, fragment, rightCharCode, leftSource, leftCharCode;
           fragment = this.generateExpression(expr.argument, Precedence.Unary, E_TTT);
           if (space === "") {
-            result = join5(expr.operator, fragment);
+            result = join6(expr.operator, fragment);
           } else {
             result = [expr.operator];
             if (expr.operator.length > 2) {
-              result = join5(result, fragment);
+              result = join6(result, fragment);
             } else {
               leftSource = toSourceNodeWhenNeeded(result).toString();
               leftCharCode = leftSource.charCodeAt(leftSource.length - 1);
@@ -37732,7 +37732,7 @@ var require_escodegen = __commonJS({
             result = "yield";
           }
           if (expr.argument) {
-            result = join5(
+            result = join6(
               result,
               this.generateExpression(expr.argument, Precedence.Yield, E_TTT)
             );
@@ -37740,7 +37740,7 @@ var require_escodegen = __commonJS({
           return parenthesize(result, Precedence.Yield, precedence);
         },
         AwaitExpression: function(expr, precedence, flags) {
-          var result = join5(
+          var result = join6(
             expr.all ? "await*" : "await",
             this.generateExpression(expr.argument, Precedence.Await, E_TTT)
           );
@@ -37823,11 +37823,11 @@ var require_escodegen = __commonJS({
           var result, fragment;
           result = ["class"];
           if (expr.id) {
-            result = join5(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
+            result = join6(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
           }
           if (expr.superClass) {
-            fragment = join5("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
-            result = join5(result, fragment);
+            fragment = join6("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
+            result = join6(result, fragment);
           }
           result.push(space);
           result.push(this.generateStatement(expr.body, S_TFFT));
@@ -37842,7 +37842,7 @@ var require_escodegen = __commonJS({
           }
           if (expr.kind === "get" || expr.kind === "set") {
             fragment = [
-              join5(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
+              join6(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
               this.generateFunctionBody(expr.value)
             ];
           } else {
@@ -37852,7 +37852,7 @@ var require_escodegen = __commonJS({
               this.generateFunctionBody(expr.value)
             ];
           }
-          return join5(result, fragment);
+          return join6(result, fragment);
         },
         Property: function(expr, precedence, flags) {
           if (expr.kind === "get" || expr.kind === "set") {
@@ -38047,7 +38047,7 @@ var require_escodegen = __commonJS({
               for (i = 0, iz = expr.blocks.length; i < iz; ++i) {
                 fragment = that.generateExpression(expr.blocks[i], Precedence.Sequence, E_TTT);
                 if (i > 0 || extra.moz.comprehensionExpressionStartsWithAssignment) {
-                  result = join5(result, fragment);
+                  result = join6(result, fragment);
                 } else {
                   result.push(fragment);
                 }
@@ -38055,13 +38055,13 @@ var require_escodegen = __commonJS({
             });
           }
           if (expr.filter) {
-            result = join5(result, "if" + space);
+            result = join6(result, "if" + space);
             fragment = this.generateExpression(expr.filter, Precedence.Sequence, E_TTT);
-            result = join5(result, ["(", fragment, ")"]);
+            result = join6(result, ["(", fragment, ")"]);
           }
           if (!extra.moz.comprehensionExpressionStartsWithAssignment) {
             fragment = this.generateExpression(expr.body, Precedence.Assignment, E_TTT);
-            result = join5(result, fragment);
+            result = join6(result, fragment);
           }
           result.push(expr.type === Syntax.GeneratorExpression ? ")" : "]");
           return result;
@@ -38077,8 +38077,8 @@ var require_escodegen = __commonJS({
           } else {
             fragment = this.generateExpression(expr.left, Precedence.Call, E_TTT);
           }
-          fragment = join5(fragment, expr.of ? "of" : "in");
-          fragment = join5(fragment, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
+          fragment = join6(fragment, expr.of ? "of" : "in");
+          fragment = join6(fragment, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
           return ["for" + space + "(", fragment, ")"];
         },
         SpreadElement: function(expr, precedence, flags) {
@@ -59531,7 +59531,7 @@ var require_dist19 = __commonJS({
 });
 
 // src/kolops/cli.ts
-import { readFileSync as readFileSync7 } from "node:fs";
+import { readFileSync as readFileSync8 } from "node:fs";
 import { parseArgs } from "node:util";
 
 // src/kolops/base.ts
@@ -59736,6 +59736,10 @@ var SETTINGS_TABLES = {
     { name: "\u5907\u6CE8", type: "text" }
   ]
 };
+var SYSTEM_FIELDS = {
+  profiles: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }],
+  followups: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }]
+};
 var SETTING_DEFAULTS = {
   \u65F6\u533A: "+08:00",
   \u5168\u516C\u53F8\u6BCF\u65E5\u4E0A\u9650: 450,
@@ -59764,7 +59768,8 @@ var REQUIRED_FIELDS = {
     "\u5408\u4F5C\u9080\u7EA6\u65B9\u5411",
     "\u5165\u5E93\u6279\u6B21",
     "\u8DDF\u8FDB\u8BB0\u5F55",
-    "\u5907\u6CE8"
+    "\u5907\u6CE8",
+    "\u66F4\u65B0\u65F6\u95F4"
   ],
   followups: [
     "\u8D26\u53F7\u540D\u79F0",
@@ -59780,7 +59785,8 @@ var REQUIRED_FIELDS = {
     "\u6700\u8FD1\u8054\u7CFB\u65E5\u671F",
     "\u6700\u540E\u6765\u4FE1\u65E5\u671F",
     "\u4E0B\u4E00\u6B65",
-    "\u7ED3\u6848\u539F\u56E0"
+    "\u7ED3\u6848\u539F\u56E0",
+    "\u66F4\u65B0\u65F6\u95F4"
   ],
   contacts: ["\u65B9\u5411", "\u6E20\u9053", "Message ID", "\u6458\u8981", "\u5185\u5BB9", "\u65E5\u671F", "\u5F85\u5904\u7406", "KOL"],
   reviews: [
@@ -60251,8 +60257,8 @@ function makeCtx(cfg, lark, me, title, scheduled, sleep) {
 }
 
 // src/kolops/find.ts
-import { existsSync as existsSync2, readFileSync as readFileSync3, writeFileSync } from "node:fs";
-import { join as join2 } from "node:path";
+import { existsSync as existsSync3, readFileSync as readFileSync4, writeFileSync as writeFileSync2 } from "node:fs";
+import { join as join3 } from "node:path";
 
 // node_modules/apify-client/dist/index.mjs
 var import_index = __toESM(require_dist19(), 1);
@@ -60862,6 +60868,45 @@ async function applyClassification(ctx, o) {
   return { \u5199\u5165: Object.keys(changes).length, \u8BD5\u8DD1: o.dryRun || void 0 };
 }
 
+// src/kolops/cache.ts
+import { existsSync as existsSync2, mkdirSync as mkdirSync2, readFileSync as readFileSync3, renameSync, writeFileSync } from "node:fs";
+import { join as join2 } from "node:path";
+var MODIFIED = "\u66F4\u65B0\u65F6\u95F4";
+var FULL_EVERY_MS = 20 * 36e5;
+var OVERLAP_MS = 10 * 6e4;
+async function cachedRecords(base, table, fields, tz) {
+  const want = [.../* @__PURE__ */ new Set([...fields, MODIFIED])].sort();
+  const dir = join2(dataDir(), "cache", base.token);
+  mkdirSync2(dir, { recursive: true, mode: 448 });
+  const file2 = join2(dir, `${table.replace(/[^\w一-鿿-]/g, "_")}.json`);
+  const now = Date.now();
+  let cache = null;
+  try {
+    cache = existsSync2(file2) ? JSON.parse(readFileSync3(file2, "utf8")) : null;
+  } catch {
+    cache = null;
+  }
+  const usable = cache && cache.fields.join("\n") === want.join("\n") && now - cache.fullAt < FULL_EVERY_MS;
+  if (usable) {
+    const since = cache.readAt - OVERLAP_MS;
+    const changed = await base.records(table, { fields: want, filter: { logic: "and", conditions: [onOrAfter(MODIFIED, dayOf(since, tz))] } });
+    for (const r of changed) {
+      const at = cellTime(r[MODIFIED], tz);
+      if (at == null || at >= since) cache.rows[r.record_id] = r;
+    }
+    save(file2, { ...cache, readAt: now });
+    return Object.values(cache.rows);
+  }
+  const all = await base.records(table, { fields: want });
+  const hasModified = all.length === 0 || all.some((r) => MODIFIED in r);
+  if (hasModified) save(file2, { fields: want, readAt: now, fullAt: now, rows: Object.fromEntries(all.map((r) => [r.record_id, r])) });
+  return all;
+}
+function save(file2, data) {
+  writeFileSync(`${file2}.tmp`, JSON.stringify(data), { mode: 384 });
+  renameSync(`${file2}.tmp`, file2);
+}
+
 // src/kolops/data.ts
 var PROFILE_FIELDS = [
   "\u8D26\u53F7",
@@ -60893,13 +60938,19 @@ var FOLLOWUP_FIELDS = [
   "\u6700\u8FD1\u8054\u7CFB\u65E5\u671F",
   "\u6700\u540E\u6765\u4FE1\u65E5\u671F",
   "\u4E0B\u4E00\u6B65",
-  "\u7ED3\u6848\u539F\u56E0"
+  "\u7ED3\u6848\u539F\u56E0",
+  "\u4F53\u9A8C\u7801",
+  "\u4F53\u9A8C\u7801\u4E0A\u9650",
+  "\u4F53\u9A8C\u7801\u5DF2\u7528",
+  "\u4F53\u9A8C\u7801\u5230\u671F",
+  "\u6D3B\u52A8\u7801",
+  "\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"
 ];
 async function loadSnapshot(base, cfg) {
   const t = cfg.tables;
   const [profiles, followups] = await Promise.all([
-    base.records(t.profiles, { fields: PROFILE_FIELDS }),
-    base.records(t.followups, { fields: FOLLOWUP_FIELDS })
+    cachedRecords(base, t.profiles, PROFILE_FIELDS, cfg.timezone),
+    cachedRecords(base, t.followups, FOLLOWUP_FIELDS, cfg.timezone)
   ]);
   return buildSnapshot(profiles, followups);
 }
@@ -60950,32 +61001,32 @@ var FileLedger = class {
   file;
   data;
   constructor(job) {
-    this.file = join2(dataDir(), `find-${job.replace(/[^\w一-鿿-]/g, "_")}.json`);
-    this.data = existsSync2(this.file) ? JSON.parse(readFileSync3(this.file, "utf8")) : {};
+    this.file = join3(dataDir(), `find-${job.replace(/[^\w一-鿿-]/g, "_")}.json`);
+    this.data = existsSync3(this.file) ? JSON.parse(readFileSync4(this.file, "utf8")) : {};
   }
   async find(step) {
     return this.data[step] ?? null;
   }
   async started(step, _actor, run) {
     this.data[step] = run;
-    writeFileSync(this.file, JSON.stringify(this.data, null, 2));
+    writeFileSync2(this.file, JSON.stringify(this.data, null, 2));
   }
   async finished(step, r) {
     this.data[step] = { ...this.data[step], status: r.status };
-    writeFileSync(this.file, JSON.stringify(this.data, null, 2));
+    writeFileSync2(this.file, JSON.stringify(this.data, null, 2));
   }
 };
 function apifyToken() {
   if (process.env.APIFY_TOKEN) return process.env.APIFY_TOKEN;
-  const file2 = join2(dataDir(), "apify-token");
-  if (existsSync2(file2)) return readFileSync3(file2, "utf8").trim();
+  const file2 = join3(dataDir(), "apify-token");
+  if (existsSync3(file2)) return readFileSync4(file2, "utf8").trim();
   throw new Error(`\u6CA1\u6709 Apify token\u3002\u628A token \u5B58\u8FDB ${file2}\uFF08\u53EA\u653E\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09\uFF0C\u6216\u8BBE\u7F6E\u73AF\u5883\u53D8\u91CF APIFY_TOKEN`);
 }
 async function find(ctx, o) {
   const t = ctx.cfg.tables;
   const batches = await ctx.base.fieldOptions(t.profiles, "\u5165\u5E93\u6279\u6B21");
   if (!batches?.includes(o.batch)) throw new Error(`\u300C${o.batch}\u300D\u8FD8\u4E0D\u662F\u300C\u5165\u5E93\u6279\u6B21\u300D\u7684\u9009\u9879\uFF0C\u5148\u5728\u98DE\u4E66\u91CC\u52A0\u4E0A\u518D\u627E\u4EBA\uFF08\u514D\u5F97\u82B1\u4E86\u94B1\u5199\u4E0D\u8FDB\u53BB\uFF09`);
-  const existing = await ctx.base.records(t.profiles, { fields: ["\u8D26\u53F7", "\u4E3B\u9875\u94FE\u63A5", "\u516C\u5F00\u90AE\u7BB1", "\u5176\u4ED6\u90AE\u7BB1", "\u8054\u7CFB\u8BB8\u53EF"] });
+  const existing = [...(await loadSnapshot(ctx.base, ctx.cfg)).profiles.values()];
   const handles = /* @__PURE__ */ new Set();
   const emails = /* @__PURE__ */ new Set();
   for (const p of existing) {
@@ -61047,16 +61098,16 @@ function handleOf(s) {
 }
 
 // src/kolops/projects.ts
-import { existsSync as existsSync3, readFileSync as readFileSync4, writeFileSync as writeFileSync2 } from "node:fs";
-import { join as join3 } from "node:path";
+import { existsSync as existsSync4, readFileSync as readFileSync5, writeFileSync as writeFileSync3 } from "node:fs";
+import { join as join4 } from "node:path";
 function file() {
-  return join3(dataDir(), "projects.json");
+  return join4(dataDir(), "projects.json");
 }
 function load() {
-  return existsSync3(file()) ? JSON.parse(readFileSync4(file(), "utf8")) : { projects: {} };
+  return existsSync4(file()) ? JSON.parse(readFileSync5(file(), "utf8")) : { projects: {} };
 }
-function save(r) {
-  writeFileSync2(file(), JSON.stringify(r, null, 2));
+function save2(r) {
+  writeFileSync3(file(), JSON.stringify(r, null, 2));
 }
 function listProjects() {
   return Object.entries(load().projects).map(([name, p]) => ({ name, ...p }));
@@ -61082,27 +61133,27 @@ function addProject(name, baseToken) {
   const r = load();
   r.projects[name] = { ...r.projects[name], baseToken: baseTokenFrom(baseToken) };
   r.default ??= name;
-  save(r);
+  save2(r);
   return { name, baseToken: r.projects[name].baseToken };
 }
 function setDefaultProject(name) {
   const r = load();
   if (!r.projects[name]) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${name}\u300D\u7684\u9879\u76EE`);
   r.default = name;
-  save(r);
+  save2(r);
 }
 function removeProject(name) {
   const r = load();
   if (!r.projects[name]) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${name}\u300D\u7684\u9879\u76EE`);
   delete r.projects[name];
   if (r.default === name) r.default = Object.keys(r.projects)[0];
-  save(r);
+  save2(r);
 }
 function setDataApiKey(name, key) {
   const r = load();
   if (!r.projects[name]) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${name}\u300D\u7684\u9879\u76EE`);
   r.projects[name].dataApiKey = key.trim();
-  save(r);
+  save2(r);
 }
 function resolveProject(name) {
   const r = load();
@@ -61128,8 +61179,8 @@ async function contactedElsewhere(ctx) {
     let profiles, followups;
     try {
       [profiles, followups] = await Promise.all([
-        other.records(TABLES.profiles, { fields: ["\u516C\u5F00\u90AE\u7BB1", "\u5176\u4ED6\u90AE\u7BB1"] }),
-        other.records(TABLES.followups, { fields: ["\u6863\u6848", "\u6700\u8FD1\u8054\u7CFB\u65E5\u671F", "\u9996\u6B21\u9080\u7EA6\u65E5\u671F"] })
+        cachedRecords(other, TABLES.profiles, PROFILE_FIELDS, ctx.cfg.timezone),
+        cachedRecords(other, TABLES.followups, FOLLOWUP_FIELDS, ctx.cfg.timezone)
       ]);
     } catch (err) {
       throw new Error(`\u8BFB\u4E0D\u5230\u9879\u76EE\u300C${p.name}\u300D\u7684\u98DE\u4E66\u8868\uFF0C\u6CA1\u6CD5\u68C0\u67E5\u8DE8\u9879\u76EE\u8054\u7CFB\u8BB0\u5F55\u3002\u5982\u679C\u8FD9\u4E2A\u9879\u76EE\u5DF2\u7ECF\u4E0D\u7528\u4E86\uFF0C\u8FD0\u884C kol project remove ${p.name}\u3002\u539F\u59CB\u9519\u8BEF\uFF1A${err?.message ?? err}`);
@@ -61729,8 +61780,8 @@ async function reminderCounts(ctx, s) {
 }
 
 // src/kolops/setup.ts
-import { existsSync as existsSync4, readdirSync, readFileSync as readFileSync5 } from "node:fs";
-import { join as join4 } from "node:path";
+import { existsSync as existsSync5, readdirSync, readFileSync as readFileSync6 } from "node:fs";
+import { join as join5 } from "node:path";
 function fieldJson(f) {
   return {
     name: f.name,
@@ -61789,19 +61840,40 @@ async function setupBase(base, o) {
       }
     }
   }
+  for (const [key, defs] of Object.entries(SYSTEM_FIELDS)) {
+    const have = await base.fieldNames(TABLES[key]);
+    if (have == null) continue;
+    for (const f of defs.filter((d) => !have.includes(d.name))) {
+      report.\u52A0\u5B57\u6BB5.push(`${TABLES[key]}.${f.name}`);
+      if (!o.dryRun) {
+        await base.lark.json([
+          "base",
+          "+field-create",
+          "--base-token",
+          base.token,
+          "--table-id",
+          TABLES[key],
+          "--json",
+          JSON.stringify(fieldJson(f)),
+          "--as",
+          "user"
+        ]);
+      }
+    }
+  }
   const settingsRows = fresh.has(TABLES.settings) ? [] : await base.records(TABLES.settings);
   if (!settingsRows.length) {
     report.\u5199\u5165\u9ED8\u8BA4\u8BBE\u7F6E = true;
     if (!o.dryRun) await base.create(TABLES.settings, [{ \u9879\u76EE\u540D\u79F0: o.project, ...SETTING_DEFAULTS }]);
   }
   if (o.importDir) {
-    if (!existsSync4(o.importDir)) throw new Error(`\u627E\u4E0D\u5230\u6A21\u677F\u6587\u4EF6\u5939 ${o.importDir}`);
+    if (!existsSync5(o.importDir)) throw new Error(`\u627E\u4E0D\u5230\u6A21\u677F\u6587\u4EF6\u5939 ${o.importDir}`);
     const existing = fresh.has(TABLES.templates) ? [] : await base.records(TABLES.templates, { fields: ["\u540D\u79F0"] });
     const names = new Set(existing.map((r) => text(r["\u540D\u79F0"])));
     const rows = readdirSync(o.importDir).filter((f) => f.endsWith(".txt")).sort().flatMap((file2) => {
       const name = file2.slice(0, -4);
       if (names.has(name)) return [];
-      const { subject, body } = parseTemplateFile(readFileSync5(join4(o.importDir, file2), "utf8"));
+      const { subject, body } = parseTemplateFile(readFileSync6(join5(o.importDir, file2), "utf8"));
       report.\u5BFC\u5165\u6A21\u677F.push(name);
       return [{
         \u540D\u79F0: name,
@@ -61963,9 +62035,7 @@ async function syncCodes(ctx, o) {
   const key = listProjects().find((p) => p.name === cfg.project)?.dataApiKey;
   if (!key) throw new Error(`\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u9879\u76EE\u300C${cfg.project}\u300D\u7684\u63A5\u53E3\u5BC6\u94A5\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u8981\uFF0C\u7136\u540E\u8FD0\u884C kol project set-key ${cfg.project} <\u5BC6\u94A5>`);
   const s = await loadSnapshot(ctx.base, cfg);
-  const rows = await ctx.base.records(cfg.tables.followups, {
-    fields: ["\u8D26\u53F7\u540D\u79F0", "\u6863\u6848", "\u9636\u6BB5", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u4E0A\u9650", "\u4F53\u9A8C\u7801\u5DF2\u7528", "\u4F53\u9A8C\u7801\u5230\u671F", "\u6D3B\u52A8\u7801"]
-  });
+  const rows = [...s.followups.values()];
   const open = rows.filter((f) => option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848" && (text(f["\u4F53\u9A8C\u7801"]) || text(f["\u6D3B\u52A8\u7801"])));
   const codes = [...new Set(open.flatMap((f) => [text(f["\u4F53\u9A8C\u7801"]), text(f["\u6D3B\u52A8\u7801"])]).filter(Boolean))];
   const info = await lookupCodes(cfg.dataApi, key, codes, o.fetchImpl);
@@ -62016,11 +62086,11 @@ async function syncCodes(ctx, o) {
 }
 
 // src/kolops/notify.ts
-import { readFileSync as readFileSync6 } from "node:fs";
+import { readFileSync as readFileSync7 } from "node:fs";
 var MAX_CHARS = 4e3;
 async function notifyGroup(cfg, o) {
   if (!cfg.webhook) return { \u53D1\u9001: false, \u539F\u56E0: "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\uFF0C\u8DF3\u8FC7" };
-  const body = readFileSync6(o.file, "utf8").trim();
+  const body = readFileSync7(o.file, "utf8").trim();
   if (!body) throw new Error(`${o.file} \u662F\u7A7A\u7684`);
   const head = body.startsWith("KOL") ? "" : `KOL\uFF5C${cfg.project}
 `;
@@ -62042,7 +62112,7 @@ async function todayLists(ctx) {
   const cfg = ctx.cfg;
   const t = cfg.tables;
   const d = today(cfg);
-  const [s, pendingMail, reviews, trials] = await Promise.all([
+  const [s, pendingMail, reviews] = await Promise.all([
     loadSnapshot(ctx.base, cfg),
     ctx.base.records(t.contacts, {
       filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
@@ -62051,12 +62121,9 @@ async function todayLists(ctx) {
     ctx.base.records(t.reviews, {
       filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838"]]] },
       fields: ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u63D0\u51FA\u65F6\u95F4", "KOL", "\u72B6\u6001", "\u53D1\u9001\u6E20\u9053"]
-    }),
-    ctx.base.records(t.followups, {
-      filter: { logic: "and", conditions: [["\u9636\u6BB5", "intersects", ["\u4F53\u9A8C\u4E2D", "\u5DF2\u7EA6\u53D1\u5E03"]]] },
-      fields: ["\u8D26\u53F7\u540D\u79F0", "\u9636\u6BB5", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5230\u671F", "\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"]
     })
   ]);
+  const trials = [...s.followups.values()].filter((f) => ["\u4F53\u9A8C\u4E2D", "\u5DF2\u7EA6\u53D1\u5E03"].includes(option(f["\u9636\u6BB5"])));
   const name = (fid) => {
     const f = s.followups.get(fid);
     return f ? displayName(s, f) : fid;
@@ -62139,7 +62206,7 @@ var COMMANDS = {
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
-      const profiles = v["profiles-file"] ? list(readFileSync7(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
+      const profiles = v["profiles-file"] ? list(readFileSync8(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
       if (!profiles.length) throw new Error("\u6CA1\u6709\u7ED9\u8981\u9080\u7EA6\u7684\u6863\u6848\u8BB0\u5F55\uFF08--profiles \u6216 --profiles-file\uFF09");
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }
