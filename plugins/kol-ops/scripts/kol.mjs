@@ -59640,6 +59640,14 @@ function day(v, tz = "+08:00") {
   if (Number.isNaN(t)) return String(v).slice(0, 10);
   return dayOf(t, tz);
 }
+function cellTime(v, tz = "+08:00") {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") return v;
+  const s = String(v).trim();
+  const local = s.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2})?$/);
+  const t = local ? Date.parse(`${local[1]}T${local[2]}${local[3] ?? ":00"}${tz}`) : Date.parse(s);
+  return Number.isNaN(t) ? null : t;
+}
 function dayOf(ms, tz = "+08:00") {
   const sign = tz.startsWith("-") ? -1 : 1;
   const [h, m] = tz.slice(1).split(":").map(Number);
@@ -59866,6 +59874,18 @@ function stamp(ms = Date.now(), tz = "+08:00") {
 }
 function today(cfg, ms = Date.now()) {
   return dayOf(ms, cfg.timezone);
+}
+var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL" };
+var SENDING_RUNS = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
+var LOCK_MINUTES = 30;
+async function otherSendingRun(base, cfg, selfId) {
+  const rows = await base.records(cfg.tables.runs, {
+    filter: { logic: "and", conditions: [["\u7ED3\u679C", "intersects", ["\u8FDB\u884C\u4E2D"]]] },
+    fields: ["\u8FD0\u884C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u679C"]
+  });
+  const cutoff = Date.now() - LOCK_MINUTES * 6e4;
+  const busy = rows.find((r) => r.record_id !== selfId && SENDING_RUNS.some((title) => String(r["\u8FD0\u884C"] ?? "").startsWith(title)) && (cellTime(r["\u5F00\u59CB\u65F6\u95F4"], cfg.timezone) ?? 0) >= cutoff);
+  return busy ? `\u300C${busy["\u8FD0\u884C"]}\u300D\u4ECE ${stamp(cellTime(busy["\u5F00\u59CB\u65F6\u95F4"], cfg.timezone), cfg.timezone)} \u8D77\u6B63\u5728\u53D1\u4FE1\uFF0C\u7B49\u5B83\u8DD1\u5B8C\u518D\u53D1\uFF08\u8D85\u8FC7 ${LOCK_MINUTES} \u5206\u949F\u8FD8\u6CA1\u7ED3\u675F\u7684\u4F1A\u81EA\u52A8\u653E\u884C\uFF09` : "";
 }
 async function whoami(lark) {
   const data = await lark.json(["contact", "+get-user", "--as", "user", "--format", "json"]);
@@ -60750,6 +60770,11 @@ async function deliver(ctx, items, s, dryRun) {
     report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "\u63A7\u5236\u8868\u7684\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D\u5F00\u7740" })));
     return report;
   }
+  const busy = !dryRun && items.length ? await otherSendingRun(ctx.base, ctx.cfg, ctx.run.id) : "";
+  if (busy) {
+    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: busy })));
+    return report;
+  }
   const counts = await todaysSends(ctx.base, ctx.cfg);
   const gap = Math.ceil(6e4 / Math.max(1, ctx.cfg.perMinute));
   const t = ctx.cfg.tables;
@@ -60788,7 +60813,7 @@ async function deliver(ctx, items, s, dryRun) {
     ctx.journal.mark(o.key, "sending");
     let sent;
     try {
-      sent = await ctx.mail.send({ mailbox: o.mailbox.address, to: o.recipient, subject: o.subject, body: toHtml(o.body), replyTo: o.replyTo });
+      sent = await sendRetryingConflicts(ctx, { mailbox: o.mailbox.address, to: o.recipient, subject: o.subject, body: toHtml(o.body), replyTo: o.replyTo });
     } catch (err) {
       const definite = err instanceof MailBlocked || err instanceof LarkError && err.definite;
       ctx.journal.mark(o.key, definite ? "failed" : "sending");
@@ -60843,6 +60868,16 @@ async function deliver(ctx, items, s, dryRun) {
   async function markFailed(ctx2, o, why) {
     if (o.after?.review) {
       await ctx2.base.update(t.reviews, { [o.after.review]: { \u72B6\u6001: ["\u6267\u884C\u5931\u8D25"], \u6267\u884C\u7ED3\u679C: why.slice(0, 2e3), \u6267\u884C\u65F6\u95F4: stamp(Date.now(), ctx2.cfg.timezone) } });
+    }
+  }
+}
+async function sendRetryingConflicts(ctx, mail) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await ctx.mail.send(mail);
+    } catch (err) {
+      if (!(err instanceof LarkError && err.definite && err.message.includes("1236006")) || attempt >= 4) throw err;
+      await ctx.sleep(2e3 * attempt);
     }
   }
 }
@@ -60949,6 +60984,7 @@ ${text(approval["\u8981\u4F60\u5B9A\u4EC0\u4E48"])}`;
   const day2 = today(ctx.cfg);
   const items = [];
   const skipped = [];
+  const inThisBatch = /* @__PURE__ */ new Set();
   for (const pid of new Set(o.profiles)) {
     const p = s.profiles.get(pid);
     const name = text(p?.["\u8D26\u53F7\u540D\u79F0"]) || text(p?.["\u8D26\u53F7"]) || pid;
@@ -60960,11 +60996,22 @@ ${text(approval["\u8981\u4F60\u5B9A\u4EC0\u4E48"])}`;
       skipped.push({ key: pid, name, reason: "\u5DF2\u7ECF\u6709\u8DDF\u8FDB\u8BB0\u5F55\uFF0C\u8054\u7CFB\u8FC7\u4E86" });
       continue;
     }
-    const email = profileEmails(p)[0];
+    const emails = profileEmails(p);
+    const email = emails[0];
     if (!email) {
       skipped.push({ key: pid, name, reason: "\u6863\u6848\u91CC\u6CA1\u6709\u90AE\u7BB1" });
       continue;
     }
+    const elsewhere = emails.flatMap((e) => s.followupsByEmail.get(e) ?? [])[0];
+    if (elsewhere) {
+      skipped.push({ key: pid, name, reason: `\u90AE\u7BB1\u5DF2\u7ECF\u5728\u300C${displayName(s, s.followups.get(elsewhere))}\u300D\u7684\u8DDF\u8FDB\u8BB0\u5F55\u91CC\uFF0C\u8054\u7CFB\u8FC7\u4E86` });
+      continue;
+    }
+    if (emails.some((e) => inThisBatch.has(e))) {
+      skipped.push({ key: pid, name, reason: "\u8FD9\u4E00\u6279\u91CC\u5DF2\u7ECF\u6709\u4EBA\u7528\u540C\u4E00\u4E2A\u90AE\u7BB1" });
+      continue;
+    }
+    emails.forEach((e) => inThisBatch.add(e));
     let mail;
     try {
       mail = render(tpl, { \u7A31\u547C: text(p["\u79F0\u547C"]) || name, \u79F0\u547C: text(p["\u79F0\u547C"]) || name, \u8D26\u53F7\u540D\u79F0: name });
@@ -61012,9 +61059,14 @@ import { join as join6 } from "node:path";
 
 // src/kolops/sync.ts
 var BOUNCE_SENDER = /mailer-daemon|postmaster|mail-noreply.*bounce|delivery-?status/i;
+var AUTO_REPLY = /自動回覆|自动回复|自動回復|auto[- ]?reply|automatic reply|out of (the )?office|不在辦公室|不在办公室|休假中|已收到您的來信|已收到您的来信/i;
+var NOT_A_PERSON = /no-?reply|notifications?@|newsletter|mailer@|marketing@/i;
+var DEFAULT_DAYS = 3;
+var MAX_DAYS = 30;
+var MAX_PER_MAILBOX = 400;
 async function syncInbox(ctx, opts) {
   const t = ctx.cfg.tables;
-  const since = Date.now() - opts.days * 864e5;
+  const since = opts.days ? Date.now() - opts.days * 864e5 : await lastSync(ctx);
   const sinceIso = new Date(since).toISOString().replace("Z", "+00:00");
   const s = await loadSnapshot(ctx.base, ctx.cfg);
   const known = await ctx.base.records(t.contacts, {
@@ -61022,12 +61074,25 @@ async function syncInbox(ctx, opts) {
     fields: ["Message ID"]
   });
   const seen = new Set(known.map((r) => text(r["Message ID"])).filter(Boolean));
-  const report = { mailboxes: [], newReplies: [], bounces: [], unknownSenders: 0, alreadySynced: 0 };
+  const report = {
+    since: stamp(since, ctx.cfg.timezone),
+    mailboxes: [],
+    newReplies: [],
+    autoReplies: [],
+    bounces: [],
+    unknownSenders: [],
+    alreadySynced: 0,
+    warnings: []
+  };
   const contacts = [];
   const followupChanges = {};
+  const ours = new Set(ctx.cfg.mailboxes.map((m) => m.address.toLowerCase()));
   for (const mb of ctx.cfg.mailboxes) {
-    const mails = await ctx.mail.list(mb.address, { folder: "INBOX", time_range: { start_time: sinceIso } });
+    const mails = await ctx.mail.list(mb.address, { folder: "INBOX", time_range: { start_time: sinceIso } }, MAX_PER_MAILBOX);
     report.mailboxes.push(`${mb.address}\uFF1A${mails.length} \u5C01`);
+    if (mails.length >= MAX_PER_MAILBOX) {
+      report.warnings.push(`${mb.address} \u4ECE ${report.since} \u8D77\u8D85\u8FC7 ${MAX_PER_MAILBOX} \u5C01\uFF0C\u53EA\u8BFB\u4E86\u4E00\u90E8\u5206\u3002\u8BF7\u7528 --days 1 \u5206\u51E0\u6B21\u8865\u540C\u6B65`);
+    }
     for (const m of mails) {
       if (seen.has(m.message_id)) {
         report.alreadySynced++;
@@ -61042,11 +61107,26 @@ async function syncInbox(ctx, opts) {
       }
       const fids = s.followupsByEmail.get(from);
       if (!fids?.length) {
-        report.unknownSenders++;
+        if (!ours.has(from) && !NOT_A_PERSON.test(from)) {
+          report.unknownSenders.push({ mailbox: mb.address, from, subject: m.subject, date: m.date });
+        }
         continue;
       }
       const fid = pickFollowup(s, fids);
       const f = s.followups.get(fid);
+      if (AUTO_REPLY.test(m.subject)) {
+        contacts.push({
+          \u65B9\u5411: ["\u6536\u5230"],
+          \u6E20\u9053: [mb.channel],
+          "Message ID": m.message_id,
+          \u6458\u8981: `[\u81EA\u52A8\u56DE\u590D] ${m.subject}`.slice(0, 200),
+          \u65E5\u671F: stamp(when, ctx.cfg.timezone),
+          \u5F85\u5904\u7406: false,
+          KOL: [{ id: fid }]
+        });
+        report.autoReplies.push({ name: displayName(s, f), subject: m.subject });
+        continue;
+      }
       contacts.push({
         \u65B9\u5411: ["\u6536\u5230"],
         \u6E20\u9053: [mb.channel],
@@ -61071,9 +61151,20 @@ async function syncInbox(ctx, opts) {
     if (contacts.length) await ctx.base.create(t.contacts, contacts);
     if (Object.keys(followupChanges).length) await ctx.base.update(t.followups, followupChanges);
     for (const r of report.newReplies) ctx.run.op({ type: "\u6765\u4FE1\u5904\u7406", result: "\u5B8C\u6210", action: `\u6536\u5230\u6765\u4FE1\uFF1A${r.name}`, detail: r.subject });
+    for (const r of report.autoReplies) ctx.run.op({ type: "\u6765\u4FE1\u5904\u7406", result: "\u5B8C\u6210", action: `\u81EA\u52A8\u56DE\u590D\uFF08\u4E0D\u7B97\u56DE\u4FE1\uFF09\uFF1A${r.name}`, detail: r.subject });
     for (const b of report.bounces) ctx.run.op({ type: "\u6765\u4FE1\u5904\u7406", result: "\u9000\u4FE1", action: `\u9000\u4FE1\u7ED3\u6848\uFF1A${b.name}`, detail: b.address });
   }
   return report;
+}
+async function lastSync(ctx) {
+  const now = Date.now();
+  const runs = await ctx.base.records(ctx.cfg.tables.runs, {
+    filter: { logic: "and", conditions: [["\u7ED3\u679C", "intersects", ["\u5B8C\u6210", "\u90E8\u5206\u5B8C\u6210"]]] },
+    fields: ["\u8FD0\u884C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u679C"]
+  });
+  const starts = runs.filter((r) => [RUN_TITLES.sync, RUN_TITLES.remind].some((title) => text(r["\u8FD0\u884C"]).startsWith(title))).map((r) => cellTime(r["\u5F00\u59CB\u65F6\u95F4"], ctx.cfg.timezone)).filter((ms) => ms != null && ms <= now);
+  if (!starts.length) return now - DEFAULT_DAYS * 864e5;
+  return Math.max(Math.max(...starts) - 864e5, now - MAX_DAYS * 864e5);
 }
 function pickFollowup(s, ids) {
   return ids.find((id) => !["\u7ED3\u6848"].includes(option(s.followups.get(id)?.["\u9636\u6BB5"]))) ?? ids[0];
@@ -61132,10 +61223,9 @@ async function remind(ctx, o) {
   const templates = loadTemplates(join6(pluginRoot(), cfg.templatesDir));
   const missing = REMIND_TEMPLATES.filter((n) => !templates.has(n));
   if (missing.length) throw new Error(`\u50AC\u4FE1\u6A21\u677F\u8FD8\u6CA1\u6279\u51C6\uFF1A${missing.join("\u3001")}\u3002\u6279\u51C6\u540E\u653E\u8FDB\u63D2\u4EF6\u7684 templates \u6587\u4EF6\u5939\u624D\u80FD\u81EA\u52A8\u50AC`);
-  const sync = await syncInbox(ctx, { days: 3, dryRun: o.dryRun });
+  const sync = await syncInbox(ctx, { dryRun: o.dryRun });
   const s = await loadSnapshot(ctx.base, cfg);
   const counts = await reminderCounts(ctx, s);
-  const firstSubject = await inviteSubjects(ctx);
   const todayStr = today(cfg);
   const items = [];
   const closes = {};
@@ -61170,7 +61260,6 @@ async function remind(ctx, o) {
       report.notChased.push({ key: f.record_id, name, reason: err.message });
       continue;
     }
-    const original = firstSubject.get(f.record_id);
     const next = addDays(todayStr, step.n === 1 ? cfg.followup.secondAfterDays : cfg.followup.closeAfterDays);
     items.push({
       key: `remind:${f.record_id}:${step.n}`,
@@ -61178,7 +61267,8 @@ async function remind(ctx, o) {
       name,
       recipient: email,
       mailbox,
-      subject: original ? `Re: ${original}` : mail.subject,
+      // The template's own subject: a reminder that isn't threaded under the invitation shouldn't pose as a "Re:".
+      subject: mail.subject,
       body: mail.body,
       oncePerDay: true,
       kind: "\u50AC\u4FE1",
@@ -61203,18 +61293,6 @@ async function reminderCounts(ctx, s) {
     for (const id of linkIds(r["KOL"])) if (s.followups.has(id)) counts.set(id, (counts.get(id) ?? 0) + 1);
   }
   return counts;
-}
-async function inviteSubjects(ctx) {
-  const rows = await ctx.base.records(ctx.cfg.tables.contacts, {
-    filter: { logic: "and", conditions: [["\u65B9\u5411", "intersects", ["\u53D1\u51FA"]], ["\u65E5\u671F", ">=", `ExactDate(${ctx.cfg.followup.onlyInvitedOnOrAfter})`]] },
-    fields: ["\u6458\u8981", "KOL", "\u65B9\u5411", "\u65E5\u671F"]
-  });
-  const out = /* @__PURE__ */ new Map();
-  for (const r of rows) {
-    const m = text(r["\u6458\u8981"]).match(/^\[邀约\]\s*(.+)$/);
-    if (m) for (const id of linkIds(r["KOL"])) out.set(id, m[1]);
-  }
-  return out;
 }
 
 // src/kolops/today.ts
@@ -61258,7 +61336,7 @@ async function todayLists(ctx) {
 var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
 
   today                         \u4ECA\u5929\u7684\u6E05\u5355\uFF1A\u5F85\u5904\u7406\u6765\u4FE1\u3001\u8F6E\u5230\u6211\u4EEC\u3001\u7B49\u4F60\u5BA1\u6838\u3001\u4F53\u9A8C\u7801\u5FEB\u5230\u671F\u3001\u5FEB\u5230\u7684\u53D1\u5E03\uFF08\u53EA\u8BFB\uFF09
-  sync    [--days 3]            \u628A\u5404\u90AE\u7BB1\u6700\u8FD1\u51E0\u5929\u7684\u6765\u4FE1\u540C\u6B65\u8FDB\u63A5\u89E6\u8BB0\u5F55\uFF0C\u6765\u4FE1\u7684 KOL \u6539\u6210\u300C\u8F6E\u5230\u6211\u4EEC\u300D
+  sync    [--days N]            \u628A\u5404\u90AE\u7BB1\u4ECE\u4E0A\u6B21\u540C\u6B65\u4EE5\u6765\u7684\u6765\u4FE1\u540C\u6B65\u8FDB\u63A5\u89E6\u8BB0\u5F55\uFF08--days \u6539\u6210\u53EA\u770B\u6700\u8FD1 N \u5929\uFF09\uFF0C\u6765\u4FE1\u7684 KOL \u6539\u6210\u300C\u8F6E\u5230\u6211\u4EEC\u300D
   send    [--only rec1,rec2]    \u53D1\u51FA\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u6279\u51C6\u3001\u8FD8\u6CA1\u53D1\u7684\u4FE1
   invite  --batch \u6279\u6B21 --template \u6A21\u677F --mailbox \u90AE\u7BB1 --approval \u5BA1\u6838\u8BB0\u5F55 --profiles rec1,rec2 | --profiles-file \u6587\u4EF6
                                 \u7ED9\u4E00\u6279\u6863\u6848\u53D1\u9080\u7EA6\u5E76\u5EFA\u8DDF\u8FDB\u8BB0\u5F55\uFF08\u6279\u6B21\u8981\u5148\u5728\u5BA1\u6838\u961F\u5217\u91CC\u6279\u51C6\uFF09
@@ -61280,10 +61358,10 @@ function need(v, ...keys) {
 }
 var COMMANDS = {
   today: { title: "", writes: false, run: (ctx) => todayLists(ctx) },
-  sync: { title: "\u6536\u4FE1\u540C\u6B65", writes: true, run: (ctx, v) => syncInbox(ctx, { days: Number(v.days ?? 3), dryRun: !!v["dry-run"] }) },
-  send: { title: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", writes: true, run: (ctx, v) => sendApproved(ctx, { dryRun: !!v["dry-run"], only: list(v.only) }) },
+  sync: { title: RUN_TITLES.sync, writes: true, run: (ctx, v) => syncInbox(ctx, { days: v.days ? Number(v.days) : void 0, dryRun: !!v["dry-run"] }) },
+  send: { title: RUN_TITLES.send, writes: true, run: (ctx, v) => sendApproved(ctx, { dryRun: !!v["dry-run"], only: list(v.only) }) },
   invite: {
-    title: "\u53D1\u9080\u7EA6",
+    title: RUN_TITLES.invite,
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
@@ -61292,9 +61370,9 @@ var COMMANDS = {
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }
   },
-  remind: { title: "\u50AC\u4FE1\u548C\u7ED3\u6848", writes: true, run: (ctx, v) => remind(ctx, { dryRun: !!v["dry-run"] }) },
+  remind: { title: RUN_TITLES.remind, writes: true, run: (ctx, v) => remind(ctx, { dryRun: !!v["dry-run"] }) },
   find: {
-    title: "\u627E KOL",
+    title: RUN_TITLES.find,
     writes: true,
     run: (ctx, v) => {
       need(v, "platform", "batch", "job", "budget");

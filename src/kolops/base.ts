@@ -87,6 +87,16 @@ export function day(v: unknown, tz = "+08:00"): string {
   return dayOf(t, tz);
 }
 
+/** Epoch ms of a datetime cell: a number, an ISO string, or the "YYYY-MM-DD HH:mm" this plugin writes (in `tz`). */
+export function cellTime(v: unknown, tz = "+08:00"): number | null {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") return v;
+  const s = String(v).trim();
+  const local = s.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2})?$/);
+  const t = local ? Date.parse(`${local[1]}T${local[2]}${local[3] ?? ":00"}${tz}`) : Date.parse(s);
+  return Number.isNaN(t) ? null : t;
+}
+
 export function dayOf(ms: number, tz = "+08:00"): string {
   const sign = tz.startsWith("-") ? -1 : 1;
   const [h, m] = tz.slice(1).split(":").map(Number);

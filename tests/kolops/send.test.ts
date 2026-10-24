@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { loadConfig } from "../../src/kolops/config.js";
 import { makeCtx, type Ctx } from "../../src/kolops/ctx.js";
 import { isApproved, sendApproved } from "../../src/kolops/send.js";
+import { LarkError } from "../../src/kolops/lark.js";
 import { FakeLark } from "./fake.js";
 
 const cfg = loadConfig(join(import.meta.dirname, "../../plugins/kol-ops"));
@@ -116,5 +117,38 @@ describe("sendApproved", () => {
     review();
     const r = await sendApproved(ctx, { dryRun: false });
     expect(r.skipped[0].reason).toMatch(/额度/);
+  });
+});
+
+describe("sending across the team", () => {
+  it("waits while another computer's run is sending, unless that run is long dead", async () => {
+    review();
+    const other = lark.add(T.runs, { 运行: "催信和结案（同事）", 结果: ["进行中"], 开始时间: Date.now() - 5 * 60_000 });
+    const r = await sendApproved(ctx, { dryRun: false });
+    expect(r.sent).toHaveLength(0);
+    expect(r.skipped[0].reason).toMatch(/正在发信/);
+    expect(lark.sent).toHaveLength(0);
+
+    lark.table(T.runs).find((x) => x.record_id === other)!["开始时间"] = Date.now() - 2 * 3600_000;
+    const later = await sendApproved(ctx, { dryRun: false });
+    expect(later.sent).toHaveLength(1);
+  });
+
+  it("retries Feishu's concurrent-draft conflict, which never sends anything", async () => {
+    review();
+    lark.failSend = new LarkError('lark-cli mail +reply 失败：{"code":1236006,"msg":"failed to create draft: Concurrent write conflict"}', true);
+    lark.failSendTimes = 2;
+    const r = await sendApproved(ctx, { dryRun: false });
+    expect(r.failed).toHaveLength(0);
+    expect(r.sent).toHaveLength(1);
+    expect(lark.sent).toHaveLength(1);
+  });
+
+  it("gives up on the conflict after a few tries and says so", async () => {
+    review();
+    lark.failSend = new LarkError('lark-cli mail +reply 失败：{"code":1236006}', true);
+    const r = await sendApproved(ctx, { dryRun: false });
+    expect(r.sent).toHaveLength(0);
+    expect(r.failed[0].reason).toMatch(/1236006/);
   });
 });

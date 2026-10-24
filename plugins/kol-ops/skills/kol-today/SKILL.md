@@ -8,6 +8,9 @@ description: 运营同事说「今天有什么事」「处理来信」「看看�
 先读 `${CLAUDE_PLUGIN_ROOT}/reference/rules.md`。
 
 1. 同步来信：`node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" sync`。这一步只记录来信、把对方改成「轮到我们」，不发信，可以直接跑。
+   - 它从上次同步的时间点开始收信，结果里的 `since` 就是从哪天开始的；`warnings` 有内容（某个邮箱信太多没收全）要先讲。
+   - `unknownSenders` 是档案里没登记的发件人，可能是经纪人、MCN，或者 KOL 换了邮箱回信。逐个念给同事听，问是不是哪位 KOL；是的话，把这个邮箱加进那位 KOL 档案的「其他邮箱」，下次同步就会自动记上。
+   - `autoReplies` 是休假、已收到之类的自动回复，已经记进接触记录，但不算回信，催信照常。
 2. 拿清单：`node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" today`，按这个顺序讲给同事：待处理来信、等你审核、轮到我们、体验码三天内到期、七天内约定发布、今天该催的邀约有几位。
 3. 同事要处理某封来信时：
    - 用 `lark-cli mail +messages --mailbox <渠道邮箱> --message-ids <Message ID> --format json --as user` 读原文（Message ID 在接触记录里）。

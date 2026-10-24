@@ -54,3 +54,15 @@ it("refuses without an approval naming the batch, or with a batch the select doe
   lark.table(T.reviews)[0]["处理"] = ["发／同意"];
   await expect(invite(ctx, { ...opts(), batch: "第四十批·新版" })).rejects.toThrow(/选项|批次/);
 });
+
+it("skips an address that already has a followup under another profile, or appears twice in the batch", async () => {
+  const earlier = lark.add(T.profiles, { 账号名称: "77夫妻 YouTube", 公开邮箱: "77@example.com", 联系许可: ["可联系"] });
+  lark.add(T.followups, { 账号名称: "77夫妻 YouTube", 档案: [{ id: earlier }], 阶段: ["结案"] });
+  const twinA = lark.add(T.profiles, { 账号名称: "雙胞胎 IG", 称呼: "雙胞胎", 公开邮箱: "twins@example.com", 联系许可: ["可联系"] });
+  const twinB = lark.add(T.profiles, { 账号名称: "雙胞胎 TikTok", 称呼: "雙胞胎", 公开邮箱: "Twins@Example.com", 联系许可: ["可联系"] });
+  const r = await invite(ctx, { ...opts(), profiles: [ok, twinA, twinB] });
+  expect(r.sent.map((x) => x.name)).toEqual(["雙胞胎 IG"]);
+  const reasons = r.skipped.map((x) => `${x.name}：${x.reason}`).join("\n");
+  expect(reasons).toMatch(/77夫妻：邮箱已经在「77夫妻 YouTube」的跟进记录里/);
+  expect(reasons).toMatch(/雙胞胎 TikTok：这一批里已经有人用同一个邮箱/);
+});

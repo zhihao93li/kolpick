@@ -6,7 +6,7 @@ import { makeCtx, type Ctx } from "./ctx.js";
 import { find } from "./find.js";
 import { invite } from "./invite.js";
 import { LarkCli } from "./lark.js";
-import { checkAuth, whoami } from "./ops.js";
+import { checkAuth, RUN_TITLES, whoami } from "./ops.js";
 import { remind } from "./remind.js";
 import { sendApproved } from "./send.js";
 import { syncInbox } from "./sync.js";
@@ -15,7 +15,7 @@ import { todayLists } from "./today.js";
 const HELP = `kol <命令> [选项]
 
   today                         今天的清单：待处理来信、轮到我们、等你审核、体验码快到期、快到的发布（只读）
-  sync    [--days 3]            把各邮箱最近几天的来信同步进接触记录，来信的 KOL 改成「轮到我们」
+  sync    [--days N]            把各邮箱从上次同步以来的来信同步进接触记录（--days 改成只看最近 N 天），来信的 KOL 改成「轮到我们」
   send    [--only rec1,rec2]    发出审核队列里已批准、还没发的信
   invite  --batch 批次 --template 模板 --mailbox 邮箱 --approval 审核记录 --profiles rec1,rec2 | --profiles-file 文件
                                 给一批档案发邀约并建跟进记录（批次要先在审核队列里批准）
@@ -39,10 +39,10 @@ function need(v: Record<string, any>, ...keys: string[]) {
 
 const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx, v: Record<string, any>) => Promise<unknown> }> = {
   today: { title: "", writes: false, run: (ctx) => todayLists(ctx) },
-  sync: { title: "收信同步", writes: true, run: (ctx, v) => syncInbox(ctx, { days: Number(v.days ?? 3), dryRun: !!v["dry-run"] }) },
-  send: { title: "发出已批准的信", writes: true, run: (ctx, v) => sendApproved(ctx, { dryRun: !!v["dry-run"], only: list(v.only) }) },
+  sync: { title: RUN_TITLES.sync, writes: true, run: (ctx, v) => syncInbox(ctx, { days: v.days ? Number(v.days) : undefined, dryRun: !!v["dry-run"] }) },
+  send: { title: RUN_TITLES.send, writes: true, run: (ctx, v) => sendApproved(ctx, { dryRun: !!v["dry-run"], only: list(v.only) }) },
   invite: {
-    title: "发邀约", writes: true,
+    title: RUN_TITLES.invite, writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
       const profiles = v["profiles-file"] ? list(readFileSync(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
@@ -50,9 +50,9 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     },
   },
-  remind: { title: "催信和结案", writes: true, run: (ctx, v) => remind(ctx, { dryRun: !!v["dry-run"] }) },
+  remind: { title: RUN_TITLES.remind, writes: true, run: (ctx, v) => remind(ctx, { dryRun: !!v["dry-run"] }) },
   find: {
-    title: "找 KOL", writes: true,
+    title: RUN_TITLES.find, writes: true,
     run: (ctx, v) => {
       need(v, "platform", "batch", "job", "budget");
       return find(ctx, {

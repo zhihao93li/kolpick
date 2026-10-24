@@ -53,10 +53,9 @@ export async function remind(ctx: Ctx, o: { dryRun: boolean }): Promise<RemindRe
   const missing = REMIND_TEMPLATES.filter((n) => !templates.has(n));
   if (missing.length) throw new Error(`催信模板还没批准：${missing.join("、")}。批准后放进插件的 templates 文件夹才能自动催`);
 
-  const sync = await syncInbox(ctx, { days: 3, dryRun: o.dryRun });
+  const sync = await syncInbox(ctx, { dryRun: o.dryRun });
   const s = await loadSnapshot(ctx.base, cfg);
   const counts = await reminderCounts(ctx, s);
-  const firstSubject = await inviteSubjects(ctx);
   const todayStr = today(cfg);
 
   const items: Outgoing[] = [];
@@ -93,11 +92,11 @@ export async function remind(ctx: Ctx, o: { dryRun: boolean }): Promise<RemindRe
       report.notChased.push({ key: f.record_id, name, reason: err.message });
       continue;
     }
-    const original = firstSubject.get(f.record_id);
     const next = addDays(todayStr, step.n === 1 ? cfg.followup.secondAfterDays : cfg.followup.closeAfterDays);
     items.push({
       key: `remind:${f.record_id}:${step.n}`, followupId: f.record_id, name, recipient: email, mailbox,
-      subject: original ? `Re: ${original}` : mail.subject, body: mail.body, oncePerDay: true, kind: "催信",
+      // The template's own subject: a reminder that isn't threaded under the invitation shouldn't pose as a "Re:".
+      subject: mail.subject, body: mail.body, oncePerDay: true, kind: "催信",
       after: { followup: { 下次跟进日期: `${next} 10:00`, 下一步: `${todayStr} 发了第 ${step.n} 次催信，${next} ${step.n === 1 ? "再催一次" : "还没回就结案"}` } },
     });
   }
@@ -122,18 +121,4 @@ async function reminderCounts(ctx: Ctx, s: Snapshot): Promise<Map<string, number
     for (const id of linkIds(r["KOL"])) if (s.followups.has(id)) counts.set(id, (counts.get(id) ?? 0) + 1);
   }
   return counts;
-}
-
-/** The subject of the plugin's invitation to each followup, so 催信 read as Re: of it. */
-async function inviteSubjects(ctx: Ctx): Promise<Map<string, string>> {
-  const rows = await ctx.base.records(ctx.cfg.tables.contacts, {
-    filter: { logic: "and", conditions: [["方向", "intersects", ["发出"]], ["日期", ">=", `ExactDate(${ctx.cfg.followup.onlyInvitedOnOrAfter})`]] },
-    fields: ["摘要", "KOL", "方向", "日期"],
-  });
-  const out = new Map<string, string>();
-  for (const r of rows) {
-    const m = text(r["摘要"]).match(/^\[邀约\]\s*(.+)$/);
-    if (m) for (const id of linkIds(r["KOL"])) out.set(id, m[1]);
-  }
-  return out;
 }

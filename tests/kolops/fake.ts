@@ -6,6 +6,8 @@ export class FakeLark implements Lark {
   inbox: Record<string, { message_id: string; from: string; subject: string; date: string; thread_id?: string }[]> = {};
   sent: { args: string[] }[] = [];
   failSend: Error | null = null;
+  /** How many sends fail with `failSend` before they start working again. */
+  failSendTimes = Infinity;
   options: Record<string, string[]> = { 邀约批次: ["第三十九批·新版"], 入库批次: ["第三十批"] };
   private n = 0;
 
@@ -48,7 +50,7 @@ export class FakeLark implements Lark {
       return { messages: list };
     }
     if (svc === "mail" && (cmd === "+send" || cmd === "+reply")) {
-      if (this.failSend) throw this.failSend;
+      if (this.failSend && this.failSendTimes-- > 0) throw this.failSend;
       this.sent.push({ args });
       return { message_id: `msg${this.sent.length}`, thread_id: "t1" };
     }

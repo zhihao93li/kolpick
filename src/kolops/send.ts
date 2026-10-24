@@ -4,7 +4,7 @@ import type { Ctx } from "./ctx.js";
 import { blockedReason, displayName, followupEmails, loadSnapshot, type Snapshot } from "./data.js";
 import { LarkError, type Row } from "./lark.js";
 import { MailBlocked, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
-import { paused, stamp, todaysSends, type SendCounts } from "./ops.js";
+import { otherSendingRun, paused, stamp, todaysSends, type SendCounts } from "./ops.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
 
@@ -79,6 +79,11 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
     report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "控制表的「暂停所有发送」开着" })));
     return report;
   }
+  const busy = !dryRun && items.length ? await otherSendingRun(ctx.base, ctx.cfg, ctx.run.id) : "";
+  if (busy) {
+    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: busy })));
+    return report;
+  }
   const counts = await todaysSends(ctx.base, ctx.cfg);
   const gap = Math.ceil(60_000 / Math.max(1, ctx.cfg.perMinute));
   const t = ctx.cfg.tables;
@@ -122,7 +127,7 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
     ctx.journal.mark(o.key, "sending");
     let sent;
     try {
-      sent = await ctx.mail.send({ mailbox: o.mailbox.address, to: o.recipient, subject: o.subject, body: toHtml(o.body), replyTo: o.replyTo });
+      sent = await sendRetryingConflicts(ctx, { mailbox: o.mailbox.address, to: o.recipient, subject: o.subject, body: toHtml(o.body), replyTo: o.replyTo });
     } catch (err: any) {
       const definite = err instanceof MailBlocked || (err instanceof LarkError && err.definite);
       ctx.journal.mark(o.key, definite ? "failed" : "sending");
@@ -182,6 +187,21 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
   async function markFailed(ctx: Ctx, o: Outgoing, why: string) {
     if (o.after?.review) {
       await ctx.base.update(t.reviews, { [o.after.review]: { 状态: ["执行失败"], 执行结果: why.slice(0, 2000), 执行时间: stamp(Date.now(), ctx.cfg.timezone) } });
+    }
+  }
+}
+
+/**
+ * Feishu answers 1236006 ("failed to create draft: Concurrent write conflict") when drafts are written too
+ * close together. The draft was never created, so nothing went out and trying again is safe.
+ */
+async function sendRetryingConflicts(ctx: Ctx, mail: Parameters<Ctx["mail"]["send"]>[0]) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await ctx.mail.send(mail);
+    } catch (err) {
+      if (!(err instanceof LarkError && err.definite && err.message.includes("1236006")) || attempt >= 4) throw err;
+      await ctx.sleep(2_000 * attempt);
     }
   }
 }

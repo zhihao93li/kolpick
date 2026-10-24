@@ -1,7 +1,7 @@
 import { addDays, linkIds, option, text } from "./base.js";
 import { mailboxFor, pluginRoot } from "./config.js";
 import type { Ctx } from "./ctx.js";
-import { loadSnapshot, profileEmails } from "./data.js";
+import { displayName, loadSnapshot, profileEmails } from "./data.js";
 import { stamp, today } from "./ops.js";
 import { deliver, type Outgoing, type SendReport, type Skipped } from "./send.js";
 import { loadTemplates, MissingValue, render } from "./templates.js";
@@ -54,6 +54,7 @@ export async function invite(ctx: Ctx, o: InviteOpts): Promise<SendReport & { ba
   const day = today(ctx.cfg);
   const items: Outgoing[] = [];
   const skipped: Skipped[] = [];
+  const inThisBatch = new Set<string>();
   for (const pid of new Set(o.profiles)) {
     const p = s.profiles.get(pid);
     const name = text(p?.["账号名称"]) || text(p?.["账号"]) || pid;
@@ -65,11 +66,23 @@ export async function invite(ctx: Ctx, o: InviteOpts): Promise<SendReport & { ba
       skipped.push({ key: pid, name, reason: "已经有跟进记录，联系过了" });
       continue;
     }
-    const email = profileEmails(p)[0];
+    const emails = profileEmails(p);
+    const email = emails[0];
     if (!email) {
       skipped.push({ key: pid, name, reason: "档案里没有邮箱" });
       continue;
     }
+    // The same person can have several 档案 (one per platform); the address is what they'd get twice.
+    const elsewhere = emails.flatMap((e) => s.followupsByEmail.get(e) ?? [])[0];
+    if (elsewhere) {
+      skipped.push({ key: pid, name, reason: `邮箱已经在「${displayName(s, s.followups.get(elsewhere)!)}」的跟进记录里，联系过了` });
+      continue;
+    }
+    if (emails.some((e) => inThisBatch.has(e))) {
+      skipped.push({ key: pid, name, reason: "这一批里已经有人用同一个邮箱" });
+      continue;
+    }
+    emails.forEach((e) => inThisBatch.add(e));
     let mail;
     try {
       mail = render(tpl, { 稱呼: text(p["称呼"]) || name, 称呼: text(p["称呼"]) || name, 账号名称: name });

@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { Base, dayOf, linkIds, option, type Fields } from "./base.js";
+import { Base, cellTime, dayOf, linkIds, option, type Fields } from "./base.js";
 import type { Config } from "./config.js";
 import { authHint, REQUIRED_SCOPES, type Lark } from "./lark.js";
 
@@ -20,6 +20,28 @@ export function stamp(ms = Date.now(), tz = "+08:00"): string {
 
 export function today(cfg: Config, ms = Date.now()): string {
   return dayOf(ms, cfg.timezone);
+}
+
+/** The 运行 names of commands that write. 运行记录 rows start with these, which sync and the send lock rely on. */
+export const RUN_TITLES = { sync: "收信同步", send: "发出已批准的信", invite: "发邀约", remind: "催信和结案", find: "找 KOL" } as const;
+const SENDING_RUNS: string[] = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
+/** A sending run older than this is treated as dead, so a crash can't block sending for good. */
+const LOCK_MINUTES = 30;
+
+/**
+ * Another run that is sending mail right now, whoever's computer it is on. Each run writes its 运行记录
+ * row before it sends, so two runs started together both see each other and both stand down.
+ */
+export async function otherSendingRun(base: Base, cfg: Config, selfId: string): Promise<string> {
+  const rows = await base.records(cfg.tables.runs, {
+    filter: { logic: "and", conditions: [["结果", "intersects", ["进行中"]]] },
+    fields: ["运行", "开始时间", "结果"],
+  });
+  const cutoff = Date.now() - LOCK_MINUTES * 60_000;
+  const busy = rows.find((r) => r.record_id !== selfId
+    && SENDING_RUNS.some((title) => String(r["运行"] ?? "").startsWith(title))
+    && (cellTime(r["开始时间"], cfg.timezone) ?? 0) >= cutoff);
+  return busy ? `「${busy["运行"]}」从 ${stamp(cellTime(busy["开始时间"], cfg.timezone)!, cfg.timezone)} 起正在发信，等它跑完再发（超过 ${LOCK_MINUTES} 分钟还没结束的会自动放行）` : "";
 }
 
 export interface Me {
