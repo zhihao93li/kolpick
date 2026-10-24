@@ -177,3 +177,20 @@ describe("bounce-rate gate", () => {
     expect(r.sent).toHaveLength(1);
   });
 });
+
+describe("reply subjects", () => {
+  it("strip stacked reply prefixes in any language and add one plain Re:", async () => {
+    const { replySubject } = await import("../../src/kolops/mail.js");
+    expect(replySubject("Re: 回复：RE：想送 Emma 一份合盤")).toBe("Re: 想送 Emma 一份合盤");
+    expect(replySubject("合作")).toBe("Re: 合作");
+  });
+
+  it("an approved reply without its own subject goes out as Re: of the KOL's mail, in its thread", async () => {
+    review();
+    await sendApproved(ctx, { dryRun: false });
+    const args = lark.sent[0].args;
+    expect(args).toContain("+reply");
+    expect(args[args.indexOf("--message-id") + 1]).toBe("in1");
+    expect(args[args.indexOf("--subject") + 1]).toBe("Re: 合作");
+  });
+});

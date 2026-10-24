@@ -3,7 +3,7 @@ import { mailboxFor, sendingPaused, type Mailbox } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import { blockedReason, displayName, followupEmails, loadSnapshot, type Snapshot } from "./data.js";
 import { LarkError, type Row } from "./lark.js";
-import { MailBlocked, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
+import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
 import { bounceStats, bouncePaused, otherSendingRun, stamp, todaysSends, type SendCounts } from "./ops.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
@@ -113,6 +113,7 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
       if (latest) {
         o.replyTo = latest.message_id;
         senders.add(o.recipient);
+        if (!o.subject) o.subject = replySubject(latest.subject);
       }
     }
 

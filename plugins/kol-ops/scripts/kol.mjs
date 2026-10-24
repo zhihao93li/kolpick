@@ -59941,6 +59941,12 @@ function toHtml(body) {
   const links = (s) => s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
   return body.trim().split(/\n{2,}/).map((para) => `<p>${links(esc(para)).replace(/\n/g, "<br>")}</p>`).join("\n");
 }
+function replySubject(subject) {
+  const prefix = /^\s*(re|aw|sv|回复|回覆|答复)\s*[:：]\s*/i;
+  let s = subject;
+  while (prefix.test(s)) s = s.replace(prefix, "");
+  return `Re: ${s.trim()}`;
+}
 function splitDraft(draft) {
   const m = draft.match(/^\s*(?:主题|主旨|Subject)\s*[:：]\s*(.+)\n/i);
   return m ? { subject: m[1].trim(), body: draft.slice(m[0].length).trim() } : { subject: "", body: draft.trim() };
@@ -61204,6 +61210,7 @@ async function deliver(ctx, items, s, dryRun) {
       if (latest) {
         o.replyTo = latest.message_id;
         senders.add(o.recipient);
+        if (!o.subject) o.subject = replySubject(latest.subject);
       }
     }
     let reason = bouncePaused(o.mailbox, bounces) || checkOne(o, s, counts, senders);

@@ -79,6 +79,17 @@ export function toHtml(body: string): string {
   return body.trim().split(/\n{2,}/).map((para) => `<p>${links(esc(para)).replace(/\n/g, "<br>")}</p>`).join("\n");
 }
 
+/**
+ * "Re: " plus the subject with any reply prefixes (Re:, RE：, 回复：, 回覆：) taken off. Feishu keeps a reply with
+ * this subject in the original thread (checked 2026-10-24); left alone it would prefix a simplified 「回复：」.
+ */
+export function replySubject(subject: string): string {
+  const prefix = /^\s*(re|aw|sv|回复|回覆|答复)\s*[:：]\s*/i;
+  let s = subject;
+  while (prefix.test(s)) s = s.replace(prefix, "");
+  return `Re: ${s.trim()}`;
+}
+
 /** A draft may start with a 主题：… line; the rest is the body. */
 export function splitDraft(draft: string): { subject: string; body: string } {
   const m = draft.match(/^\s*(?:主题|主旨|Subject)\s*[:：]\s*(.+)\n/i);
