@@ -61820,7 +61820,8 @@ async function check(project) {
   const lark = new LarkCli(project?.baseToken ?? "");
   const auth = await checkAuth(lark);
   if (!project) return { ...auth, \u9879\u76EE: "\u8FD9\u53F0\u7535\u8111\u8FD8\u6CA1\u6709\u767B\u8BB0\u9879\u76EE\uFF08kol project add <\u9879\u76EE\u540D> <\u98DE\u4E66\u8868\u94FE\u63A5>\uFF09" };
-  if (!auth.\u6743\u9650\u9F50\u5168) return { ...auth, \u9879\u76EE: project.name, \u98DE\u4E66\u8868: "\u6388\u6743\u8865\u9F50\u540E\u518D\u68C0\u67E5" };
+  const canReadBase = !auth.\u7F3A\u5C11\u7684\u6743\u9650?.some((s) => s === "base:record:read" || s === "base:field:read");
+  if (!canReadBase) return { ...auth, \u9879\u76EE: project.name, \u98DE\u4E66\u8868: "\u6388\u6743\u8865\u9F50\u540E\u518D\u68C0\u67E5" };
   return { ...auth, \u9879\u76EE: project.name, \u98DE\u4E66\u8868: await checkBase(new Base(lark, project.baseToken)) };
 }
 async function main() {

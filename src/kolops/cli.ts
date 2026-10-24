@@ -100,7 +100,9 @@ async function check(project: Project | undefined): Promise<unknown> {
   const lark = new LarkCli(project?.baseToken ?? "");
   const auth = await checkAuth(lark);
   if (!project) return { ...auth, 项目: "这台电脑还没有登记项目（kol project add <项目名> <飞书表链接>）" };
-  if (!auth.权限齐全) return { ...auth, 项目: project.name, 飞书表: "授权补齐后再检查" };
+  // Reading the base needs only the Base scopes, so a login still waiting for mail scopes can be checked too.
+  const canReadBase = !auth.缺少的权限?.some((s) => s === "base:record:read" || s === "base:field:read");
+  if (!canReadBase) return { ...auth, 项目: project.name, 飞书表: "授权补齐后再检查" };
   return { ...auth, 项目: project.name, 飞书表: await checkBase(new Base(lark, project.baseToken)) };
 }
 
