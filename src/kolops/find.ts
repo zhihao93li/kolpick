@@ -4,6 +4,7 @@ import { ApifyRunner, type RunLedger, type RunRecord } from "../discovery/apify.
 import { normalizeHandle, type Platform } from "../discovery/models.js";
 import { DEFAULT_PARAMS, discover, type DiscoveryParams } from "../discovery/run.js";
 import { text } from "./base.js";
+import { withBio } from "./classify.js";
 import type { Ctx } from "./ctx.js";
 import { profileEmails } from "./data.js";
 import { dataDir } from "./ops.js";
@@ -103,7 +104,7 @@ export async function find(ctx: Ctx, o: FindOpts) {
       ...(all[0] ? { 公开邮箱: all[0] } : {}),
       ...(all.length > 1 ? { 其他邮箱: all.slice(1).join(", ") } : {}),
       联系许可: ["可联系"], 入库批次: [o.batch],
-      备注: `kol find ${o.job}：${c.discoveredBy}${c.emailSource ? `，邮箱来自 ${c.emailSource}` : ""}`,
+      备注: withBio(`kol find ${o.job}：${c.discoveredBy}${c.emailSource ? `，邮箱来自 ${c.emailSource}` : ""}`, c.bio),
     });
   }
   const ids = rows.length ? await ctx.base.create(t.profiles, rows) : [];

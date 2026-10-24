@@ -12,6 +12,7 @@ import { addProject, listProjects, removeProject, resolveProject, setDataApiKey,
 import { remind } from "./remind.js";
 import { sendApproved } from "./send.js";
 import { checkBase, setupBase } from "./setup.js";
+import { applyClassification, toClassify } from "./classify.js";
 import { syncInbox } from "./sync.js";
 import { todayLists } from "./today.js";
 
@@ -26,6 +27,9 @@ const HELP = `kol <命令> [选项]
   find    --platform instagram|youtube|tiktok --batch 入库批次 --job 名字 --budget 美元
           [--keywords a,b] [--seeds a,b] [--handles a,b] [--min-followers N] [--max-followers N] [--youtube-hidden]
                                 找新 KOL 和邮箱，不在库里的写进档案
+  classify --batch 入库批次 [--limit 50]
+                                列出这批里还没填合作邀约方向、市场、語言、内容类型、称呼的人，附简介和可选值（只读）
+  classify --apply 文件.json     按文件写入上面这几个字段（{"rec…": {"市场": "台湾", …}}），有一个值不对就一条都不写
   whoami                        看当前登录的飞书账号
   check                         检查飞书授权是否齐全、项目的飞书表缺不缺表和字段，以及怎么补
 
@@ -69,6 +73,14 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
         minFollowers: num(v["min-followers"]), maxFollowers: num(v["max-followers"]), budget: Number(v.budget),
         batch: v.batch, job: v.job, youtubeHidden: !!v["youtube-hidden"], dryRun: !!v["dry-run"],
       });
+    },
+  },
+  classify: {
+    title: RUN_TITLES.classify, writes: true,
+    run: (ctx, v) => {
+      if (v.apply) return applyClassification(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] });
+      need(v, "batch");
+      return toClassify(ctx, { batch: v.batch, limit: Number(v.limit ?? 50) });
     },
   },
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
@@ -115,7 +127,7 @@ async function main(): Promise<number> {
       "youtube-hidden": { type: "boolean" },
       days: str, only: str, batch: str, template: str, mailbox: str, approval: str, profiles: str, "profiles-file": str,
       platform: str, job: str, budget: str, keywords: str, seeds: str, handles: str, "min-followers": str, "max-followers": str,
-      project: str, "import-templates": str, "template-language": str,
+      project: str, "import-templates": str, "template-language": str, apply: str, limit: str,
     },
   });
   const name = positionals[0];
@@ -126,7 +138,8 @@ async function main(): Promise<number> {
   }
 
   let ctx: Ctx | undefined;
-  const logged = cmd.writes && !values["dry-run"];
+  // Listing what to classify only reads; only --apply belongs in 运行记录.
+  const logged = cmd.writes && !values["dry-run"] && !(name === "classify" && !values.apply);
   try {
     if (name === "project") return print(projectCommand(positionals.slice(1)));
     if (name === "check") {

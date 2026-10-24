@@ -23,7 +23,7 @@ export function today(cfg: Config, ms = Date.now()): string {
 }
 
 /** The 运行 names of commands that write. 运行记录 rows start with these, which sync and the send lock rely on. */
-export const RUN_TITLES = { sync: "收信同步", send: "发出已批准的信", invite: "发邀约", remind: "催信和结案", find: "找 KOL" } as const;
+export const RUN_TITLES = { sync: "收信同步", send: "发出已批准的信", invite: "发邀约", remind: "催信和结案", find: "找 KOL", classify: "补全档案" } as const;
 const SENDING_RUNS: string[] = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 /** A sending run older than this is treated as dead, so a crash can't block sending for good. */
 const LOCK_MINUTES = 30;
@@ -42,6 +42,40 @@ export async function otherSendingRun(base: Base, cfg: Config, selfId: string): 
     && SENDING_RUNS.some((title) => String(r["运行"] ?? "").startsWith(title))
     && (cellTime(r["开始时间"], cfg.timezone) ?? 0) >= cutoff);
   return busy ? `「${busy["运行"]}」从 ${stamp(cellTime(busy["开始时间"], cfg.timezone)!, cfg.timezone)} 起正在发信，等它跑完再发（超过 ${LOCK_MINUTES} 分钟还没结束的会自动放行）` : "";
+}
+
+/** How 接触记录 marks a bounce; sync writes it and the bounce-rate gate counts it. */
+export const BOUNCE_MARK = "[退信]";
+/** The bounce-rate gate looks at this many days, and only once a mailbox has sent at least this many mails. */
+const BOUNCE_WINDOW_DAYS = 14;
+const BOUNCE_MIN_SENT = 20;
+
+/** Per mailbox channel: mails sent and bounces filed in the last two weeks. */
+export async function bounceStats(base: Base, cfg: Config): Promise<Map<string, { sent: number; bounced: number }>> {
+  const since = dayOf(Date.now() - BOUNCE_WINDOW_DAYS * 86_400_000, cfg.timezone);
+  const rows = await base.records(cfg.tables.contacts, {
+    filter: { logic: "and", conditions: [["日期", ">=", `ExactDate(${since})`]] },
+    fields: ["方向", "渠道", "摘要", "日期"],
+  });
+  const stats = new Map<string, { sent: number; bounced: number }>();
+  for (const r of rows) {
+    const ch = option(r["渠道"]);
+    const s = stats.get(ch) ?? { sent: 0, bounced: 0 };
+    if (option(r["方向"]) === "发出") s.sent++;
+    else if (String(r["摘要"] ?? "").startsWith(BOUNCE_MARK)) s.bounced++;
+    stats.set(ch, s);
+  }
+  return stats;
+}
+
+/** Why a mailbox must stop sending because too much of its mail bounced, or "". */
+export function bouncePaused(mb: { address: string; channel: string; bouncePause: number }, stats: Map<string, { sent: number; bounced: number }>): string {
+  const s = stats.get(mb.channel);
+  if (!s || s.sent < BOUNCE_MIN_SENT || mb.bouncePause <= 0) return "";
+  const rate = (s.bounced / s.sent) * 100;
+  if (rate < mb.bouncePause) return "";
+  return `${mb.address} 最近 ${BOUNCE_WINDOW_DAYS} 天退信率 ${rate.toFixed(1)}%（发 ${s.sent} 封退 ${s.bounced} 封），`
+    + `到了暂停线 ${mb.bouncePause}%，先停发。请检查退信的邮箱，确认没问题后可在「发信邮箱」里调高这个邮箱的暂停线`;
 }
 
 export interface Me {

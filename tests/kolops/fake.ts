@@ -14,6 +14,8 @@ export class FakeLark implements Lark {
   /** Other projects' bases, by token, for reads that name one. */
   others: Record<string, FakeLark> = {};
   created: string[][] = [];
+  /** Full text of inbox messages, for `mail +messages`. */
+  bodies: Record<string, string> = {};
   private n = 0;
 
   table(name: string): Row[] {
@@ -69,6 +71,9 @@ export class FakeLark implements Lark {
       let list = this.inbox[flag("--mailbox")] ?? [];
       if (filter.from) list = list.filter((m) => filter.from.includes(m.from.replace(/.*</, "").replace(">", "")));
       return { messages: list };
+    }
+    if (svc === "mail" && cmd === "+messages") {
+      return { messages: flag("--message-ids").split(",").map((id) => ({ message_id: id, body_plain_text: this.bodies[id] ?? "" })) };
     }
     if (svc === "mail" && (cmd === "+send" || cmd === "+reply")) {
       if (this.failSend && this.failSendTimes-- > 0) throw this.failSend;

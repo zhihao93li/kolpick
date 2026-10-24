@@ -8,7 +8,7 @@
 node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" <命令> [选项]
 ```
 
-命令：`today`、`sync`、`send`、`invite`、`remind`、`find`、`whoami`、`check`、`project`、`setup-base`。`--help` 看完整参数。
+命令：`today`、`sync`、`send`、`invite`、`remind`、`find`、`classify`、`whoami`、`check`、`project`、`setup-base`。`--help` 看完整参数。
 
 ## 项目
 
@@ -22,7 +22,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" <命令> [选项]
 
 ## 先试跑，再正式跑
 
-会发信或改表的命令（`send`、`invite`、`remind`、`find`、`sync`）第一次一律先加 `--dry-run`，把会做什么（发给谁、几封、跳过谁和原因、花多少钱）讲清楚，同事说「发」或「跑」之后再去掉 `--dry-run` 正式跑。定时任务除外，见 kol-daily。
+会发信或改表的命令（`send`、`invite`、`remind`、`find`、`sync`）第一次一律先加 `--dry-run`（`classify --apply` 只补档案字段，找人后直接跑，见 kol-find），把会做什么（发给谁、几封、跳过谁和原因、花多少钱）讲清楚，同事说「发」或「跑」之后再去掉 `--dry-run` 正式跑。定时任务除外，见 kol-daily。
 
 ## 不能绕开的规则
 

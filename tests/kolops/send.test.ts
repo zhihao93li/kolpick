@@ -154,3 +154,26 @@ describe("sending across the team", () => {
     expect(r.failed[0].reason).toMatch(/1236006/);
   });
 });
+
+describe("bounce-rate gate", () => {
+  const today = () => `${new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10)} 09:00`;
+  function history(sent: number, bounced: number) {
+    for (let i = 0; i < sent; i++) lark.add(T.contacts, { 方向: ["发出"], 渠道: ["hello@tafu.me"], 日期: today(), 摘要: "[邀约] x", KOL: [{ id: `old${i}` }] });
+    for (let i = 0; i < bounced; i++) lark.add(T.contacts, { 方向: ["收到"], 渠道: ["hello@tafu.me"], 日期: today(), 摘要: `[退信] x${i}@example.com` });
+  }
+
+  it("stops a mailbox whose recent bounces reach its line", async () => {
+    history(20, 2); // 10% against the 6% line
+    review();
+    const r = await sendApproved(ctx, { dryRun: false });
+    expect(r.sent).toHaveLength(0);
+    expect(r.skipped[0].reason).toMatch(/退信率 10\.0%.*暂停线 6%/);
+  });
+
+  it("lets it send below the line, or before there's enough history to judge", async () => {
+    history(10, 3); // 30%, but only 10 sent
+    review();
+    const r = await sendApproved(ctx, { dryRun: false });
+    expect(r.sent).toHaveLength(1);
+  });
+});

@@ -78,3 +78,18 @@ it("reads the default few days when nothing synced before", async () => {
   const since = Date.parse(`${r.since.replace(" ", "T")}:00+08:00`);
   expect(Math.abs(since - (Date.now() - 3 * 86_400_000))).toBeLessThan(60_000);
 });
+
+it("closes a bounced address and files the bounce so it's counted once", async () => {
+  lark.inbox["hello@tafu.me"] = [{ message_id: "b1", from: "Mail Delivery <mailer-daemon@tafu.me>", subject: "Undeliverable", date: new Date().toISOString() }];
+  lark.bodies.b1 = "Delivery to deer@example.com failed permanently.";
+  const r = await syncInbox(ctx, { days: 3, dryRun: false });
+  expect(r.bounces).toEqual([{ name: "小鹿與阿哲", address: "deer@example.com" }]);
+  const f = lark.table(T.followups).find((x) => x.record_id === fid)!;
+  expect(f["结案原因"]).toEqual(["退信或邮箱无效"]);
+  const filed = lark.table(T.contacts);
+  expect(filed).toHaveLength(1);
+  expect(filed[0]).toMatchObject({ 摘要: "[退信] deer@example.com", 渠道: ["hello@tafu.me"], 待处理: false, KOL: [{ id: fid }] });
+
+  await syncInbox(ctx, { days: 3, dryRun: false });
+  expect(lark.table(T.contacts)).toHaveLength(1);
+});

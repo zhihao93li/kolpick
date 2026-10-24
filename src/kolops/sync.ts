@@ -2,7 +2,8 @@ import { cellTime, day, emailsIn, option, text } from "./base.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, loadSnapshot, type Snapshot } from "./data.js";
 import { addressOf, type MailSummary } from "./mail.js";
-import { RUN_TITLES, stamp } from "./ops.js";
+import { BOUNCE_MARK, RUN_TITLES, stamp } from "./ops.js";
+import type { Mailbox } from "./config.js";
 
 const BOUNCE_SENDER = /mailer-daemon|postmaster|mail-noreply.*bounce|delivery-?status/i;
 /** Out-of-office and "we got your mail" answers: filed, but not a reply that stops the 催信. */
@@ -65,7 +66,7 @@ export async function syncInbox(ctx: Ctx, opts: { days?: number; dryRun: boolean
       const from = addressOf(m.from);
       const when = Number.isNaN(Date.parse(m.date)) ? Date.now() : Date.parse(m.date);
       if (BOUNCE_SENDER.test(from)) {
-        await handleBounce(ctx, s, mb.address, m, when, report, followupChanges);
+        await handleBounce(ctx, s, mb, m, when, report, followupChanges, contacts);
         continue;
       }
       const fids = s.followupsByEmail.get(from);
@@ -134,14 +135,23 @@ function pickFollowup(s: Snapshot, ids: string[]): string {
   return ids.find((id) => !["结案"].includes(option(s.followups.get(id)?.["阶段"]))) ?? ids[0];
 }
 
-async function handleBounce(ctx: Ctx, s: Snapshot, mailbox: string, m: MailSummary, when: number,
-                            report: SyncReport, changes: Record<string, Record<string, unknown>>): Promise<void> {
+/**
+ * Closes the followups whose address bounced and files the bounce in 接触记录 as 「[退信] 地址」: that row is
+ * what the per-mailbox bounce-rate gate counts, and its Message ID keeps the bounce from being read twice.
+ */
+async function handleBounce(ctx: Ctx, s: Snapshot, mb: Mailbox, m: MailSummary, when: number, report: SyncReport,
+                            changes: Record<string, Record<string, unknown>>, contacts: Record<string, unknown>[]): Promise<void> {
   // The bounce names the failed address in its body, not its headers.
-  const data = await ctx.base.lark.json(["mail", "+messages", "--mailbox", mailbox, "--message-ids", m.message_id,
+  const data = await ctx.base.lark.json(["mail", "+messages", "--mailbox", mb.address, "--message-ids", m.message_id,
     "--html=false", "--as", "user"]).catch(() => null);
   const body = JSON.stringify(data ?? "");
-  for (const addr of new Set(emailsIn(body))) {
-    if (addr === mailbox || BOUNCE_SENDER.test(addr)) continue;
+  const failed = [...new Set(emailsIn(body))].filter((addr) => addr !== mb.address && !BOUNCE_SENDER.test(addr) && s.followupsByEmail.has(addr));
+  contacts.push({
+    方向: ["收到"], 渠道: [mb.channel], "Message ID": m.message_id, 日期: stamp(when, ctx.cfg.timezone), 待处理: false,
+    摘要: `${BOUNCE_MARK} ${failed.join(", ") || "（没认出是哪个地址）"}`.slice(0, 200),
+    ...(failed.length ? { KOL: [{ id: s.followupsByEmail.get(failed[0])![0] }] } : {}),
+  });
+  for (const addr of failed) {
     for (const fid of s.followupsByEmail.get(addr) ?? []) {
       const f = s.followups.get(fid)!;
       if (option(f["阶段"]) === "结案") continue;

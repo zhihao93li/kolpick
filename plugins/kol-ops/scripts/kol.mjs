@@ -959,9 +959,9 @@ var require_dist = __commonJS({
       return predicates.some((singlePredicate) => predicateOnArray(Array.prototype.some, singlePredicate, values));
     };
     is.all = (predicate, ...values) => predicateOnArray(Array.prototype.every, predicate, values);
-    var assertType = (condition, description, value, options = {}) => {
+    var assertType = (condition, description, value, options2 = {}) => {
       if (!condition) {
-        const { multipleValues } = options;
+        const { multipleValues } = options2;
         const valuesMessage = multipleValues ? `received values of types ${[
           ...new Set(value.map((singleValue) => `\`${is(singleValue)}\``))
         ].join(", ")}` : `received value of type \`${is(value)}\``;
@@ -1237,7 +1237,7 @@ var require_predicate = __commonJS({
     var generate_argument_error_message_1 = require_generate_argument_error_message();
     exports.validatorSymbol = /* @__PURE__ */ Symbol("validators");
     var Predicate = class {
-      constructor(type, options = {}) {
+      constructor(type, options2 = {}) {
         Object.defineProperty(this, "type", {
           enumerable: true,
           configurable: true,
@@ -1248,7 +1248,7 @@ var require_predicate = __commonJS({
           enumerable: true,
           configurable: true,
           writable: true,
-          value: options
+          value: options2
         });
         Object.defineProperty(this, "context", {
           enumerable: true,
@@ -1410,8 +1410,8 @@ var require_string = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("string", options);
+      constructor(options2) {
+        super("string", options2);
       }
       /**
           Test a string to have a specific length.
@@ -1619,8 +1619,8 @@ var require_number = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("number", options);
+      constructor(options2) {
+        super("number", options2);
       }
       /**
           Test a number to be in a specified range.
@@ -1813,8 +1813,8 @@ var require_bigint = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("bigint", options);
+      constructor(options2) {
+        super("bigint", options2);
       }
     };
     exports.BigIntPredicate = BigIntPredicate;
@@ -1832,8 +1832,8 @@ var require_boolean = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("boolean", options);
+      constructor(options2) {
+        super("boolean", options2);
       }
       /**
       Test a boolean to be true.
@@ -2665,8 +2665,8 @@ var require_array = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("array", options);
+      constructor(options2) {
+        super("array", options2);
       }
       /**
           Test an array to have a specific length.
@@ -2994,8 +2994,8 @@ var require_object = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("object", options);
+      constructor(options2) {
+        super("object", options2);
       }
       /**
       Test if an Object is a plain object.
@@ -3166,8 +3166,8 @@ var require_date = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("date", options);
+      constructor(options2) {
+        super("date", options2);
       }
       /**
           Test a date to be before another date.
@@ -3207,8 +3207,8 @@ var require_error = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("error", options);
+      constructor(options2) {
+        super("error", options2);
       }
       /**
           Test an error to have a specific name.
@@ -3320,8 +3320,8 @@ var require_map = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("Map", options);
+      constructor(options2) {
+        super("Map", options2);
       }
       /**
           Test a Map to have a specific size.
@@ -3473,8 +3473,8 @@ var require_weak_map = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("WeakMap", options);
+      constructor(options2) {
+        super("WeakMap", options2);
       }
       /**
           Test a WeakMap to include all the provided keys. The keys are tested by identity, not structure.
@@ -3517,8 +3517,8 @@ var require_set = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("Set", options);
+      constructor(options2) {
+        super("Set", options2);
       }
       /**
           Test a Set to have a specific size.
@@ -3634,8 +3634,8 @@ var require_weak_set = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("WeakSet", options);
+      constructor(options2) {
+        super("WeakSet", options2);
       }
       /**
           Test a WeakSet to include all the provided items. The items are tested by identity, not structure.
@@ -3806,8 +3806,8 @@ var require_data_view = __commonJS({
       /**
       @hidden
       */
-      constructor(options) {
-        super("DataView", options);
+      constructor(options2) {
+        super("DataView", options2);
       }
       /**
           Test a DataView to have a specific byte length.
@@ -3859,7 +3859,7 @@ var require_any = __commonJS({
     var base_predicate_1 = require_base_predicate();
     var generate_argument_error_message_1 = require_generate_argument_error_message();
     var AnyPredicate = class {
-      constructor(predicates, options = {}) {
+      constructor(predicates, options2 = {}) {
         Object.defineProperty(this, "predicates", {
           enumerable: true,
           configurable: true,
@@ -3870,7 +3870,7 @@ var require_any = __commonJS({
           enumerable: true,
           configurable: true,
           writable: true,
-          value: options
+          value: options2
         });
       }
       [base_predicate_1.testSymbol](value, main2, label, idLabel) {
@@ -3973,115 +3973,115 @@ var require_predicates = __commonJS({
     Object.defineProperty(exports, "AnyPredicate", { enumerable: true, get: function() {
       return any_1.AnyPredicate;
     } });
-    exports.default = (object, options) => {
+    exports.default = (object, options2) => {
       Object.defineProperties(object, {
         string: {
-          get: () => new string_1.StringPredicate(options)
+          get: () => new string_1.StringPredicate(options2)
         },
         number: {
-          get: () => new number_1.NumberPredicate(options)
+          get: () => new number_1.NumberPredicate(options2)
         },
         bigint: {
-          get: () => new bigint_1.BigIntPredicate(options)
+          get: () => new bigint_1.BigIntPredicate(options2)
         },
         boolean: {
-          get: () => new boolean_1.BooleanPredicate(options)
+          get: () => new boolean_1.BooleanPredicate(options2)
         },
         undefined: {
-          get: () => new predicate_1.Predicate("undefined", options)
+          get: () => new predicate_1.Predicate("undefined", options2)
         },
         null: {
-          get: () => new predicate_1.Predicate("null", options)
+          get: () => new predicate_1.Predicate("null", options2)
         },
         nullOrUndefined: {
-          get: () => new predicate_1.Predicate("nullOrUndefined", options)
+          get: () => new predicate_1.Predicate("nullOrUndefined", options2)
         },
         nan: {
-          get: () => new predicate_1.Predicate("nan", options)
+          get: () => new predicate_1.Predicate("nan", options2)
         },
         symbol: {
-          get: () => new predicate_1.Predicate("symbol", options)
+          get: () => new predicate_1.Predicate("symbol", options2)
         },
         array: {
-          get: () => new array_1.ArrayPredicate(options)
+          get: () => new array_1.ArrayPredicate(options2)
         },
         object: {
-          get: () => new object_1.ObjectPredicate(options)
+          get: () => new object_1.ObjectPredicate(options2)
         },
         date: {
-          get: () => new date_1.DatePredicate(options)
+          get: () => new date_1.DatePredicate(options2)
         },
         error: {
-          get: () => new error_1.ErrorPredicate(options)
+          get: () => new error_1.ErrorPredicate(options2)
         },
         map: {
-          get: () => new map_1.MapPredicate(options)
+          get: () => new map_1.MapPredicate(options2)
         },
         weakMap: {
-          get: () => new weak_map_1.WeakMapPredicate(options)
+          get: () => new weak_map_1.WeakMapPredicate(options2)
         },
         set: {
-          get: () => new set_1.SetPredicate(options)
+          get: () => new set_1.SetPredicate(options2)
         },
         weakSet: {
-          get: () => new weak_set_1.WeakSetPredicate(options)
+          get: () => new weak_set_1.WeakSetPredicate(options2)
         },
         function: {
-          get: () => new predicate_1.Predicate("Function", options)
+          get: () => new predicate_1.Predicate("Function", options2)
         },
         buffer: {
-          get: () => new predicate_1.Predicate("Buffer", options)
+          get: () => new predicate_1.Predicate("Buffer", options2)
         },
         regExp: {
-          get: () => new predicate_1.Predicate("RegExp", options)
+          get: () => new predicate_1.Predicate("RegExp", options2)
         },
         promise: {
-          get: () => new predicate_1.Predicate("Promise", options)
+          get: () => new predicate_1.Predicate("Promise", options2)
         },
         typedArray: {
-          get: () => new typed_array_1.TypedArrayPredicate("TypedArray", options)
+          get: () => new typed_array_1.TypedArrayPredicate("TypedArray", options2)
         },
         int8Array: {
-          get: () => new typed_array_1.TypedArrayPredicate("Int8Array", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Int8Array", options2)
         },
         uint8Array: {
-          get: () => new typed_array_1.TypedArrayPredicate("Uint8Array", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Uint8Array", options2)
         },
         uint8ClampedArray: {
-          get: () => new typed_array_1.TypedArrayPredicate("Uint8ClampedArray", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Uint8ClampedArray", options2)
         },
         int16Array: {
-          get: () => new typed_array_1.TypedArrayPredicate("Int16Array", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Int16Array", options2)
         },
         uint16Array: {
-          get: () => new typed_array_1.TypedArrayPredicate("Uint16Array", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Uint16Array", options2)
         },
         int32Array: {
-          get: () => new typed_array_1.TypedArrayPredicate("Int32Array", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Int32Array", options2)
         },
         uint32Array: {
-          get: () => new typed_array_1.TypedArrayPredicate("Uint32Array", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Uint32Array", options2)
         },
         float32Array: {
-          get: () => new typed_array_1.TypedArrayPredicate("Float32Array", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Float32Array", options2)
         },
         float64Array: {
-          get: () => new typed_array_1.TypedArrayPredicate("Float64Array", options)
+          get: () => new typed_array_1.TypedArrayPredicate("Float64Array", options2)
         },
         arrayBuffer: {
-          get: () => new array_buffer_1.ArrayBufferPredicate("ArrayBuffer", options)
+          get: () => new array_buffer_1.ArrayBufferPredicate("ArrayBuffer", options2)
         },
         sharedArrayBuffer: {
-          get: () => new array_buffer_1.ArrayBufferPredicate("SharedArrayBuffer", options)
+          get: () => new array_buffer_1.ArrayBufferPredicate("SharedArrayBuffer", options2)
         },
         dataView: {
-          get: () => new data_view_1.DataViewPredicate(options)
+          get: () => new data_view_1.DataViewPredicate(options2)
         },
         iterable: {
-          get: () => new predicate_1.Predicate("Iterable", options)
+          get: () => new predicate_1.Predicate("Iterable", options2)
         },
         any: {
-          value: (...predicates) => new any_1.AnyPredicate(predicates, options)
+          value: (...predicates) => new any_1.AnyPredicate(predicates, options2)
         }
       });
       return object;
@@ -5215,7 +5215,7 @@ var require_cjs2 = __commonJS({
       }
     }
     __name(getFormatFromEnv, "getFormatFromEnv");
-    function sanitizeData(data, options) {
+    function sanitizeData(data, options2) {
       const {
         maxDepth = Infinity,
         gradualLimitFactor = 1,
@@ -5225,7 +5225,7 @@ var require_cjs2 = __commonJS({
         preferredFieldsMap = {},
         truncationSuffix = TRUNCATION_SUFFIX,
         truncationFlagKey = TRUNCATION_FLAG_KEY
-      } = options;
+      } = options2;
       if (typeof data === "string") {
         return data.length > maxStringLength ? truncate(data, maxStringLength, truncationSuffix) : data;
       }
@@ -5237,7 +5237,7 @@ var require_cjs2 = __commonJS({
         data = { name, message, stack, cause, ...rest, [IS_APIFY_LOGGER_EXCEPTION]: true };
       }
       const nextCall = /* @__PURE__ */ __name((dat) => sanitizeData(dat, {
-        ...options,
+        ...options2,
         maxDepth: maxDepth - 1,
         maxStringLength: Math.max(
           Math.floor(maxStringLength * gradualLimitFactor),
@@ -5284,12 +5284,12 @@ var require_cjs2 = __commonJS({
     __name(sanitizeData, "sanitizeData");
     var import_node_events = __require("events");
     var _Logger = class _Logger extends import_node_events.EventEmitter {
-      constructor(options) {
+      constructor(options2) {
         super();
-        __publicField(this, "options", options);
+        __publicField(this, "options", options2);
       }
-      setOptions(options) {
-        this.options = { ...this.options, ...options };
+      setOptions(options2) {
+        this.options = { ...this.options, ...options2 };
       }
       getOptions() {
         return this.options;
@@ -5325,8 +5325,8 @@ var require_cjs2 = __commonJS({
       skipTime: false
     };
     var _LoggerJson = class _LoggerJson extends Logger {
-      constructor(options = {}) {
-        super({ ...DEFAULT_OPTIONS, ...options });
+      constructor(options2 = {}) {
+        super({ ...DEFAULT_OPTIONS, ...options2 });
       }
       _log(level, message, data, exception, opts = {}) {
         const { prefix, suffix } = opts;
@@ -5438,8 +5438,8 @@ var require_cjs2 = __commonJS({
       skipTime: true
     };
     var _LoggerText = class _LoggerText extends Logger {
-      constructor(options = {}) {
-        super({ ...DEFAULT_OPTIONS2, ...options });
+      constructor(options2 = {}) {
+        super({ ...DEFAULT_OPTIONS2, ...options2 });
       }
       _log(level, message, data, exception, opts = {}) {
         let { prefix, suffix } = opts;
@@ -5533,12 +5533,12 @@ ${errorLines.map((line) => `${" ".repeat(indentLevel * 2)}${line}`).join("\n")}`
       data: {}
     }), "getDefaultOptions");
     var _Log = class _Log2 {
-      constructor(options = {}) {
+      constructor(options2 = {}) {
         __publicField(this, "LEVELS", LogLevel);
         __publicField(this, "options");
         __publicField(this, "preferredFieldsMap");
         __publicField(this, "warningsOnceLogged", /* @__PURE__ */ new Set());
-        this.options = { ...getDefaultOptions(), ...options };
+        this.options = { ...getDefaultOptions(), ...options2 };
         if (!LogLevel[this.options.level]) throw new Error('Options "level" must be one of log.LEVELS enum!');
         if (typeof this.options.maxDepth !== "number") throw new Error('Options "maxDepth" must be a number!');
         if (typeof this.options.gradualLimitFactor !== "number")
@@ -5612,8 +5612,8 @@ ${errorLines.map((line) => `${" ".repeat(indentLevel * 2)}${line}`).join("\n")}`
       /**
        * Configures logger.
        */
-      setOptions(options) {
-        this.options = { ...this.options, ...options };
+      setOptions(options2) {
+        this.options = { ...this.options, ...options2 };
       }
       /**
        * Returns the logger configuration.
@@ -5624,15 +5624,15 @@ ${errorLines.map((line) => `${" ".repeat(indentLevel * 2)}${line}`).join("\n")}`
       /**
        * Creates a new instance of logger that inherits settings from a parent logger.
        */
-      child(options) {
+      child(options2) {
         let { prefix } = this.options;
-        if (options.prefix) {
-          prefix = prefix ? `${prefix}${PREFIX_DELIMITER}${options.prefix}` : options.prefix;
+        if (options2.prefix) {
+          prefix = prefix ? `${prefix}${PREFIX_DELIMITER}${options2.prefix}` : options2.prefix;
         }
-        const data = options.data ? { ...this.options.data, ...options.data } : this.options.data;
+        const data = options2.data ? { ...this.options.data, ...options2.data } : this.options.data;
         const newOptions = {
           ...this.options,
-          ...options,
+          ...options2,
           prefix,
           data
         };
@@ -5705,14 +5705,14 @@ ${errorLines.map((line) => `${" ".repeat(indentLevel * 2)}${line}`).join("\n")}`
 // node_modules/retry/lib/retry_operation.js
 var require_retry_operation = __commonJS({
   "node_modules/retry/lib/retry_operation.js"(exports, module) {
-    function RetryOperation(timeouts, options) {
-      if (typeof options === "boolean") {
-        options = { forever: options };
+    function RetryOperation(timeouts, options2) {
+      if (typeof options2 === "boolean") {
+        options2 = { forever: options2 };
       }
       this._originalTimeouts = JSON.parse(JSON.stringify(timeouts));
       this._timeouts = timeouts;
-      this._options = options || {};
-      this._maxRetryTime = options && options.maxRetryTime || Infinity;
+      this._options = options2 || {};
+      this._maxRetryTime = options2 && options2.maxRetryTime || Infinity;
       this._fn = null;
       this._errors = [];
       this._attempts = 1;
@@ -5841,17 +5841,17 @@ var require_retry_operation = __commonJS({
 var require_retry = __commonJS({
   "node_modules/retry/lib/retry.js"(exports) {
     var RetryOperation = require_retry_operation();
-    exports.operation = function(options) {
-      var timeouts = exports.timeouts(options);
+    exports.operation = function(options2) {
+      var timeouts = exports.timeouts(options2);
       return new RetryOperation(timeouts, {
-        forever: options && (options.forever || options.retries === Infinity),
-        unref: options && options.unref,
-        maxRetryTime: options && options.maxRetryTime
+        forever: options2 && (options2.forever || options2.retries === Infinity),
+        unref: options2 && options2.unref,
+        maxRetryTime: options2 && options2.maxRetryTime
       });
     };
-    exports.timeouts = function(options) {
-      if (options instanceof Array) {
-        return [].concat(options);
+    exports.timeouts = function(options2) {
+      if (options2 instanceof Array) {
+        return [].concat(options2);
       }
       var opts = {
         retries: 10,
@@ -5860,8 +5860,8 @@ var require_retry = __commonJS({
         maxTimeout: Infinity,
         randomize: false
       };
-      for (var key in options) {
-        opts[key] = options[key];
+      for (var key in options2) {
+        opts[key] = options2[key];
       }
       if (opts.minTimeout > opts.maxTimeout) {
         throw new Error("minTimeout is greater than maxTimeout");
@@ -5870,7 +5870,7 @@ var require_retry = __commonJS({
       for (var i = 0; i < opts.retries; i++) {
         timeouts.push(this.createTimeout(i, opts));
       }
-      if (options && options.forever && !timeouts.length) {
+      if (options2 && options2.forever && !timeouts.length) {
         timeouts.push(this.createTimeout(i, opts));
       }
       timeouts.sort(function(a, b) {
@@ -5884,10 +5884,10 @@ var require_retry = __commonJS({
       timeout = Math.min(timeout, opts.maxTimeout);
       return timeout;
     };
-    exports.wrap = function(obj, options, methods) {
-      if (options instanceof Array) {
-        methods = options;
-        options = null;
+    exports.wrap = function(obj, options2, methods) {
+      if (options2 instanceof Array) {
+        methods = options2;
+        options2 = null;
       }
       if (!methods) {
         methods = [];
@@ -5901,7 +5901,7 @@ var require_retry = __commonJS({
         var method = methods[i];
         var original = obj[method];
         obj[method] = function retryWrapper(original2) {
-          var op = exports.operation(options);
+          var op = exports.operation(options2);
           var args = Array.prototype.slice.call(arguments, 1);
           var callback = args.pop();
           args.push(function(err) {
@@ -5917,7 +5917,7 @@ var require_retry = __commonJS({
             original2.apply(obj, args);
           });
         }.bind(obj, original);
-        obj[method].options = options;
+        obj[method].options = options2;
       }
     };
   }
@@ -5936,12 +5936,12 @@ var require_lib = __commonJS({
     var retrier = require_retry2();
     function retry(fn, opts) {
       function run(resolve, reject) {
-        var options = opts || {};
+        var options2 = opts || {};
         var op;
-        if (!("randomize" in options)) {
-          options.randomize = true;
+        if (!("randomize" in options2)) {
+          options2.randomize = true;
         }
-        op = retrier.operation(options);
+        op = retrier.operation(options2);
         function bail(err) {
           reject(err || new Error("Aborted"));
         }
@@ -5952,8 +5952,8 @@ var require_lib = __commonJS({
           }
           if (!op.retry(err)) {
             reject(op.mainError());
-          } else if (options.onRetry) {
-            options.onRetry(err, num3);
+          } else if (options2.onRetry) {
+            options2.onRetry(err, num3);
           }
         }
         function runAttempt(num3) {
@@ -5992,11 +5992,11 @@ var require_delayed_stream = __commonJS({
       this._bufferedEvents = [];
     }
     util.inherits(DelayedStream, Stream);
-    DelayedStream.create = function(source, options) {
+    DelayedStream.create = function(source, options2) {
       var delayedStream = new this();
-      options = options || {};
-      for (var option2 in options) {
-        delayedStream[option2] = options[option2];
+      options2 = options2 || {};
+      for (var option2 in options2) {
+        delayedStream[option2] = options2[option2];
       }
       delayedStream.source = source;
       var realEmit = source.emit;
@@ -6087,11 +6087,11 @@ var require_combined_stream = __commonJS({
       this._pendingNext = false;
     }
     util.inherits(CombinedStream, Stream);
-    CombinedStream.create = function(options) {
+    CombinedStream.create = function(options2) {
       var combinedStream = new this();
-      options = options || {};
-      for (var option2 in options) {
-        combinedStream[option2] = options[option2];
+      options2 = options2 || {};
+      for (var option2 in options2) {
+        combinedStream[option2] = options2[option2];
       }
       return combinedStream;
     };
@@ -6117,8 +6117,8 @@ var require_combined_stream = __commonJS({
       this._streams.push(stream);
       return this;
     };
-    CombinedStream.prototype.pipe = function(dest, options) {
-      Stream.prototype.pipe.call(this, dest, options);
+    CombinedStream.prototype.pipe = function(dest, options2) {
+      Stream.prototype.pipe.call(this, dest, options2);
       this.resume();
       return dest;
     };
@@ -15947,26 +15947,26 @@ var require_form_data = __commonJS({
     function escapeHeaderParam(str) {
       return String(str).replace(/\r/g, "%0D").replace(/\n/g, "%0A").replace(/"/g, "%22");
     }
-    function FormData2(options) {
+    function FormData2(options2) {
       if (!(this instanceof FormData2)) {
-        return new FormData2(options);
+        return new FormData2(options2);
       }
       this._overheadLength = 0;
       this._valueLength = 0;
       this._valuesToMeasure = [];
       CombinedStream.call(this);
-      options = options || {};
-      for (var option2 in options) {
-        this[option2] = options[option2];
+      options2 = options2 || {};
+      for (var option2 in options2) {
+        this[option2] = options2[option2];
       }
     }
     util.inherits(FormData2, CombinedStream);
     FormData2.LINE_BREAK = "\r\n";
     FormData2.DEFAULT_CONTENT_TYPE = "application/octet-stream";
-    FormData2.prototype.append = function(field, value, options) {
-      options = options || {};
-      if (typeof options === "string") {
-        options = { filename: options };
+    FormData2.prototype.append = function(field, value, options2) {
+      options2 = options2 || {};
+      if (typeof options2 === "string") {
+        options2 = { filename: options2 };
       }
       var append = CombinedStream.prototype.append.bind(this);
       if (typeof value === "number" || value == null) {
@@ -15976,17 +15976,17 @@ var require_form_data = __commonJS({
         this._error(new Error("Arrays are not supported."));
         return;
       }
-      var header = this._multiPartHeader(field, value, options);
+      var header = this._multiPartHeader(field, value, options2);
       var footer = this._multiPartFooter();
       append(header);
       append(value);
       append(footer);
-      this._trackLength(header, value, options);
+      this._trackLength(header, value, options2);
     };
-    FormData2.prototype._trackLength = function(header, value, options) {
+    FormData2.prototype._trackLength = function(header, value, options2) {
       var valueLength = 0;
-      if (options.knownLength != null) {
-        valueLength += Number(options.knownLength);
+      if (options2.knownLength != null) {
+        valueLength += Number(options2.knownLength);
       } else if (Buffer.isBuffer(value)) {
         valueLength = value.length;
       } else if (typeof value === "string") {
@@ -15997,7 +15997,7 @@ var require_form_data = __commonJS({
       if (!value || !value.path && !(value.readable && hasOwn(value, "httpVersion")) && !(value instanceof Stream)) {
         return;
       }
-      if (!options.knownLength) {
+      if (!options2.knownLength) {
         this._valuesToMeasure.push(value);
       }
     };
@@ -16027,12 +16027,12 @@ var require_form_data = __commonJS({
         callback("Unknown stream");
       }
     };
-    FormData2.prototype._multiPartHeader = function(field, value, options) {
-      if (typeof options.header === "string") {
-        return options.header;
+    FormData2.prototype._multiPartHeader = function(field, value, options2) {
+      if (typeof options2.header === "string") {
+        return options2.header;
       }
-      var contentDisposition = this._getContentDisposition(value, options);
-      var contentType = this._getContentType(value, options);
+      var contentDisposition = this._getContentDisposition(value, options2);
+      var contentType = this._getContentType(value, options2);
       var contents = "";
       var headers = {
         // add custom disposition as third element or keep it two elements if not
@@ -16040,8 +16040,8 @@ var require_form_data = __commonJS({
         // if no content type. allow it to be empty array
         "Content-Type": [].concat(contentType || [])
       };
-      if (typeof options.header === "object") {
-        populate(headers, options.header);
+      if (typeof options2.header === "object") {
+        populate(headers, options2.header);
       }
       var header;
       for (var prop in headers) {
@@ -16060,12 +16060,12 @@ var require_form_data = __commonJS({
       }
       return "--" + this.getBoundary() + FormData2.LINE_BREAK + contents + FormData2.LINE_BREAK;
     };
-    FormData2.prototype._getContentDisposition = function(value, options) {
+    FormData2.prototype._getContentDisposition = function(value, options2) {
       var filename;
-      if (typeof options.filepath === "string") {
-        filename = path.normalize(options.filepath).replace(/\\/g, "/");
-      } else if (options.filename || value && (value.name || value.path)) {
-        filename = path.basename(options.filename || value && (value.name || value.path));
+      if (typeof options2.filepath === "string") {
+        filename = path.normalize(options2.filepath).replace(/\\/g, "/");
+      } else if (options2.filename || value && (value.name || value.path)) {
+        filename = path.basename(options2.filename || value && (value.name || value.path));
       } else if (value && value.readable && hasOwn(value, "httpVersion")) {
         filename = path.basename(value.client._httpMessage.path || "");
       }
@@ -16073,8 +16073,8 @@ var require_form_data = __commonJS({
         return 'filename="' + escapeHeaderParam(filename) + '"';
       }
     };
-    FormData2.prototype._getContentType = function(value, options) {
-      var contentType = options.contentType;
+    FormData2.prototype._getContentType = function(value, options2) {
+      var contentType = options2.contentType;
       if (!contentType && value && value.name) {
         contentType = mime.lookup(value.name);
       }
@@ -16084,8 +16084,8 @@ var require_form_data = __commonJS({
       if (!contentType && value && value.readable && hasOwn(value, "httpVersion")) {
         contentType = value.headers["content-type"];
       }
-      if (!contentType && (options.filepath || options.filename)) {
-        contentType = mime.lookup(options.filepath || options.filename);
+      if (!contentType && (options2.filepath || options2.filename)) {
+        contentType = mime.lookup(options2.filepath || options2.filename);
       }
       if (!contentType && value && typeof value === "object") {
         contentType = FormData2.DEFAULT_CONTENT_TYPE;
@@ -16188,27 +16188,27 @@ var require_form_data = __commonJS({
     };
     FormData2.prototype.submit = function(params, cb) {
       var request;
-      var options;
+      var options2;
       var defaults = { method: "post" };
       if (typeof params === "string") {
         params = parseUrl(params);
-        options = populate({
+        options2 = populate({
           port: params.port,
           path: params.pathname,
           host: params.hostname,
           protocol: params.protocol
         }, defaults);
       } else {
-        options = populate(params, defaults);
-        if (!options.port) {
-          options.port = options.protocol === "https:" ? 443 : 80;
+        options2 = populate(params, defaults);
+        if (!options2.port) {
+          options2.port = options2.protocol === "https:" ? 443 : 80;
         }
       }
-      options.headers = this.getHeaders(params.headers);
-      if (options.protocol === "https:") {
-        request = https.request(options);
+      options2.headers = this.getHeaders(params.headers);
+      if (options2.protocol === "https:") {
+        request = https.request(options2);
       } else {
-        request = http.request(options);
+        request = http.request(options2);
       }
       this.getLength(function(err, length) {
         if (err && err !== "Unknown stream") {
@@ -16257,13 +16257,13 @@ var require_ms = __commonJS({
     var d = h * 24;
     var w = d * 7;
     var y = d * 365.25;
-    module.exports = function(val, options) {
-      options = options || {};
+    module.exports = function(val, options2) {
+      options2 = options2 || {};
       var type = typeof val;
       if (type === "string" && val.length > 0) {
         return parse(val);
       } else if (type === "number" && isFinite(val)) {
-        return options.long ? fmtLong(val) : fmtShort(val);
+        return options2.long ? fmtLong(val) : fmtShort(val);
       }
       throw new Error(
         "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
@@ -17438,10 +17438,10 @@ var require_follow_redirects = __commonJS({
       "write after end"
     );
     var destroy = Writable.prototype.destroy || noop;
-    function RedirectableRequest(options, responseCallback) {
+    function RedirectableRequest(options2, responseCallback) {
       Writable.call(this);
-      this._sanitizeOptions(options);
-      this._options = options;
+      this._sanitizeOptions(options2);
+      this._options = options2;
       this._ended = false;
       this._ending = false;
       this._redirectCount = 0;
@@ -17459,7 +17459,7 @@ var require_follow_redirects = __commonJS({
           self2.emit("error", cause instanceof RedirectionError ? cause : new RedirectionError({ cause }));
         }
       };
-      this._headerFilter = new RegExp("^(?:" + sensitiveHeaders.concat(options.sensitiveHeaders).map(escapeRegex).join("|") + ")$", "i");
+      this._headerFilter = new RegExp("^(?:" + sensitiveHeaders.concat(options2.sensitiveHeaders).map(escapeRegex).join("|") + ")$", "i");
       this._performRequest();
     }
     RedirectableRequest.prototype = Object.create(Writable.prototype);
@@ -17593,32 +17593,32 @@ var require_follow_redirects = __commonJS({
         }
       });
     });
-    RedirectableRequest.prototype._sanitizeOptions = function(options) {
-      if (!options.headers) {
-        options.headers = {};
-      } else if (Array.isArray(options.headers)) {
-        var headerList = options.headers;
-        options.headers = {};
+    RedirectableRequest.prototype._sanitizeOptions = function(options2) {
+      if (!options2.headers) {
+        options2.headers = {};
+      } else if (Array.isArray(options2.headers)) {
+        var headerList = options2.headers;
+        options2.headers = {};
         for (var i = 0; i < headerList.length; i += 2) {
-          options.headers[headerList[i]] = headerList[i + 1];
+          options2.headers[headerList[i]] = headerList[i + 1];
         }
       }
-      if (!isArray(options.sensitiveHeaders)) {
-        options.sensitiveHeaders = [];
+      if (!isArray(options2.sensitiveHeaders)) {
+        options2.sensitiveHeaders = [];
       }
-      if (options.host) {
-        if (!options.hostname) {
-          options.hostname = options.host;
+      if (options2.host) {
+        if (!options2.hostname) {
+          options2.hostname = options2.host;
         }
-        delete options.host;
+        delete options2.host;
       }
-      if (!options.pathname && options.path) {
-        var searchPos = options.path.indexOf("?");
+      if (!options2.pathname && options2.path) {
+        var searchPos = options2.path.indexOf("?");
         if (searchPos < 0) {
-          options.pathname = options.path;
+          options2.pathname = options2.path;
         } else {
-          options.pathname = options.path.substring(0, searchPos);
-          options.search = options.path.substring(searchPos);
+          options2.pathname = options2.path.substring(0, searchPos);
+          options2.search = options2.path.substring(searchPos);
         }
       }
     };
@@ -17738,34 +17738,34 @@ var require_follow_redirects = __commonJS({
         var protocol = scheme + ":";
         var nativeProtocol = nativeProtocols[protocol] = protocols[scheme];
         var wrappedProtocol = exports2[scheme] = Object.create(nativeProtocol);
-        function request(input, options, callback) {
+        function request(input, options2, callback) {
           if (isURL(input)) {
             input = spreadUrlObject(input);
           } else if (isString(input)) {
             input = spreadUrlObject(parseUrl(input));
           } else {
-            callback = options;
-            options = validateUrl(input);
+            callback = options2;
+            options2 = validateUrl(input);
             input = { protocol };
           }
-          if (isFunction(options)) {
-            callback = options;
-            options = null;
+          if (isFunction(options2)) {
+            callback = options2;
+            options2 = null;
           }
-          options = Object.assign({
+          options2 = Object.assign({
             maxRedirects: exports2.maxRedirects,
             maxBodyLength: exports2.maxBodyLength
-          }, input, options);
-          options.nativeProtocols = nativeProtocols;
-          if (!isString(options.host) && !isString(options.hostname)) {
-            options.hostname = "::1";
+          }, input, options2);
+          options2.nativeProtocols = nativeProtocols;
+          if (!isString(options2.host) && !isString(options2.hostname)) {
+            options2.hostname = "::1";
           }
-          assert.equal(options.protocol, protocol, "protocol mismatch");
-          debug("options", options);
-          return new RedirectableRequest(options, callback);
+          assert.equal(options2.protocol, protocol, "protocol mismatch");
+          debug("options", options2);
+          return new RedirectableRequest(options2, callback);
         }
-        function get2(input, options, callback) {
-          var wrappedRequest = wrappedProtocol.request(input, options, callback);
+        function get2(input, options2, callback) {
+          var wrappedRequest = wrappedProtocol.request(input, options2, callback);
           wrappedRequest.end();
           return wrappedRequest;
         }
@@ -19037,13 +19037,13 @@ var require_axios = __commonJS({
     var predicates = utils$1.toFlatObject(utils$1, {}, null, function filter(prop) {
       return /^is[A-Z]/.test(prop);
     });
-    function toFormData(obj, formData, options) {
+    function toFormData(obj, formData, options2) {
       if (!utils$1.isObject(obj)) {
         throw new TypeError("target must be an object");
       }
       formData = formData || new (FormData$1 || FormData)();
       const option2 = (name, fallback) => {
-        const value = utils$1.getSafeProp(options, name);
+        const value = utils$1.getSafeProp(options2, name);
         return utils$1.isUndefined(value) ? fallback : value;
       };
       const metaTokens = option2("metaTokens", true);
@@ -19168,9 +19168,9 @@ var require_axios = __commonJS({
         return charMap[match];
       });
     }
-    function AxiosURLSearchParams(params, options) {
+    function AxiosURLSearchParams(params, options2) {
       this._pairs = [];
-      params && toFormData(params, this, options);
+      params && toFormData(params, this, options2);
     }
     var prototype = AxiosURLSearchParams.prototype;
     prototype.append = function append(name, value) {
@@ -19185,14 +19185,14 @@ var require_axios = __commonJS({
     function encode(val) {
       return encodeURIComponent(val).replace(/%3A/gi, ":").replace(/%24/g, "$").replace(/%2C/gi, ",").replace(/%20/g, "+");
     }
-    function buildURL(url2, params, options) {
+    function buildURL(url2, params, options2) {
       if (!params) {
         return url2;
       }
       url2 = url2 || "";
-      const _options = utils$1.isFunction(options) ? {
-        serialize: options
-      } : options;
+      const _options = utils$1.isFunction(options2) ? {
+        serialize: options2
+      } : options2;
       const _encode = utils$1.getSafeProp(_options, "encode") || encode;
       const serializeFn = utils$1.getSafeProp(_options, "serialize");
       let serializedParams;
@@ -19261,12 +19261,12 @@ var require_axios = __commonJS({
        *
        * @return {Number} An ID used to remove interceptor later
        */
-      use(fulfilled, rejected, options) {
+      use(fulfilled, rejected, options2) {
         const handler = {
           fulfilled,
           rejected,
-          synchronous: options ? options.synchronous : false,
-          runWhen: options ? options.runWhen : null
+          synchronous: options2 ? options2.synchronous : false,
+          runWhen: options2 ? options2.runWhen : null
         };
         const internals = this[$internals];
         if (this.handlers == null) {
@@ -19404,7 +19404,7 @@ var require_axios = __commonJS({
       ...utils,
       ...platform$1
     };
-    function toURLEncodedForm(data, options) {
+    function toURLEncodedForm(data, options2) {
       return toFormData(data, new platform.classes.URLSearchParams(), {
         visitor: function(value, key, path2, helpers) {
           if (platform.isNode && utils$1.isBuffer(value)) {
@@ -19413,7 +19413,7 @@ var require_axios = __commonJS({
           }
           return helpers.defaultVisitor.apply(this, arguments);
         },
-        ...options
+        ...options2
       });
     }
     var MAX_DEPTH = DEFAULT_FORM_DATA_MAX_DEPTH;
@@ -19759,8 +19759,8 @@ var require_axios = __commonJS({
       return match && match[1] || "";
     }
     var DATA_URL_PATTERN = /^([^,;/]+\/[^,;/]+)?((?:;[^,;=]+=[^,;]+)*)(;base64)?,([\s\S]*)$/;
-    function fromDataURI(uri, asBlob, options) {
-      const _Blob = options && options.Blob || platform.classes.Blob;
+    function fromDataURI(uri, asBlob, options2) {
+      const _Blob = options2 && options2.Blob || platform.classes.Blob;
       const protocol = parseProtocol(uri);
       if (asBlob === void 0 && _Blob) {
         asBlob = true;
@@ -19808,8 +19808,8 @@ var require_axios = __commonJS({
     }
     var kInternals = /* @__PURE__ */ Symbol("internals");
     var AxiosTransformStream = class extends stream.Transform {
-      constructor(options) {
-        options = utils$1.toFlatObject(options, {
+      constructor(options2) {
+        options2 = utils$1.toFlatObject(options2, {
           maxRate: 0,
           chunkSize: 64 * 1024,
           minChunkSize: 100,
@@ -19820,13 +19820,13 @@ var require_axios = __commonJS({
           return !utils$1.isUndefined(source[prop]);
         });
         super({
-          readableHighWaterMark: options.chunkSize
+          readableHighWaterMark: options2.chunkSize
         });
         const internals = this[kInternals] = {
-          timeWindow: options.timeWindow,
-          chunkSize: options.chunkSize,
-          maxRate: options.maxRate,
-          minChunkSize: options.minChunkSize,
+          timeWindow: options2.timeWindow,
+          chunkSize: options2.chunkSize,
+          maxRate: options2.maxRate,
+          minChunkSize: options2.minChunkSize,
           bytesSeen: 0,
           isCaptured: false,
           notifiedBytesLoaded: 0,
@@ -19975,12 +19975,12 @@ var require_axios = __commonJS({
         })[match]);
       }
     };
-    var formDataToStream = (form, headersHandler, options) => {
+    var formDataToStream = (form, headersHandler, options2) => {
       const {
         tag = "form-data-boundary",
         size = 25,
         boundary = tag + "-" + platform.generateString(size, BOUNDARY_ALPHABET)
-      } = options || {};
+      } = options2 || {};
       if (!utils$1.isFormData(form)) {
         throw new TypeError("FormData instance required");
       }
@@ -20034,21 +20034,21 @@ var require_axios = __commonJS({
       constructor() {
         this.sessions = /* @__PURE__ */ Object.create(null);
       }
-      getSession(authority, options) {
-        options = Object.assign(/* @__PURE__ */ Object.create(null), {
+      getSession(authority, options2) {
+        options2 = Object.assign(/* @__PURE__ */ Object.create(null), {
           sessionTimeout: 1e3
-        }, options);
+        }, options2);
         let authoritySessions = this.sessions[authority];
         if (authoritySessions) {
           let len = authoritySessions.length;
           for (let i = 0; i < len; i++) {
             const [sessionHandle, sessionOptions] = authoritySessions[i];
-            if (!sessionHandle.destroyed && !sessionHandle.closed && util.isDeepStrictEqual(sessionOptions, options)) {
+            if (!sessionHandle.destroyed && !sessionHandle.closed && util.isDeepStrictEqual(sessionOptions, options2)) {
               return sessionHandle;
             }
           }
         }
-        const session = http2.connect(authority, options);
+        const session = http2.connect(authority, options2);
         let removed;
         let timer;
         const removeSession = () => {
@@ -20078,7 +20078,7 @@ var require_axios = __commonJS({
         const originalRequestFn = session.request;
         const {
           sessionTimeout
-        } = options;
+        } = options2;
         if (sessionTimeout != null) {
           let streamsCount = 0;
           session.request = function() {
@@ -20101,7 +20101,7 @@ var require_axios = __commonJS({
         }
         session.once("close", removeSession);
         session.once("error", removeSession);
-        let entry = [session, options];
+        let entry = [session, options2];
         authoritySessions ? authoritySessions.push(entry) : authoritySessions = this.sessions[authority] = [entry];
         return session;
       }
@@ -20706,8 +20706,8 @@ var require_axios = __commonJS({
       const agentOptions = agent && agent.options;
       return Boolean(agentOptions && utils$1.hasOwnProp(agentOptions, "proxyEnv") && agentOptions.proxyEnv != null);
     }
-    function getProxyEnvAgent(options, configHttpAgent, configHttpsAgent) {
-      return isHttps.test(options.protocol) ? configHttpsAgent || https.globalAgent : configHttpAgent || http.globalAgent;
+    function getProxyEnvAgent(options2, configHttpAgent, configHttpsAgent) {
+      return isHttps.test(options2.protocol) ? configHttpsAgent || https.globalAgent : configHttpAgent || http.globalAgent;
     }
     function getTunnelingAgent(agentOptions, userHttpsAgent) {
       const key = agentOptions.protocol + "//" + agentOptions.hostname + ":" + (agentOptions.port || "") + "#" + (agentOptions.auth || "");
@@ -20753,18 +20753,18 @@ var require_axios = __commonJS({
       return throttled;
     };
     var http2Sessions = new Http2Sessions();
-    function dispatchBeforeRedirect(options, responseDetails, requestDetails) {
-      if (options.beforeRedirects.proxy) {
-        options.beforeRedirects.proxy(options);
+    function dispatchBeforeRedirect(options2, responseDetails, requestDetails) {
+      if (options2.beforeRedirects.proxy) {
+        options2.beforeRedirects.proxy(options2);
       }
-      if (options.beforeRedirects.auth) {
-        options.beforeRedirects.auth(options);
+      if (options2.beforeRedirects.auth) {
+        options2.beforeRedirects.auth(options2);
       }
-      if (options.beforeRedirects.sensitiveHeaders) {
-        options.beforeRedirects.sensitiveHeaders(options, requestDetails);
+      if (options2.beforeRedirects.sensitiveHeaders) {
+        options2.beforeRedirects.sensitiveHeaders(options2, requestDetails);
       }
-      if (options.beforeRedirects.config) {
-        options.beforeRedirects.config(options, responseDetails, requestDetails);
+      if (options2.beforeRedirects.config) {
+        options2.beforeRedirects.config(options2, responseDetails, requestDetails);
       }
     }
     function stripMatchingHeaders(headers, sensitiveSet) {
@@ -20787,9 +20787,9 @@ var require_axios = __commonJS({
         return false;
       }
     }
-    function setProxy(options, configProxy, location, isRedirect, configHttpsAgent, configHttpAgent, allowEnvProxy = true) {
+    function setProxy(options2, configProxy, location, isRedirect, configHttpsAgent, configHttpAgent, allowEnvProxy = true) {
       let proxy = configProxy;
-      const proxyEnvAgent = getProxyEnvAgent(options, configHttpAgent, configHttpsAgent);
+      const proxyEnvAgent = getProxyEnvAgent(options2, configHttpAgent, configHttpsAgent);
       if (!proxy && proxy !== false && allowEnvProxy && !isNodeEnvProxyEnabled(proxyEnvAgent)) {
         const proxyUrl = getProxyForUrl(location);
         if (proxyUrl) {
@@ -20798,15 +20798,15 @@ var require_axios = __commonJS({
           }
         }
       }
-      if (isRedirect && options.headers) {
-        for (const name of Object.keys(options.headers)) {
+      if (isRedirect && options2.headers) {
+        for (const name of Object.keys(options2.headers)) {
           if (name.toLowerCase() === "proxy-authorization") {
-            delete options.headers[name];
+            delete options2.headers[name];
           }
         }
       }
-      if (isRedirect && options.agent && options.agent[kAxiosInstalledTunnel]) {
-        options.agent = void 0;
+      if (isRedirect && options2.agent && options2.agent[kAxiosInstalledTunnel]) {
+        options2.agent = void 0;
       }
       if (proxy) {
         const isProxyURL = proxy instanceof URL;
@@ -20830,7 +20830,7 @@ var require_axios = __commonJS({
             });
           }
         }
-        const targetIsHttps = isHttps.test(options.protocol);
+        const targetIsHttps = isHttps.test(options2.protocol);
         if (targetIsHttps) {
           if (!(configHttpsAgent instanceof HttpsProxyAgent)) {
             const proxyHost = readProxyField("hostname") || readProxyField("host");
@@ -20849,38 +20849,38 @@ var require_axios = __commonJS({
               agentOptions.ALPNProtocols = ["http/1.1"];
             }
             const tunnelingAgent = getTunnelingAgent(agentOptions, configHttpsAgent);
-            options.agent = tunnelingAgent;
-            if (options.agents) {
-              options.agents.https = tunnelingAgent;
+            options2.agent = tunnelingAgent;
+            if (options2.agents) {
+              options2.agents.https = tunnelingAgent;
             }
           }
         } else {
           if (proxyAuth) {
             const base64 = Buffer.from(proxyAuth, "utf8").toString("base64");
-            options.headers["Proxy-Authorization"] = "Basic " + base64;
+            options2.headers["Proxy-Authorization"] = "Basic " + base64;
           }
           let hasUserHostHeader = false;
-          for (const name of Object.keys(options.headers)) {
+          for (const name of Object.keys(options2.headers)) {
             if (name.toLowerCase() === "host") {
               hasUserHostHeader = true;
               break;
             }
           }
           if (!hasUserHostHeader) {
-            options.headers.host = options.hostname + (options.port ? ":" + options.port : "");
+            options2.headers.host = options2.hostname + (options2.port ? ":" + options2.port : "");
           }
           const proxyHost = readProxyField("hostname") || readProxyField("host");
-          options.hostname = proxyHost;
-          options.host = proxyHost;
-          options.port = readProxyField("port");
-          options.path = location;
+          options2.hostname = proxyHost;
+          options2.host = proxyHost;
+          options2.port = readProxyField("port");
+          options2.path = location;
           const proxyProtocol = readProxyField("protocol");
           if (proxyProtocol) {
-            options.protocol = proxyProtocol.includes(":") ? proxyProtocol : `${proxyProtocol}:`;
+            options2.protocol = proxyProtocol.includes(":") ? proxyProtocol : `${proxyProtocol}:`;
           }
         }
       }
-      options.beforeRedirects.proxy = function beforeRedirect(redirectOptions) {
+      options2.beforeRedirects.proxy = function beforeRedirect(redirectOptions) {
         setProxy(redirectOptions, configProxy, redirectOptions.href, true, configHttpsAgent, configHttpAgent, allowEnvProxy);
       };
       return Boolean(proxy || configProxy !== false && allowEnvProxy && isNodeEnvProxyEnabled(proxyEnvAgent));
@@ -20947,12 +20947,12 @@ var require_axios = __commonJS({
       return normalized;
     };
     var http2Transport = {
-      request(options, cb) {
-        const authority = options.protocol + "//" + options.hostname + ":" + (options.port || (options.protocol === "https:" ? 443 : 80));
+      request(options2, cb) {
+        const authority = options2.protocol + "//" + options2.hostname + ":" + (options2.port || (options2.protocol === "https:" ? 443 : 80));
         const {
           http2Options,
           headers
-        } = options;
+        } = options2;
         const session = http2Sessions.getSession(authority, http2Options);
         const {
           HTTP2_HEADER_SCHEME,
@@ -20961,9 +20961,9 @@ var require_axios = __commonJS({
           HTTP2_HEADER_STATUS
         } = http2.constants;
         const http2Headers = {
-          [HTTP2_HEADER_SCHEME]: options.protocol.replace(":", ""),
-          [HTTP2_HEADER_METHOD]: options.method,
-          [HTTP2_HEADER_PATH]: options.path
+          [HTTP2_HEADER_SCHEME]: options2.protocol.replace(":", ""),
+          [HTTP2_HEADER_METHOD]: options2.method,
+          [HTTP2_HEADER_PATH]: options2.path
         };
         utils$1.forEach(headers, (header, name) => {
           name.charAt(0) !== ":" && (http2Headers[name] = header);
@@ -21218,7 +21218,7 @@ var require_axios = __commonJS({
             lookup
           });
         }
-        const options = Object.assign(/* @__PURE__ */ Object.create(null), {
+        const options2 = Object.assign(/* @__PURE__ */ Object.create(null), {
           path: path$1,
           method,
           headers: toByteStringHeaderObject(headers),
@@ -21234,7 +21234,7 @@ var require_axios = __commonJS({
           http2Options,
           createConnection: void 0
         });
-        !utils$1.isUndefined(lookup) && (options.lookup = lookup);
+        !utils$1.isUndefined(lookup) && (options2.lookup = lookup);
         let proxyApplied = false;
         if (socketPath) {
           if (typeof socketPath !== "string") {
@@ -21249,14 +21249,14 @@ var require_axios = __commonJS({
               return reject(new AxiosError(`socketPath "${socketPath}" is not permitted by allowedSocketPaths`, AxiosError.ERR_BAD_OPTION_VALUE, config));
             }
           }
-          options.socketPath = socketPath;
+          options2.socketPath = socketPath;
         } else {
-          options.hostname = parsed.hostname.startsWith("[") ? parsed.hostname.slice(1, -1) : parsed.hostname;
-          options.port = parsed.port;
+          options2.hostname = parsed.hostname.startsWith("[") ? parsed.hostname.slice(1, -1) : parsed.hostname;
+          options2.port = parsed.port;
           proxyApplied = setProxy(
-            options,
+            options2,
             configProxy,
-            protocol + "//" + parsed.hostname + (parsed.port ? ":" + parsed.port : "") + options.path,
+            protocol + "//" + parsed.hostname + (parsed.port ? ":" + parsed.port : "") + options2.path,
             false,
             httpsAgent,
             httpAgent,
@@ -21269,9 +21269,9 @@ var require_axios = __commonJS({
         let transport;
         let isNativeTransport = false;
         let transportEnforcesMaxBodyLength = false;
-        const isHttpsRequest = isHttps.test(options.protocol);
-        if (options.agent == null) {
-          options.agent = isHttpsRequest ? httpsAgent : httpAgent;
+        const isHttpsRequest = isHttps.test(options2.protocol);
+        if (options2.agent == null) {
+          options2.agent = isHttpsRequest ? httpsAgent : httpAgent;
         }
         if (isHttp2) {
           if (proxyApplied) {
@@ -21287,18 +21287,18 @@ var require_axios = __commonJS({
             isNativeTransport = true;
           } else {
             transportEnforcesMaxBodyLength = true;
-            options.sensitiveHeaders = [];
+            options2.sensitiveHeaders = [];
             if (maxRedirects) {
-              options.maxRedirects = maxRedirects;
+              options2.maxRedirects = maxRedirects;
             }
             const configBeforeRedirect = own2("beforeRedirect");
             if (configBeforeRedirect) {
-              options.beforeRedirects.config = configBeforeRedirect;
+              options2.beforeRedirects.config = configBeforeRedirect;
             }
             if (auth) {
               const requestOrigin = parsed.origin;
               const authToRestore = auth;
-              options.beforeRedirects.auth = function beforeRedirectAuth(redirectOptions) {
+              options2.beforeRedirects.auth = function beforeRedirectAuth(redirectOptions) {
                 try {
                   if (new URL(redirectOptions.href).origin === requestOrigin) {
                     redirectOptions.auth = authToRestore;
@@ -21320,8 +21320,8 @@ var require_axios = __commonJS({
                 sensitiveSet.add(header.toLowerCase());
               }
               if (sensitiveSet.size) {
-                options.sensitiveHeaders = Array.from(sensitiveSet);
-                options.beforeRedirects.sensitiveHeaders = function beforeRedirectSensitiveHeaders(redirectOptions, requestDetails) {
+                options2.sensitiveHeaders = Array.from(sensitiveSet);
+                options2.beforeRedirects.sensitiveHeaders = function beforeRedirectSensitiveHeaders(redirectOptions, requestDetails) {
                   if (!isSameOriginRedirect(redirectOptions, requestDetails)) {
                     stripMatchingHeaders(redirectOptions.headers, sensitiveSet);
                   }
@@ -21332,12 +21332,12 @@ var require_axios = __commonJS({
           }
         }
         if (maxBodyLength > -1) {
-          options.maxBodyLength = maxBodyLength;
+          options2.maxBodyLength = maxBodyLength;
         } else {
-          options.maxBodyLength = Infinity;
+          options2.maxBodyLength = Infinity;
         }
-        options.insecureHTTPParser = Boolean(own2("insecureHTTPParser"));
-        req = transport.request(options, function handleResponse(res) {
+        options2.insecureHTTPParser = Boolean(own2("insecureHTTPParser"));
+        req = transport.request(options2, function handleResponse(res) {
           clearConnectPhaseTimer();
           if (req.destroyed) return;
           const streams = [res];
@@ -22347,9 +22347,9 @@ var require_axios = __commonJS({
           }
           const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
           if (supportsResponseStream && response.body && (onDownloadProgress || hasMaxContentLength || isStreamResponse && unsubscribe)) {
-            const options = {};
+            const options2 = {};
             ["status", "statusText", "headers"].forEach((prop) => {
-              options[prop] = response[prop];
+              options2[prop] = response[prop];
             });
             const responseContentLength = utils$1.toFiniteNumber(responseHeaders.getContentLength());
             const [onProgress, flush] = onDownloadProgress && progressEventDecorator(responseContentLength, progressEventReducer(asyncDecorator(onDownloadProgress), true)) || [];
@@ -22366,7 +22366,7 @@ var require_axios = __commonJS({
             response = new Response(trackStream(response.body, DEFAULT_CHUNK_SIZE, onChunkProgress, () => {
               flush && flush();
               unsubscribe && unsubscribe();
-            }), options);
+            }), options2);
           }
           responseType = responseType || "text";
           let responseData = await resolvers[utils$1.findKey(resolvers, responseType) || "text"](response, config);
@@ -22592,18 +22592,18 @@ var require_axios = __commonJS({
         return true;
       };
     };
-    function assertOptions(options, schema, allowUnknown) {
-      if (typeof options !== "object" || options === null) {
+    function assertOptions(options2, schema, allowUnknown) {
+      if (typeof options2 !== "object" || options2 === null) {
         throw new AxiosError("options must be an object", AxiosError.ERR_BAD_OPTION_VALUE);
       }
-      const keys = Object.keys(options);
+      const keys = Object.keys(options2);
       let i = keys.length;
       while (i-- > 0) {
         const opt = keys[i];
         const validator2 = Object.prototype.hasOwnProperty.call(schema, opt) ? schema[opt] : void 0;
         if (validator2) {
-          const value = options[opt];
-          const result = value === void 0 || validator2(value, opt, options);
+          const value = options2[opt];
+          const result = value === void 0 || validator2(value, opt, options2);
           if (result !== true) {
             throw new AxiosError("option " + opt + " must be " + result, AxiosError.ERR_BAD_OPTION_VALUE);
           }
@@ -23352,8 +23352,8 @@ var require_utils = __commonJS({
         const { promisify: promisify2 } = await import("node:util");
         const { brotliCompress, constants } = await import("node:zlib");
         const compress = promisify2(brotliCompress);
-        const options = { params: { [constants.BROTLI_PARAM_QUALITY]: 6 } };
-        brotliCompressPromisified = async (input) => compress(input, options);
+        const options2 = { params: { [constants.BROTLI_PARAM_QUALITY]: 6 } };
+        brotliCompressPromisified = async (input) => compress(input, options2);
       }
       return brotliCompressPromisified(value);
     }
@@ -23427,12 +23427,12 @@ var require_utils = __commonJS({
       limit;
       exclusiveStartId;
       cursor;
-      constructor(options) {
-        this.maxPageLimit = options.maxPageLimit;
-        this.limit = options.limit;
-        this.exclusiveStartId = options.exclusiveStartId;
-        this.cursor = options.cursor;
-        this.getPage = options.getPage;
+      constructor(options2) {
+        this.maxPageLimit = options2.maxPageLimit;
+        this.limit = options2.limit;
+        this.exclusiveStartId = options2.exclusiveStartId;
+        this.cursor = options2.cursor;
+        this.getPage = options2.getPage;
       }
       async *[Symbol.asyncIterator]() {
         let nextCursor = this.cursor;
@@ -23466,8 +23466,8 @@ var require_utils = __commonJS({
       }
       return [value];
     }
-    function applyQueryParamsToUrl(url, options) {
-      for (const [key, value] of Object.entries(options ?? {})) {
+    function applyQueryParamsToUrl(url, options2) {
+      for (const [key, value] of Object.entries(options2 ?? {})) {
         if (value === void 0)
           continue;
         if (Array.isArray(value)) {
@@ -23870,7 +23870,7 @@ var require_lru_cache = __commonJS({
       }
     };
     var LRUCache = class _LRUCache {
-      constructor(options = {}) {
+      constructor(options2 = {}) {
         const {
           max = 0,
           ttl,
@@ -23893,8 +23893,8 @@ var require_lru_cache = __commonJS({
           allowStaleOnFetchRejection,
           allowStaleOnFetchAbort,
           ignoreFetchAbort
-        } = options;
-        const { length, maxAge, stale } = options instanceof _LRUCache ? {} : options;
+        } = options2;
+        const { length, maxAge, stale } = options2 instanceof _LRUCache ? {} : options2;
         if (max !== 0 && !isPosInt(max)) {
           throw new TypeError("max option must be a nonnegative integer");
         }
@@ -24425,33 +24425,33 @@ var require_lru_cache = __commonJS({
           return this.isBackgroundFetch(v) ? v.__staleWhileFetching : v;
         }
       }
-      backgroundFetch(k, index, options, context) {
+      backgroundFetch(k, index, options2, context) {
         const v = index === void 0 ? void 0 : this.valList[index];
         if (this.isBackgroundFetch(v)) {
           return v;
         }
         const ac = new AC();
-        if (options.signal) {
-          options.signal.addEventListener(
+        if (options2.signal) {
+          options2.signal.addEventListener(
             "abort",
-            () => ac.abort(options.signal.reason)
+            () => ac.abort(options2.signal.reason)
           );
         }
         const fetchOpts = {
           signal: ac.signal,
-          options,
+          options: options2,
           context
         };
         const cb = (v2, updateCache = false) => {
           const { aborted } = ac.signal;
-          const ignoreAbort = options.ignoreFetchAbort && v2 !== void 0;
-          if (options.status) {
+          const ignoreAbort = options2.ignoreFetchAbort && v2 !== void 0;
+          if (options2.status) {
             if (aborted && !updateCache) {
-              options.status.fetchAborted = true;
-              options.status.fetchError = ac.signal.reason;
-              if (ignoreAbort) options.status.fetchAbortIgnored = true;
+              options2.status.fetchAborted = true;
+              options2.status.fetchError = ac.signal.reason;
+              if (ignoreAbort) options2.status.fetchAbortIgnored = true;
             } else {
-              options.status.fetchResolved = true;
+              options2.status.fetchResolved = true;
             }
           }
           if (aborted && !ignoreAbort && !updateCache) {
@@ -24465,24 +24465,24 @@ var require_lru_cache = __commonJS({
                 this.delete(k);
               }
             } else {
-              if (options.status) options.status.fetchUpdated = true;
+              if (options2.status) options2.status.fetchUpdated = true;
               this.set(k, v2, fetchOpts.options);
             }
           }
           return v2;
         };
         const eb = (er) => {
-          if (options.status) {
-            options.status.fetchRejected = true;
-            options.status.fetchError = er;
+          if (options2.status) {
+            options2.status.fetchRejected = true;
+            options2.status.fetchError = er;
           }
           return fetchFail(er);
         };
         const fetchFail = (er) => {
           const { aborted } = ac.signal;
-          const allowStaleAborted = aborted && options.allowStaleOnFetchAbort;
-          const allowStale = allowStaleAborted || options.allowStaleOnFetchRejection;
-          const noDelete = allowStale || options.noDeleteOnFetchRejection;
+          const allowStaleAborted = aborted && options2.allowStaleOnFetchAbort;
+          const allowStale = allowStaleAborted || options2.allowStaleOnFetchRejection;
+          const noDelete = allowStale || options2.noDeleteOnFetchRejection;
           if (this.valList[index] === p) {
             const del = !noDelete || p.__staleWhileFetching === void 0;
             if (del) {
@@ -24492,8 +24492,8 @@ var require_lru_cache = __commonJS({
             }
           }
           if (allowStale) {
-            if (options.status && p.__staleWhileFetching !== void 0) {
-              options.status.returnedStale = true;
+            if (options2.status && p.__staleWhileFetching !== void 0) {
+              options2.status.returnedStale = true;
             }
             return p.__staleWhileFetching;
           } else if (p.__returned === p) {
@@ -24503,15 +24503,15 @@ var require_lru_cache = __commonJS({
         const pcall = (res, rej) => {
           this.fetchMethod(k, v, fetchOpts).then((v2) => res(v2), rej);
           ac.signal.addEventListener("abort", () => {
-            if (!options.ignoreFetchAbort || options.allowStaleOnFetchAbort) {
+            if (!options2.ignoreFetchAbort || options2.allowStaleOnFetchAbort) {
               res();
-              if (options.allowStaleOnFetchAbort) {
+              if (options2.allowStaleOnFetchAbort) {
                 res = (v2) => cb(v2, true);
               }
             }
           });
         };
-        if (options.status) options.status.fetchDispatched = true;
+        if (options2.status) options2.status.fetchDispatched = true;
         const p = new Promise(pcall).then(cb, eb);
         p.__abortController = ac;
         p.__staleWhileFetching = v;
@@ -24561,7 +24561,7 @@ var require_lru_cache = __commonJS({
             status
           });
         }
-        const options = {
+        const options2 = {
           allowStale,
           updateAgeOnGet,
           noDeleteOnStaleGet,
@@ -24580,7 +24580,7 @@ var require_lru_cache = __commonJS({
         let index = this.keyMap.get(k);
         if (index === void 0) {
           if (status) status.fetch = "miss";
-          const p = this.backgroundFetch(k, index, options, fetchContext);
+          const p = this.backgroundFetch(k, index, options2, fetchContext);
           return p.__returned = p;
         } else {
           const v = this.valList[index];
@@ -24602,7 +24602,7 @@ var require_lru_cache = __commonJS({
             this.statusTTL(status, index);
             return v;
           }
-          const p = this.backgroundFetch(k, index, options, fetchContext);
+          const p = this.backgroundFetch(k, index, options2, fetchContext);
           const hasStale = p.__staleWhileFetching !== void 0;
           const staleVal = hasStale && allowStale;
           if (status) {
@@ -24886,13 +24886,13 @@ var require_dist4 = __commonJS({
       /**
        * Determine whether this is an `http` or `https` request.
        */
-      isSecureEndpoint(options) {
-        if (options) {
-          if (typeof options.secureEndpoint === "boolean") {
-            return options.secureEndpoint;
+      isSecureEndpoint(options2) {
+        if (options2) {
+          if (typeof options2.secureEndpoint === "boolean") {
+            return options2.secureEndpoint;
           }
-          if (typeof options.protocol === "string") {
-            return options.protocol === "https:";
+          if (typeof options2.protocol === "string") {
+            return options2.protocol === "https:";
           }
         }
         const { stack } = new Error();
@@ -24934,17 +24934,17 @@ var require_dist4 = __commonJS({
       }
       // In order to properly update the socket pool, we need to call `getName()` on
       // the core `https.Agent` if it is a secureEndpoint.
-      getName(options) {
-        const secureEndpoint = this.isSecureEndpoint(options);
+      getName(options2) {
+        const secureEndpoint = this.isSecureEndpoint(options2);
         if (secureEndpoint) {
-          return https_1.Agent.prototype.getName.call(this, options);
+          return https_1.Agent.prototype.getName.call(this, options2);
         }
-        return super.getName(options);
+        return super.getName(options2);
       }
-      createSocket(req, options, cb) {
+      createSocket(req, options2, cb) {
         const connectOpts = {
-          ...options,
-          secureEndpoint: this.isSecureEndpoint(options)
+          ...options2,
+          secureEndpoint: this.isSecureEndpoint(options2)
         };
         const name = this.getName(connectOpts);
         const fakeSocket = this.incrementSockets(name);
@@ -24958,7 +24958,7 @@ var require_dist4 = __commonJS({
             }
           }
           this[INTERNAL].currentSocket = socket;
-          super.createSocket(req, options, cb);
+          super.createSocket(req, options2, cb);
         }, (err) => {
           this.decrementSockets(name, fakeSocket);
           cb(err);
@@ -25182,13 +25182,13 @@ var require_dist5 = __commonJS({
       /**
        * Determine whether this is an `http` or `https` request.
        */
-      isSecureEndpoint(options) {
-        if (options) {
-          if (typeof options.secureEndpoint === "boolean") {
-            return options.secureEndpoint;
+      isSecureEndpoint(options2) {
+        if (options2) {
+          if (typeof options2.secureEndpoint === "boolean") {
+            return options2.secureEndpoint;
           }
-          if (typeof options.protocol === "string") {
-            return options.protocol === "https:";
+          if (typeof options2.protocol === "string") {
+            return options2.protocol === "https:";
           }
         }
         const { stack } = new Error();
@@ -25230,17 +25230,17 @@ var require_dist5 = __commonJS({
       }
       // In order to properly update the socket pool, we need to call `getName()` on
       // the core `https.Agent` if it is a secureEndpoint.
-      getName(options) {
-        const secureEndpoint = this.isSecureEndpoint(options);
+      getName(options2) {
+        const secureEndpoint = this.isSecureEndpoint(options2);
         if (secureEndpoint) {
-          return https_1.Agent.prototype.getName.call(this, options);
+          return https_1.Agent.prototype.getName.call(this, options2);
         }
-        return super.getName(options);
+        return super.getName(options2);
       }
-      createSocket(req, options, cb) {
+      createSocket(req, options2, cb) {
         const connectOpts = {
-          ...options,
-          secureEndpoint: this.isSecureEndpoint(options)
+          ...options2,
+          secureEndpoint: this.isSecureEndpoint(options2)
         };
         const name = this.getName(connectOpts);
         const fakeSocket = this.incrementSockets(name);
@@ -25254,7 +25254,7 @@ var require_dist5 = __commonJS({
             }
           }
           this[INTERNAL].currentSocket = socket;
-          super.createSocket(req, options, cb);
+          super.createSocket(req, options2, cb);
         }, (err) => {
           this.decrementSockets(name, fakeSocket);
           cb(err);
@@ -25559,14 +25559,14 @@ var require_dist7 = __commonJS({
     var url_1 = __require("url");
     var parse_proxy_response_1 = require_parse_proxy_response2();
     var debug = (0, debug_1.default)("https-proxy-agent");
-    var setServernameFromNonIpHost = (options) => {
-      if (options.servername === void 0 && options.host && !net.isIP(options.host)) {
+    var setServernameFromNonIpHost = (options2) => {
+      if (options2.servername === void 0 && options2.host && !net.isIP(options2.host)) {
         return {
-          ...options,
-          servername: options.host
+          ...options2,
+          servername: options2.host
         };
       }
-      return options;
+      return options2;
     };
     var HttpsProxyAgent = class extends agent_base_1.Agent {
       constructor(proxy, opts) {
@@ -25748,26 +25748,26 @@ var require_smartbuffer = __commonJS({
        *
        * @param options { SmartBufferOptions } The SmartBufferOptions to apply to this instance.
        */
-      constructor(options) {
+      constructor(options2) {
         this.length = 0;
         this._encoding = DEFAULT_SMARTBUFFER_ENCODING;
         this._writeOffset = 0;
         this._readOffset = 0;
-        if (_SmartBuffer.isSmartBufferOptions(options)) {
-          if (options.encoding) {
-            utils_1.checkEncoding(options.encoding);
-            this._encoding = options.encoding;
+        if (_SmartBuffer.isSmartBufferOptions(options2)) {
+          if (options2.encoding) {
+            utils_1.checkEncoding(options2.encoding);
+            this._encoding = options2.encoding;
           }
-          if (options.size) {
-            if (utils_1.isFiniteInteger(options.size) && options.size > 0) {
-              this._buff = Buffer.allocUnsafe(options.size);
+          if (options2.size) {
+            if (utils_1.isFiniteInteger(options2.size) && options2.size > 0) {
+              this._buff = Buffer.allocUnsafe(options2.size);
             } else {
               throw new Error(utils_1.ERRORS.INVALID_SMARTBUFFER_SIZE);
             }
-          } else if (options.buff) {
-            if (Buffer.isBuffer(options.buff)) {
-              this._buff = options.buff;
-              this.length = options.buff.length;
+          } else if (options2.buff) {
+            if (Buffer.isBuffer(options2.buff)) {
+              this._buff = options2.buff;
+              this.length = options2.buff.length;
             } else {
               throw new Error(utils_1.ERRORS.INVALID_SMARTBUFFER_BUFFER);
             }
@@ -25775,7 +25775,7 @@ var require_smartbuffer = __commonJS({
             this._buff = Buffer.allocUnsafe(DEFAULT_SMARTBUFFER_SIZE);
           }
         } else {
-          if (typeof options !== "undefined") {
+          if (typeof options2 !== "undefined") {
             throw new Error(utils_1.ERRORS.INVALID_SMARTBUFFER_OBJECT);
           }
           this._buff = Buffer.allocUnsafe(DEFAULT_SMARTBUFFER_SIZE);
@@ -25814,14 +25814,14 @@ var require_smartbuffer = __commonJS({
        *
        * @param options { SmartBufferOptions } The options to use when creating the SmartBuffer instance.
        */
-      static fromOptions(options) {
-        return new this(options);
+      static fromOptions(options2) {
+        return new this(options2);
       }
       /**
        * Type checking function that determines if an object is a SmartBufferOptions object.
        */
-      static isSmartBufferOptions(options) {
-        const castOptions = options;
+      static isSmartBufferOptions(options2) {
+        const castOptions = options2;
         return castOptions && (castOptions.encoding !== void 0 || castOptions.size !== void 0 || castOptions.buff !== void 0);
       }
       // Signed integers
@@ -27017,9 +27017,9 @@ var require_util = __commonJS({
     exports.SocksClientError = void 0;
     exports.shuffleArray = shuffleArray;
     var SocksClientError = class extends Error {
-      constructor(message, options) {
+      constructor(message, options2) {
         super(message);
-        this.options = options;
+        this.options = options2;
       }
     };
     exports.SocksClientError = SocksClientError;
@@ -27616,12 +27616,12 @@ var require_ipv4 = __commonJS({
        * @param {boolean} options.omitSuffix - omit the "in-addr.arpa" suffix
        * @returns {String}
        */
-      reverseForm(options) {
-        if (!options) {
-          options = {};
+      reverseForm(options2) {
+        if (!options2) {
+          options2 = {};
         }
         const reversed = this.correctForm().split(".").reverse().join(".");
-        if (options.omitSuffix) {
+        if (options2.omitSuffix) {
           return reversed;
         }
         return `${reversed}.in-addr.arpa.`;
@@ -28518,19 +28518,19 @@ var require_ipv6 = __commonJS({
        * @param {boolean} options.omitSuffix - omit the "ip6.arpa" suffix
        * @returns {String}
        */
-      reverseForm(options) {
-        if (!options) {
-          options = {};
+      reverseForm(options2) {
+        if (!options2) {
+          options2 = {};
         }
         const characters = Math.floor(this.subnetMask / 4);
         const reversed = this.canonicalForm().replace(/:/g, "").split("").slice(0, characters).reverse().join(".");
         if (characters > 0) {
-          if (options.omitSuffix) {
+          if (options2.omitSuffix) {
             return reversed;
           }
           return `${reversed}.ip6.arpa.`;
         }
-        if (options.omitSuffix) {
+        if (options2.omitSuffix) {
           return "";
         }
         return "ip6.arpa.";
@@ -29179,28 +29179,28 @@ var require_ipv6 = __commonJS({
        * @param options.prefix - hash prefix prepended to the address (default `/#address=`)
        * @param options.v4 - when true, render the address in v4-in-v6 form
        */
-      link(options) {
-        if (!options) {
-          options = {};
+      link(options2) {
+        if (!options2) {
+          options2 = {};
         }
-        if (options.className === void 0) {
-          options.className = "";
+        if (options2.className === void 0) {
+          options2.className = "";
         }
-        if (options.prefix === void 0) {
-          options.prefix = "/#address=";
+        if (options2.prefix === void 0) {
+          options2.prefix = "/#address=";
         }
-        if (options.v4 === void 0) {
-          options.v4 = false;
+        if (options2.v4 === void 0) {
+          options2.v4 = false;
         }
         let formFunction = this.correctForm;
-        if (options.v4) {
+        if (options2.v4) {
           formFunction = this.to4in6;
         }
         const form = formFunction.call(this);
-        const safeHref = helpers.escapeHtml(`${options.prefix}${form}`);
+        const safeHref = helpers.escapeHtml(`${options2.prefix}${form}`);
         const safeForm = helpers.escapeHtml(form);
-        if (options.className) {
-          const safeClass = helpers.escapeHtml(options.className);
+        if (options2.className) {
+          const safeClass = helpers.escapeHtml(options2.className);
           return `<a href="${safeHref}" class="${safeClass}">${safeForm}</a>`;
         }
         return `<a href="${safeHref}">${safeForm}</a>`;
@@ -29381,60 +29381,60 @@ var require_helpers4 = __commonJS({
     var stream = __require("stream");
     var ip_address_1 = require_ip_address();
     var net = __require("net");
-    function validateSocksClientOptions(options, acceptedCommands = ["connect", "bind", "associate"]) {
-      if (!constants_1.SocksCommand[options.command]) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksCommand, options);
+    function validateSocksClientOptions(options2, acceptedCommands = ["connect", "bind", "associate"]) {
+      if (!constants_1.SocksCommand[options2.command]) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksCommand, options2);
       }
-      if (acceptedCommands.indexOf(options.command) === -1) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksCommandForOperation, options);
+      if (acceptedCommands.indexOf(options2.command) === -1) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksCommandForOperation, options2);
       }
-      if (!isValidSocksRemoteHost(options.destination)) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsDestination, options);
+      if (!isValidSocksRemoteHost(options2.destination)) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsDestination, options2);
       }
-      if (!isValidSocksProxy(options.proxy)) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsProxy, options);
+      if (!isValidSocksProxy(options2.proxy)) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsProxy, options2);
       }
-      validateCustomProxyAuth(options.proxy, options);
-      if (options.timeout && !isValidTimeoutValue(options.timeout)) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsTimeout, options);
+      validateCustomProxyAuth(options2.proxy, options2);
+      if (options2.timeout && !isValidTimeoutValue(options2.timeout)) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsTimeout, options2);
       }
-      if (options.existing_socket && !(options.existing_socket instanceof stream.Duplex)) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsExistingSocket, options);
+      if (options2.existing_socket && !(options2.existing_socket instanceof stream.Duplex)) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsExistingSocket, options2);
       }
     }
-    function validateSocksClientChainOptions(options) {
-      if (options.command !== "connect") {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksCommandChain, options);
+    function validateSocksClientChainOptions(options2) {
+      if (options2.command !== "connect") {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksCommandChain, options2);
       }
-      if (!isValidSocksRemoteHost(options.destination)) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsDestination, options);
+      if (!isValidSocksRemoteHost(options2.destination)) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsDestination, options2);
       }
-      if (!(options.proxies && Array.isArray(options.proxies) && options.proxies.length >= 2)) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsProxiesLength, options);
+      if (!(options2.proxies && Array.isArray(options2.proxies) && options2.proxies.length >= 2)) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsProxiesLength, options2);
       }
-      options.proxies.forEach((proxy) => {
+      options2.proxies.forEach((proxy) => {
         if (!isValidSocksProxy(proxy)) {
-          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsProxy, options);
+          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsProxy, options2);
         }
-        validateCustomProxyAuth(proxy, options);
+        validateCustomProxyAuth(proxy, options2);
       });
-      if (options.timeout && !isValidTimeoutValue(options.timeout)) {
-        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsTimeout, options);
+      if (options2.timeout && !isValidTimeoutValue(options2.timeout)) {
+        throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsTimeout, options2);
       }
     }
-    function validateCustomProxyAuth(proxy, options) {
+    function validateCustomProxyAuth(proxy, options2) {
       if (proxy.custom_auth_method !== void 0) {
         if (proxy.custom_auth_method < constants_1.SOCKS5_CUSTOM_AUTH_START || proxy.custom_auth_method > constants_1.SOCKS5_CUSTOM_AUTH_END) {
-          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsCustomAuthRange, options);
+          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsCustomAuthRange, options2);
         }
         if (proxy.custom_auth_request_handler === void 0 || typeof proxy.custom_auth_request_handler !== "function") {
-          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsCustomAuthOptions, options);
+          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsCustomAuthOptions, options2);
         }
         if (proxy.custom_auth_response_size === void 0) {
-          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsCustomAuthOptions, options);
+          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsCustomAuthOptions, options2);
         }
         if (proxy.custom_auth_response_handler === void 0 || typeof proxy.custom_auth_response_handler !== "function") {
-          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsCustomAuthOptions, options);
+          throw new util_1.SocksClientError(constants_1.ERRORS.InvalidSocksClientOptionsCustomAuthOptions, options2);
         }
       }
     }
@@ -29565,10 +29565,10 @@ var require_socksclient = __commonJS({
     } });
     var ip_address_1 = require_ip_address();
     var SocksClient = class _SocksClient extends events_1.EventEmitter {
-      constructor(options) {
+      constructor(options2) {
         super();
-        this.options = Object.assign({}, options);
-        (0, helpers_1.validateSocksClientOptions)(options);
+        this.options = Object.assign({}, options2);
+        (0, helpers_1.validateSocksClientOptions)(options2);
         this.setState(constants_1.SocksClientState.Created);
       }
       /**
@@ -29579,10 +29579,10 @@ var require_socksclient = __commonJS({
        * @param callback { Function } An optional callback function.
        * @returns { Promise }
        */
-      static createConnection(options, callback) {
+      static createConnection(options2, callback) {
         return new Promise((resolve, reject) => {
           try {
-            (0, helpers_1.validateSocksClientOptions)(options, ["connect"]);
+            (0, helpers_1.validateSocksClientOptions)(options2, ["connect"]);
           } catch (err) {
             if (typeof callback === "function") {
               callback(err);
@@ -29591,8 +29591,8 @@ var require_socksclient = __commonJS({
               return reject(err);
             }
           }
-          const client = new _SocksClient(options);
-          client.connect(options.existing_socket);
+          const client = new _SocksClient(options2);
+          client.connect(options2.existing_socket);
           client.once("established", (info) => {
             client.removeAllListeners();
             if (typeof callback === "function") {
@@ -29622,10 +29622,10 @@ var require_socksclient = __commonJS({
        * @param callback { Function } An optional callback function.
        * @returns { Promise }
        */
-      static createConnectionChain(options, callback) {
+      static createConnectionChain(options2, callback) {
         return new Promise((resolve, reject) => __awaiter2(this, void 0, void 0, function* () {
           try {
-            (0, helpers_1.validateSocksClientChainOptions)(options);
+            (0, helpers_1.validateSocksClientChainOptions)(options2);
           } catch (err) {
             if (typeof callback === "function") {
               callback(err);
@@ -29634,16 +29634,16 @@ var require_socksclient = __commonJS({
               return reject(err);
             }
           }
-          if (options.randomizeChain) {
-            (0, util_1.shuffleArray)(options.proxies);
+          if (options2.randomizeChain) {
+            (0, util_1.shuffleArray)(options2.proxies);
           }
           try {
             let sock;
-            for (let i = 0; i < options.proxies.length; i++) {
-              const nextProxy = options.proxies[i];
-              const nextDestination = i === options.proxies.length - 1 ? options.destination : {
-                host: options.proxies[i + 1].host || options.proxies[i + 1].ipaddress,
-                port: options.proxies[i + 1].port
+            for (let i = 0; i < options2.proxies.length; i++) {
+              const nextProxy = options2.proxies[i];
+              const nextDestination = i === options2.proxies.length - 1 ? options2.destination : {
+                host: options2.proxies[i + 1].host || options2.proxies[i + 1].ipaddress,
+                port: options2.proxies[i + 1].port
               };
               const result = yield _SocksClient.createConnection({
                 command: "connect",
@@ -29673,23 +29673,23 @@ var require_socksclient = __commonJS({
        * Creates a SOCKS UDP Frame.
        * @param options
        */
-      static createUDPFrame(options) {
+      static createUDPFrame(options2) {
         const buff = new smart_buffer_1.SmartBuffer();
         buff.writeUInt16BE(0);
-        buff.writeUInt8(options.frameNumber || 0);
-        if (net.isIPv4(options.remoteHost.host)) {
+        buff.writeUInt8(options2.frameNumber || 0);
+        if (net.isIPv4(options2.remoteHost.host)) {
           buff.writeUInt8(constants_1.Socks5HostType.IPv4);
-          buff.writeUInt32BE((0, helpers_1.ipv4ToInt32)(options.remoteHost.host));
-        } else if (net.isIPv6(options.remoteHost.host)) {
+          buff.writeUInt32BE((0, helpers_1.ipv4ToInt32)(options2.remoteHost.host));
+        } else if (net.isIPv6(options2.remoteHost.host)) {
           buff.writeUInt8(constants_1.Socks5HostType.IPv6);
-          buff.writeBuffer((0, helpers_1.ipToBuffer)(options.remoteHost.host));
+          buff.writeBuffer((0, helpers_1.ipToBuffer)(options2.remoteHost.host));
         } else {
           buff.writeUInt8(constants_1.Socks5HostType.Hostname);
-          buff.writeUInt8(Buffer.byteLength(options.remoteHost.host));
-          buff.writeString(options.remoteHost.host);
+          buff.writeUInt8(Buffer.byteLength(options2.remoteHost.host));
+          buff.writeString(options2.remoteHost.host);
         }
-        buff.writeUInt16BE(options.remoteHost.port);
-        buff.writeBuffer(options.data);
+        buff.writeUInt16BE(options2.remoteHost.port);
+        buff.writeBuffer(options2.data);
         return buff.toBuffer();
       }
       /**
@@ -30343,13 +30343,13 @@ var require_dist8 = __commonJS({
       /**
        * Determine whether this is an `http` or `https` request.
        */
-      isSecureEndpoint(options) {
-        if (options) {
-          if (typeof options.secureEndpoint === "boolean") {
-            return options.secureEndpoint;
+      isSecureEndpoint(options2) {
+        if (options2) {
+          if (typeof options2.secureEndpoint === "boolean") {
+            return options2.secureEndpoint;
           }
-          if (typeof options.protocol === "string") {
-            return options.protocol === "https:";
+          if (typeof options2.protocol === "string") {
+            return options2.protocol === "https:";
           }
         }
         const { stack } = new Error();
@@ -30391,17 +30391,17 @@ var require_dist8 = __commonJS({
       }
       // In order to properly update the socket pool, we need to call `getName()` on
       // the core `https.Agent` if it is a secureEndpoint.
-      getName(options) {
-        const secureEndpoint = this.isSecureEndpoint(options);
+      getName(options2) {
+        const secureEndpoint = this.isSecureEndpoint(options2);
         if (secureEndpoint) {
-          return https_1.Agent.prototype.getName.call(this, options);
+          return https_1.Agent.prototype.getName.call(this, options2);
         }
-        return super.getName(options);
+        return super.getName(options2);
       }
-      createSocket(req, options, cb) {
+      createSocket(req, options2, cb) {
         const connectOpts = {
-          ...options,
-          secureEndpoint: this.isSecureEndpoint(options)
+          ...options2,
+          secureEndpoint: this.isSecureEndpoint(options2)
         };
         const name = this.getName(connectOpts);
         const fakeSocket = this.incrementSockets(name);
@@ -30415,7 +30415,7 @@ var require_dist8 = __commonJS({
             }
           }
           this[INTERNAL].currentSocket = socket;
-          super.createSocket(req, options, cb);
+          super.createSocket(req, options2, cb);
         }, (err) => {
           this.decrementSockets(name, fakeSocket);
           cb(err);
@@ -30494,14 +30494,14 @@ var require_dist9 = __commonJS({
     var tls = __importStar2(__require("tls"));
     var url_1 = __require("url");
     var debug = (0, debug_1.default)("socks-proxy-agent");
-    var setServernameFromNonIpHost = (options) => {
-      if (options.servername === void 0 && options.host && !net.isIP(options.host)) {
+    var setServernameFromNonIpHost = (options2) => {
+      if (options2.servername === void 0 && options2.host && !net.isIP(options2.host)) {
         return {
-          ...options,
-          servername: options.host
+          ...options2,
+          servername: options2.host
         };
       }
-      return options;
+      return options2;
     };
     function parseSocksURL(url) {
       let lookup = false;
@@ -30762,13 +30762,13 @@ var require_dist10 = __commonJS({
       /**
        * Determine whether this is an `http` or `https` request.
        */
-      isSecureEndpoint(options) {
-        if (options) {
-          if (typeof options.secureEndpoint === "boolean") {
-            return options.secureEndpoint;
+      isSecureEndpoint(options2) {
+        if (options2) {
+          if (typeof options2.secureEndpoint === "boolean") {
+            return options2.secureEndpoint;
           }
-          if (typeof options.protocol === "string") {
-            return options.protocol === "https:";
+          if (typeof options2.protocol === "string") {
+            return options2.protocol === "https:";
           }
         }
         const { stack } = new Error();
@@ -30810,17 +30810,17 @@ var require_dist10 = __commonJS({
       }
       // In order to properly update the socket pool, we need to call `getName()` on
       // the core `https.Agent` if it is a secureEndpoint.
-      getName(options) {
-        const secureEndpoint = this.isSecureEndpoint(options);
+      getName(options2) {
+        const secureEndpoint = this.isSecureEndpoint(options2);
         if (secureEndpoint) {
-          return https_1.Agent.prototype.getName.call(this, options);
+          return https_1.Agent.prototype.getName.call(this, options2);
         }
-        return super.getName(options);
+        return super.getName(options2);
       }
-      createSocket(req, options, cb) {
+      createSocket(req, options2, cb) {
         const connectOpts = {
-          ...options,
-          secureEndpoint: this.isSecureEndpoint(options)
+          ...options2,
+          secureEndpoint: this.isSecureEndpoint(options2)
         };
         const name = this.getName(connectOpts);
         const fakeSocket = this.incrementSockets(name);
@@ -30834,7 +30834,7 @@ var require_dist10 = __commonJS({
             }
           }
           this[INTERNAL].currentSocket = socket;
-          super.createSocket(req, options, cb);
+          super.createSocket(req, options2, cb);
         }, (err) => {
           this.decrementSockets(name, fakeSocket);
           cb(err);
@@ -31467,9 +31467,9 @@ var require_netUtils = __commonJS({
       }
       return `${socket.remoteAddress}:${socket.remotePort}`;
     }
-    function upgradeSocket(socket, options) {
+    function upgradeSocket(socket, options2) {
       return new Promise((resolve, reject) => {
-        const tlsOptions = Object.assign({}, options, {
+        const tlsOptions = Object.assign({}, options2, {
           socket
         });
         const tlsSocket = (0, tls_1.connect)(tlsOptions, () => {
@@ -32320,13 +32320,13 @@ var require_Client = __commonJS({
        */
       constructor(timeout = 3e4, userOptions = defaultClientOptions) {
         this.availableListCommands = LIST_COMMANDS_DEFAULT();
-        const options = { ...defaultClientOptions, ...userOptions };
+        const options2 = { ...defaultClientOptions, ...userOptions };
         this.ftp = new FtpContext_1.FTPContext(timeout);
         this.prepareTransfer = this._enterFirstCompatibleMode([
           transfer_1.enterPassiveModeIPv6,
-          options.allowSeparateTransferHost ? transfer_1.enterPassiveModeIPv4 : transfer_1.enterPassiveModeIPv4_forceControlHostIP
+          options2.allowSeparateTransferHost ? transfer_1.enterPassiveModeIPv4 : transfer_1.enterPassiveModeIPv4_forceControlHostIP
         ]);
-        this.options = options;
+        this.options = options2;
         this.parseList = parseList_1.parseList;
         this._progressTracker = new ProgressTracker_1.ProgressTracker();
       }
@@ -32423,10 +32423,10 @@ var require_Client = __commonJS({
        * @param options  TLS options as in `tls.connect(options)`, optional.
        * @param command  Set the authentication command. Optional, default is "AUTH TLS".
        */
-      async useTLS(options = {}, command = "AUTH TLS") {
+      async useTLS(options2 = {}, command = "AUTH TLS") {
         const ret = await this.send(command);
-        this.ftp.socket = await (0, netUtils_1.upgradeSocket)(this.ftp.socket, options);
-        this.ftp.tlsOptions = options;
+        this.ftp.socket = await (0, netUtils_1.upgradeSocket)(this.ftp.socket, options2);
+        this.ftp.tlsOptions = options2;
         this.ftp.log(`Control socket is using: ${(0, netUtils_1.describeTLS)(this.ftp.socket)}`);
         return ret;
       }
@@ -32481,23 +32481,23 @@ var require_Client = __commonJS({
        * you can reopen a `Client` instance that has been closed due to an error when reconnecting with this
        * method. In fact, reconnecting is the only way to continue using a closed `Client`.
        */
-      async access(options = {}) {
+      async access(options2 = {}) {
         var _a, _b;
-        const useExplicitTLS = options.secure === true;
-        const useImplicitTLS = options.secure === "implicit";
+        const useExplicitTLS = options2.secure === true;
+        const useImplicitTLS = options2.secure === "implicit";
         let welcome;
         if (useImplicitTLS) {
-          welcome = await this.connectImplicitTLS(options.host, options.port, options.secureOptions);
+          welcome = await this.connectImplicitTLS(options2.host, options2.port, options2.secureOptions);
         } else {
-          welcome = await this.connect(options.host, options.port);
+          welcome = await this.connect(options2.host, options2.port);
         }
         if (useExplicitTLS) {
-          const secureOptions = (_a = options.secureOptions) !== null && _a !== void 0 ? _a : {};
-          secureOptions.host = (_b = secureOptions.host) !== null && _b !== void 0 ? _b : options.host;
+          const secureOptions = (_a = options2.secureOptions) !== null && _a !== void 0 ? _a : {};
+          secureOptions.host = (_b = secureOptions.host) !== null && _b !== void 0 ? _b : options2.host;
           await this.useTLS(secureOptions);
         }
         await this.sendIgnoringError("OPTS UTF8 ON");
-        await this.login(options.user, options.password);
+        await this.login(options2.user, options2.password);
         await this.useDefaultSettings();
         return welcome;
       }
@@ -32609,8 +32609,8 @@ var require_Client = __commonJS({
        * @param source  Readable stream or path to a local file.
        * @param toRemotePath  Path to a remote file to write to.
        */
-      async uploadFrom(source, toRemotePath, options = {}) {
-        return this._uploadWithCommand(source, toRemotePath, "STOR", options);
+      async uploadFrom(source, toRemotePath, options2 = {}) {
+        return this._uploadWithCommand(source, toRemotePath, "STOR", options2);
       }
       /**
        * Upload data from a readable stream or a local file by appending it to an existing file. If the file doesn't
@@ -32619,27 +32619,27 @@ var require_Client = __commonJS({
        * @param source  Readable stream or path to a local file.
        * @param toRemotePath  Path to a remote file to write to.
        */
-      async appendFrom(source, toRemotePath, options = {}) {
-        return this._uploadWithCommand(source, toRemotePath, "APPE", options);
+      async appendFrom(source, toRemotePath, options2 = {}) {
+        return this._uploadWithCommand(source, toRemotePath, "APPE", options2);
       }
       /**
        * @protected
        */
-      async _uploadWithCommand(source, remotePath, command, options) {
+      async _uploadWithCommand(source, remotePath, command, options2) {
         if (typeof source === "string") {
-          return this._uploadLocalFile(source, remotePath, command, options);
+          return this._uploadLocalFile(source, remotePath, command, options2);
         }
         return this._uploadFromStream(source, remotePath, command);
       }
       /**
        * @protected
        */
-      async _uploadLocalFile(localPath, remotePath, command, options) {
+      async _uploadLocalFile(localPath, remotePath, command, options2) {
         const fd = await fsOpen(localPath, "r");
         const source = (0, fs_1.createReadStream)("", {
           fd,
-          start: options.localStart,
-          end: options.localEndInclusive,
+          start: options2.localStart,
+          end: options2.localEndInclusive,
           autoClose: false
         });
         try {
@@ -32963,17 +32963,17 @@ var require_Client = __commonJS({
        * DEPRECATED, use `uploadFrom`.
        * @deprecated
        */
-      async upload(source, toRemotePath, options = {}) {
+      async upload(source, toRemotePath, options2 = {}) {
         this.ftp.log("Warning: upload() has been deprecated, use uploadFrom().");
-        return this.uploadFrom(source, toRemotePath, options);
+        return this.uploadFrom(source, toRemotePath, options2);
       }
       /**
        * DEPRECATED, use `appendFrom`.
        * @deprecated
        */
-      async append(source, toRemotePath, options = {}) {
+      async append(source, toRemotePath, options2 = {}) {
         this.ftp.log("Warning: append() has been deprecated, use appendFrom().");
-        return this.appendFrom(source, toRemotePath, options);
+        return this.appendFrom(source, toRemotePath, options2);
       }
       /**
        * DEPRECATED, use `downloadTo`.
@@ -33199,23 +33199,23 @@ var require_http = __commonJS({
         mod2 = http_1.default;
         debug("using `http` core module");
       }
-      const options = { ...opts };
+      const options2 = { ...opts };
       if (cache) {
-        if (!options.headers) {
-          options.headers = {};
+        if (!options2.headers) {
+          options2.headers = {};
         }
         const lastModified = cache.headers["last-modified"];
         if (lastModified) {
-          options.headers["If-Modified-Since"] = lastModified;
+          options2.headers["If-Modified-Since"] = lastModified;
           debug('added "If-Modified-Since" request header: %o', lastModified);
         }
         const etag = cache.headers.etag;
         if (etag) {
-          options.headers["If-None-Match"] = etag;
+          options2.headers["If-None-Match"] = etag;
           debug('added "If-None-Match" request header: %o', etag);
         }
       }
-      const req = mod2.get(url, options);
+      const req = mod2.get(url, options2);
       const [res] = await (0, events_1.once)(req, "response");
       const code = res.statusCode || 0;
       res.date = Date.now();
@@ -38162,46 +38162,46 @@ var require_escodegen = __commonJS({
         }
         throw new Error("Unknown node type: " + node.type);
       }
-      function generate(node, options) {
+      function generate(node, options2) {
         var defaultOptions = getDefaultOptions(), result, pair;
-        if (options != null) {
-          if (typeof options.indent === "string") {
-            defaultOptions.format.indent.style = options.indent;
+        if (options2 != null) {
+          if (typeof options2.indent === "string") {
+            defaultOptions.format.indent.style = options2.indent;
           }
-          if (typeof options.base === "number") {
-            defaultOptions.format.indent.base = options.base;
+          if (typeof options2.base === "number") {
+            defaultOptions.format.indent.base = options2.base;
           }
-          options = updateDeeply(defaultOptions, options);
-          indent = options.format.indent.style;
-          if (typeof options.base === "string") {
-            base = options.base;
+          options2 = updateDeeply(defaultOptions, options2);
+          indent = options2.format.indent.style;
+          if (typeof options2.base === "string") {
+            base = options2.base;
           } else {
-            base = stringRepeat(indent, options.format.indent.base);
+            base = stringRepeat(indent, options2.format.indent.base);
           }
         } else {
-          options = defaultOptions;
-          indent = options.format.indent.style;
-          base = stringRepeat(indent, options.format.indent.base);
+          options2 = defaultOptions;
+          indent = options2.format.indent.style;
+          base = stringRepeat(indent, options2.format.indent.base);
         }
-        json = options.format.json;
-        renumber = options.format.renumber;
-        hexadecimal = json ? false : options.format.hexadecimal;
-        quotes = json ? "double" : options.format.quotes;
-        escapeless = options.format.escapeless;
-        newline = options.format.newline;
-        space = options.format.space;
-        if (options.format.compact) {
+        json = options2.format.json;
+        renumber = options2.format.renumber;
+        hexadecimal = json ? false : options2.format.hexadecimal;
+        quotes = json ? "double" : options2.format.quotes;
+        escapeless = options2.format.escapeless;
+        newline = options2.format.newline;
+        space = options2.format.space;
+        if (options2.format.compact) {
           newline = space = indent = base = "";
         }
-        parentheses = options.format.parentheses;
-        semicolons = options.format.semicolons;
-        safeConcatenation = options.format.safeConcatenation;
-        directive = options.directive;
-        parse = json ? null : options.parse;
-        sourceMap = options.sourceMap;
-        sourceCode = options.sourceCode;
-        preserveBlankLines = options.format.preserveBlankLines && sourceCode !== null;
-        extra = options;
+        parentheses = options2.format.parentheses;
+        semicolons = options2.format.semicolons;
+        safeConcatenation = options2.format.safeConcatenation;
+        directive = options2.directive;
+        parse = json ? null : options2.parse;
+        sourceMap = options2.sourceMap;
+        sourceCode = options2.sourceCode;
+        preserveBlankLines = options2.format.preserveBlankLines && sourceCode !== null;
+        extra = options2;
         if (sourceMap) {
           if (!exports.browser) {
             SourceNode = require_source_map().SourceNode;
@@ -38212,19 +38212,19 @@ var require_escodegen = __commonJS({
         result = generateInternal(node);
         if (!sourceMap) {
           pair = { code: result.toString(), map: null };
-          return options.sourceMapWithCode ? pair : pair.code;
+          return options2.sourceMapWithCode ? pair : pair.code;
         }
         pair = result.toStringWithSourceMap({
-          file: options.file,
-          sourceRoot: options.sourceMapRoot
+          file: options2.file,
+          sourceRoot: options2.sourceMapRoot
         });
-        if (options.sourceContent) {
+        if (options2.sourceContent) {
           pair.map.setSourceContent(
-            options.sourceMap,
-            options.sourceContent
+            options2.sourceMap,
+            options2.sourceContent
           );
         }
-        if (options.sourceMapWithCode) {
+        if (options2.sourceMapWithCode) {
           return pair;
         }
         return pair.map.toString();
@@ -38301,7 +38301,7 @@ var require_esprima = __commonJS({
             var jsx_parser_1 = __webpack_require__(3);
             var parser_1 = __webpack_require__(8);
             var tokenizer_1 = __webpack_require__(15);
-            function parse(code, options, delegate) {
+            function parse(code, options2, delegate) {
               var commentHandler = null;
               var proxyDelegate = function(node, metadata) {
                 if (delegate) {
@@ -38313,25 +38313,25 @@ var require_esprima = __commonJS({
               };
               var parserDelegate = typeof delegate === "function" ? proxyDelegate : null;
               var collectComment = false;
-              if (options) {
-                collectComment = typeof options.comment === "boolean" && options.comment;
-                var attachComment = typeof options.attachComment === "boolean" && options.attachComment;
+              if (options2) {
+                collectComment = typeof options2.comment === "boolean" && options2.comment;
+                var attachComment = typeof options2.attachComment === "boolean" && options2.attachComment;
                 if (collectComment || attachComment) {
                   commentHandler = new comment_handler_1.CommentHandler();
                   commentHandler.attach = attachComment;
-                  options.comment = true;
+                  options2.comment = true;
                   parserDelegate = proxyDelegate;
                 }
               }
               var isModule = false;
-              if (options && typeof options.sourceType === "string") {
-                isModule = options.sourceType === "module";
+              if (options2 && typeof options2.sourceType === "string") {
+                isModule = options2.sourceType === "module";
               }
               var parser;
-              if (options && typeof options.jsx === "boolean" && options.jsx) {
-                parser = new jsx_parser_1.JSXParser(code, options, parserDelegate);
+              if (options2 && typeof options2.jsx === "boolean" && options2.jsx) {
+                parser = new jsx_parser_1.JSXParser(code, options2, parserDelegate);
               } else {
-                parser = new parser_1.Parser(code, options, parserDelegate);
+                parser = new parser_1.Parser(code, options2, parserDelegate);
               }
               var program = isModule ? parser.parseModule() : parser.parseScript();
               var ast = program;
@@ -38347,20 +38347,20 @@ var require_esprima = __commonJS({
               return ast;
             }
             exports2.parse = parse;
-            function parseModule(code, options, delegate) {
-              var parsingOptions = options || {};
+            function parseModule(code, options2, delegate) {
+              var parsingOptions = options2 || {};
               parsingOptions.sourceType = "module";
               return parse(code, parsingOptions, delegate);
             }
             exports2.parseModule = parseModule;
-            function parseScript(code, options, delegate) {
-              var parsingOptions = options || {};
+            function parseScript(code, options2, delegate) {
+              var parsingOptions = options2 || {};
               parsingOptions.sourceType = "script";
               return parse(code, parsingOptions, delegate);
             }
             exports2.parseScript = parseScript;
-            function tokenize(code, options, delegate) {
-              var tokenizer = new tokenizer_1.Tokenizer(code, options);
+            function tokenize(code, options2, delegate) {
+              var tokenizer = new tokenizer_1.Tokenizer(code, options2);
               var tokens;
               tokens = [];
               try {
@@ -38666,8 +38666,8 @@ var require_esprima = __commonJS({
             }
             var JSXParser = (function(_super) {
               __extends2(JSXParser2, _super);
-              function JSXParser2(code, options, delegate) {
-                return _super.call(this, code, options, delegate) || this;
+              function JSXParser2(code, options2, delegate) {
+                return _super.call(this, code, options2, delegate) || this;
               }
               JSXParser2.prototype.parsePrimaryExpression = function() {
                 return this.match("<") ? this.parseJSXRoot() : _super.prototype.parsePrimaryExpression.call(this);
@@ -39980,20 +39980,20 @@ var require_esprima = __commonJS({
             var token_1 = __webpack_require__(13);
             var ArrowParameterPlaceHolder = "ArrowParameterPlaceHolder";
             var Parser = (function() {
-              function Parser2(code, options, delegate) {
-                if (options === void 0) {
-                  options = {};
+              function Parser2(code, options2, delegate) {
+                if (options2 === void 0) {
+                  options2 = {};
                 }
                 this.config = {
-                  range: typeof options.range === "boolean" && options.range,
-                  loc: typeof options.loc === "boolean" && options.loc,
+                  range: typeof options2.range === "boolean" && options2.range,
+                  loc: typeof options2.loc === "boolean" && options2.loc,
                   source: null,
-                  tokens: typeof options.tokens === "boolean" && options.tokens,
-                  comment: typeof options.comment === "boolean" && options.comment,
-                  tolerant: typeof options.tolerant === "boolean" && options.tolerant
+                  tokens: typeof options2.tokens === "boolean" && options2.tokens,
+                  comment: typeof options2.comment === "boolean" && options2.comment,
+                  tolerant: typeof options2.tolerant === "boolean" && options2.tolerant
                 };
-                if (this.config.loc && options.source && options.source !== null) {
-                  this.config.source = String(options.source);
+                if (this.config.loc && options2.source && options2.source !== null) {
+                  this.config.source = String(options2.source);
                 }
                 this.delegate = delegate;
                 this.errorHandler = new error_handler_1.ErrorHandler();
@@ -41167,37 +41167,37 @@ var require_esprima = __commonJS({
                 }
                 return expr;
               };
-              Parser2.prototype.checkPatternParam = function(options, param) {
+              Parser2.prototype.checkPatternParam = function(options2, param) {
                 switch (param.type) {
                   case syntax_1.Syntax.Identifier:
-                    this.validateParam(options, param, param.name);
+                    this.validateParam(options2, param, param.name);
                     break;
                   case syntax_1.Syntax.RestElement:
-                    this.checkPatternParam(options, param.argument);
+                    this.checkPatternParam(options2, param.argument);
                     break;
                   case syntax_1.Syntax.AssignmentPattern:
-                    this.checkPatternParam(options, param.left);
+                    this.checkPatternParam(options2, param.left);
                     break;
                   case syntax_1.Syntax.ArrayPattern:
                     for (var i = 0; i < param.elements.length; i++) {
                       if (param.elements[i] !== null) {
-                        this.checkPatternParam(options, param.elements[i]);
+                        this.checkPatternParam(options2, param.elements[i]);
                       }
                     }
                     break;
                   case syntax_1.Syntax.ObjectPattern:
                     for (var i = 0; i < param.properties.length; i++) {
-                      this.checkPatternParam(options, param.properties[i].value);
+                      this.checkPatternParam(options2, param.properties[i].value);
                     }
                     break;
                   default:
                     break;
                 }
-                options.simple = options.simple && param instanceof Node.Identifier;
+                options2.simple = options2.simple && param instanceof Node.Identifier;
               };
               Parser2.prototype.reinterpretAsCoverFormalsList = function(expr) {
                 var params = [expr];
-                var options;
+                var options2;
                 var asyncArrow = false;
                 switch (expr.type) {
                   case syntax_1.Syntax.Identifier:
@@ -41209,7 +41209,7 @@ var require_esprima = __commonJS({
                   default:
                     return null;
                 }
-                options = {
+                options2 = {
                   simple: true,
                   paramSet: {}
                 };
@@ -41228,7 +41228,7 @@ var require_esprima = __commonJS({
                   } else if (asyncArrow && param.type === syntax_1.Syntax.Identifier && param.name === "await") {
                     this.throwUnexpectedToken(this.lookahead);
                   }
-                  this.checkPatternParam(options, param);
+                  this.checkPatternParam(options2, param);
                   params[i] = param;
                 }
                 if (this.context.strict || !this.context.allowYield) {
@@ -41239,16 +41239,16 @@ var require_esprima = __commonJS({
                     }
                   }
                 }
-                if (options.message === messages_1.Messages.StrictParamDupe) {
-                  var token = this.context.strict ? options.stricted : options.firstRestricted;
-                  this.throwUnexpectedToken(token, options.message);
+                if (options2.message === messages_1.Messages.StrictParamDupe) {
+                  var token = this.context.strict ? options2.stricted : options2.firstRestricted;
+                  this.throwUnexpectedToken(token, options2.message);
                 }
                 return {
-                  simple: options.simple,
+                  simple: options2.simple,
                   params,
-                  stricted: options.stricted,
-                  firstRestricted: options.firstRestricted,
-                  message: options.message
+                  stricted: options2.stricted,
+                  firstRestricted: options2.firstRestricted,
+                  message: options2.message
                 };
               };
               Parser2.prototype.parseAssignmentExpression = function() {
@@ -41410,7 +41410,7 @@ var require_esprima = __commonJS({
                 this.expect("}");
                 return this.finalize(node, new Node.BlockStatement(block));
               };
-              Parser2.prototype.parseLexicalBinding = function(kind, options) {
+              Parser2.prototype.parseLexicalBinding = function(kind, options2) {
                 var node = this.createNode();
                 var params = [];
                 var id = this.parsePattern(params, kind);
@@ -41429,17 +41429,17 @@ var require_esprima = __commonJS({
                       this.throwError(messages_1.Messages.DeclarationMissingInitializer, "const");
                     }
                   }
-                } else if (!options.inFor && id.type !== syntax_1.Syntax.Identifier || this.match("=")) {
+                } else if (!options2.inFor && id.type !== syntax_1.Syntax.Identifier || this.match("=")) {
                   this.expect("=");
                   init = this.isolateCoverGrammar(this.parseAssignmentExpression);
                 }
                 return this.finalize(node, new Node.VariableDeclarator(id, init));
               };
-              Parser2.prototype.parseBindingList = function(kind, options) {
-                var list2 = [this.parseLexicalBinding(kind, options)];
+              Parser2.prototype.parseBindingList = function(kind, options2) {
+                var list2 = [this.parseLexicalBinding(kind, options2)];
                 while (this.match(",")) {
                   this.nextToken();
-                  list2.push(this.parseLexicalBinding(kind, options));
+                  list2.push(this.parseLexicalBinding(kind, options2));
                 }
                 return list2;
               };
@@ -41450,11 +41450,11 @@ var require_esprima = __commonJS({
                 this.scanner.restoreState(state);
                 return next.type === 3 || next.type === 7 && next.value === "[" || next.type === 7 && next.value === "{" || next.type === 4 && next.value === "let" || next.type === 4 && next.value === "yield";
               };
-              Parser2.prototype.parseLexicalDeclaration = function(options) {
+              Parser2.prototype.parseLexicalDeclaration = function(options2) {
                 var node = this.createNode();
                 var kind = this.nextToken().value;
                 assert_1.assert(kind === "let" || kind === "const", "Lexical declaration must be either let or const");
-                var declarations = this.parseBindingList(kind, options);
+                var declarations = this.parseBindingList(kind, options2);
                 this.consumeSemicolon();
                 return this.finalize(node, new Node.VariableDeclaration(declarations, kind));
               };
@@ -41583,7 +41583,7 @@ var require_esprima = __commonJS({
                 }
                 return this.finalize(node, new Node.Identifier(token.value));
               };
-              Parser2.prototype.parseVariableDeclaration = function(options) {
+              Parser2.prototype.parseVariableDeclaration = function(options2) {
                 var node = this.createNode();
                 var params = [];
                 var id = this.parsePattern(params, "var");
@@ -41596,13 +41596,13 @@ var require_esprima = __commonJS({
                 if (this.match("=")) {
                   this.nextToken();
                   init = this.isolateCoverGrammar(this.parseAssignmentExpression);
-                } else if (id.type !== syntax_1.Syntax.Identifier && !options.inFor) {
+                } else if (id.type !== syntax_1.Syntax.Identifier && !options2.inFor) {
                   this.expect("=");
                 }
                 return this.finalize(node, new Node.VariableDeclarator(id, init));
               };
-              Parser2.prototype.parseVariableDeclarationList = function(options) {
-                var opt = { inFor: options.inFor };
+              Parser2.prototype.parseVariableDeclarationList = function(options2) {
+                var opt = { inFor: options2.inFor };
                 var list2 = [];
                 list2.push(this.parseVariableDeclaration(opt));
                 while (this.match(",")) {
@@ -42136,33 +42136,33 @@ var require_esprima = __commonJS({
                 this.context.inFunctionBody = previousInFunctionBody;
                 return this.finalize(node, new Node.BlockStatement(body));
               };
-              Parser2.prototype.validateParam = function(options, param, name) {
+              Parser2.prototype.validateParam = function(options2, param, name) {
                 var key = "$" + name;
                 if (this.context.strict) {
                   if (this.scanner.isRestrictedWord(name)) {
-                    options.stricted = param;
-                    options.message = messages_1.Messages.StrictParamName;
+                    options2.stricted = param;
+                    options2.message = messages_1.Messages.StrictParamName;
                   }
-                  if (Object.prototype.hasOwnProperty.call(options.paramSet, key)) {
-                    options.stricted = param;
-                    options.message = messages_1.Messages.StrictParamDupe;
+                  if (Object.prototype.hasOwnProperty.call(options2.paramSet, key)) {
+                    options2.stricted = param;
+                    options2.message = messages_1.Messages.StrictParamDupe;
                   }
-                } else if (!options.firstRestricted) {
+                } else if (!options2.firstRestricted) {
                   if (this.scanner.isRestrictedWord(name)) {
-                    options.firstRestricted = param;
-                    options.message = messages_1.Messages.StrictParamName;
+                    options2.firstRestricted = param;
+                    options2.message = messages_1.Messages.StrictParamName;
                   } else if (this.scanner.isStrictModeReservedWord(name)) {
-                    options.firstRestricted = param;
-                    options.message = messages_1.Messages.StrictReservedWord;
-                  } else if (Object.prototype.hasOwnProperty.call(options.paramSet, key)) {
-                    options.stricted = param;
-                    options.message = messages_1.Messages.StrictParamDupe;
+                    options2.firstRestricted = param;
+                    options2.message = messages_1.Messages.StrictReservedWord;
+                  } else if (Object.prototype.hasOwnProperty.call(options2.paramSet, key)) {
+                    options2.stricted = param;
+                    options2.message = messages_1.Messages.StrictParamDupe;
                   }
                 }
                 if (typeof Object.defineProperty === "function") {
-                  Object.defineProperty(options.paramSet, key, { value: true, enumerable: true, writable: true, configurable: true });
+                  Object.defineProperty(options2.paramSet, key, { value: true, enumerable: true, writable: true, configurable: true });
                 } else {
-                  options.paramSet[key] = true;
+                  options2.paramSet[key] = true;
                 }
               };
               Parser2.prototype.parseRestElement = function(params) {
@@ -42177,27 +42177,27 @@ var require_esprima = __commonJS({
                 }
                 return this.finalize(node, new Node.RestElement(arg));
               };
-              Parser2.prototype.parseFormalParameter = function(options) {
+              Parser2.prototype.parseFormalParameter = function(options2) {
                 var params = [];
                 var param = this.match("...") ? this.parseRestElement(params) : this.parsePatternWithDefault(params);
                 for (var i = 0; i < params.length; i++) {
-                  this.validateParam(options, params[i], params[i].value);
+                  this.validateParam(options2, params[i], params[i].value);
                 }
-                options.simple = options.simple && param instanceof Node.Identifier;
-                options.params.push(param);
+                options2.simple = options2.simple && param instanceof Node.Identifier;
+                options2.params.push(param);
               };
               Parser2.prototype.parseFormalParameters = function(firstRestricted) {
-                var options;
-                options = {
+                var options2;
+                options2 = {
                   simple: true,
                   params: [],
                   firstRestricted
                 };
                 this.expect("(");
                 if (!this.match(")")) {
-                  options.paramSet = {};
+                  options2.paramSet = {};
                   while (this.lookahead.type !== 2) {
-                    this.parseFormalParameter(options);
+                    this.parseFormalParameter(options2);
                     if (this.match(")")) {
                       break;
                     }
@@ -42209,11 +42209,11 @@ var require_esprima = __commonJS({
                 }
                 this.expect(")");
                 return {
-                  simple: options.simple,
-                  params: options.params,
-                  stricted: options.stricted,
-                  firstRestricted: options.firstRestricted,
-                  message: options.message
+                  simple: options2.simple,
+                  params: options2.params,
+                  stricted: options2.stricted,
+                  firstRestricted: options2.firstRestricted,
+                  message: options2.message
                 };
               };
               Parser2.prototype.matchAsyncFunction = function() {
@@ -47690,11 +47690,11 @@ var require_compile = __commonJS({
     exports.compile = void 0;
     var util_1 = __require("util");
     var degenerator_1 = require_degenerator();
-    function compile(qjs, code, returnName, options = {}) {
-      const compiled = (0, degenerator_1.degenerator)(code, options.names ?? []);
+    function compile(qjs, code, returnName, options2 = {}) {
+      const compiled = (0, degenerator_1.degenerator)(code, options2.names ?? []);
       const vm = qjs.newContext();
-      if (options.sandbox) {
-        for (const [name, value] of Object.entries(options.sandbox)) {
+      if (options2.sandbox) {
+        for (const [name, value] of Object.entries(options2.sandbox)) {
           if (typeof value !== "function") {
             throw new Error(`Expected a "function" for sandbox property \`${name}\`, but got "${typeof value}"`);
           }
@@ -47706,7 +47706,7 @@ var require_compile = __commonJS({
           fnHandle.consume((handle) => vm.setProp(vm.global, name, handle));
         }
       }
-      const fnResult = vm.evalCode(`${compiled};${returnName}`, options.filename);
+      const fnResult = vm.evalCode(`${compiled};${returnName}`, options2.filename);
       const fn = vm.unwrapResult(fnResult);
       const t = vm.typeof(fn);
       if (t !== "function") {
@@ -49683,9 +49683,9 @@ var require_context = __commonJS({
        * interrupted, the error will have name `InternalError` and message
        * `interrupted`.
        */
-      evalCode(code, filename = "eval.js", options) {
-        const detectModule = options === void 0 ? 1 : 0;
-        const flags = (0, types_1.evalOptionsToFlags)(options);
+      evalCode(code, filename = "eval.js", options2) {
+        const detectModule = options2 === void 0 ? 1 : 0;
+        const flags = (0, types_1.evalOptionsToFlags)(options2);
         const resultPtr = this.memory.newHeapCharPointer(code).consume((charHandle) => this.ffi.QTS_Eval(this.ctx.value, charHandle.value, filename, detectModule, flags));
         const errorPtr = this.ffi.QTS_ResolveException(this.ctx.value, resultPtr);
         if (errorPtr) {
@@ -49904,11 +49904,11 @@ var require_runtime = __commonJS({
       dispose() {
         return this.scope.dispose();
       }
-      newContext(options = {}) {
-        if (options.intrinsics && options.intrinsics !== types_1.DefaultIntrinsics) {
+      newContext(options2 = {}) {
+        if (options2.intrinsics && options2.intrinsics !== types_1.DefaultIntrinsics) {
           throw new Error("TODO: Custom intrinsics are not supported yet");
         }
-        const ctx = new lifetime_1.Lifetime(options.contextPointer || this.ffi.QTS_NewContext(this.rt.value), void 0, (ctx_ptr) => {
+        const ctx = new lifetime_1.Lifetime(options2.contextPointer || this.ffi.QTS_NewContext(this.rt.value), void 0, (ctx_ptr) => {
           this.contextMap.delete(ctx_ptr);
           this.callbacks.deleteContext(ctx_ptr);
           this.ffi.QTS_FreeContext(ctx_ptr);
@@ -49918,7 +49918,7 @@ var require_runtime = __commonJS({
           ctx,
           ffi: this.ffi,
           rt: this.rt,
-          ownedLifetimes: options.ownedLifetimes,
+          ownedLifetimes: options2.ownedLifetimes,
           runtime: this,
           callbacks: this.callbacks
         });
@@ -50215,30 +50215,30 @@ Attempted to suspend at:`);
       }
     };
     exports.QuickJSModuleCallbacks = QuickJSModuleCallbacks;
-    function applyBaseRuntimeOptions(runtime, options) {
-      if (options.interruptHandler) {
-        runtime.setInterruptHandler(options.interruptHandler);
+    function applyBaseRuntimeOptions(runtime, options2) {
+      if (options2.interruptHandler) {
+        runtime.setInterruptHandler(options2.interruptHandler);
       }
-      if (options.maxStackSizeBytes !== void 0) {
-        runtime.setMaxStackSize(options.maxStackSizeBytes);
+      if (options2.maxStackSizeBytes !== void 0) {
+        runtime.setMaxStackSize(options2.maxStackSizeBytes);
       }
-      if (options.memoryLimitBytes !== void 0) {
-        runtime.setMemoryLimit(options.memoryLimitBytes);
+      if (options2.memoryLimitBytes !== void 0) {
+        runtime.setMemoryLimit(options2.memoryLimitBytes);
       }
     }
     exports.applyBaseRuntimeOptions = applyBaseRuntimeOptions;
-    function applyModuleEvalRuntimeOptions(runtime, options) {
-      if (options.moduleLoader) {
-        runtime.setModuleLoader(options.moduleLoader);
+    function applyModuleEvalRuntimeOptions(runtime, options2) {
+      if (options2.moduleLoader) {
+        runtime.setModuleLoader(options2.moduleLoader);
       }
-      if (options.shouldInterrupt) {
-        runtime.setInterruptHandler(options.shouldInterrupt);
+      if (options2.shouldInterrupt) {
+        runtime.setInterruptHandler(options2.shouldInterrupt);
       }
-      if (options.memoryLimitBytes !== void 0) {
-        runtime.setMemoryLimit(options.memoryLimitBytes);
+      if (options2.memoryLimitBytes !== void 0) {
+        runtime.setMemoryLimit(options2.memoryLimitBytes);
       }
-      if (options.maxStackSizeBytes !== void 0) {
-        runtime.setMaxStackSize(options.maxStackSizeBytes);
+      if (options2.maxStackSizeBytes !== void 0) {
+        runtime.setMaxStackSize(options2.maxStackSizeBytes);
       }
     }
     exports.applyModuleEvalRuntimeOptions = applyModuleEvalRuntimeOptions;
@@ -50254,7 +50254,7 @@ Attempted to suspend at:`);
        * Use the runtime to set limits on CPU and memory usage and configure module
        * loading for one or more [[QuickJSContext]]s inside the runtime.
        */
-      newRuntime(options = {}) {
+      newRuntime(options2 = {}) {
         const rt = new lifetime_1.Lifetime(this.ffi.QTS_NewRuntime(), void 0, (rt_ptr) => {
           this.callbacks.deleteRuntime(rt_ptr);
           this.ffi.QTS_FreeRuntime(rt_ptr);
@@ -50265,9 +50265,9 @@ Attempted to suspend at:`);
           ffi: this.ffi,
           rt
         });
-        applyBaseRuntimeOptions(runtime, options);
-        if (options.moduleLoader) {
-          runtime.setModuleLoader(options.moduleLoader);
+        applyBaseRuntimeOptions(runtime, options2);
+        if (options2.moduleLoader) {
+          runtime.setModuleLoader(options2.moduleLoader);
         }
         return runtime;
       }
@@ -50276,11 +50276,11 @@ Attempted to suspend at:`);
        * [[QuickJSContext]] inside that runtime at the same time. The runtime will
        * be disposed when the context is disposed.
        */
-      newContext(options = {}) {
+      newContext(options2 = {}) {
         const runtime = this.newRuntime();
         const context = runtime.newContext({
-          ...options,
-          ownedLifetimes: (0, types_1.concat)(runtime, options.ownedLifetimes)
+          ...options2,
+          ownedLifetimes: (0, types_1.concat)(runtime, options2.ownedLifetimes)
         });
         runtime.context = context;
         return context;
@@ -50310,12 +50310,12 @@ Attempted to suspend at:`);
        * @throws if `options.shouldInterrupt` interrupted execution, will throw a Error
        * with name `"InternalError"` and  message `"interrupted"`.
        */
-      evalCode(code, options = {}) {
+      evalCode(code, options2 = {}) {
         return lifetime_1.Scope.withScope((scope) => {
           const vm = scope.manage(this.newContext());
-          applyModuleEvalRuntimeOptions(vm.runtime, options);
+          applyModuleEvalRuntimeOptions(vm.runtime, options2);
           const result = vm.evalCode(code, "eval.js");
-          if (options.memoryLimitBytes !== void 0) {
+          if (options2.memoryLimitBytes !== void 0) {
             vm.runtime.setMemoryLimit(-1);
           }
           if (result.error) {
@@ -50354,9 +50354,9 @@ var require_context_asyncify = __commonJS({
       /**
        * Asyncified version of [[evalCode]].
        */
-      async evalCodeAsync(code, filename = "eval.js", options) {
-        const detectModule = options === void 0 ? 1 : 0;
-        const flags = (0, types_1.evalOptionsToFlags)(options);
+      async evalCodeAsync(code, filename = "eval.js", options2) {
+        const detectModule = options2 === void 0 ? 1 : 0;
+        const flags = (0, types_1.evalOptionsToFlags)(options2);
         let resultPtr = 0;
         try {
           resultPtr = await this.memory.newHeapCharPointer(code).consume((charHandle) => this.ffi.QTS_Eval_MaybeAsync(this.ctx.value, charHandle.value, filename, detectModule, flags));
@@ -50407,8 +50407,8 @@ var require_runtime_asyncify = __commonJS({
       constructor(args) {
         super(args);
       }
-      newContext(options = {}) {
-        if (options.intrinsics && options.intrinsics !== types_1.DefaultIntrinsics) {
+      newContext(options2 = {}) {
+        if (options2.intrinsics && options2.intrinsics !== types_1.DefaultIntrinsics) {
           throw new Error("TODO: Custom intrinsics are not supported yet");
         }
         const ctx = new _1.Lifetime(this.ffi.QTS_NewContext(this.rt.value), void 0, (ctx_ptr) => {
@@ -50468,7 +50468,7 @@ var require_module_asyncify = __commonJS({
        * module are limited to a single async call at a time. For multiple
        * concurrent async actions, create multiple WebAssembly modules.
        */
-      newRuntime(options = {}) {
+      newRuntime(options2 = {}) {
         const rt = new lifetime_1.Lifetime(this.ffi.QTS_NewRuntime(), void 0, (rt_ptr) => {
           this.callbacks.deleteRuntime(rt_ptr);
           this.ffi.QTS_FreeRuntime(rt_ptr);
@@ -50479,9 +50479,9 @@ var require_module_asyncify = __commonJS({
           rt,
           callbacks: this.callbacks
         });
-        (0, module_1.applyBaseRuntimeOptions)(runtime, options);
-        if (options.moduleLoader) {
-          runtime.setModuleLoader(options.moduleLoader);
+        (0, module_1.applyBaseRuntimeOptions)(runtime, options2);
+        if (options2.moduleLoader) {
+          runtime.setModuleLoader(options2.moduleLoader);
         }
         return runtime;
       }
@@ -50490,10 +50490,10 @@ var require_module_asyncify = __commonJS({
        * [[QuickJSContext]] inside that runtime at the same time. The runtime will
        * be disposed when the context is disposed.
        */
-      newContext(options = {}) {
+      newContext(options2 = {}) {
         const runtime = this.newRuntime();
-        const lifetimes = options.ownedLifetimes ? options.ownedLifetimes.concat([runtime]) : [runtime];
-        const context = runtime.newContext({ ...options, ownedLifetimes: lifetimes });
+        const lifetimes = options2.ownedLifetimes ? options2.ownedLifetimes.concat([runtime]) : [runtime];
+        const context = runtime.newContext({ ...options2, ownedLifetimes: lifetimes });
         runtime.context = context;
         return context;
       }
@@ -50512,12 +50512,12 @@ var require_module_asyncify = __commonJS({
        *
        * See the documentation for [[QuickJSWASMModule.evalCode]] for more details.
        */
-      evalCodeAsync(code, options) {
+      evalCodeAsync(code, options2) {
         return lifetime_1.Scope.withScopeAsync(async (scope) => {
           const vm = scope.manage(this.newContext());
-          (0, module_1.applyModuleEvalRuntimeOptions)(vm.runtime, options);
+          (0, module_1.applyModuleEvalRuntimeOptions)(vm.runtime, options2);
           const result = await vm.evalCodeAsync(code, "eval.js");
-          if (options.memoryLimitBytes !== void 0) {
+          if (options2.memoryLimitBytes !== void 0) {
             vm.runtime.setMemoryLimit(-1);
           }
           if (result.error) {
@@ -51476,30 +51476,30 @@ var require_module_test = __commonJS({
         this.contexts = /* @__PURE__ */ new Set();
         this.runtimes = /* @__PURE__ */ new Set();
       }
-      newRuntime(options) {
+      newRuntime(options2) {
         const runtime = this.parent.newRuntime({
-          ...options,
+          ...options2,
           ownedLifetimes: [
             new lifetime_1.Lifetime(void 0, void 0, () => this.runtimes.delete(runtime)),
-            ...options?.ownedLifetimes ?? []
+            ...options2?.ownedLifetimes ?? []
           ]
         });
         this.runtimes.add(runtime);
         return runtime;
       }
-      newContext(options) {
+      newContext(options2) {
         const context = this.parent.newContext({
-          ...options,
+          ...options2,
           ownedLifetimes: [
             new lifetime_1.Lifetime(void 0, void 0, () => this.contexts.delete(context)),
-            ...options?.ownedLifetimes ?? []
+            ...options2?.ownedLifetimes ?? []
           ]
         });
         this.contexts.add(context);
         return context;
       }
-      evalCode(code, options) {
-        return this.parent.evalCode(code, options);
+      evalCode(code, options2) {
+        return this.parent.evalCode(code, options2);
       }
       disposeAll() {
         const allDisposables = [...this.contexts, ...this.runtimes];
@@ -51609,14 +51609,14 @@ var require_dist15 = __commonJS({
       return singleton;
     }
     exports.getQuickJSSync = getQuickJSSync;
-    async function newAsyncRuntime(options) {
+    async function newAsyncRuntime(options2) {
       const module2 = await (0, variants_1.newQuickJSAsyncWASMModule)();
-      return module2.newRuntime(options);
+      return module2.newRuntime(options2);
     }
     exports.newAsyncRuntime = newAsyncRuntime;
-    async function newAsyncContext(options) {
+    async function newAsyncContext(options2) {
       const module2 = await (0, variants_1.newQuickJSAsyncWASMModule)();
-      return module2.newContext(options);
+      return module2.newContext(options2);
     }
     exports.newAsyncContext = newAsyncContext;
     function shouldInterruptAfterDeadline(deadline) {
@@ -51769,14 +51769,14 @@ var require_dist16 = __commonJS({
     var url_1 = __require("url");
     var parse_proxy_response_1 = require_parse_proxy_response3();
     var debug = (0, debug_1.default)("https-proxy-agent");
-    var setServernameFromNonIpHost = (options) => {
-      if (options.servername === void 0 && options.host && !net.isIP(options.host)) {
+    var setServernameFromNonIpHost = (options2) => {
+      if (options2.servername === void 0 && options2.host && !net.isIP(options2.host)) {
         return {
-          ...options,
-          servername: options.host
+          ...options2,
+          servername: options2.host
         };
       }
-      return options;
+      return options2;
     };
     var HttpsProxyAgent = class extends agent_base_1.Agent {
       constructor(proxy, opts) {
@@ -51922,14 +51922,14 @@ var require_dist17 = __commonJS({
     var pac_resolver_1 = require_dist14();
     var quickjs_emscripten_1 = require_dist15();
     var debug = (0, debug_1.default)("pac-proxy-agent");
-    var setServernameFromNonIpHost = (options) => {
-      if (options.servername === void 0 && options.host && !net.isIP(options.host)) {
+    var setServernameFromNonIpHost = (options2) => {
+      if (options2.servername === void 0 && options2.host && !net.isIP(options2.host)) {
         return {
-          ...options,
-          servername: options.host
+          ...options2,
+          servername: options2.host
         };
       }
-      return options;
+      return options2;
     };
     var PacProxyAgent = class extends agent_base_1.Agent {
       constructor(uri, opts) {
@@ -52226,16 +52226,16 @@ var require_http_client = __commonJS({
       workflowKey;
       nodeInitPromise;
       userAgentSuffix;
-      constructor(options) {
-        const { token } = options;
-        this.stats = options.apifyClientStats;
-        this.maxRetries = options.maxRetries;
-        this.minDelayBetweenRetriesMillis = options.minDelayBetweenRetriesMillis;
-        this.userProvidedRequestInterceptors = options.requestInterceptors;
-        this.timeoutMillis = options.timeoutSecs * 1e3;
-        this.logger = options.logger;
-        this.workflowKey = options.workflowKey || process.env[consts_1.APIFY_ENV_VARS.WORKFLOW_KEY];
-        this.userAgentSuffix = options.userAgentSuffix;
+      constructor(options2) {
+        const { token } = options2;
+        this.stats = options2.apifyClientStats;
+        this.maxRetries = options2.maxRetries;
+        this.minDelayBetweenRetriesMillis = options2.minDelayBetweenRetriesMillis;
+        this.userProvidedRequestInterceptors = options2.requestInterceptors;
+        this.timeoutMillis = options2.timeoutSecs * 1e3;
+        this.logger = options2.logger;
+        this.workflowKey = options2.workflowKey || process.env[consts_1.APIFY_ENV_VARS.WORKFLOW_KEY];
+        this.userAgentSuffix = options2.userAgentSuffix;
         this._onRequestRetry = this._onRequestRetry.bind(this);
         this.axios = axios_1.default.create({
           // Disable axios's built-in proxy handling since we're using custom agents
@@ -52457,8 +52457,8 @@ var require_api_client = __commonJS({
       apifyClient;
       httpClient;
       params;
-      constructor(options) {
-        const { baseUrl, publicBaseUrl, apifyClient, httpClient, resourcePath, id, params = {} } = options;
+      constructor(options2) {
+        const { baseUrl, publicBaseUrl, apifyClient, httpClient, resourcePath, id, params = {} } = options2;
         this.id = id;
         this.safeId = id && this._toSafeId(id);
         this.baseUrl = baseUrl;
@@ -52495,7 +52495,7 @@ var require_api_client = __commonJS({
       /**
        * Returns async iterator to iterate through all items and Promise that can be awaited to get first page of results.
        */
-      _listPaginatedFromCallback(getPaginatedList, options = {}) {
+      _listPaginatedFromCallback(getPaginatedList, options2 = {}) {
         const minForLimitParam = (a, b) => {
           if (a === 0)
             a = void 0;
@@ -52508,21 +52508,21 @@ var require_api_client = __commonJS({
           return Math.min(a, b);
         };
         const paginatedListPromise = getPaginatedList({
-          ...options,
-          limit: minForLimitParam(options.limit, options.chunkSize)
+          ...options2,
+          limit: minForLimitParam(options2.limit, options2.chunkSize)
         });
         async function* asyncGenerator() {
           let currentPage = await paginatedListPromise;
           yield* currentPage.items;
-          const offset = options.offset ?? 0;
-          const limit = Math.min(options.limit || currentPage.total, currentPage.total);
+          const offset = options2.offset ?? 0;
+          const limit = Math.min(options2.limit || currentPage.total, currentPage.total);
           let currentOffset = offset + currentPage.items.length;
           let remainingItems = Math.min(currentPage.total - offset, limit) - currentPage.items.length;
           while (currentPage.items.length > 0 && // Continue only if at least some items were returned in the last page.
           remainingItems > 0) {
             const newOptions = {
-              ...options,
-              limit: minForLimitParam(remainingItems, options.chunkSize),
+              ...options2,
+              limit: minForLimitParam(remainingItems, options2.chunkSize),
               offset: currentOffset
             };
             currentPage = await getPaginatedList(newOptions);
@@ -52554,11 +52554,11 @@ var require_resource_client = __commonJS({
     exports.MEDIUM_TIMEOUT_MILLIS = 30 * 1e3;
     exports.DEFAULT_TIMEOUT_MILLIS = 360 * 1e3;
     var ResourceClient = class extends api_client_1.ApiClient {
-      async _get(options = {}, timeoutMillis) {
+      async _get(options2 = {}, timeoutMillis) {
         const requestOpts = {
           url: this._url(),
           method: "GET",
-          params: this._params(options),
+          params: this._params(options2),
           timeout: timeoutMillis
         };
         try {
@@ -52595,8 +52595,8 @@ var require_resource_client = __commonJS({
        * This function is used in Build and Run endpoints so it's kept
        * here to stay DRY.
        */
-      async _waitForFinish(options = {}) {
-        const { waitSecs = MAX_WAIT_FOR_FINISH } = options;
+      async _waitForFinish(options2 = {}) {
+        const { waitSecs = MAX_WAIT_FOR_FINISH } = options2;
         const waitMillis = waitSecs * 1e3;
         let job;
         const startedAt = Date.now();
@@ -52653,10 +52653,10 @@ var require_actor_env_var = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "env-vars",
-          ...options
+          ...options2
         });
       }
       /**
@@ -52704,19 +52704,19 @@ var require_resource_collection_client = __commonJS({
       /**
        * @private
        */
-      async _list(options = {}) {
+      async _list(options2 = {}) {
         const response = await this.httpClient.call({
           url: this._url(),
           method: "GET",
-          params: this._params(options)
+          params: this._params(options2)
         });
         return (0, utils_1.parseDateFields)((0, utils_1.pluckData)(response.data));
       }
       /**
        * Returns async iterator to iterate through all items and Promise that can be awaited to get first page of results.
        */
-      _listPaginated(options = {}) {
-        return this._listPaginatedFromCallback(this._list.bind(this), options);
+      _listPaginated(options2 = {}) {
+        return this._listPaginatedFromCallback(this._list.bind(this), options2);
       }
       async _create(resource) {
         const response = await this.httpClient.call({
@@ -52754,10 +52754,10 @@ var require_actor_env_var_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "env-vars",
-          ...options
+          ...options2
         });
       }
       /**
@@ -52813,10 +52813,10 @@ var require_actor_version = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "versions",
-          ...options
+          ...options2
         });
       }
       /**
@@ -52894,10 +52894,10 @@ var require_actor_version_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "versions",
-          ...options
+          ...options2
         });
       }
       /**
@@ -52953,10 +52953,10 @@ var require_log = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "logs",
-          ...options
+          ...options2
         });
       }
       /**
@@ -52967,11 +52967,11 @@ var require_log = __commonJS({
        * @returns The log content as a string, or `undefined` if it does not exist.
        * @see https://docs.apify.com/api/v2/log-get
        */
-      async get(options = {}) {
+      async get(options2 = {}) {
         const requestOpts = {
           url: this._url(),
           method: "GET",
-          params: this._params(options)
+          params: this._params(options2)
         };
         try {
           const response = await this.httpClient.call(requestOpts);
@@ -52989,10 +52989,10 @@ var require_log = __commonJS({
        * @returns The log content as a Readable stream, or `undefined` if it does not exist.
        * @see https://docs.apify.com/api/v2/log-get
        */
-      async stream(options = {}) {
+      async stream(options2 = {}) {
         const params = {
           stream: true,
-          raw: options.raw
+          raw: options2.raw
         };
         const requestOpts = {
           url: this._url(),
@@ -53011,8 +53011,8 @@ var require_log = __commonJS({
     };
     exports.LogClient = LogClient2;
     var LoggerActorRedirect2 = class extends log_1.Logger {
-      constructor(options = {}) {
-        super({ skipTime: true, level: log_1.LogLevel.DEBUG, ...options });
+      constructor(options2 = {}) {
+        super({ skipTime: true, level: log_1.LogLevel.DEBUG, ...options2 });
       }
       _log(level, message, data, exception, opts = {}) {
         if (level > this.options.level) {
@@ -53041,8 +53041,8 @@ var require_log = __commonJS({
       logClient;
       streamingTask = null;
       stopLogging = false;
-      constructor(options) {
-        const { toLog, logClient, fromStart = true } = options;
+      constructor(options2) {
+        const { toLog, logClient, fromStart = true } = options2;
         this.destinationLog = toLog;
         this.logClient = logClient;
         this.relevancyTimeLimit = fromStart ? null : /* @__PURE__ */ new Date();
@@ -53150,10 +53150,10 @@ var require_build2 = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "actor-builds",
-          ...options
+          ...options2
         });
       }
       /**
@@ -53174,11 +53174,11 @@ var require_build2 = __commonJS({
        * const build = await client.build('build-id').get({ waitForFinish: 60 });
        * ```
        */
-      async get(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async get(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           waitForFinish: ow_1.default.optional.number
         }));
-        return this._get(options);
+        return this._get(options2);
       }
       /**
        * Aborts the Actor build.
@@ -53253,11 +53253,11 @@ var require_build2 = __commonJS({
        * }
        * ```
        */
-      async waitForFinish(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async waitForFinish(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           waitSecs: ow_1.default.optional.number
         }));
-        return this._waitForFinish(options);
+        return this._waitForFinish(options2);
       }
       /**
        * Returns a client for accessing the log of this Actor build.
@@ -53295,10 +53295,10 @@ var require_build_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
-          ...options,
-          resourcePath: options.resourcePath || "actor-builds"
+          ...options2,
+          resourcePath: options2.resourcePath || "actor-builds"
         });
       }
       /**
@@ -53321,13 +53321,13 @@ var require_build_collection = __commonJS({
        * @returns A paginated iterator of Actor builds.
        * @see https://docs.apify.com/api/v2/actor-builds-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
     };
     exports.BuildCollectionClient = BuildCollectionClient2;
@@ -55069,8 +55069,8 @@ var require_cjs3 = __commonJS({
       return CHECK_TYPES2;
     })(CHECK_TYPES || {});
     var _HealthChecker = class _HealthChecker {
-      constructor(options) {
-        __publicField(this, "options", options);
+      constructor(options2) {
+        __publicField(this, "options", options2);
         __publicField(this, "checks");
         __publicField(this, "redisPrefix");
         __publicField(this, "redisTtlSecs");
@@ -55084,7 +55084,7 @@ var require_cjs3 = __commonJS({
           checkTimeoutMillis = 15e3,
           mongoDbWriteTestCollection = "healthCheckPlayground",
           mongoDbWriteTestRemoveOlderThanSecs = 15
-        } = options;
+        } = options2;
         if (!Array.isArray(checks)) throw new Error('Parameter "check" must be an array');
         checks.map((check2) => this._validateCheck(check2));
         this.checks = checks;
@@ -55280,12 +55280,12 @@ var require_cjs3 = __commonJS({
        * Parse also validates the template structure, so it can be used
        * to check validity of the template JSON and usage of allowedVariables.
        */
-      static parse(payloadTemplate, allowedVariables = null, context = {}, options = {}) {
+      static parse(payloadTemplate, allowedVariables = null, context = {}, options2 = {}) {
         const type = typeof payloadTemplate;
         if (type !== "string") throw new Error(`Cannot parse a ${type} payload template.`);
         const template = new _WebhookPayloadTemplate2(payloadTemplate, allowedVariables, context);
         const data = template._parse();
-        if (options.interpolateStrings) {
+        if (options2.interpolateStrings) {
           return template._interpolate(data);
         }
         return data;
@@ -55660,10 +55660,10 @@ var require_dataset = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "datasets",
-          ...options
+          ...options2
         });
       }
       /**
@@ -55738,8 +55738,8 @@ var require_dataset = __commonJS({
        * });
        * ```
        */
-      listItems(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      listItems(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           clean: ow_1.default.optional.boolean,
           desc: ow_1.default.optional.boolean,
           flatten: ow_1.default.optional.array.ofType(ow_1.default.string),
@@ -55763,7 +55763,7 @@ var require_dataset = __commonJS({
           });
           return this._createPaginationList(response, datasetListOptions.desc ?? false);
         };
-        return this._listPaginatedFromCallback(fetchItems, options);
+        return this._listPaginatedFromCallback(fetchItems, options2);
       }
       /**
        * Downloads dataset items in a specific format.
@@ -55805,9 +55805,9 @@ var require_dataset = __commonJS({
        * });
        * ```
        */
-      async downloadItems(format, options = {}) {
+      async downloadItems(format, options2 = {}) {
         (0, ow_1.default)(format, ow_1.default.string.oneOf(validItemFormats));
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           attachment: ow_1.default.optional.boolean,
           bom: ow_1.default.optional.boolean,
           clean: ow_1.default.optional.boolean,
@@ -55832,7 +55832,7 @@ var require_dataset = __commonJS({
           method: "GET",
           params: this._params({
             format,
-            ...options
+            ...options2
           }),
           forceBuffer: true,
           timeout: resource_client_1.DEFAULT_TIMEOUT_MILLIS
@@ -55941,8 +55941,8 @@ var require_dataset = __commonJS({
        * });
        * ```
        */
-      async createItemsPublicUrl(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async createItemsPublicUrl(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           clean: ow_1.default.optional.boolean,
           desc: ow_1.default.optional.boolean,
           flatten: ow_1.default.optional.array.ofType(ow_1.default.string),
@@ -55957,7 +55957,7 @@ var require_dataset = __commonJS({
           expiresInSecs: ow_1.default.optional.number
         }));
         const dataset = await this.get();
-        const { expiresInSecs, ...queryOptions } = options;
+        const { expiresInSecs, ...queryOptions } = options2;
         let createdItemsPublicUrl = new URL(this._publicUrl("items"));
         if (dataset?.urlSigningSecretKey) {
           const signature = await (0, utilities_1.createStorageContentSignatureAsync)({
@@ -56015,10 +56015,10 @@ var require_key_value_store = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "key-value-stores",
-          ...options
+          ...options2
         });
       }
       /**
@@ -56087,8 +56087,8 @@ var require_key_value_store = __commonJS({
        * } while (result.isTruncated);
        * ```
        */
-      listKeys(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      listKeys(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           exclusiveStartKey: ow_1.default.optional.string,
           collection: ow_1.default.optional.string,
@@ -56104,16 +56104,16 @@ var require_key_value_store = __commonJS({
           });
           return (0, utils_1.cast)((0, utils_1.parseDateFields)((0, utils_1.pluckData)(response.data)));
         };
-        const paginatedListPromise = getPaginatedList(options);
+        const paginatedListPromise = getPaginatedList(options2);
         async function* asyncGenerator() {
           let currentPage = await paginatedListPromise;
           yield* currentPage.items;
-          let remainingItems = options.limit ? options.limit - currentPage.items.length : void 0;
+          let remainingItems = options2.limit ? options2.limit - currentPage.items.length : void 0;
           while (currentPage.items.length > 0 && // Continue only if at least some items were returned in the last page.
           currentPage.nextExclusiveStartKey !== null && // Continue only if there is some next key.
           (remainingItems === void 0 || remainingItems > 0)) {
             const newOptions = {
-              ...options,
+              ...options2,
               limit: remainingItems,
               exclusiveStartKey: currentPage.nextExclusiveStartKey
             };
@@ -56177,8 +56177,8 @@ var require_key_value_store = __commonJS({
        * console.log(`Share this URL: ${url}`);
        * ```
        */
-      async createKeysPublicUrl(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async createKeysPublicUrl(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           exclusiveStartKey: ow_1.default.optional.string,
           collection: ow_1.default.optional.string,
@@ -56186,7 +56186,7 @@ var require_key_value_store = __commonJS({
           expiresInSecs: ow_1.default.optional.number
         }));
         const store = await this.get();
-        const { expiresInSecs, ...queryOptions } = options;
+        const { expiresInSecs, ...queryOptions } = options2;
         let createdPublicKeysUrl = new URL(this._publicUrl("keys"));
         if (store?.urlSigningSecretKey) {
           const signature = await (0, utilities_1.createStorageContentSignatureAsync)({
@@ -56230,32 +56230,32 @@ var require_key_value_store = __commonJS({
         }
         return false;
       }
-      async getRecord(key, options = {}) {
+      async getRecord(key, options2 = {}) {
         (0, ow_1.default)(key, ow_1.default.string);
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           buffer: ow_1.default.optional.boolean,
           stream: ow_1.default.optional.boolean,
           disableRedirect: ow_1.default.optional.boolean,
           signature: ow_1.default.optional.string
         }));
-        if (options.stream && !(0, utils_1.isNode)()) {
+        if (options2.stream && !(0, utils_1.isNode)()) {
           throw new Error("The stream option can only be used in Node.js environment.");
         }
-        if ("disableRedirect" in options) {
+        if ("disableRedirect" in options2) {
           log_1.default.deprecated("The disableRedirect option for getRecord() is deprecated. It has no effect and will be removed in the following major release.");
         }
         const queryParams = { attachment: "true" };
-        if (options.signature)
-          queryParams.signature = options.signature;
+        if (options2.signature)
+          queryParams.signature = options2.signature;
         const requestOpts = {
           url: this._url(`records/${key}`),
           method: "GET",
           params: this._params(queryParams),
           timeout: resource_client_1.DEFAULT_TIMEOUT_MILLIS
         };
-        if (options.buffer)
+        if (options2.buffer)
           requestOpts.forceBuffer = true;
-        if (options.stream)
+        if (options2.stream)
           requestOpts.responseType = "stream";
         try {
           const response = await this.httpClient.call(requestOpts);
@@ -56316,19 +56316,19 @@ var require_key_value_store = __commonJS({
        * });
        * ```
        */
-      async setRecord(record, options = {}) {
+      async setRecord(record, options2 = {}) {
         (0, ow_1.default)(record, ow_1.default.object.exactShape({
           key: ow_1.default.string,
           value: ow_1.default.any(ow_1.default.null, ow_1.default.string, ow_1.default.number, ow_1.default.object, ow_1.default.boolean),
           contentType: ow_1.default.optional.string.nonEmpty
         }));
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           timeoutSecs: ow_1.default.optional.number,
           doNotRetryTimeouts: ow_1.default.optional.boolean
         }));
         const { key } = record;
         let { value, contentType } = record;
-        const { timeoutSecs, doNotRetryTimeouts } = options;
+        const { timeoutSecs, doNotRetryTimeouts } = options2;
         const isValueStreamOrBuffer = (0, utils_1.isStream)(value) || (0, utils_1.isBuffer)(value);
         if (!contentType) {
           if (isValueStreamOrBuffer)
@@ -56407,10 +56407,10 @@ var require_request_queue = __commonJS({
       /**
        * @hidden
        */
-      constructor(options, userOptions = {}) {
+      constructor(options2, userOptions = {}) {
         super({
           resourcePath: "request-queues",
-          ...options
+          ...options2
         });
         this.clientKey = userOptions.clientKey;
         this.timeoutMillis = userOptions.timeoutSecs ? userOptions.timeoutSecs * 1e3 : void 0;
@@ -56453,8 +56453,8 @@ var require_request_queue = __commonJS({
        * @returns List of requests from the queue head
        * @see https://docs.apify.com/api/v2/request-queue-head-get
        */
-      async listHead(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async listHead(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative
         }));
         const response = await this.httpClient.call({
@@ -56462,7 +56462,7 @@ var require_request_queue = __commonJS({
           method: "GET",
           timeout: Math.min(resource_client_1.SMALL_TIMEOUT_MILLIS, this.timeoutMillis ?? Infinity),
           params: this._params({
-            limit: options.limit,
+            limit: options2.limit,
             clientKey: this.clientKey
           })
         });
@@ -56500,8 +56500,8 @@ var require_request_queue = __commonJS({
        * }
        * ```
        */
-      async listAndLockHead(options) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async listAndLockHead(options2) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           lockSecs: ow_1.default.number,
           limit: ow_1.default.optional.number.not.negative
         }));
@@ -56510,8 +56510,8 @@ var require_request_queue = __commonJS({
           method: "POST",
           timeout: Math.min(resource_client_1.MEDIUM_TIMEOUT_MILLIS, this.timeoutMillis ?? Infinity),
           params: this._params({
-            limit: options.limit,
-            lockSecs: options.lockSecs,
+            limit: options2.limit,
+            lockSecs: options2.lockSecs,
             clientKey: this.clientKey
           })
         });
@@ -56555,11 +56555,11 @@ var require_request_queue = __commonJS({
        * );
        * ```
        */
-      async addRequest(request, options = {}) {
+      async addRequest(request, options2 = {}) {
         (0, ow_1.default)(request, ow_1.default.object.partialShape({
           id: ow_1.default.undefined
         }));
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           forefront: ow_1.default.optional.boolean
         }));
         const response = await this.httpClient.call({
@@ -56568,7 +56568,7 @@ var require_request_queue = __commonJS({
           timeout: Math.min(resource_client_1.SMALL_TIMEOUT_MILLIS, this.timeoutMillis ?? Infinity),
           data: request,
           params: this._params({
-            forefront: options.forefront,
+            forefront: options2.forefront,
             clientKey: this.clientKey
           })
         });
@@ -56579,11 +56579,11 @@ var require_request_queue = __commonJS({
        *
        * @private
        */
-      async _batchAddRequests(requests, options = {}) {
+      async _batchAddRequests(requests, options2 = {}) {
         (0, ow_1.default)(requests, ow_1.default.array.ofType(ow_1.default.object.partialShape({
           id: ow_1.default.undefined
         })).minLength(1).maxLength(consts_1.REQUEST_QUEUE_MAX_REQUESTS_PER_BATCH_OPERATION));
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           forefront: ow_1.default.optional.boolean
         }));
         const { data } = await this.httpClient.call({
@@ -56592,14 +56592,14 @@ var require_request_queue = __commonJS({
           timeout: Math.min(resource_client_1.MEDIUM_TIMEOUT_MILLIS, this.timeoutMillis ?? Infinity),
           data: requests,
           params: this._params({
-            forefront: options.forefront,
+            forefront: options2.forefront,
             clientKey: this.clientKey
           })
         });
         return (0, utils_1.cast)((0, utils_1.parseDateFields)((0, utils_1.pluckData)(data)));
       }
-      async _batchAddRequestsWithRetries(requests, options = {}) {
-        const { forefront, maxUnprocessedRequestsRetries = DEFAULT_UNPROCESSED_RETRIES_BATCH_ADD_REQUESTS, minDelayBetweenUnprocessedRequestsRetriesMillis = DEFAULT_MIN_DELAY_BETWEEN_UNPROCESSED_REQUESTS_RETRIES_MILLIS } = options;
+      async _batchAddRequestsWithRetries(requests, options2 = {}) {
+        const { forefront, maxUnprocessedRequestsRetries = DEFAULT_UNPROCESSED_RETRIES_BATCH_ADD_REQUESTS, minDelayBetweenUnprocessedRequestsRetriesMillis = DEFAULT_MIN_DELAY_BETWEEN_UNPROCESSED_REQUESTS_RETRIES_MILLIS } = options2;
         let remainingRequests = requests;
         const processedRequests = [];
         let unprocessedRequests = [];
@@ -56669,8 +56669,8 @@ var require_request_queue = __commonJS({
        * );
        * ```
        */
-      async batchAddRequests(requests, options = {}) {
-        const { forefront, maxUnprocessedRequestsRetries = DEFAULT_UNPROCESSED_RETRIES_BATCH_ADD_REQUESTS, maxParallel = DEFAULT_PARALLEL_BATCH_ADD_REQUESTS, minDelayBetweenUnprocessedRequestsRetriesMillis = DEFAULT_MIN_DELAY_BETWEEN_UNPROCESSED_REQUESTS_RETRIES_MILLIS } = options;
+      async batchAddRequests(requests, options2 = {}) {
+        const { forefront, maxUnprocessedRequestsRetries = DEFAULT_UNPROCESSED_RETRIES_BATCH_ADD_REQUESTS, maxParallel = DEFAULT_PARALLEL_BATCH_ADD_REQUESTS, minDelayBetweenUnprocessedRequestsRetriesMillis = DEFAULT_MIN_DELAY_BETWEEN_UNPROCESSED_REQUESTS_RETRIES_MILLIS } = options2;
         (0, ow_1.default)(requests, ow_1.default.array.ofType(ow_1.default.object.partialShape({
           id: ow_1.default.undefined
         })).minLength(1));
@@ -56685,7 +56685,7 @@ var require_request_queue = __commonJS({
         while (i < requests.length) {
           const slicedRequests = requests.slice(i, i + consts_1.REQUEST_QUEUE_MAX_REQUESTS_PER_BATCH_OPERATION);
           const requestsInBatch = (0, utils_1.sliceArrayByByteLength)(slicedRequests, payloadSizeLimitBytes, i);
-          const requestPromise = this._batchAddRequestsWithRetries(requestsInBatch, options);
+          const requestPromise = this._batchAddRequestsWithRetries(requestsInBatch, options2);
           executingRequests.add(requestPromise);
           void requestPromise.then((batchAddResult) => {
             executingRequests.delete(requestPromise);
@@ -56760,11 +56760,11 @@ var require_request_queue = __commonJS({
        * @returns Information about the updated request
        * @see https://docs.apify.com/api/v2/request-queue-request-put
        */
-      async updateRequest(request, options = {}) {
+      async updateRequest(request, options2 = {}) {
         (0, ow_1.default)(request, ow_1.default.object.partialShape({
           id: ow_1.default.string
         }));
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           forefront: ow_1.default.optional.boolean
         }));
         const response = await this.httpClient.call({
@@ -56773,7 +56773,7 @@ var require_request_queue = __commonJS({
           timeout: Math.min(resource_client_1.MEDIUM_TIMEOUT_MILLIS, this.timeoutMillis ?? Infinity),
           data: request,
           params: this._params({
-            forefront: options.forefront,
+            forefront: options2.forefront,
             clientKey: this.clientKey
           })
         });
@@ -56819,9 +56819,9 @@ var require_request_queue = __commonJS({
        * await client.requestQueue('my-queue').prolongRequestLock(request.id, { lockSecs: 120 });
        * ```
        */
-      async prolongRequestLock(id, options) {
+      async prolongRequestLock(id, options2) {
         (0, ow_1.default)(id, ow_1.default.string);
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           lockSecs: ow_1.default.number,
           forefront: ow_1.default.optional.boolean
         }));
@@ -56830,8 +56830,8 @@ var require_request_queue = __commonJS({
           method: "PUT",
           timeout: Math.min(resource_client_1.MEDIUM_TIMEOUT_MILLIS, this.timeoutMillis ?? Infinity),
           params: this._params({
-            forefront: options.forefront,
-            lockSecs: options.lockSecs,
+            forefront: options2.forefront,
+            lockSecs: options2.lockSecs,
             clientKey: this.clientKey
           })
         });
@@ -56847,9 +56847,9 @@ var require_request_queue = __commonJS({
        * @param options - Options such as whether to move to front
        * @see https://docs.apify.com/api/v2/request-queue-request-lock-delete
        */
-      async deleteRequestLock(id, options = {}) {
+      async deleteRequestLock(id, options2 = {}) {
         (0, ow_1.default)(id, ow_1.default.string);
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           forefront: ow_1.default.optional.boolean
         }));
         await this.httpClient.call({
@@ -56857,7 +56857,7 @@ var require_request_queue = __commonJS({
           method: "DELETE",
           timeout: Math.min(resource_client_1.SMALL_TIMEOUT_MILLIS, this.timeoutMillis ?? Infinity),
           params: this._params({
-            forefront: options.forefront,
+            forefront: options2.forefront,
             clientKey: this.clientKey
           })
         });
@@ -56872,8 +56872,8 @@ var require_request_queue = __commonJS({
        * @returns List of requests with pagination information
        * @see https://docs.apify.com/api/v2/request-queue-requests-get
        */
-      listRequests(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      listRequests(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           exclusiveStartId: ow_1.default.optional.string,
           cursor: ow_1.default.optional.string,
@@ -56892,16 +56892,16 @@ var require_request_queue = __commonJS({
           });
           return (0, utils_1.cast)((0, utils_1.parseDateFields)((0, utils_1.pluckData)(response.data)));
         };
-        const paginatedListPromise = getPaginatedList(options);
+        const paginatedListPromise = getPaginatedList(options2);
         async function* asyncGenerator() {
           let currentPage = await paginatedListPromise;
           yield* currentPage.items;
-          let remainingItems = options.limit ? options.limit - currentPage.items.length : void 0;
+          let remainingItems = options2.limit ? options2.limit - currentPage.items.length : void 0;
           while (currentPage.items.length > 0 && // Continue only if at least some items were returned in the last page.
           currentPage.nextCursor && // Continue only if the API returned a cursor for the next page.
           (remainingItems === void 0 || remainingItems > 0)) {
             const newOptions = {
-              ...options,
+              ...options2,
               limit: remainingItems,
               // remove original exclusiveStartId, if there was any, and use cursor-based pagination
               exclusiveStartId: void 0,
@@ -56955,15 +56955,15 @@ var require_request_queue = __commonJS({
        * }
        * ```
        */
-      paginateRequests(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      paginateRequests(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           maxPageLimit: ow_1.default.optional.number,
           exclusiveStartId: ow_1.default.optional.string,
           cursor: ow_1.default.optional.string,
           filter: ow_1.default.optional.array.ofType(ow_1.default.string.oneOf(["locked", "pending"])).minLength(1)
         }).validate((0, utils_1.mutuallyExclusive)("exclusiveStartId", "cursor")));
-        const { limit, exclusiveStartId, cursor, filter, maxPageLimit = DEFAULT_REQUEST_QUEUE_REQUEST_PAGE_LIMIT } = options;
+        const { limit, exclusiveStartId, cursor, filter, maxPageLimit = DEFAULT_REQUEST_QUEUE_REQUEST_PAGE_LIMIT } = options2;
         return new utils_1.RequestQueuePaginationIterator({
           getPage: async (pageOptions) => this.listRequests({ ...pageOptions, filter }),
           limit,
@@ -56997,10 +56997,10 @@ var require_run = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
-          ...options,
-          resourcePath: options.resourcePath || "actor-runs"
+          ...options2,
+          resourcePath: options2.resourcePath || "actor-runs"
         });
       }
       /**
@@ -57021,11 +57021,11 @@ var require_run = __commonJS({
        * const run = await client.run('run-id').get({ waitForFinish: 60 });
        * ```
        */
-      async get(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async get(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           waitForFinish: ow_1.default.optional.number
         }));
-        return this._get(options);
+        return this._get(options2);
       }
       /**
        * Aborts the Actor run.
@@ -57044,14 +57044,14 @@ var require_run = __commonJS({
        * await client.run('run-id').abort({ gracefully: true });
        * ```
        */
-      async abort(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async abort(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           gracefully: ow_1.default.optional.boolean
         }));
         const response = await this.httpClient.call({
           url: this._url("abort"),
           method: "POST",
-          params: this._params(options)
+          params: this._params(options2)
         });
         return (0, utils_1.cast)((0, utils_1.parseDateFields)((0, utils_1.pluckData)(response.data)));
       }
@@ -57088,16 +57088,16 @@ var require_run = __commonJS({
        * console.log(`Run ${metamorphedRun.id} is now running ${metamorphedRun.actId}`);
        * ```
        */
-      async metamorph(targetActorId, input, options = {}) {
+      async metamorph(targetActorId, input, options2 = {}) {
         (0, ow_1.default)(targetActorId, ow_1.default.string);
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           contentType: ow_1.default.optional.string,
           build: ow_1.default.optional.string
         }));
         const safeTargetActorId = this._toSafeId(targetActorId);
         const params = {
           targetActorId: safeTargetActorId,
-          build: options.build
+          build: options2.build
         };
         const request = {
           url: this._url("metamorph"),
@@ -57110,9 +57110,9 @@ var require_run = __commonJS({
           // @ts-expect-error Custom Apify property
           stringifyFunctions: true
         };
-        if (options.contentType) {
+        if (options2.contentType) {
           request.headers = {
-            "content-type": options.contentType
+            "content-type": options2.contentType
           };
         }
         const response = await this.httpClient.call(request);
@@ -57185,8 +57185,8 @@ var require_run = __commonJS({
        * console.log(`New run started: ${newRun.id}`);
        * ```
        */
-      async resurrect(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async resurrect(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           build: ow_1.default.optional.string,
           memory: ow_1.default.optional.number,
           timeout: ow_1.default.optional.number,
@@ -57197,7 +57197,7 @@ var require_run = __commonJS({
         const response = await this.httpClient.call({
           url: this._url("resurrect"),
           method: "POST",
-          params: this._params(options)
+          params: this._params(options2)
         });
         return (0, utils_1.cast)((0, utils_1.parseDateFields)((0, utils_1.pluckData)(response.data)));
       }
@@ -57211,20 +57211,20 @@ var require_run = __commonJS({
        * @returns Empty response object.
        * @see https://docs.apify.com/api/v2/post-charge-run
        */
-      async charge(options) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async charge(options2) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           eventName: ow_1.default.string,
           count: ow_1.default.optional.number,
           idempotencyKey: ow_1.default.optional.string
         }));
-        const count = options.count ?? 1;
+        const count = options2.count ?? 1;
         const randomSuffix = (Math.random() + 1).toString(36).slice(3, 8);
-        const idempotencyKey = options.idempotencyKey ?? `${this.id}-${options.eventName}-${Date.now()}-${randomSuffix}`;
+        const idempotencyKey = options2.idempotencyKey ?? `${this.id}-${options2.eventName}-${Date.now()}-${randomSuffix}`;
         const request = {
           url: this._url("charge"),
           method: "POST",
           data: {
-            eventName: options.eventName,
+            eventName: options2.eventName,
             count
           },
           headers: {
@@ -57262,11 +57262,11 @@ var require_run = __commonJS({
        * }
        * ```
        */
-      async waitForFinish(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async waitForFinish(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           waitSecs: ow_1.default.optional.number
         }));
-        return this._waitForFinish(options);
+        return this._waitForFinish(options2);
       }
       /**
        * Returns a client for the default dataset of this Actor run.
@@ -57340,9 +57340,9 @@ var require_run = __commonJS({
       /**
        * Get StreamedLog for convenient streaming of the run log and their redirection.
        */
-      async getStreamedLog(options = {}) {
-        const { fromStart = true } = options;
-        let { toLog } = options;
+      async getStreamedLog(options2 = {}) {
+        const { fromStart = true } = options2;
+        let { toLog } = options2;
         if (toLog === null || !(0, utils_1.isNode)()) {
           return void 0;
         }
@@ -57376,10 +57376,10 @@ var require_run_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "runs",
-          ...options
+          ...options2
         });
       }
       /**
@@ -57402,8 +57402,8 @@ var require_run_collection = __commonJS({
        * @returns A paginated iterator of Actor runs.
        * @see https://docs.apify.com/api/v2/actor-runs-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean,
@@ -57411,7 +57411,7 @@ var require_run_collection = __commonJS({
           startedBefore: ow_1.default.optional.any(ow_1.default.optional.date, ow_1.default.optional.string),
           startedAfter: ow_1.default.optional.any(ow_1.default.optional.date, ow_1.default.optional.string)
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
     };
     exports.RunCollectionClient = RunCollectionClient2;
@@ -57431,10 +57431,10 @@ var require_webhook_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "webhooks",
-          ...options
+          ...options2
         });
       }
       /**
@@ -57457,13 +57457,13 @@ var require_webhook_collection = __commonJS({
        * @returns A paginated iterator of webhooks.
        * @see https://docs.apify.com/api/v2/webhooks-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
       /**
        * Creates a new webhook.
@@ -57504,10 +57504,10 @@ var require_actor = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "actors",
-          ...options
+          ...options2
         });
       }
       /**
@@ -57572,8 +57572,8 @@ var require_actor = __commonJS({
        * );
        * ```
        */
-      async start(input, options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async start(input, options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           build: ow_1.default.optional.string,
           contentType: ow_1.default.optional.string,
           memory: ow_1.default.optional.number,
@@ -57585,13 +57585,13 @@ var require_actor = __commonJS({
           restartOnError: ow_1.default.optional.boolean,
           forcePermissionLevel: ow_1.default.optional.string.oneOf(Object.values(consts_1.ACTOR_PERMISSION_LEVEL))
         }));
-        const { waitForFinish, timeout, memory, build, maxItems, maxTotalChargeUsd, restartOnError, forcePermissionLevel } = options;
+        const { waitForFinish, timeout, memory, build, maxItems, maxTotalChargeUsd, restartOnError, forcePermissionLevel } = options2;
         const params = {
           waitForFinish,
           timeout,
           memory,
           build,
-          webhooks: (0, utils_1.stringifyWebhooksToBase64)(options.webhooks),
+          webhooks: (0, utils_1.stringifyWebhooksToBase64)(options2.webhooks),
           maxItems,
           maxTotalChargeUsd,
           restartOnError,
@@ -57606,9 +57606,9 @@ var require_actor = __commonJS({
           // to stringify functions to JSON, instead of omitting them.
           stringifyFunctions: true
         };
-        if (options.contentType) {
+        if (options2.contentType) {
           request.headers = {
-            "content-type": options.contentType
+            "content-type": options2.contentType
           };
         }
         const response = await this.httpClient.call(request);
@@ -57651,8 +57651,8 @@ var require_actor = __commonJS({
        * const run = await client.actor('my-actor').call({ url: 'https://example.com' }, { log });
        * ```
        */
-      async call(input, options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async call(input, options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           build: ow_1.default.optional.string,
           contentType: ow_1.default.optional.string,
           memory: ow_1.default.optional.number,
@@ -57665,10 +57665,10 @@ var require_actor = __commonJS({
           restartOnError: ow_1.default.optional.boolean,
           forcePermissionLevel: ow_1.default.optional.string.oneOf(Object.values(consts_1.ACTOR_PERMISSION_LEVEL))
         }));
-        const { waitSecs, log, ...startOptions } = options;
+        const { waitSecs, log, ...startOptions } = options2;
         const { id } = await this.start(input, startOptions);
         const newRunClient = this.apifyClient.run(id);
-        const streamedLog = await newRunClient.getStreamedLog({ toLog: options?.log });
+        const streamedLog = await newRunClient.getStreamedLog({ toLog: options2?.log });
         streamedLog?.start();
         return this.apifyClient.run(id).waitForFinish({ waitSecs }).finally(async () => {
           await streamedLog?.stop();
@@ -57704,8 +57704,8 @@ var require_actor = __commonJS({
        * );
        * ```
        */
-      async validateInput(input, options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      async validateInput(input, options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           build: ow_1.default.optional.string,
           contentType: ow_1.default.optional.string
         }));
@@ -57713,14 +57713,14 @@ var require_actor = __commonJS({
           url: this._url("validate-input"),
           method: "POST",
           data: input,
-          params: this._params({ build: options.build }),
+          params: this._params({ build: options2.build }),
           // Apify internal property. Tells the request serialization interceptor
           // to stringify functions to JSON, instead of omitting them.
           stringifyFunctions: true
         };
-        if (options.contentType) {
+        if (options2.contentType) {
           request.headers = {
-            "content-type": options.contentType
+            "content-type": options2.contentType
           };
         }
         const response = await this.httpClient.call(request);
@@ -57755,9 +57755,9 @@ var require_actor = __commonJS({
        * });
        * ```
        */
-      async build(versionNumber, options = {}) {
+      async build(versionNumber, options2 = {}) {
         (0, ow_1.default)(versionNumber, ow_1.default.string);
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           betaPackages: ow_1.default.optional.boolean,
           tag: ow_1.default.optional.string,
           useCache: ow_1.default.optional.boolean,
@@ -57768,7 +57768,7 @@ var require_actor = __commonJS({
           method: "POST",
           params: this._params({
             version: versionNumber,
-            ...options
+            ...options2
           })
         });
         return (0, utils_1.cast)((0, utils_1.parseDateFields)((0, utils_1.pluckData)(response.data)));
@@ -57797,11 +57797,11 @@ var require_actor = __commonJS({
        * const build = await buildClient.get();
        * ```
        */
-      async defaultBuild(options = {}) {
+      async defaultBuild(options2 = {}) {
         const response = await this.httpClient.call({
           url: this._url("builds/default"),
           method: "GET",
-          params: this._params(options)
+          params: this._params(options2)
         });
         const { id } = (0, utils_1.pluckData)(response.data);
         return new build_1.BuildClient({
@@ -57829,14 +57829,14 @@ var require_actor = __commonJS({
        * const lastRun = await client.actor('my-actor').lastRun({ status: 'SUCCEEDED' }).get();
        * ```
        */
-      lastRun(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      lastRun(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           status: ow_1.default.optional.string.oneOf(Object.values(consts_1.ACTOR_JOB_STATUSES)),
           origin: ow_1.default.optional.string.oneOf(Object.values(consts_1.META_ORIGINS))
         }));
         return new run_1.RunClient(this._subResourceOptions({
           id: "last",
-          params: this._params(options),
+          params: this._params(options2),
           resourcePath: "runs"
         }));
       }
@@ -57911,10 +57911,10 @@ var require_actor_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "actors",
-          ...options
+          ...options2
         });
       }
       /**
@@ -57937,15 +57937,15 @@ var require_actor_collection = __commonJS({
        * @returns A paginated iterator of Actors.
        * @see https://docs.apify.com/api/v2/acts-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           my: ow_1.default.optional.boolean,
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean,
           sortBy: ow_1.default.optional.string.oneOf(Object.values(ActorListSortBy2))
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
       /**
        * Creates a new Actor.
@@ -57982,10 +57982,10 @@ var require_dataset_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "datasets",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58008,15 +58008,15 @@ var require_dataset_collection = __commonJS({
        * @returns A paginated iterator of Datasets.
        * @see https://docs.apify.com/api/v2/datasets-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           unnamed: ow_1.default.optional.boolean,
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean,
           ownership: ow_1.default.optional.string.oneOf(Object.values(consts_1.STORAGE_OWNERSHIP_FILTER))
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
       /**
        * Gets or creates a dataset with the specified name.
@@ -58026,10 +58026,10 @@ var require_dataset_collection = __commonJS({
        * @returns The dataset object.
        * @see https://docs.apify.com/api/v2/datasets-post
        */
-      async getOrCreate(name, options) {
+      async getOrCreate(name, options2) {
         (0, ow_1.default)(name, ow_1.default.optional.string);
-        (0, ow_1.default)(options?.schema, ow_1.default.optional.object);
-        return this._getOrCreate(name, options);
+        (0, ow_1.default)(options2?.schema, ow_1.default.optional.object);
+        return this._getOrCreate(name, options2);
       }
     };
     exports.DatasetCollectionClient = DatasetCollectionClient2;
@@ -58050,10 +58050,10 @@ var require_key_value_store_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "key-value-stores",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58076,15 +58076,15 @@ var require_key_value_store_collection = __commonJS({
        * @returns A paginated iterator of Key-value stores.
        * @see https://docs.apify.com/api/v2/key-value-stores-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           unnamed: ow_1.default.optional.boolean,
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean,
           ownership: ow_1.default.optional.string.oneOf(Object.values(consts_1.STORAGE_OWNERSHIP_FILTER))
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
       /**
        * Gets or creates a key-value store with the specified name.
@@ -58094,10 +58094,10 @@ var require_key_value_store_collection = __commonJS({
        * @returns The key-value store object.
        * @see https://docs.apify.com/api/v2/key-value-stores-post
        */
-      async getOrCreate(name, options) {
+      async getOrCreate(name, options2) {
         (0, ow_1.default)(name, ow_1.default.optional.string);
-        (0, ow_1.default)(options?.schema, ow_1.default.optional.object);
-        return this._getOrCreate(name, options);
+        (0, ow_1.default)(options2?.schema, ow_1.default.optional.object);
+        return this._getOrCreate(name, options2);
       }
     };
     exports.KeyValueStoreCollectionClient = KeyValueStoreCollectionClient2;
@@ -58118,10 +58118,10 @@ var require_request_queue_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "request-queues",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58144,15 +58144,15 @@ var require_request_queue_collection = __commonJS({
        * @returns A paginated iterator of Request queues.
        * @see https://docs.apify.com/api/v2/request-queues-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           unnamed: ow_1.default.optional.boolean,
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean,
           ownership: ow_1.default.optional.string.oneOf(Object.values(consts_1.STORAGE_OWNERSHIP_FILTER))
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
       /**
        * Gets or creates a Request queue with the specified name.
@@ -58184,10 +58184,10 @@ var require_schedule = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "schedules",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58261,10 +58261,10 @@ var require_schedule_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "schedules",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58287,13 +58287,13 @@ var require_schedule_collection = __commonJS({
        * @returns A paginated iterator of schedules.
        * @see https://docs.apify.com/api/v2/schedules-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
       /**
        * Creates a new schedule.
@@ -58324,10 +58324,10 @@ var require_store_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "store",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58350,8 +58350,8 @@ var require_store_collection = __commonJS({
        * @returns A paginated iterator of store Actors.
        * @see https://docs.apify.com/api/v2/store-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           search: ow_1.default.optional.string,
@@ -58361,7 +58361,7 @@ var require_store_collection = __commonJS({
           pricingModel: ow_1.default.optional.string,
           includeUnrunnableActors: ow_1.default.optional.boolean
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
     };
     exports.StoreCollectionClient = StoreCollectionClient2;
@@ -58386,10 +58386,10 @@ var require_task = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "actor-tasks",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58464,9 +58464,9 @@ var require_task = __commonJS({
        * @returns The Actor Run object.
        * @see https://docs.apify.com/api/v2/actor-task-runs-post
        */
-      async start(input, options = {}) {
+      async start(input, options2 = {}) {
         (0, ow_1.default)(input, ow_1.default.optional.object);
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           build: ow_1.default.optional.string,
           memory: ow_1.default.optional.number,
           timeout: ow_1.default.optional.number,
@@ -58476,13 +58476,13 @@ var require_task = __commonJS({
           maxTotalChargeUsd: ow_1.default.optional.number.not.negative,
           restartOnError: ow_1.default.optional.boolean
         }));
-        const { waitForFinish, timeout, memory, build, maxItems, maxTotalChargeUsd, restartOnError } = options;
+        const { waitForFinish, timeout, memory, build, maxItems, maxTotalChargeUsd, restartOnError } = options2;
         const params = {
           waitForFinish,
           timeout,
           memory,
           build,
-          webhooks: (0, utils_1.stringifyWebhooksToBase64)(options.webhooks),
+          webhooks: (0, utils_1.stringifyWebhooksToBase64)(options2.webhooks),
           maxItems,
           maxTotalChargeUsd,
           restartOnError
@@ -58519,9 +58519,9 @@ var require_task = __commonJS({
        * @returns The Actor run object.
        * @see https://docs.apify.com/api/v2/actor-task-runs-post
        */
-      async call(input, options = {}) {
+      async call(input, options2 = {}) {
         (0, ow_1.default)(input, ow_1.default.optional.object);
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           build: ow_1.default.optional.string,
           memory: ow_1.default.optional.number,
           timeout: ow_1.default.optional.number.not.negative,
@@ -58531,7 +58531,7 @@ var require_task = __commonJS({
           maxTotalChargeUsd: ow_1.default.optional.number.not.negative,
           restartOnError: ow_1.default.optional.boolean
         }));
-        const { waitSecs, ...startOptions } = options;
+        const { waitSecs, ...startOptions } = options2;
         const { id } = await this.start(input, startOptions);
         return this.apifyClient.run(id).waitForFinish({ waitSecs });
       }
@@ -58580,14 +58580,14 @@ var require_task = __commonJS({
        * @returns A client for the last run.
        * @see https://docs.apify.com/api/v2/actor-task-runs-last-get
        */
-      lastRun(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      lastRun(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           status: ow_1.default.optional.string.oneOf(Object.values(consts_1.ACT_JOB_STATUSES)),
           origin: ow_1.default.optional.string.oneOf(Object.values(consts_1.META_ORIGINS))
         }));
         return new run_1.RunClient(this._subResourceOptions({
           id: "last",
-          params: this._params(options),
+          params: this._params(options2),
           resourcePath: "runs"
         }));
       }
@@ -58629,10 +58629,10 @@ var require_task_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "actor-tasks",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58655,13 +58655,13 @@ var require_task_collection = __commonJS({
        * @returns A paginated iterator of tasks.
        * @see https://docs.apify.com/api/v2/actor-tasks-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
       /**
        * Creates a new task.
@@ -58691,10 +58691,10 @@ var require_user = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "users",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58760,12 +58760,12 @@ var require_user = __commonJS({
        * @param options - The new limits to set.
        * @see https://docs.apify.com/api/v2/users-me-limits-put
        */
-      async updateLimits(options) {
+      async updateLimits(options2) {
         const requestOpts = {
           url: this._url("limits"),
           method: "PUT",
           params: this._params(),
-          data: options
+          data: options2
         };
         await this.httpClient.call(requestOpts);
       }
@@ -58797,10 +58797,10 @@ var require_webhook_dispatch_collection = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "webhook-dispatches",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58823,13 +58823,13 @@ var require_webhook_dispatch_collection = __commonJS({
        * @returns A paginated iterator of webhook dispatches.
        * @see https://docs.apify.com/api/v2/webhook-dispatches-get
        */
-      list(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      list(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           limit: ow_1.default.optional.number.not.negative,
           offset: ow_1.default.optional.number.not.negative,
           desc: ow_1.default.optional.boolean
         }));
-        return this._listPaginated(options);
+        return this._listPaginated(options2);
       }
     };
     exports.WebhookDispatchCollectionClient = WebhookDispatchCollectionClient2;
@@ -58851,10 +58851,10 @@ var require_webhook = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "webhooks",
-          ...options
+          ...options2
         });
       }
       /**
@@ -58932,10 +58932,10 @@ var require_webhook_dispatch = __commonJS({
       /**
        * @hidden
        */
-      constructor(options) {
+      constructor(options2) {
         super({
           resourcePath: "webhook-dispatches",
-          ...options
+          ...options2
         });
       }
       /**
@@ -59048,8 +59048,8 @@ var require_apify_client = __commonJS({
       stats;
       logger;
       httpClient;
-      constructor(options = {}) {
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+      constructor(options2 = {}) {
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           baseUrl: ow_1.default.optional.string,
           publicBaseUrl: ow_1.default.optional.string,
           maxRetries: ow_1.default.optional.number,
@@ -59059,7 +59059,7 @@ var require_apify_client = __commonJS({
           token: ow_1.default.optional.string,
           userAgentSuffix: ow_1.default.optional.any(ow_1.default.string, ow_1.default.array.ofType(ow_1.default.string))
         }));
-        const { baseUrl = "https://api.apify.com", publicBaseUrl = "https://api.apify.com", maxRetries = 8, minDelayBetweenRetriesMillis = 500, requestInterceptors = [], timeoutSecs = DEFAULT_TIMEOUT_SECS, token } = options;
+        const { baseUrl = "https://api.apify.com", publicBaseUrl = "https://api.apify.com", maxRetries = 8, minDelayBetweenRetriesMillis = 500, requestInterceptors = [], timeoutSecs = DEFAULT_TIMEOUT_SECS, token } = options2;
         const tempBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, baseUrl.length - 1) : baseUrl;
         this.baseUrl = `${tempBaseUrl}/v2`;
         const tempPublicBaseUrl = publicBaseUrl.endsWith("/") ? publicBaseUrl.slice(0, publicBaseUrl.length - 1) : publicBaseUrl;
@@ -59075,7 +59075,7 @@ var require_apify_client = __commonJS({
           timeoutSecs,
           logger: this.logger,
           token: this.token,
-          userAgentSuffix: options.userAgentSuffix
+          userAgentSuffix: options2.userAgentSuffix
         });
       }
       _options() {
@@ -59271,9 +59271,9 @@ var require_apify_client = __commonJS({
        * const { items } = await queue.listAndLockHead({ lockSecs: 60 });
        * ```
        */
-      requestQueue(id, options = {}) {
+      requestQueue(id, options2 = {}) {
         (0, ow_1.default)(id, ow_1.default.string.nonEmpty);
-        (0, ow_1.default)(options, ow_1.default.object.exactShape({
+        (0, ow_1.default)(options2, ow_1.default.object.exactShape({
           clientKey: ow_1.default.optional.string.nonEmpty,
           timeoutSecs: ow_1.default.optional.number
         }));
@@ -59281,7 +59281,7 @@ var require_apify_client = __commonJS({
           id,
           ...this._options()
         };
-        return new request_queue_1.RequestQueueClient(apiClientOptions, options);
+        return new request_queue_1.RequestQueueClient(apiClientOptions, options2);
       }
       /**
        * Returns a client for managing Actor runs in your account.
@@ -59472,14 +59472,14 @@ var require_apify_client = __commonJS({
        * @param options - Additional options for the status message
        * @throws {Error} If `ACTOR_RUN_ID` environment variable is not set
        */
-      async setStatusMessage(message, options) {
+      async setStatusMessage(message, options2) {
         const runId = process.env[consts_1.ACTOR_ENV_VARS.RUN_ID];
         if (!runId) {
           throw new Error(`Environment variable ${consts_1.ACTOR_ENV_VARS.RUN_ID} is not set!`);
         }
         await this.run(runId).update({
           statusMessage: message,
-          ...options
+          ...options2
         });
       }
     };
@@ -59531,7 +59531,7 @@ var require_dist19 = __commonJS({
 });
 
 // src/kolops/cli.ts
-import { readFileSync as readFileSync5 } from "node:fs";
+import { readFileSync as readFileSync6 } from "node:fs";
 import { parseArgs } from "node:util";
 
 // src/kolops/base.ts
@@ -59634,6 +59634,9 @@ function text(v) {
 }
 function option(v) {
   return Array.isArray(v) ? String(v[0] ?? "") : text(v);
+}
+function options(v) {
+  return Array.isArray(v) ? v.map(String) : v ? [String(v)] : [];
 }
 function linkIds(v) {
   return Array.isArray(v) ? v.map((x) => String(x?.id ?? x)).filter(Boolean) : [];
@@ -60068,7 +60071,7 @@ function stamp(ms = Date.now(), tz = "+08:00") {
 function today(cfg, ms = Date.now()) {
   return dayOf(ms, cfg.timezone);
 }
-var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL" };
+var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848" };
 var SENDING_RUNS = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 var LOCK_MINUTES = 30;
 async function otherSendingRun(base, cfg, selfId) {
@@ -60079,6 +60082,32 @@ async function otherSendingRun(base, cfg, selfId) {
   const cutoff = Date.now() - LOCK_MINUTES * 6e4;
   const busy = rows.find((r) => r.record_id !== selfId && SENDING_RUNS.some((title) => String(r["\u8FD0\u884C"] ?? "").startsWith(title)) && (cellTime(r["\u5F00\u59CB\u65F6\u95F4"], cfg.timezone) ?? 0) >= cutoff);
   return busy ? `\u300C${busy["\u8FD0\u884C"]}\u300D\u4ECE ${stamp(cellTime(busy["\u5F00\u59CB\u65F6\u95F4"], cfg.timezone), cfg.timezone)} \u8D77\u6B63\u5728\u53D1\u4FE1\uFF0C\u7B49\u5B83\u8DD1\u5B8C\u518D\u53D1\uFF08\u8D85\u8FC7 ${LOCK_MINUTES} \u5206\u949F\u8FD8\u6CA1\u7ED3\u675F\u7684\u4F1A\u81EA\u52A8\u653E\u884C\uFF09` : "";
+}
+var BOUNCE_MARK = "[\u9000\u4FE1]";
+var BOUNCE_WINDOW_DAYS = 14;
+var BOUNCE_MIN_SENT = 20;
+async function bounceStats(base, cfg) {
+  const since = dayOf(Date.now() - BOUNCE_WINDOW_DAYS * 864e5, cfg.timezone);
+  const rows = await base.records(cfg.tables.contacts, {
+    filter: { logic: "and", conditions: [["\u65E5\u671F", ">=", `ExactDate(${since})`]] },
+    fields: ["\u65B9\u5411", "\u6E20\u9053", "\u6458\u8981", "\u65E5\u671F"]
+  });
+  const stats = /* @__PURE__ */ new Map();
+  for (const r of rows) {
+    const ch = option(r["\u6E20\u9053"]);
+    const s = stats.get(ch) ?? { sent: 0, bounced: 0 };
+    if (option(r["\u65B9\u5411"]) === "\u53D1\u51FA") s.sent++;
+    else if (String(r["\u6458\u8981"] ?? "").startsWith(BOUNCE_MARK)) s.bounced++;
+    stats.set(ch, s);
+  }
+  return stats;
+}
+function bouncePaused(mb, stats) {
+  const s = stats.get(mb.channel);
+  if (!s || s.sent < BOUNCE_MIN_SENT || mb.bouncePause <= 0) return "";
+  const rate = s.bounced / s.sent * 100;
+  if (rate < mb.bouncePause) return "";
+  return `${mb.address} \u6700\u8FD1 ${BOUNCE_WINDOW_DAYS} \u5929\u9000\u4FE1\u7387 ${rate.toFixed(1)}%\uFF08\u53D1 ${s.sent} \u5C01\u9000 ${s.bounced} \u5C01\uFF09\uFF0C\u5230\u4E86\u6682\u505C\u7EBF ${mb.bouncePause}%\uFF0C\u5148\u505C\u53D1\u3002\u8BF7\u68C0\u67E5\u9000\u4FE1\u7684\u90AE\u7BB1\uFF0C\u786E\u8BA4\u6CA1\u95EE\u9898\u540E\u53EF\u5728\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u91CC\u8C03\u9AD8\u8FD9\u4E2A\u90AE\u7BB1\u7684\u6682\u505C\u7EBF`;
 }
 async function whoami(lark) {
   const data = await lark.json(["contact", "+get-user", "--as", "user", "--format", "json"]);
@@ -60207,7 +60236,7 @@ function makeCtx(cfg, lark, me, title, scheduled, sleep) {
 }
 
 // src/kolops/find.ts
-import { existsSync as existsSync2, readFileSync as readFileSync2, writeFileSync } from "node:fs";
+import { existsSync as existsSync2, readFileSync as readFileSync3, writeFileSync } from "node:fs";
 import { join as join2 } from "node:path";
 
 // node_modules/apify-client/dist/index.mjs
@@ -60740,6 +60769,80 @@ async function discover(api, p, skip = /* @__PURE__ */ new Set()) {
   return { creators: results, stoppedEarly };
 }
 
+// src/kolops/classify.ts
+import { readFileSync as readFileSync2 } from "node:fs";
+var CLASSIFY_SELECTS = ["\u5408\u4F5C\u9080\u7EA6\u65B9\u5411", "\u5E02\u573A", "\u8A9E\u8A00", "\u5185\u5BB9\u7C7B\u578B"];
+var CLASSIFY_FIELDS = [...CLASSIFY_SELECTS, "\u79F0\u547C"];
+var BIO_MARK = "\u7B80\u4ECB\uFF1A";
+function bioOf(note) {
+  const s = text(note);
+  const i = s.lastIndexOf(BIO_MARK);
+  return i < 0 ? "" : s.slice(i + BIO_MARK.length).trim();
+}
+function withBio(note, bio) {
+  const b = bio.replace(/\s+/g, " ").trim().slice(0, 500);
+  return b ? `${note}
+${BIO_MARK}${b}` : note;
+}
+async function choices(ctx) {
+  const out = {};
+  for (const f of CLASSIFY_SELECTS) out[f] = await ctx.base.fieldOptions(ctx.cfg.tables.profiles, f) ?? [];
+  return out;
+}
+async function toClassify(ctx, o) {
+  const rows = await ctx.base.records(ctx.cfg.tables.profiles, {
+    filter: { logic: "and", conditions: [["\u5165\u5E93\u6279\u6B21", "intersects", [o.batch]]] },
+    fields: ["\u8D26\u53F7", "\u8D26\u53F7\u540D\u79F0", "\u4E3B\u9875\u94FE\u63A5", "\u7C89\u4E1D\u6570", "\u4E3B\u8981\u5E73\u53F0", "\u5907\u6CE8", ...CLASSIFY_FIELDS]
+  });
+  const missing = rows.filter((r) => CLASSIFY_FIELDS.some((f) => !text(r[f])));
+  return {
+    \u6279\u6B21: o.batch,
+    \u8FD8\u8981\u8865\u7684\u4EBA\u6570: missing.length,
+    \u53EF\u9009\u503C: await choices(ctx),
+    \u8BF4\u660E: "\u9009\u9879\u5B57\u6BB5\u53EA\u80FD\u7528\u300C\u53EF\u9009\u503C\u300D\u91CC\u7684\u540D\u5B57\uFF0C\u62FF\u4E0D\u51C6\u5C31\u9009\u300C\u5F85\u78BA\u8A8D\u300D\uFF08\u6CA1\u6709\u8FD9\u4E2A\u9009\u9879\u5C31\u7559\u7A7A\uFF09\u3002\u79F0\u547C\u5199\u4FE1\u91CC\u600E\u4E48\u53EB\u5BF9\u65B9\uFF0C\u6BD4\u5982\u300C\u5C0F\u9E7F\u300D\u300CAmy\u300D\uFF0C\u4E0D\u8981\u5E26 @",
+    \u540D\u5355: missing.slice(0, o.limit).map((r) => ({
+      id: r.record_id,
+      \u8D26\u53F7: text(r["\u8D26\u53F7"]),
+      \u8D26\u53F7\u540D\u79F0: text(r["\u8D26\u53F7\u540D\u79F0"]),
+      \u4E3B\u9875\u94FE\u63A5: text(r["\u4E3B\u9875\u94FE\u63A5"]),
+      \u7C89\u4E1D\u6570: r["\u7C89\u4E1D\u6570"] ?? null,
+      \u4E3B\u8981\u5E73\u53F0: options(r["\u4E3B\u8981\u5E73\u53F0"]),
+      \u7B80\u4ECB: bioOf(r["\u5907\u6CE8"]),
+      \u5DF2\u6709: Object.fromEntries(CLASSIFY_FIELDS.filter((f) => text(r[f])).map((f) => [f, f === "\u79F0\u547C" ? text(r[f]) : option(r[f])]))
+    }))
+  };
+}
+async function applyClassification(ctx, o) {
+  const input = JSON.parse(readFileSync2(o.file, "utf8"));
+  const allowed = await choices(ctx);
+  const known = new Set((await ctx.base.records(ctx.cfg.tables.profiles, { fields: ["\u8D26\u53F7"] })).map((r) => r.record_id));
+  const errors = [];
+  const changes = {};
+  for (const [id, values] of Object.entries(input)) {
+    if (!known.has(id)) {
+      errors.push(`${id}\uFF1A\u6863\u6848\u91CC\u6CA1\u6709\u8FD9\u6761\u8BB0\u5F55`);
+      continue;
+    }
+    const change = {};
+    for (const [field, raw] of Object.entries(values ?? {})) {
+      const v = String(raw ?? "").trim();
+      if (!v) continue;
+      if (field === "\u79F0\u547C") change[field] = v.replace(/^@/, "");
+      else if (CLASSIFY_SELECTS.includes(field)) {
+        if (allowed[field].includes(v)) change[field] = [v];
+        else errors.push(`${id}\uFF1A\u300C${field}\u300D\u6CA1\u6709\u300C${v}\u300D\u8FD9\u4E2A\u9009\u9879`);
+      } else errors.push(`${id}\uFF1A\u4E0D\u80FD\u7528 classify \u6539\u300C${field}\u300D`);
+    }
+    if (Object.keys(change).length) changes[id] = change;
+  }
+  if (errors.length) return { \u5199\u5165: 0, \u95EE\u9898: errors, \u8BF4\u660E: "\u6709\u95EE\u9898\u7684\u503C\u6CA1\u6539\u597D\u4E4B\u524D\uFF0C\u4E00\u6761\u90FD\u6CA1\u5199" };
+  if (!o.dryRun) {
+    await ctx.base.update(ctx.cfg.tables.profiles, changes);
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u8865\u5168\u6863\u6848 ${Object.keys(changes).length} \u4EBA`, detail: o.file });
+  }
+  return { \u5199\u5165: Object.keys(changes).length, \u8BD5\u8DD1: o.dryRun || void 0 };
+}
+
 // src/kolops/data.ts
 var PROFILE_FIELDS = [
   "\u8D26\u53F7",
@@ -60829,7 +60932,7 @@ var FileLedger = class {
   data;
   constructor(job) {
     this.file = join2(dataDir(), `find-${job.replace(/[^\w一-鿿-]/g, "_")}.json`);
-    this.data = existsSync2(this.file) ? JSON.parse(readFileSync2(this.file, "utf8")) : {};
+    this.data = existsSync2(this.file) ? JSON.parse(readFileSync3(this.file, "utf8")) : {};
   }
   async find(step) {
     return this.data[step] ?? null;
@@ -60846,7 +60949,7 @@ var FileLedger = class {
 function apifyToken() {
   if (process.env.APIFY_TOKEN) return process.env.APIFY_TOKEN;
   const file2 = join2(dataDir(), "apify-token");
-  if (existsSync2(file2)) return readFileSync2(file2, "utf8").trim();
+  if (existsSync2(file2)) return readFileSync3(file2, "utf8").trim();
   throw new Error(`\u6CA1\u6709 Apify token\u3002\u628A token \u5B58\u8FDB ${file2}\uFF08\u53EA\u653E\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09\uFF0C\u6216\u8BBE\u7F6E\u73AF\u5883\u53D8\u91CF APIFY_TOKEN`);
 }
 async function find(ctx, o) {
@@ -60904,7 +61007,7 @@ async function find(ctx, o) {
       ...all.length > 1 ? { \u5176\u4ED6\u90AE\u7BB1: all.slice(1).join(", ") } : {},
       \u8054\u7CFB\u8BB8\u53EF: ["\u53EF\u8054\u7CFB"],
       \u5165\u5E93\u6279\u6B21: [o.batch],
-      \u5907\u6CE8: `kol find ${o.job}\uFF1A${c.discoveredBy}${c.emailSource ? `\uFF0C\u90AE\u7BB1\u6765\u81EA ${c.emailSource}` : ""}`
+      \u5907\u6CE8: withBio(`kol find ${o.job}\uFF1A${c.discoveredBy}${c.emailSource ? `\uFF0C\u90AE\u7BB1\u6765\u81EA ${c.emailSource}` : ""}`, c.bio)
     });
   }
   const ids = rows.length ? await ctx.base.create(t.profiles, rows) : [];
@@ -60925,13 +61028,13 @@ function handleOf(s) {
 }
 
 // src/kolops/projects.ts
-import { existsSync as existsSync3, readFileSync as readFileSync3, writeFileSync as writeFileSync2 } from "node:fs";
+import { existsSync as existsSync3, readFileSync as readFileSync4, writeFileSync as writeFileSync2 } from "node:fs";
 import { join as join3 } from "node:path";
 function file() {
   return join3(dataDir(), "projects.json");
 }
 function load() {
-  return existsSync3(file()) ? JSON.parse(readFileSync3(file(), "utf8")) : { projects: {} };
+  return existsSync3(file()) ? JSON.parse(readFileSync4(file(), "utf8")) : { projects: {} };
 }
 function save(r) {
   writeFileSync2(file(), JSON.stringify(r, null, 2));
@@ -61056,7 +61159,7 @@ async function deliver(ctx, items, s, dryRun) {
     report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: busy })));
     return report;
   }
-  const counts = await todaysSends(ctx.base, ctx.cfg);
+  const [counts, bounces] = await Promise.all([todaysSends(ctx.base, ctx.cfg), bounceStats(ctx.base, ctx.cfg)]);
   const gap = Math.ceil(6e4 / Math.max(1, ctx.cfg.perMinute));
   const t = ctx.cfg.tables;
   for (const o of items) {
@@ -61081,7 +61184,7 @@ async function deliver(ctx, items, s, dryRun) {
         senders.add(o.recipient);
       }
     } else senders.add(o.recipient);
-    let reason = checkOne(o, s, counts, senders);
+    let reason = bouncePaused(o.mailbox, bounces) || checkOne(o, s, counts, senders);
     if (!reason && companyFull(ctx, counts, o.followupId)) reason = `\u5168\u516C\u53F8\u4ECA\u5929\u7684\u5916\u90E8\u6536\u4EF6\u4EBA\u989D\u5EA6\uFF08${ctx.cfg.companyDailyExternal} \u4EBA\uFF09\u5DF2\u7528\u5B8C`;
     if (reason) {
       report.skipped.push({ key: o.key, name: o.name, reason });
@@ -61392,7 +61495,7 @@ async function syncInbox(ctx, opts) {
       const from = addressOf(m.from);
       const when = Number.isNaN(Date.parse(m.date)) ? Date.now() : Date.parse(m.date);
       if (BOUNCE_SENDER.test(from)) {
-        await handleBounce(ctx, s, mb.address, m, when, report, followupChanges);
+        await handleBounce(ctx, s, mb, m, when, report, followupChanges, contacts);
         continue;
       }
       const fids = s.followupsByEmail.get(from);
@@ -61459,12 +61562,12 @@ async function lastSync(ctx) {
 function pickFollowup(s, ids) {
   return ids.find((id) => !["\u7ED3\u6848"].includes(option(s.followups.get(id)?.["\u9636\u6BB5"]))) ?? ids[0];
 }
-async function handleBounce(ctx, s, mailbox, m, when, report, changes) {
+async function handleBounce(ctx, s, mb, m, when, report, changes, contacts) {
   const data = await ctx.base.lark.json([
     "mail",
     "+messages",
     "--mailbox",
-    mailbox,
+    mb.address,
     "--message-ids",
     m.message_id,
     "--html=false",
@@ -61472,8 +61575,17 @@ async function handleBounce(ctx, s, mailbox, m, when, report, changes) {
     "user"
   ]).catch(() => null);
   const body = JSON.stringify(data ?? "");
-  for (const addr of new Set(emailsIn(body))) {
-    if (addr === mailbox || BOUNCE_SENDER.test(addr)) continue;
+  const failed = [...new Set(emailsIn(body))].filter((addr) => addr !== mb.address && !BOUNCE_SENDER.test(addr) && s.followupsByEmail.has(addr));
+  contacts.push({
+    \u65B9\u5411: ["\u6536\u5230"],
+    \u6E20\u9053: [mb.channel],
+    "Message ID": m.message_id,
+    \u65E5\u671F: stamp(when, ctx.cfg.timezone),
+    \u5F85\u5904\u7406: false,
+    \u6458\u8981: `${BOUNCE_MARK} ${failed.join(", ") || "\uFF08\u6CA1\u8BA4\u51FA\u662F\u54EA\u4E2A\u5730\u5740\uFF09"}`.slice(0, 200),
+    ...failed.length ? { KOL: [{ id: s.followupsByEmail.get(failed[0])[0] }] } : {}
+  });
+  for (const addr of failed) {
     for (const fid of s.followupsByEmail.get(addr) ?? []) {
       const f = s.followups.get(fid);
       if (option(f["\u9636\u6BB5"]) === "\u7ED3\u6848") continue;
@@ -61588,7 +61700,7 @@ async function reminderCounts(ctx, s) {
 }
 
 // src/kolops/setup.ts
-import { existsSync as existsSync4, readdirSync, readFileSync as readFileSync4 } from "node:fs";
+import { existsSync as existsSync4, readdirSync, readFileSync as readFileSync5 } from "node:fs";
 import { join as join4 } from "node:path";
 function fieldJson(f) {
   return {
@@ -61660,7 +61772,7 @@ async function setupBase(base, o) {
     const rows = readdirSync(o.importDir).filter((f) => f.endsWith(".txt")).sort().flatMap((file2) => {
       const name = file2.slice(0, -4);
       if (names.has(name)) return [];
-      const { subject, body } = parseTemplateFile(readFileSync4(join4(o.importDir, file2), "utf8"));
+      const { subject, body } = parseTemplateFile(readFileSync5(join4(o.importDir, file2), "utf8"));
       report.\u5BFC\u5165\u6A21\u677F.push(name);
       return [{
         \u540D\u79F0: name,
@@ -61705,7 +61817,7 @@ async function todayLists(ctx) {
     }),
     ctx.base.records(t.reviews, {
       filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838"]]] },
-      fields: ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u63D0\u51FA\u65F6\u95F4", "KOL", "\u72B6\u6001"]
+      fields: ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u63D0\u51FA\u65F6\u95F4", "KOL", "\u72B6\u6001", "\u53D1\u9001\u6E20\u9053"]
     }),
     ctx.base.records(t.followups, {
       filter: { logic: "and", conditions: [["\u9636\u6BB5", "intersects", ["\u4F53\u9A8C\u4E2D", "\u5DF2\u7EA6\u53D1\u5E03"]]] },
@@ -61716,13 +61828,33 @@ async function todayLists(ctx) {
     const f = s.followups.get(fid);
     return f ? displayName(s, f) : fid;
   };
-  const ourTurn = [...s.followups.values()].filter((f) => option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]) === "\u6211\u4EEC" && !["\u7ED3\u6848"].includes(option(f["\u9636\u6BB5"]))).map((f) => ({ id: f.record_id, name: displayName(s, f), \u9636\u6BB5: option(f["\u9636\u6BB5"]), \u4E0B\u4E00\u6B65: text(f["\u4E0B\u4E00\u6B65"]) }));
+  const pluginChannel = (ch) => !ch || Boolean(mailboxFor(cfg, ch));
+  const open = [...s.followups.values()].filter((f) => option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848");
+  const ourTurn = open.filter((f) => option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]) === "\u6211\u4EEC" && pluginChannel(option(f["\u8054\u7CFB\u6E20\u9053"]))).map((f) => ({ id: f.record_id, name: displayName(s, f), \u9636\u6BB5: option(f["\u9636\u6BB5"]), \u4E0B\u4E00\u6B65: text(f["\u4E0B\u4E00\u6B65"]) }));
+  const otherChannels = open.filter((f) => ["\u6211\u4EEC", "\u7B49\u4F60\u5BA1\u6838"].includes(option(f["\u5F53\u524D\u8F6E\u5230\u8C01"])) && !pluginChannel(option(f["\u8054\u7CFB\u6E20\u9053"]))).map((f) => ({
+    id: f.record_id,
+    name: displayName(s, f),
+    \u6E20\u9053: option(f["\u8054\u7CFB\u6E20\u9053"]),
+    \u8F6E\u5230: option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]),
+    \u9636\u6BB5: option(f["\u9636\u6BB5"]),
+    \u4E0B\u4E00\u6B65: text(f["\u4E0B\u4E00\u6B65"])
+  }));
   const due = [...s.followups.values()].filter((f) => nextStep(cfg, f, 0, d).kind === "remind").length;
   return {
     \u65E5\u671F: d,
     \u5F85\u5904\u7406\u6765\u4FE1: pendingMail.map((r) => ({ kol: name(linkIds(r["KOL"])[0] ?? ""), \u4E3B\u9898: text(r["\u6458\u8981"]), \u65E5\u671F: day(r["\u65E5\u671F"], cfg.timezone), \u6E20\u9053: option(r["\u6E20\u9053"]) })),
     \u8F6E\u5230\u6211\u4EEC: ourTurn,
-    \u7B49\u4F60\u5BA1\u6838: reviews.map((r) => ({ id: r.record_id, \u5BA1\u6838\u9879: text(r["\u5BA1\u6838\u9879"]), \u7C7B\u578B: option(r["\u7C7B\u578B"]), kol: name(linkIds(r["KOL"])[0] ?? "") })),
+    \u7B49\u4F60\u5BA1\u6838: reviews.map((r) => {
+      const ch = option(r["\u53D1\u9001\u6E20\u9053"]);
+      return {
+        id: r.record_id,
+        \u5BA1\u6838\u9879: text(r["\u5BA1\u6838\u9879"]),
+        \u7C7B\u578B: option(r["\u7C7B\u578B"]),
+        kol: name(linkIds(r["KOL"])[0] ?? ""),
+        ...ch && ch !== "\u4E0D\u53D1\u90AE\u4EF6" ? { \u53D1\u9001\u6E20\u9053: ch, \u63D2\u4EF6\u80FD\u53D1: pluginChannel(ch) } : {}
+      };
+    }),
+    \u5176\u4ED6\u6E20\u9053\u8981\u624B\u52A8\u5904\u7406: otherChannels,
     \u4F53\u9A8C\u7801\u4E09\u5929\u5185\u5230\u671F: trials.filter((f) => option(f["\u9636\u6BB5"]) === "\u4F53\u9A8C\u4E2D" && day(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) && day(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) <= addDays(d, 3)).map((f) => ({ name: text(f["\u8D26\u53F7\u540D\u79F0"]), \u4F53\u9A8C\u7801: text(f["\u4F53\u9A8C\u7801"]), \u5230\u671F: day(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) })),
     \u4E03\u5929\u5185\u7EA6\u5B9A\u53D1\u5E03: trials.filter((f) => option(f["\u9636\u6BB5"]) === "\u5DF2\u7EA6\u53D1\u5E03" && day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], cfg.timezone) && day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], cfg.timezone) <= addDays(d, 7)).map((f) => ({ name: text(f["\u8D26\u53F7\u540D\u79F0"]), \u53D1\u5E03\u65E5\u671F: day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], cfg.timezone) })),
     \u4ECA\u5929\u5230\u671F\u8BE5\u50AC\u7684\u9080\u7EA6: due
@@ -61741,6 +61873,9 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   find    --platform instagram|youtube|tiktok --batch \u5165\u5E93\u6279\u6B21 --job \u540D\u5B57 --budget \u7F8E\u5143
           [--keywords a,b] [--seeds a,b] [--handles a,b] [--min-followers N] [--max-followers N] [--youtube-hidden]
                                 \u627E\u65B0 KOL \u548C\u90AE\u7BB1\uFF0C\u4E0D\u5728\u5E93\u91CC\u7684\u5199\u8FDB\u6863\u6848
+  classify --batch \u5165\u5E93\u6279\u6B21 [--limit 50]
+                                \u5217\u51FA\u8FD9\u6279\u91CC\u8FD8\u6CA1\u586B\u5408\u4F5C\u9080\u7EA6\u65B9\u5411\u3001\u5E02\u573A\u3001\u8A9E\u8A00\u3001\u5185\u5BB9\u7C7B\u578B\u3001\u79F0\u547C\u7684\u4EBA\uFF0C\u9644\u7B80\u4ECB\u548C\u53EF\u9009\u503C\uFF08\u53EA\u8BFB\uFF09
+  classify --apply \u6587\u4EF6.json     \u6309\u6587\u4EF6\u5199\u5165\u4E0A\u9762\u8FD9\u51E0\u4E2A\u5B57\u6BB5\uFF08{"rec\u2026": {"\u5E02\u573A": "\u53F0\u6E7E", \u2026}}\uFF09\uFF0C\u6709\u4E00\u4E2A\u503C\u4E0D\u5BF9\u5C31\u4E00\u6761\u90FD\u4E0D\u5199
   whoami                        \u770B\u5F53\u524D\u767B\u5F55\u7684\u98DE\u4E66\u8D26\u53F7
   check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\u3001\u9879\u76EE\u7684\u98DE\u4E66\u8868\u7F3A\u4E0D\u7F3A\u8868\u548C\u5B57\u6BB5\uFF0C\u4EE5\u53CA\u600E\u4E48\u8865
 
@@ -61768,7 +61903,7 @@ var COMMANDS = {
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
-      const profiles = v["profiles-file"] ? list(readFileSync5(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
+      const profiles = v["profiles-file"] ? list(readFileSync6(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
       if (!profiles.length) throw new Error("\u6CA1\u6709\u7ED9\u8981\u9080\u7EA6\u7684\u6863\u6848\u8BB0\u5F55\uFF08--profiles \u6216 --profiles-file\uFF09");
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }
@@ -61792,6 +61927,15 @@ var COMMANDS = {
         youtubeHidden: !!v["youtube-hidden"],
         dryRun: !!v["dry-run"]
       });
+    }
+  },
+  classify: {
+    title: RUN_TITLES.classify,
+    writes: true,
+    run: (ctx, v) => {
+      if (v.apply) return applyClassification(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] });
+      need(v, "batch");
+      return toClassify(ctx, { batch: v.batch, limit: Number(v.limit ?? 50) });
     }
   },
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
@@ -61851,7 +61995,9 @@ async function main() {
       "max-followers": str,
       project: str,
       "import-templates": str,
-      "template-language": str
+      "template-language": str,
+      apply: str,
+      limit: str
     }
   });
   const name = positionals[0];
@@ -61861,7 +62007,7 @@ async function main() {
     return cmd || values.help ? 0 : 1;
   }
   let ctx;
-  const logged = cmd.writes && !values["dry-run"];
+  const logged = cmd.writes && !values["dry-run"] && !(name === "classify" && !values.apply);
   try {
     if (name === "project") return print(projectCommand(positionals.slice(1)));
     if (name === "check") {
