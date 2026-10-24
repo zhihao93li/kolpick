@@ -88,3 +88,15 @@ it("skips someone another project on this computer contacted recently, but not l
   expect(r.sent.map((x) => x.name)).toEqual(["老朋友"]);
   expect(r.skipped[0].reason).toMatch(/项目「另一个项目」.*90 天内不重复联系/);
 });
+
+it("doesn't look at other projects when the cooldown is 0", async () => {
+  const other = new FakeLark();
+  const p = other.add(T.profiles, { 公开邮箱: "77@example.com" });
+  other.add(T.followups, { 档案: [{ id: p }], 最近联系日期: Date.now() });
+  lark.others.OtherBaseToken0001 = other;
+  addProject("测试项目", BASE);
+  addProject("另一个项目", "OtherBaseToken0001");
+  ctx.cfg.crossProjectCooldownDays = 0;
+  const r = await invite(ctx, { ...opts(), profiles: [ok] });
+  expect(r.sent.map((x) => x.name)).toEqual(["77夫妻"]);
+});

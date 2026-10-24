@@ -10,6 +10,8 @@ import { TABLES } from "./schema.js";
  */
 export async function contactedElsewhere(ctx: Ctx): Promise<Map<string, string>> {
   const out = new Map<string, string>();
+  // 0 in 设置 turns the check off (an empty cell means the default).
+  if (ctx.cfg.crossProjectCooldownDays <= 0) return out;
   const cutoff = Date.now() - ctx.cfg.crossProjectCooldownDays * 86_400_000;
   for (const p of listProjects()) {
     if (p.baseToken === ctx.cfg.baseToken) continue;

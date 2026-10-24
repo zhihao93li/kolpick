@@ -60990,6 +60990,7 @@ function resolveProject(name) {
 // src/kolops/crossproject.ts
 async function contactedElsewhere(ctx) {
   const out = /* @__PURE__ */ new Map();
+  if (ctx.cfg.crossProjectCooldownDays <= 0) return out;
   const cutoff = Date.now() - ctx.cfg.crossProjectCooldownDays * 864e5;
   for (const p of listProjects()) {
     if (p.baseToken === ctx.cfg.baseToken) continue;
