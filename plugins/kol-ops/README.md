@@ -28,11 +28,12 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
    lark-cli auth login --scope "base:record:read base:record:create base:record:update base:field:read contact:user.basic_profile:readonly mail:user_mailbox:readonly mail:user_mailbox.message:readonly mail:user_mailbox.message.address:read mail:user_mailbox.message.subject:read mail:user_mailbox.message.body:read mail:user_mailbox.message:modify mail:user_mailbox.message:send"
    ```
    用同一串权限运行 `lark-cli auth check --scope "…"`，结果里 `missing` 是空的，就说明授权齐了。
-2. 在 Claude 桌面版的 Code 里运行下面两条。插件放在 `claude/project-thread-eps57k` 分支上，第一条命令里要带上 `#` 和分支名：
+2. 在 Claude 桌面版的 Code 里运行：
    ```
-   /plugin marketplace add zhihao93li/kolpick#claude/project-thread-eps57k
+   /plugin marketplace add zhihao93li/kolpick
    /plugin install kol-ops@kolpick
    ```
+   以前按 `zhihao93li/kolpick#claude/project-thread-eps57k` 装过的，先用 `/plugin marketplace remove kolpick` 删掉旧的，再运行上面两条。
 3. 新开一个会话试一下：对 Claude 说「今天有什么事」。插件只在新会话里生效。如果它说飞书授权缺少权限，就照它给的提示补，或者让它跑一下 `kol.mjs check`，看缺了哪些。
 
 ## 能做的事

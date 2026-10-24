@@ -6,20 +6,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "tsx watch src/main.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/main.js",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "hash-password": "tsx src/scripts/hash-password.ts",
     "build:plugin": "tsx src/scripts/build-plugin.ts"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.5",
-    "apify-client": "^2.25.0",
-    "hono": "^4.13.13",
-    "pg-boss": "^12.38.0",
-    "postgres": "^3.4.9"
+    "apify-client": "^2.25.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
