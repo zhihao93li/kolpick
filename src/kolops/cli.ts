@@ -13,6 +13,8 @@ import { remind } from "./remind.js";
 import { sendApproved } from "./send.js";
 import { checkBase, setupBase } from "./setup.js";
 import { applyClassification, toClassify } from "./classify.js";
+import { postMetrics } from "./metrics.js";
+import { notifyGroup } from "./notify.js";
 import { syncInbox } from "./sync.js";
 import { todayLists } from "./today.js";
 
@@ -30,6 +32,8 @@ const HELP = `kol <命令> [选项]
   classify --batch 入库批次 [--limit 50]
                                 列出这批里还没填合作邀约方向、市场、語言、内容类型、称呼的人，附简介和可选值（只读）
   classify --apply 文件.json     按文件写入上面这几个字段（{"rec…": {"市场": "台湾", …}}），有一个值不对就一条都不写
+  metrics [--budget 2]          发布后第 1/3/7/30 天，抓 Instagram、YouTube、TikTok 帖子的播放和互动数填进「发布内容」（花 Apify 的钱）
+  notify  --file 文本文件        把一段文字发到项目的飞书群（「设置」里填了飞书群机器人才发）
   whoami                        看当前登录的飞书账号
   check                         检查飞书授权是否齐全、项目的飞书表缺不缺表和字段，以及怎么补
 
@@ -83,6 +87,14 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
       return toClassify(ctx, { batch: v.batch, limit: Number(v.limit ?? 50) });
     },
   },
+  metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
+  notify: {
+    title: "", writes: false,
+    run: (ctx, v) => {
+      need(v, "file");
+      return notifyGroup(ctx.cfg, { file: String(v.file), dryRun: !!v["dry-run"] });
+    },
+  },
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
   // These three are handled in main(): they must work before the project's settings can be read.
   check: { title: "", writes: false, run: async () => null },
@@ -127,7 +139,7 @@ async function main(): Promise<number> {
       "youtube-hidden": { type: "boolean" },
       days: str, only: str, batch: str, template: str, mailbox: str, approval: str, profiles: str, "profiles-file": str,
       platform: str, job: str, budget: str, keywords: str, seeds: str, handles: str, "min-followers": str, "max-followers": str,
-      project: str, "import-templates": str, "template-language": str, apply: str, limit: str,
+      project: str, "import-templates": str, "template-language": str, apply: str, limit: str, file: str,
     },
   });
   const name = positionals[0];

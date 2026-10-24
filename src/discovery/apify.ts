@@ -12,6 +12,10 @@ export const ACTORS = {
   yt_hidden: { id: "dataovercoffee/Youtube-Channel-Business-Email-Scraper", perItem: 0.12, start: 0 },
   tt_search: { id: "clockworks/tiktok-user-search-scraper", perItem: 0.005, start: 0 },
   tt_profile: { id: "clockworks/tiktok-profile-scraper", perItem: 0.002, start: 0 },
+  // Post stats for 发布内容 (kol metrics); prices are rough, checked 2026-10-24. TikTok charges at least $0.50 a run.
+  ig_post: { id: "apify/instagram-scraper", perItem: 0.0027, start: 0 },
+  tt_post: { id: "clockworks/tiktok-scraper", perItem: 0.005, start: 0.5 },
+  yt_video: { id: "streamers/youtube-scraper", perItem: 0.005, start: 0 },
 } as const;
 
 export type ActorKey = keyof typeof ACTORS;

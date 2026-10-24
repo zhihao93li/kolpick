@@ -15770,11 +15770,11 @@ var require_get_intrinsic = __commonJS({
     var rePropName = /[^%.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|%$))/g;
     var reEscapeChar = /\\(\\)?/g;
     var stringToPath = function stringToPath2(string) {
-      var first = $strSlice(string, 0, 1);
+      var first2 = $strSlice(string, 0, 1);
       var last = $strSlice(string, -1);
-      if (first === "%" && last !== "%") {
+      if (first2 === "%" && last !== "%") {
         throw new $SyntaxError("invalid intrinsic syntax, expected closing `%`");
-      } else if (last === "%" && first !== "%") {
+      } else if (last === "%" && first2 !== "%") {
         throw new $SyntaxError("invalid intrinsic syntax, expected opening `%`");
       }
       var result = [];
@@ -15829,9 +15829,9 @@ var require_get_intrinsic = __commonJS({
       }
       for (var i = 1, isOwn = true; i < parts.length; i += 1) {
         var part = parts[i];
-        var first = $strSlice(part, 0, 1);
+        var first2 = $strSlice(part, 0, 1);
         var last = $strSlice(part, -1);
-        if ((first === '"' || first === "'" || first === "`" || (last === '"' || last === "'" || last === "`")) && first !== last) {
+        if ((first2 === '"' || first2 === "'" || first2 === "`" || (last === '"' || last === "'" || last === "`")) && first2 !== last) {
           throw new $SyntaxError("property names with quotes must have matching quotes");
         }
         if (part === "constructor" || !isOwn) {
@@ -18815,8 +18815,8 @@ var require_axios = __commonJS({
       static parseParameters(value) {
         return parseParameters(value);
       }
-      static concat(first, ...targets) {
-        const computed = new this(first);
+      static concat(first2, ...targets) {
+        const computed = new this(first2);
         targets.forEach((target) => computed.set(target));
         return computed;
       }
@@ -25381,15 +25381,15 @@ var require_dist6 = __commonJS({
         if (!req.path.includes("://")) {
           this.setRequestProps(req, opts);
         }
-        let first;
+        let first2;
         let endOfHeaders;
         debug("Regenerating stored HTTP header string for request");
         req._implicitHeader();
         if (req.outputData && req.outputData.length > 0) {
           debug("Patching connection write() output buffer with updated header");
-          first = req.outputData[0].data;
-          endOfHeaders = first.indexOf("\r\n\r\n") + 4;
-          req.outputData[0].data = req._header + first.substring(endOfHeaders);
+          first2 = req.outputData[0].data;
+          endOfHeaders = first2.indexOf("\r\n\r\n") + 4;
+          req.outputData[0].data = req._header + first2.substring(endOfHeaders);
           debug("Output buffer: %o", req.outputData[0].data);
         }
         let socket;
@@ -28648,22 +28648,22 @@ var require_ipv6 = __commonJS({
         let groups = [];
         const halves = address.split("::");
         if (halves.length === 2) {
-          let first = halves[0].split(":");
+          let first2 = halves[0].split(":");
           let last = halves[1].split(":");
-          if (first.length === 1 && first[0] === "") {
-            first = [];
+          if (first2.length === 1 && first2[0] === "") {
+            first2 = [];
           }
           if (last.length === 1 && last[0] === "") {
             last = [];
           }
-          const remaining = this.groups - (first.length + last.length);
+          const remaining = this.groups - (first2.length + last.length);
           if (!remaining) {
             throw new address_error_1.AddressError("Error parsing groups");
           }
           this.elidedGroups = remaining;
-          this.elisionBegin = first.length;
-          this.elisionEnd = first.length + this.elidedGroups;
-          groups = groups.concat(first);
+          this.elisionBegin = first2.length;
+          this.elisionEnd = first2.length + this.elidedGroups;
+          groups = groups.concat(first2);
           for (let i = 0; i < remaining; i++) {
             groups.push("0");
           }
@@ -43242,8 +43242,8 @@ var require_esprima = __commonJS({
                 if (cp >= 55296 && cp <= 56319) {
                   var second = this.source.charCodeAt(i + 1);
                   if (second >= 56320 && second <= 57343) {
-                    var first = cp;
-                    cp = (first - 55296) * 1024 + second - 56320 + 65536;
+                    var first2 = cp;
+                    cp = (first2 - 55296) * 1024 + second - 56320 + 65536;
                   }
                 }
                 return cp;
@@ -59531,7 +59531,7 @@ var require_dist19 = __commonJS({
 });
 
 // src/kolops/cli.ts
-import { readFileSync as readFileSync6 } from "node:fs";
+import { readFileSync as readFileSync7 } from "node:fs";
 import { parseArgs } from "node:util";
 
 // src/kolops/base.ts
@@ -60071,7 +60071,7 @@ function stamp(ms = Date.now(), tz = "+08:00") {
 function today(cfg, ms = Date.now()) {
   return dayOf(ms, cfg.timezone);
 }
-var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848" };
+var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E" };
 var SENDING_RUNS = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 var LOCK_MINUTES = 30;
 async function otherSendingRun(base, cfg, selfId) {
@@ -60290,7 +60290,11 @@ var ACTORS = {
   yt_profile: { id: "flash_scraper/creator-leads-scraper", perItem: 18e-4, start: 0 },
   yt_hidden: { id: "dataovercoffee/Youtube-Channel-Business-Email-Scraper", perItem: 0.12, start: 0 },
   tt_search: { id: "clockworks/tiktok-user-search-scraper", perItem: 5e-3, start: 0 },
-  tt_profile: { id: "clockworks/tiktok-profile-scraper", perItem: 2e-3, start: 0 }
+  tt_profile: { id: "clockworks/tiktok-profile-scraper", perItem: 2e-3, start: 0 },
+  // Post stats for 发布内容 (kol metrics); prices are rough, checked 2026-10-24. TikTok charges at least $0.50 a run.
+  ig_post: { id: "apify/instagram-scraper", perItem: 27e-4, start: 0 },
+  tt_post: { id: "clockworks/tiktok-scraper", perItem: 5e-3, start: 0.5 },
+  yt_video: { id: "streamers/youtube-scraper", perItem: 5e-3, start: 0 }
 };
 var BudgetExceeded = class extends Error {
 };
@@ -61804,6 +61808,135 @@ async function checkBase(base) {
   return out;
 }
 
+// src/kolops/metrics.ts
+var CHECKPOINTS = [1, 3, 7, 30];
+var LATE_DAYS = 2;
+var ACTOR_FOR = { Instagram: "ig_post", TikTok: "tt_post", YouTube: "yt_video" };
+function duePosts(rows, now, tz) {
+  const out = { due: [], missed: [], unsupported: [] };
+  for (const r of rows) {
+    const published = cellTime(r["\u53D1\u5E03\u65E5\u671F"], tz);
+    const url = text(r["\u5185\u5BB9\u94FE\u63A5"]);
+    const platform = option(r["\u5E73\u53F0"]);
+    if (published == null || !url) continue;
+    for (const d of CHECKPOINTS) {
+      if (r[`\u7B2C${d}\u5929\u64AD\u653E`] != null || r[`\u7B2C${d}\u5929\u4E92\u52A8`] != null) continue;
+      const at = published + d * 864e5;
+      if (now < at) continue;
+      const label = `${url}\uFF08\u7B2C ${d} \u5929\uFF09`;
+      if (now > at + LATE_DAYS * 864e5) out.missed.push(label);
+      else if (!ACTOR_FOR[platform]) out.unsupported.push(`${label}\uFF1A${platform || "\u6CA1\u586B\u5E73\u53F0"} \u6293\u4E0D\u4E86\uFF0C\u8BF7\u624B\u52A8\u586B`);
+      else out.due.push({ id: r.record_id, platform, url, day: d });
+    }
+  }
+  return out;
+}
+function postKey(url) {
+  const u = url.trim();
+  const ig = u.match(/instagram\.com\/(?:[^/]+\/)?(?:p|reel|reels|tv)\/([\w-]+)/i);
+  if (ig) return `ig:${ig[1]}`;
+  const tt = u.match(/tiktok\.com\/.*?(?:video|photo)\/(\d+)/i);
+  if (tt) return `tt:${tt[1]}`;
+  const yt = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/i);
+  if (yt) return `yt:${yt[1]}`;
+  return u.toLowerCase().replace(/[?#].*$/, "").replace(/\/+$/, "");
+}
+var first = (it, keys) => {
+  for (const k of keys) if (typeof it[k] === "number") return it[k];
+  return null;
+};
+function statsOf(it) {
+  const plays = first(it, ["videoPlayCount", "playCount", "viewCount", "videoViewCount", "views"]);
+  const parts = [
+    first(it, ["likesCount", "diggCount", "likes", "likeCount"]),
+    first(it, ["commentsCount", "commentCount", "comments"]),
+    first(it, ["shareCount", "sharesCount"])
+  ].filter((n) => n != null);
+  return { plays, engagement: parts.length ? parts.reduce((a, b) => a + b, 0) : null };
+}
+function urlOf(it) {
+  return String(it.url ?? it.webVideoUrl ?? it.postUrl ?? it.inputUrl ?? (it.shortCode ? `https://www.instagram.com/p/${it.shortCode}/` : ""));
+}
+function inputFor(key, urls) {
+  if (key === "ig_post") return { directUrls: urls, resultsType: "posts", resultsLimit: 1 };
+  if (key === "tt_post") return { postURLs: urls, resultsPerPage: 1, shouldDownloadVideos: false };
+  return { startUrls: urls.map((url) => ({ url })), maxResults: 1, maxResultsShorts: 1, maxResultStreams: 0 };
+}
+var MemoryLedger = class {
+  async find() {
+    return null;
+  }
+  async started() {
+  }
+  async finished() {
+  }
+};
+async function postMetrics(ctx, o) {
+  const rows = await ctx.base.records(ctx.cfg.tables.posts);
+  const { due, missed, unsupported } = duePosts(rows, Date.now(), ctx.cfg.timezone);
+  const byPlatform = /* @__PURE__ */ new Map();
+  for (const d of due) byPlatform.set(d.platform, [...byPlatform.get(d.platform) ?? [], d]);
+  const cost = [...byPlatform].reduce((sum, [p, list2]) => sum + estimate(ACTOR_FOR[p], new Set(list2.map((d) => d.url)).size), 0);
+  const report = {
+    \u8981\u6293: due.map((d) => `${d.url}\uFF08\u7B2C ${d.day} \u5929\uFF09`),
+    \u4F30\u8BA1\u82B1\u8D39\u7F8E\u5143: Number(cost.toFixed(2)),
+    \u5DF2\u586B: 0,
+    \u6CA1\u6293\u5230: [],
+    \u9519\u8FC7\u7684: missed,
+    \u8981\u624B\u52A8\u586B: unsupported,
+    \u8BD5\u8DD1: o.dryRun || void 0
+  };
+  if (o.dryRun || !due.length) return report;
+  if (cost > o.budget) throw new Error(`\u4F30\u8BA1\u8981 $${cost.toFixed(2)}\uFF0C\u8D85\u8FC7\u9884\u7B97 $${o.budget}\u3002\u52A0\u5927 --budget \u518D\u8DD1`);
+  const runner = o.runner ?? new ApifyRunner(apifyToken(), o.budget, new MemoryLedger());
+  const changes = {};
+  for (const [platform, list2] of byPlatform) {
+    const urls = [...new Set(list2.map((d) => d.url))];
+    const items = await runner.run(ACTOR_FOR[platform], inputFor(ACTOR_FOR[platform], urls), urls.length);
+    const found = new Map(items.map((it) => [postKey(urlOf(it)), statsOf(it)]));
+    for (const d of list2) {
+      const s = found.get(postKey(d.url));
+      if (!s || s.plays == null && s.engagement == null) {
+        report.\u6CA1\u6293\u5230.push(`${d.url}\uFF08\u7B2C ${d.day} \u5929\uFF09`);
+        continue;
+      }
+      changes[d.id] = {
+        ...changes[d.id],
+        ...s.plays != null ? { [`\u7B2C${d.day}\u5929\u64AD\u653E`]: s.plays } : {},
+        ...s.engagement != null ? { [`\u7B2C${d.day}\u5929\u4E92\u52A8`]: s.engagement } : {}
+      };
+      report.\u5DF2\u586B++;
+    }
+  }
+  if (Object.keys(changes).length) {
+    await ctx.base.update(ctx.cfg.tables.posts, changes);
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u53D1\u5E03\u6570\u636E ${report.\u5DF2\u586B} \u6761`, detail: `${dayOf(Date.now(), ctx.cfg.timezone)} \u6293\u53D6` });
+  }
+  return report;
+}
+
+// src/kolops/notify.ts
+import { readFileSync as readFileSync6 } from "node:fs";
+var MAX_CHARS = 4e3;
+async function notifyGroup(cfg, o) {
+  if (!cfg.webhook) return { \u53D1\u9001: false, \u539F\u56E0: "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\uFF0C\u8DF3\u8FC7" };
+  const body = readFileSync6(o.file, "utf8").trim();
+  if (!body) throw new Error(`${o.file} \u662F\u7A7A\u7684`);
+  const head = body.startsWith("KOL") ? "" : `KOL\uFF5C${cfg.project}
+`;
+  const message = `${head}${body}`.slice(0, MAX_CHARS);
+  if (o.dryRun) return { \u53D1\u9001: false, \u8BD5\u8DD1: true, \u5185\u5BB9: message };
+  const res = await (o.fetchImpl ?? fetch)(cfg.webhook, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ msg_type: "text", content: { text: message } })
+  });
+  const data = await res.json().catch(() => ({}));
+  const code = data.code ?? data.StatusCode ?? (res.ok ? 0 : res.status);
+  if (code !== 0) throw new Error(`\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\u62D2\u6536\uFF08${code}\uFF1A${data.msg ?? data.StatusMessage ?? res.statusText}\uFF09\u3002\u5982\u679C\u5F00\u4E86\u5B89\u5168\u8BBE\u7F6E\uFF0C\u9009\u300C\u81EA\u5B9A\u4E49\u5173\u952E\u8BCD\u300D\u5E76\u586B KOL\uFF0C\u4E0D\u8981\u9009\u7B7E\u540D\u6821\u9A8C`);
+  return { \u53D1\u9001: true, \u5B57\u6570: message.length };
+}
+
 // src/kolops/today.ts
 async function todayLists(ctx) {
   const cfg = ctx.cfg;
@@ -61876,6 +62009,8 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   classify --batch \u5165\u5E93\u6279\u6B21 [--limit 50]
                                 \u5217\u51FA\u8FD9\u6279\u91CC\u8FD8\u6CA1\u586B\u5408\u4F5C\u9080\u7EA6\u65B9\u5411\u3001\u5E02\u573A\u3001\u8A9E\u8A00\u3001\u5185\u5BB9\u7C7B\u578B\u3001\u79F0\u547C\u7684\u4EBA\uFF0C\u9644\u7B80\u4ECB\u548C\u53EF\u9009\u503C\uFF08\u53EA\u8BFB\uFF09
   classify --apply \u6587\u4EF6.json     \u6309\u6587\u4EF6\u5199\u5165\u4E0A\u9762\u8FD9\u51E0\u4E2A\u5B57\u6BB5\uFF08{"rec\u2026": {"\u5E02\u573A": "\u53F0\u6E7E", \u2026}}\uFF09\uFF0C\u6709\u4E00\u4E2A\u503C\u4E0D\u5BF9\u5C31\u4E00\u6761\u90FD\u4E0D\u5199
+  metrics [--budget 2]          \u53D1\u5E03\u540E\u7B2C 1/3/7/30 \u5929\uFF0C\u6293 Instagram\u3001YouTube\u3001TikTok \u5E16\u5B50\u7684\u64AD\u653E\u548C\u4E92\u52A8\u6570\u586B\u8FDB\u300C\u53D1\u5E03\u5185\u5BB9\u300D\uFF08\u82B1 Apify \u7684\u94B1\uFF09
+  notify  --file \u6587\u672C\u6587\u4EF6        \u628A\u4E00\u6BB5\u6587\u5B57\u53D1\u5230\u9879\u76EE\u7684\u98DE\u4E66\u7FA4\uFF08\u300C\u8BBE\u7F6E\u300D\u91CC\u586B\u4E86\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\u624D\u53D1\uFF09
   whoami                        \u770B\u5F53\u524D\u767B\u5F55\u7684\u98DE\u4E66\u8D26\u53F7
   check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\u3001\u9879\u76EE\u7684\u98DE\u4E66\u8868\u7F3A\u4E0D\u7F3A\u8868\u548C\u5B57\u6BB5\uFF0C\u4EE5\u53CA\u600E\u4E48\u8865
 
@@ -61903,7 +62038,7 @@ var COMMANDS = {
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
-      const profiles = v["profiles-file"] ? list(readFileSync6(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
+      const profiles = v["profiles-file"] ? list(readFileSync7(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
       if (!profiles.length) throw new Error("\u6CA1\u6709\u7ED9\u8981\u9080\u7EA6\u7684\u6863\u6848\u8BB0\u5F55\uFF08--profiles \u6216 --profiles-file\uFF09");
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }
@@ -61936,6 +62071,15 @@ var COMMANDS = {
       if (v.apply) return applyClassification(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] });
       need(v, "batch");
       return toClassify(ctx, { batch: v.batch, limit: Number(v.limit ?? 50) });
+    }
+  },
+  metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
+  notify: {
+    title: "",
+    writes: false,
+    run: (ctx, v) => {
+      need(v, "file");
+      return notifyGroup(ctx.cfg, { file: String(v.file), dryRun: !!v["dry-run"] });
     }
   },
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
@@ -61997,7 +62141,8 @@ async function main() {
       "import-templates": str,
       "template-language": str,
       apply: str,
-      limit: str
+      limit: str,
+      file: str
     }
   });
   const name = positionals[0];

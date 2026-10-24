@@ -23,7 +23,7 @@ export function today(cfg: Config, ms = Date.now()): string {
 }
 
 /** The 运行 names of commands that write. 运行记录 rows start with these, which sync and the send lock rely on. */
-export const RUN_TITLES = { sync: "收信同步", send: "发出已批准的信", invite: "发邀约", remind: "催信和结案", find: "找 KOL", classify: "补全档案" } as const;
+export const RUN_TITLES = { sync: "收信同步", send: "发出已批准的信", invite: "发邀约", remind: "催信和结案", find: "找 KOL", classify: "补全档案", metrics: "发布数据" } as const;
 const SENDING_RUNS: string[] = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 /** A sending run older than this is treated as dead, so a crash can't block sending for good. */
 const LOCK_MINUTES = 30;
