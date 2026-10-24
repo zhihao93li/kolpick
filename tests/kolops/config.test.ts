@@ -54,3 +54,9 @@ describe("resolveBaseLink", () => {
     expect(await resolveBaseLink(never, "https://x.feishu.cn/base/Vmdjb70JKaWLm8sO2jGc1jdbnBd?table=t")).toBe("Vmdjb70JKaWLm8sO2jGc1jdbnBd");
   });
 });
+
+it("reads both mail date forms Feishu returns", async () => {
+  const { cellTime } = await import("../../src/kolops/base.js");
+  expect(cellTime("2026-10-24T10:28:12Z")).toBe(Date.parse("2026-10-24T10:28:12Z"));
+  expect(cellTime("2026-10-24 18:28")).toBe(Date.parse("2026-10-24T18:28:00+08:00"));
+});

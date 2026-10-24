@@ -59655,6 +59655,11 @@ function cellTime(v, tz = "+08:00") {
   const t = local ? Date.parse(`${local[1]}T${local[2]}${local[3] ?? ":00"}${tz}`) : Date.parse(s);
   return Number.isNaN(t) ? null : t;
 }
+function isoSeconds(ms, tz = "+08:00") {
+  const sign = tz.startsWith("-") ? -1 : 1;
+  const [h, m] = tz.slice(1).split(":").map(Number);
+  return `${new Date(ms + sign * (h * 60 + (m || 0)) * 6e4).toISOString().slice(0, 19)}${tz}`;
+}
 function dayOf(ms, tz = "+08:00") {
   const sign = tz.startsWith("-") ? -1 : 1;
   const [h, m] = tz.slice(1).split(":").map(Number);
@@ -59889,7 +59894,7 @@ var Mail = class {
   /** The newest message this address sent to the mailbox, to reply in the same thread. */
   async latestFrom(mailbox, address) {
     const list2 = await this.list(mailbox, { from: [address] }, 5);
-    return list2.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
+    return list2.sort((a, b) => (cellTime(b.date) ?? 0) - (cellTime(a.date) ?? 0))[0];
   }
   async send(o) {
     const args = o.replyTo ? ["mail", "+reply", "--message-id", o.replyTo] : ["mail", "+send", "--to", o.to, "--subject", o.subject];
@@ -61476,7 +61481,7 @@ var MAX_PER_MAILBOX = 400;
 async function syncInbox(ctx, opts) {
   const t = ctx.cfg.tables;
   const since = opts.days ? Date.now() - opts.days * 864e5 : await lastSync(ctx);
-  const sinceIso = new Date(since).toISOString().replace("Z", "+00:00");
+  const sinceIso = isoSeconds(since, ctx.cfg.timezone);
   const s = await loadSnapshot(ctx.base, ctx.cfg);
   const known = await ctx.base.records(t.contacts, {
     filter: { logic: "and", conditions: [onOrAfter("\u65E5\u671F", day(since - 864e5, ctx.cfg.timezone))] },
@@ -61509,7 +61514,7 @@ async function syncInbox(ctx, opts) {
       }
       seen.add(m.message_id);
       const from = addressOf(m.from);
-      const when = Number.isNaN(Date.parse(m.date)) ? Date.now() : Date.parse(m.date);
+      const when = cellTime(m.date, ctx.cfg.timezone) ?? Date.now();
       if (BOUNCE_SENDER.test(from)) {
         await handleBounce(ctx, s, mb, m, when, report, followupChanges, contacts);
         continue;

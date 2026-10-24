@@ -118,6 +118,16 @@ export function cellTime(v: unknown, tz = "+08:00"): number | null {
   return Number.isNaN(t) ? null : t;
 }
 
+/**
+ * "YYYY-MM-DDTHH:mm:ss+08:00": the only time form Feishu mail filters accept (milliseconds or a "Z" are
+ * rejected with "field validation failed").
+ */
+export function isoSeconds(ms: number, tz = "+08:00"): string {
+  const sign = tz.startsWith("-") ? -1 : 1;
+  const [h, m] = tz.slice(1).split(":").map(Number);
+  return `${new Date(ms + sign * (h * 60 + (m || 0)) * 60_000).toISOString().slice(0, 19)}${tz}`;
+}
+
 export function dayOf(ms: number, tz = "+08:00"): string {
   const sign = tz.startsWith("-") ? -1 : 1;
   const [h, m] = tz.slice(1).split(":").map(Number);

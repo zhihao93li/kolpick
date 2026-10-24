@@ -1,7 +1,7 @@
 {
   "name": "kol-ops",
   "displayName": "KOL 运营",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "KOL 运营的固定操作：找人、邀约、收信、批准发信、催信。数据在飞书多维表格，发信用飞书邮箱，都通过 lark-cli。",
   "author": { "name": "TAFU" }
 }

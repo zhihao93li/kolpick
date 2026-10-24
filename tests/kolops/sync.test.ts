@@ -93,3 +93,14 @@ it("closes a bounced address and files the bounce so it's counted once", async (
   await syncInbox(ctx, { days: 3, dryRun: false });
   expect(lark.table(T.contacts)).toHaveLength(1);
 });
+
+it("asks Feishu for mail since a time it accepts: seconds and the base's zone, no milliseconds", async () => {
+  const seen: any[] = [];
+  const orig = lark.json.bind(lark);
+  lark.json = async (args: string[]) => {
+    if (args[1] === "+triage") seen.push(JSON.parse(args[args.indexOf("--filter") + 1]));
+    return orig(args);
+  };
+  await syncInbox(ctx, { days: 3, dryRun: true });
+  expect(seen[0].time_range.start_time).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$/);
+});

@@ -1,3 +1,4 @@
+import { cellTime } from "./base.js";
 import type { Lark } from "./lark.js";
 
 export interface MailSummary {
@@ -28,7 +29,7 @@ export class Mail {
   /** The newest message this address sent to the mailbox, to reply in the same thread. */
   async latestFrom(mailbox: string, address: string): Promise<MailSummary | undefined> {
     const list = await this.list(mailbox, { from: [address] }, 5);
-    return list.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
+    return list.sort((a, b) => (cellTime(b.date) ?? 0) - (cellTime(a.date) ?? 0))[0];
   }
 
   async send(o: { mailbox: string; to: string; subject: string; body: string; replyTo?: string }): Promise<SentMail> {

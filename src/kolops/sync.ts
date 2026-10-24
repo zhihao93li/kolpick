@@ -1,4 +1,4 @@
-import { cellTime, day, emailsIn, onOrAfter, option, text } from "./base.js";
+import { cellTime, day, emailsIn, isoSeconds, onOrAfter, option, text } from "./base.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, loadSnapshot, type Snapshot } from "./data.js";
 import { addressOf, type MailSummary } from "./mail.js";
@@ -35,7 +35,7 @@ export interface SyncReport {
 export async function syncInbox(ctx: Ctx, opts: { days?: number; dryRun: boolean }): Promise<SyncReport> {
   const t = ctx.cfg.tables;
   const since = opts.days ? Date.now() - opts.days * 86_400_000 : await lastSync(ctx);
-  const sinceIso = new Date(since).toISOString().replace("Z", "+00:00");
+  const sinceIso = isoSeconds(since, ctx.cfg.timezone);
   const s = await loadSnapshot(ctx.base, ctx.cfg);
   const known = await ctx.base.records(t.contacts, {
     filter: { logic: "and", conditions: [onOrAfter("日期", day(since - 86_400_000, ctx.cfg.timezone))] },
@@ -64,7 +64,8 @@ export async function syncInbox(ctx: Ctx, opts: { days?: number; dryRun: boolean
       }
       seen.add(m.message_id);
       const from = addressOf(m.from);
-      const when = Number.isNaN(Date.parse(m.date)) ? Date.now() : Date.parse(m.date);
+      // Search results carry ISO dates, plain listings "YYYY-MM-DD HH:mm" in the mailbox's zone; cellTime reads both.
+      const when = cellTime(m.date, ctx.cfg.timezone) ?? Date.now();
       if (BOUNCE_SENDER.test(from)) {
         await handleBounce(ctx, s, mb, m, when, report, followupChanges, contacts);
         continue;
