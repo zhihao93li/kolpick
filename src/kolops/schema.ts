@@ -76,6 +76,9 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
     { name: "每日上限", type: "number" },
     { name: "启用", type: "checkbox" },
     { name: "退信率暂停线", type: "number" },
+    { name: "启用日期", type: "datetime" },
+    { name: "起步上限", type: "number" },
+    { name: "每天增加", type: "number" },
     { name: "说明", type: "text" },
   ],
   templates: [

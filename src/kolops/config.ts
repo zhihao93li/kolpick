@@ -9,6 +9,22 @@ export interface Mailbox {
   dailyExternal: number;
   /** Bounce rate (percent) at which this mailbox stops sending. */
   bouncePause: number;
+  /** For a mailbox still warming up: 「第 3 天，今天 40 / 上限 150」. */
+  warmup?: string;
+}
+
+/**
+ * Today's limit of a mailbox on a new domain: 起步上限 on its 启用日期, 每天增加 more each day after, never above
+ * 每日上限. A mailbox without 起步上限 or 启用日期 sends its full 每日上限 from the start.
+ */
+export function warmupLimit(m: Row, tz: string, now = Date.now()): { limit: number; note?: string } {
+  const full = num(m["每日上限"], 50);
+  const start = num(m["起步上限"], 0);
+  const since = cellTime(m["启用日期"], tz);
+  if (!start || since == null) return { limit: full };
+  const days = Math.max(0, Math.round((Date.parse(`${dayOf(now, tz)}T00:00:00${tz}`) - Date.parse(`${dayOf(since, tz)}T00:00:00${tz}`)) / 86_400_000));
+  const limit = Math.min(full, start + num(m["每天增加"], 0) * days);
+  return limit < full ? { limit, note: `预热第 ${days + 1} 天，今天 ${limit} / 上限 ${full}` } : { limit };
 }
 
 /** One project's settings, read from its base's 设置 and 发信邮箱 tables at the start of each command. */
@@ -71,7 +87,7 @@ export async function loadConfig(lark: Lark, project: string, baseToken: string)
 }
 
 /** Pure: the settings row and mailbox rows as a Config, with defaults for empty cells. */
-export function configFrom(project: string, baseToken: string, s: Row, mailboxRows: Row[]): Config {
+export function configFrom(project: string, baseToken: string, s: Row, mailboxRows: Row[], now = Date.now()): Config {
   const timezone = text(s["时区"]) || SETTING_DEFAULTS.时区;
   const pause = num(s["退信率暂停线"], SETTING_DEFAULTS.退信率暂停线);
   const startAt = cellTime(s["自动催信起始日"], timezone);
@@ -79,12 +95,16 @@ export function configFrom(project: string, baseToken: string, s: Row, mailboxRo
     project, baseToken, timezone, tables: TABLES,
     mailboxes: mailboxRows
       .filter((m) => m["启用"] === true && text(m["邮箱"]))
-      .map((m) => ({
-        address: text(m["邮箱"]).toLowerCase(),
-        channel: text(m["渠道名"]) || text(m["邮箱"]).toLowerCase(),
-        dailyExternal: num(m["每日上限"], 50),
-        bouncePause: num(m["退信率暂停线"], pause),
-      })),
+      .map((m) => {
+        const w = warmupLimit(m, timezone, now);
+        return {
+          address: text(m["邮箱"]).toLowerCase(),
+          channel: text(m["渠道名"]) || text(m["邮箱"]).toLowerCase(),
+          dailyExternal: w.limit,
+          bouncePause: num(m["退信率暂停线"], pause),
+          ...(w.note ? { warmup: w.note } : {}),
+        };
+      }),
     companyDailyExternal: num(s["全公司每日上限"], SETTING_DEFAULTS.全公司每日上限),
     perMinute: num(s["每分钟上限"], SETTING_DEFAULTS.每分钟上限),
     followup: {

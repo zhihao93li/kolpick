@@ -59,3 +59,28 @@ function distance(a: string, b: string): number {
   }
   return d[a.length][b.length];
 }
+
+type TxtResolver = (name: string) => Promise<string[][]>;
+let txt: TxtResolver = (n) => dns.resolveTxt(n);
+
+export function useTxtResolver(fn: TxtResolver): void {
+  txt = fn;
+}
+
+/**
+ * What a sending domain's DNS says about mail sent from Feishu: an SPF record that lets Feishu send, a DMARC
+ * policy, and MX records so replies arrive. DKIM can't be checked from outside (its selector is Feishu's), so
+ * the report says where to confirm it.
+ */
+export async function senderDomain(domain: string) {
+  const records = async (name: string) => (await txt(name).catch(() => [] as string[][])).map((parts) => parts.join(""));
+  const spf = (await records(domain)).find((r) => /^v=spf1\b/i.test(r)) ?? "";
+  const dmarc = (await records(`_dmarc.${domain}`)).find((r) => /^v=DMARC1\b/i.test(r)) ?? "";
+  const mx = await resolver(domain).catch(() => []);
+  const problems: string[] = [];
+  if (!spf) problems.push("没有 SPF 记录：收件方会当成冒名发信，请在域名 DNS 加 v=spf1 +include:_netblocks.m.feishu.cn -all");
+  else if (!/feishu|larksuite/i.test(spf)) problems.push(`SPF 没有包含飞书（现在是 ${spf}），请加 include:_netblocks.m.feishu.cn`);
+  if (!dmarc) problems.push("没有 DMARC 记录：请加 _dmarc 的 TXT，例如 v=DMARC1; p=none; rua=mailto:<收报告的邮箱>");
+  if (!mx.some((r) => /feishu|larksuite/i.test(r.exchange))) problems.push("MX 不是飞书的：KOL 的回信不会进这个飞书邮箱");
+  return { 域名: domain, SPF: spf || null, DMARC: dmarc || null, 问题: problems, DKIM: "在飞书管理后台「邮箱 → 域名管理」里确认 DKIM 已生效" };
+}

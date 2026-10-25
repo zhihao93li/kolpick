@@ -2,6 +2,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { option, text, type Base } from "./base.js";
 import { EXTRA_FIELDS, REQUIRED_FIELDS, SETTING_DEFAULTS, SETTINGS_TABLES, TABLES, type FieldDef, type TableKey } from "./schema.js";
+import { warmupLimit } from "./config.js";
+import { senderDomain } from "./mx.js";
 import { parseTemplateFile } from "./templates.js";
 
 function fieldJson(f: FieldDef): Record<string, unknown> {
@@ -96,6 +98,21 @@ export async function setupBase(base: Base, o: { project: string; dryRun: boolea
     }
   }
 
+  // Every enabled mailbox's 渠道名 must be an option wherever a channel is picked, or its mail can't be recorded.
+  const mailboxRows = fresh.has(TABLES.mailboxes) ? [] : await base.records(TABLES.mailboxes);
+  const channels = mailboxRows.filter((r) => r["启用"] === true && text(r["邮箱"])).map((r) => text(r["渠道名"]) || text(r["邮箱"]).toLowerCase());
+  for (const [table, field] of [[TABLES.contacts, "渠道"], [TABLES.followups, "联系渠道"], [TABLES.reviews, "发送渠道"]] as const) {
+    if (!channels.length) break;
+    const have = await base.fieldOptions(table, field);
+    const missing = have ? channels.filter((c) => !have.includes(c)) : [];
+    if (!have || !missing.length) continue;
+    report.加选项.push(...missing.map((x) => `${table}.${field}：${x}`));
+    if (!o.dryRun) {
+      await base.lark.json(["base", "+field-update", "--base-token", base.token, "--table-id", table, "--field-id", field,
+        "--json", JSON.stringify({ name: field, type: "select", multiple: false, options: [...have, ...missing].map((name) => ({ name })) }), "--as", "user", "--yes"]);
+    }
+  }
+
   const settingsRows = fresh.has(TABLES.settings) ? [] : await base.records(TABLES.settings);
   if (!settingsRows.length) {
     report.写入默认设置 = true;
@@ -127,19 +144,31 @@ export interface BaseCheck {
   缺少的表: string[];
   缺少的字段: string[];
   启用的发信邮箱: number;
+  /** Each enabled mailbox's domain records and today's warm-up limit. */
+  发信域名: Awaited<ReturnType<typeof senderDomain>>[];
+  预热中: string[];
   已批准的模板: string[];
 }
 
 /** For `kol check`: whether the base has every table and field the commands use. */
 export async function checkBase(base: Base): Promise<BaseCheck> {
-  const out: BaseCheck = { 缺少的表: [], 缺少的字段: [], 启用的发信邮箱: 0, 已批准的模板: [] };
+  const out: BaseCheck = { 缺少的表: [], 缺少的字段: [], 启用的发信邮箱: 0, 发信域名: [], 预热中: [], 已批准的模板: [] };
   for (const [key, fields] of Object.entries(REQUIRED_FIELDS) as [TableKey, string[]][]) {
     const have = await base.fieldNames(TABLES[key]);
     if (have == null) out.缺少的表.push(TABLES[key]);
     else out.缺少的字段.push(...fields.filter((f) => !have.includes(f)).map((f) => `${TABLES[key]}.${f}`));
   }
   if (!out.缺少的表.includes(TABLES.mailboxes)) {
-    out.启用的发信邮箱 = (await base.records(TABLES.mailboxes)).filter((r) => r["启用"] === true).length;
+    const settings = out.缺少的表.includes(TABLES.settings) ? [] : await base.records(TABLES.settings);
+    const tz = text(settings[0]?.["时区"]) || SETTING_DEFAULTS.时区;
+    const enabled = (await base.records(TABLES.mailboxes)).filter((r) => r["启用"] === true && text(r["邮箱"]));
+    out.启用的发信邮箱 = enabled.length;
+    const domains = [...new Set(enabled.map((r) => text(r["邮箱"]).split("@")[1]?.toLowerCase()).filter(Boolean))];
+    out.发信域名 = await Promise.all(domains.map((d) => senderDomain(d!)));
+    out.预热中 = enabled.flatMap((r) => {
+      const w = warmupLimit(r, tz);
+      return w.note ? [`${text(r["邮箱"])}：${w.note}`] : [];
+    });
   }
   if (!out.缺少的表.includes(TABLES.templates)) {
     out.已批准的模板 = (await base.records(TABLES.templates))

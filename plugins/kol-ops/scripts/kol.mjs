@@ -59733,6 +59733,9 @@ var SETTINGS_TABLES = {
     { name: "\u6BCF\u65E5\u4E0A\u9650", type: "number" },
     { name: "\u542F\u7528", type: "checkbox" },
     { name: "\u9000\u4FE1\u7387\u6682\u505C\u7EBF", type: "number" },
+    { name: "\u542F\u7528\u65E5\u671F", type: "datetime" },
+    { name: "\u8D77\u6B65\u4E0A\u9650", type: "number" },
+    { name: "\u6BCF\u5929\u589E\u52A0", type: "number" },
     { name: "\u8BF4\u660E", type: "text" }
   ],
   templates: [
@@ -59848,6 +59851,15 @@ var REQUIRED_FIELDS = {
 };
 
 // src/kolops/config.ts
+function warmupLimit(m, tz, now = Date.now()) {
+  const full = num(m["\u6BCF\u65E5\u4E0A\u9650"], 50);
+  const start = num(m["\u8D77\u6B65\u4E0A\u9650"], 0);
+  const since = cellTime(m["\u542F\u7528\u65E5\u671F"], tz);
+  if (!start || since == null) return { limit: full };
+  const days = Math.max(0, Math.round((Date.parse(`${dayOf(now, tz)}T00:00:00${tz}`) - Date.parse(`${dayOf(since, tz)}T00:00:00${tz}`)) / 864e5));
+  const limit = Math.min(full, start + num(m["\u6BCF\u5929\u589E\u52A0"], 0) * days);
+  return limit < full ? { limit, note: `\u9884\u70ED\u7B2C ${days + 1} \u5929\uFF0C\u4ECA\u5929 ${limit} / \u4E0A\u9650 ${full}` } : { limit };
+}
 var listOf = (v) => text(v).split(/[,，、;；\n]+/).map((s) => s.trim()).filter(Boolean);
 function num(v, fallback) {
   const n = typeof v === "number" ? v : Number(text(v));
@@ -59867,7 +59879,7 @@ async function loadConfig(lark, project, baseToken) {
   if (!settings.length) throw new Error(`\u9879\u76EE\u300C${project}\u300D\u7684\u300C${TABLES.settings}\u300D\u8868\u662F\u7A7A\u7684\u3002\u8FD0\u884C kol setup-base \u4F1A\u5199\u5165\u4E00\u884C\u9ED8\u8BA4\u8BBE\u7F6E`);
   return configFrom(project, baseToken, settings[0], mailboxes);
 }
-function configFrom(project, baseToken, s, mailboxRows) {
+function configFrom(project, baseToken, s, mailboxRows, now = Date.now()) {
   const timezone = text(s["\u65F6\u533A"]) || SETTING_DEFAULTS.\u65F6\u533A;
   const pause = num(s["\u9000\u4FE1\u7387\u6682\u505C\u7EBF"], SETTING_DEFAULTS.\u9000\u4FE1\u7387\u6682\u505C\u7EBF);
   const startAt = cellTime(s["\u81EA\u52A8\u50AC\u4FE1\u8D77\u59CB\u65E5"], timezone);
@@ -59876,12 +59888,16 @@ function configFrom(project, baseToken, s, mailboxRows) {
     baseToken,
     timezone,
     tables: TABLES,
-    mailboxes: mailboxRows.filter((m) => m["\u542F\u7528"] === true && text(m["\u90AE\u7BB1"])).map((m) => ({
-      address: text(m["\u90AE\u7BB1"]).toLowerCase(),
-      channel: text(m["\u6E20\u9053\u540D"]) || text(m["\u90AE\u7BB1"]).toLowerCase(),
-      dailyExternal: num(m["\u6BCF\u65E5\u4E0A\u9650"], 50),
-      bouncePause: num(m["\u9000\u4FE1\u7387\u6682\u505C\u7EBF"], pause)
-    })),
+    mailboxes: mailboxRows.filter((m) => m["\u542F\u7528"] === true && text(m["\u90AE\u7BB1"])).map((m) => {
+      const w = warmupLimit(m, timezone, now);
+      return {
+        address: text(m["\u90AE\u7BB1"]).toLowerCase(),
+        channel: text(m["\u6E20\u9053\u540D"]) || text(m["\u90AE\u7BB1"]).toLowerCase(),
+        dailyExternal: w.limit,
+        bouncePause: num(m["\u9000\u4FE1\u7387\u6682\u505C\u7EBF"], pause),
+        ...w.note ? { warmup: w.note } : {}
+      };
+    }),
     companyDailyExternal: num(s["\u5168\u516C\u53F8\u6BCF\u65E5\u4E0A\u9650"], SETTING_DEFAULTS.\u5168\u516C\u53F8\u6BCF\u65E5\u4E0A\u9650),
     perMinute: num(s["\u6BCF\u5206\u949F\u4E0A\u9650"], SETTING_DEFAULTS.\u6BCF\u5206\u949F\u4E0A\u9650),
     followup: {
@@ -61802,6 +61818,19 @@ function distance(a, b) {
   }
   return d[a.length][b.length];
 }
+var txt = (n) => dns.resolveTxt(n);
+async function senderDomain(domain) {
+  const records = async (name) => (await txt(name).catch(() => [])).map((parts) => parts.join(""));
+  const spf = (await records(domain)).find((r) => /^v=spf1\b/i.test(r)) ?? "";
+  const dmarc = (await records(`_dmarc.${domain}`)).find((r) => /^v=DMARC1\b/i.test(r)) ?? "";
+  const mx = await resolver(domain).catch(() => []);
+  const problems = [];
+  if (!spf) problems.push("\u6CA1\u6709 SPF \u8BB0\u5F55\uFF1A\u6536\u4EF6\u65B9\u4F1A\u5F53\u6210\u5192\u540D\u53D1\u4FE1\uFF0C\u8BF7\u5728\u57DF\u540D DNS \u52A0 v=spf1 +include:_netblocks.m.feishu.cn -all");
+  else if (!/feishu|larksuite/i.test(spf)) problems.push(`SPF \u6CA1\u6709\u5305\u542B\u98DE\u4E66\uFF08\u73B0\u5728\u662F ${spf}\uFF09\uFF0C\u8BF7\u52A0 include:_netblocks.m.feishu.cn`);
+  if (!dmarc) problems.push("\u6CA1\u6709 DMARC \u8BB0\u5F55\uFF1A\u8BF7\u52A0 _dmarc \u7684 TXT\uFF0C\u4F8B\u5982 v=DMARC1; p=none; rua=mailto:<\u6536\u62A5\u544A\u7684\u90AE\u7BB1>");
+  if (!mx.some((r) => /feishu|larksuite/i.test(r.exchange))) problems.push("MX \u4E0D\u662F\u98DE\u4E66\u7684\uFF1AKOL \u7684\u56DE\u4FE1\u4E0D\u4F1A\u8FDB\u8FD9\u4E2A\u98DE\u4E66\u90AE\u7BB1");
+  return { \u57DF\u540D: domain, SPF: spf || null, DMARC: dmarc || null, \u95EE\u9898: problems, DKIM: "\u5728\u98DE\u4E66\u7BA1\u7406\u540E\u53F0\u300C\u90AE\u7BB1 \u2192 \u57DF\u540D\u7BA1\u7406\u300D\u91CC\u786E\u8BA4 DKIM \u5DF2\u751F\u6548" };
+}
 
 // src/kolops/send.ts
 var SENDING_TYPES = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"];
@@ -62541,6 +62570,32 @@ async function setupBase(base, o) {
       ]);
     }
   }
+  const mailboxRows = fresh.has(TABLES.mailboxes) ? [] : await base.records(TABLES.mailboxes);
+  const channels = mailboxRows.filter((r) => r["\u542F\u7528"] === true && text(r["\u90AE\u7BB1"])).map((r) => text(r["\u6E20\u9053\u540D"]) || text(r["\u90AE\u7BB1"]).toLowerCase());
+  for (const [table, field] of [[TABLES.contacts, "\u6E20\u9053"], [TABLES.followups, "\u8054\u7CFB\u6E20\u9053"], [TABLES.reviews, "\u53D1\u9001\u6E20\u9053"]]) {
+    if (!channels.length) break;
+    const have = await base.fieldOptions(table, field);
+    const missing = have ? channels.filter((c) => !have.includes(c)) : [];
+    if (!have || !missing.length) continue;
+    report.\u52A0\u9009\u9879.push(...missing.map((x) => `${table}.${field}\uFF1A${x}`));
+    if (!o.dryRun) {
+      await base.lark.json([
+        "base",
+        "+field-update",
+        "--base-token",
+        base.token,
+        "--table-id",
+        table,
+        "--field-id",
+        field,
+        "--json",
+        JSON.stringify({ name: field, type: "select", multiple: false, options: [...have, ...missing].map((name) => ({ name })) }),
+        "--as",
+        "user",
+        "--yes"
+      ]);
+    }
+  }
   const settingsRows = fresh.has(TABLES.settings) ? [] : await base.records(TABLES.settings);
   if (!settingsRows.length) {
     report.\u5199\u5165\u9ED8\u8BA4\u8BBE\u7F6E = true;
@@ -62570,14 +62625,23 @@ async function setupBase(base, o) {
   return report;
 }
 async function checkBase(base) {
-  const out = { \u7F3A\u5C11\u7684\u8868: [], \u7F3A\u5C11\u7684\u5B57\u6BB5: [], \u542F\u7528\u7684\u53D1\u4FE1\u90AE\u7BB1: 0, \u5DF2\u6279\u51C6\u7684\u6A21\u677F: [] };
+  const out = { \u7F3A\u5C11\u7684\u8868: [], \u7F3A\u5C11\u7684\u5B57\u6BB5: [], \u542F\u7528\u7684\u53D1\u4FE1\u90AE\u7BB1: 0, \u53D1\u4FE1\u57DF\u540D: [], \u9884\u70ED\u4E2D: [], \u5DF2\u6279\u51C6\u7684\u6A21\u677F: [] };
   for (const [key, fields] of Object.entries(REQUIRED_FIELDS)) {
     const have = await base.fieldNames(TABLES[key]);
     if (have == null) out.\u7F3A\u5C11\u7684\u8868.push(TABLES[key]);
     else out.\u7F3A\u5C11\u7684\u5B57\u6BB5.push(...fields.filter((f) => !have.includes(f)).map((f) => `${TABLES[key]}.${f}`));
   }
   if (!out.\u7F3A\u5C11\u7684\u8868.includes(TABLES.mailboxes)) {
-    out.\u542F\u7528\u7684\u53D1\u4FE1\u90AE\u7BB1 = (await base.records(TABLES.mailboxes)).filter((r) => r["\u542F\u7528"] === true).length;
+    const settings = out.\u7F3A\u5C11\u7684\u8868.includes(TABLES.settings) ? [] : await base.records(TABLES.settings);
+    const tz = text(settings[0]?.["\u65F6\u533A"]) || SETTING_DEFAULTS.\u65F6\u533A;
+    const enabled = (await base.records(TABLES.mailboxes)).filter((r) => r["\u542F\u7528"] === true && text(r["\u90AE\u7BB1"]));
+    out.\u542F\u7528\u7684\u53D1\u4FE1\u90AE\u7BB1 = enabled.length;
+    const domains = [...new Set(enabled.map((r) => text(r["\u90AE\u7BB1"]).split("@")[1]?.toLowerCase()).filter(Boolean))];
+    out.\u53D1\u4FE1\u57DF\u540D = await Promise.all(domains.map((d) => senderDomain(d)));
+    out.\u9884\u70ED\u4E2D = enabled.flatMap((r) => {
+      const w = warmupLimit(r, tz);
+      return w.note ? [`${text(r["\u90AE\u7BB1"])}\uFF1A${w.note}`] : [];
+    });
   }
   if (!out.\u7F3A\u5C11\u7684\u8868.includes(TABLES.templates)) {
     out.\u5DF2\u6279\u51C6\u7684\u6A21\u677F = (await base.records(TABLES.templates)).filter((r) => option(r["\u72B6\u6001"]) === "\u5DF2\u6279\u51C6").map((r) => `${text(r["\u540D\u79F0"])}\uFF08${option(r["\u7528\u9014"])}\uFF09`);

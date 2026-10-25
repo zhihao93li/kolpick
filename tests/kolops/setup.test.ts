@@ -71,3 +71,16 @@ it("adds the trial-code fields to 审核队列 and the new purposes to 模板.�
   expect(lark.options["用途"].slice(0, 7)).toEqual(["邀约", "催信 1", "催信 2", "体验跟进", "其他", "发体验码", "体验码延期"]);
   expect(lark.schemas![TABLES.reviews]).toEqual(expect.arrayContaining(["体验码动作", "体验码", "体验次数", "体验天数"]));
 });
+
+it("adds a new mailbox's channel to every channel select, keeping existing options", async () => {
+  const lark = olderBase();
+  lark.schemas![TABLES.mailboxes] = [...REQUIRED_FIELDS.mailboxes!];
+  lark.add(TABLES.mailboxes, { 邮箱: "mei@new-brand.com", 渠道名: "mei@new-brand.com", 每日上限: 100, 启用: true });
+  lark.options["渠道"] = ["hello@tafu.me"];
+  lark.options["联系渠道"] = ["hello@tafu.me", "mei@new-brand.com"];
+  lark.options["发送渠道"] = ["hello@tafu.me", "不发邮件"];
+  const r = await setupBase(new Base(lark, BASE), { project: "p", dryRun: false });
+  expect(r.加选项).toEqual(expect.arrayContaining([`${TABLES.contacts}.渠道：mei@new-brand.com`, `${TABLES.reviews}.发送渠道：mei@new-brand.com`]));
+  expect(r.加选项.filter((x) => x.startsWith(`${TABLES.followups}.联系渠道`))).toEqual([]);
+  expect(lark.options["发送渠道"]).toEqual(["hello@tafu.me", "不发邮件", "mei@new-brand.com"]);
+});
