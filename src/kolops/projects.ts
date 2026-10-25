@@ -12,6 +12,8 @@ export interface Project {
   baseToken: string;
   /** Key for the project's business data API (体验码, orders), when it has one. */
   dataApiKey?: string;
+  /** The separate key that may create and extend trial codes through that API. */
+  trialKey?: string;
 }
 
 interface Registry {
@@ -83,10 +85,10 @@ export function removeProject(name: string): void {
   save(r);
 }
 
-export function setDataApiKey(name: string, key: string): void {
+export function setDataApiKey(name: string, key: string, which: "dataApiKey" | "trialKey" = "dataApiKey"): void {
   const r = load();
   if (!r.projects[name]) throw new Error(`没有登记叫「${name}」的项目`);
-  r.projects[name].dataApiKey = key.trim();
+  r.projects[name][which] = key.trim();
   save(r);
 }
 

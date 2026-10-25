@@ -14,7 +14,7 @@ import { sendApproved } from "./send.js";
 import { checkBase, setupBase } from "./setup.js";
 import { applyClassification, toClassify } from "./classify.js";
 import { postMetrics } from "./metrics.js";
-import { syncCodes } from "./codes.js";
+import { checkTrialName, syncCodes } from "./codes.js";
 import { notifyGroup } from "./notify.js";
 import { syncInbox } from "./sync.js";
 import { todayLists } from "./today.js";
@@ -36,11 +36,12 @@ const HELP = `kol <命令> [选项]
   metrics [--budget 2]          发布后第 1/3/7/30 天，抓 Instagram、YouTube、TikTok 帖子的播放和互动数填进「发布内容」（花 Apify 的钱）
   notify  --file 文本文件        把一段文字发到项目的飞书群（「设置」里填了飞书群机器人才发）
   codes                         从项目的业务数据接口同步体验码已用次数、上限和到期日，列出用了一部分、快到期的体验码和活动码概况
+  trial-check --code 码名        看这个码名能不能用来建体验码（只读）
   whoami                        看当前登录的飞书账号
   check                         检查飞书授权是否齐全、项目的飞书表缺不缺表和字段，以及怎么补
 
   project add 项目名 飞书表链接  登记一个项目（它的 KOL 总表）；第一个登记的是默认项目
-  project list | default 项目名 | remove 项目名 | set-key 项目名 密钥
+  project list | default 项目名 | remove 项目名 | set-key 项目名 密钥 | set-trial-key 项目名 写密钥
   setup-base [--import-templates 文件夹] [--template-language 语言]
                                 给项目的飞书表补上「设置」「发信邮箱」「模板」表和缺的字段，没有设置就写一行默认值；
                                 可把文件夹里的 .txt 模板导入成「待审核」。只加不改，先用 --dry-run 看会做什么
@@ -91,6 +92,13 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
   },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
   codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
+  "trial-check": {
+    title: "", writes: false,
+    run: (ctx, v) => {
+      need(v, "code");
+      return checkTrialName(ctx, String(v.code));
+    },
+  },
   notify: {
     title: "", writes: false,
     run: (ctx, v) => {
@@ -114,12 +122,13 @@ async function projectCommand(args: string[]): Promise<unknown> {
   if (sub === "default" && a) return setDefaultProject(a), { 默认项目: a };
   if (sub === "remove" && a) return removeProject(a), { 已删除: a };
   if (sub === "set-key" && a && b) return setDataApiKey(a, b), { 已保存: `${a} 的业务数据接口密钥（只存在这台电脑上）` };
+  if (sub === "set-trial-key" && a && b) return setDataApiKey(a, b, "trialKey"), { 已保存: `${a} 的体验码写密钥（只存在这台电脑上）` };
   if (!sub || sub === "list") {
     const all = listProjects();
     const def = all.length ? resolveProject().name : "";
-    return all.map((p) => ({ 项目: p.name, 默认: p.name === def, 飞书表: p.baseToken, 有接口密钥: !!p.dataApiKey }));
+    return all.map((p) => ({ 项目: p.name, 默认: p.name === def, 飞书表: p.baseToken, 有接口密钥: !!p.dataApiKey, 有体验码写密钥: !!p.trialKey }));
   }
-  throw new Error("用法：kol project add|list|default|remove|set-key …");
+  throw new Error("用法：kol project add|list|default|remove|set-key|set-trial-key …");
 }
 
 /** `kol check`: login scopes always; the project's base too when one is registered. */
@@ -142,7 +151,7 @@ async function main(): Promise<number> {
       "youtube-hidden": { type: "boolean" },
       days: str, only: str, batch: str, template: str, mailbox: str, approval: str, profiles: str, "profiles-file": str,
       platform: str, job: str, budget: str, keywords: str, seeds: str, handles: str, "min-followers": str, "max-followers": str,
-      project: str, "import-templates": str, "template-language": str, apply: str, limit: str, file: str,
+      project: str, "import-templates": str, "template-language": str, apply: str, limit: str, file: str, code: str,
     },
   });
   const name = positionals[0];

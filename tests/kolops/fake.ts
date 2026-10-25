@@ -52,11 +52,17 @@ export class FakeLark implements Lark {
     if (svc === "base" && cmd === "+field-list" && this.schemas) {
       const fields = this.schemas[flag("--table-id")];
       if (!fields) throw new Error(`table ${flag("--table-id")} not found`);
-      return { fields: fields.map((name) => ({ name, type: "text" })) };
+      return { fields: fields.map((name) => (this.options[name] ? { name, type: "select", options: this.options[name].map((o) => ({ name: o })) } : { name, type: "text" })) };
     }
     if (svc === "base" && cmd === "+table-create") {
       this.created.push(args);
       (this.schemas ??= {})[flag("--name")] = JSON.parse(flag("--fields")).map((f: any) => f.name);
+      return {};
+    }
+    if (svc === "base" && cmd === "+field-update") {
+      this.created.push(args);
+      const f = JSON.parse(flag("--json"));
+      if (f.options) this.options[f.name] = f.options.map((o: any) => o.name);
       return {};
     }
     if (svc === "base" && cmd === "+field-create") {

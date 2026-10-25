@@ -8,7 +8,7 @@
 node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" <命令> [选项]
 ```
 
-命令：`today`、`sync`、`send`、`invite`、`remind`、`find`、`classify`、`metrics`、`codes`、`notify`、`whoami`、`check`、`project`、`setup-base`。`--help` 看完整参数。
+命令：`today`、`sync`、`send`、`invite`、`remind`、`find`、`classify`、`metrics`、`codes`、`trial-check`、`notify`、`whoami`、`check`、`project`、`setup-base`。`--help` 看完整参数。
 
 ## 项目
 
@@ -29,6 +29,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" <命令> [选项]
 - 给 KOL 的邮件只能经过这个插件的脚本发。不要用通用的 lark-mail 技能或 `lark-cli mail +send` 直接发，否则就没有永不联系、额度、防重复这些检查，也不会留接触记录。
 - 回复和协议必须先写进「审核队列」，同事在飞书里批准（处理 选「发／同意」并勾「确认发出」）后，才由 `kol send` 发出。Claude 自己不能替同事批准。
 - 邀约要先有一条已批准的审核记录（类型「决定」，审核项里写明邀约批次名），才能 `kol invite`。
+- 体验码只能通过审核队列里批准过的「发码」「延期」来建和延，由 `kol send` 执行。不要去 TAFU 后台或用别的办法建码，那样不会留在跟进记录里。
 - 脚本报「结果不明，不会自动重发」时，不要重跑这封；请同事去飞书邮箱「已发送」里确认。
 - 「设置」表里勾了「暂停所有发送」时，脚本什么都不发。只有同事明确要求才能去改这个开关。
 - 发信规则（额度、催信天数、谁不催）、发信邮箱和邮件模板都在项目飞书表的「设置」「发信邮箱」「模板」里。同事要改规则，就去改那几张表，不要改插件。模板只有「已批准」的才会被用，Claude 不能替同事把模板改成「已批准」。

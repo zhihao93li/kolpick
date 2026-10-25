@@ -71,3 +71,16 @@ it("keeps a trial and a partner code with the same name apart", async () => {
   expect(r.体验码用了一部分).toEqual([{ name: "同名", 体验码: "SAME", 已用: 2, 上限: 3 }]);
   expect(r.活动码).toEqual([{ name: "同名", 活动码: "same", 付款订单: 9, 退款订单: 0, 访客: 50 }]);
 });
+
+it("tells whether a trial code name is free; a partner code of the same name doesn't block it", async () => {
+  const { checkTrialName } = await import("../../src/kolops/codes.js");
+  addProject("测试项目", BASE);
+  setDataApiKey("测试项目", "k");
+  const api = (async (_u: string, init: any) => {
+    const code = JSON.parse(init.body).codes[0];
+    const rows = code === "deer3" ? [{ code: "DEER3", found: true, kind: "trial", used: 1 }] : [{ code, found: true, kind: "partner", used: 4 }];
+    return new Response(JSON.stringify({ codes: rows }));
+  }) as typeof fetch;
+  expect(await checkTrialName(ctx, "deer3", api)).toMatchObject({ 可用: false, 原因: "已经有这个码（体验码，用了 1 次）" });
+  expect(await checkTrialName(ctx, "amy-tafu", api)).toEqual({ 码名: "amy-tafu", 可用: true });
+});

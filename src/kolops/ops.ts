@@ -109,7 +109,7 @@ export async function checkAuth(lark: Lark) {
  */
 export class Journal {
   private file = join(dataDir(), "sends.jsonl");
-  private entries = new Map<string, { state: string; messageId?: string }>();
+  private entries = new Map<string, { state: string; messageId?: string; data?: unknown }>();
 
   constructor() {
     if (!existsSync(this.file)) return;
@@ -124,8 +124,8 @@ export class Journal {
     return this.entries.get(key);
   }
 
-  mark(key: string, state: "sending" | "sent" | "recorded" | "failed", messageId?: string): void {
-    const e = { key, state, messageId, at: new Date().toISOString() };
+  mark(key: string, state: "sending" | "sent" | "recorded" | "failed" | "prepared", messageId?: string, data?: unknown): void {
+    const e = { key, state, messageId, data, at: new Date().toISOString() };
     this.entries.set(key, e);
     appendFileSync(this.file, JSON.stringify(e) + "\n");
   }

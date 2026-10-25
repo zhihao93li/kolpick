@@ -28,7 +28,9 @@ export interface FieldDef {
   multiple?: boolean;
 }
 
-export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "其他"] as const;
+export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "发体验码", "体验码延期", "其他"] as const;
+/** What an approved 审核队列 item asks the plugin to do with a trial code before it sends the reply. */
+export const TRIAL_ACTIONS = ["发码", "延期"] as const;
 export const TEMPLATE_STATES = ["草稿", "待审核", "已批准", "停用"] as const;
 
 /** The settings tables, in creation order. The first field of each is its primary field. */
@@ -50,6 +52,8 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
     { name: "不催的对方要求", type: "text" },
     { name: "不催渠道", type: "text" },
     { name: "跨项目冷却天数", type: "number" },
+    { name: "体验码默认次数", type: "number" },
+    { name: "体验码默认天数", type: "number" },
     { name: "飞书群机器人", type: "text" },
     { name: "业务数据接口", type: "text" },
     { name: "说明", type: "text" },
@@ -76,10 +80,19 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
   ],
 };
 
-/** System fields the commands rely on in the big tables: 更新时间 lets them read only what changed (cache.ts). */
-export const SYSTEM_FIELDS: Partial<Record<TableKey, FieldDef[]>> = {
+/**
+ * Fields setup-base adds to tables a project already has: 更新时间 lets the commands read only what changed
+ * (cache.ts); the 审核队列 fields carry a trial code to create or extend before the reply goes out.
+ */
+export const EXTRA_FIELDS: Partial<Record<TableKey, FieldDef[]>> = {
   profiles: [{ name: "更新时间", type: "updated_at" }],
   followups: [{ name: "更新时间", type: "updated_at" }],
+  reviews: [
+    { name: "体验码动作", type: "select", options: [...TRIAL_ACTIONS], multiple: false },
+    { name: "体验码", type: "text" },
+    { name: "体验次数", type: "number" },
+    { name: "体验天数", type: "number" },
+  ],
 };
 
 /** Defaults written into a new 设置 row, and used when a cell is left empty. */
@@ -92,6 +105,8 @@ export const SETTING_DEFAULTS = {
   第二次催信天数: 7,
   结案天数: 7,
   跨项目冷却天数: 90,
+  体验码默认次数: 3,
+  体验码默认天数: 14,
 } as const;
 
 /** Fields of the existing tables that the commands can't work without; `kol check` looks for these. */
@@ -102,7 +117,7 @@ export const REQUIRED_FIELDS: Partial<Record<TableKey, string[]>> = {
     "下次跟进日期", "最近联系日期", "最后来信日期", "下一步", "结案原因", "更新时间"],
   contacts: ["方向", "渠道", "Message ID", "摘要", "内容", "日期", "待处理", "KOL"],
   reviews: ["类型", "状态", "处理", "审核结果", "确认发出", "KOL", "收件人", "发送渠道", "邮件草稿", "审核项", "要你定什么",
-    "执行时间", "执行结果"],
+    "执行时间", "执行结果", "体验码动作", "体验码", "体验次数", "体验天数"],
   oplog: ["类型", "结果", "操作", "说明", "收件人明细", "邮件正文", "发送数", "时间", "KOL", "所属运行"],
   runs: ["运行", "方式", "结果", "开始时间", "结束时间", "处理来信", "发出邮件", "新增待审", "问题与备注"],
   settings: SETTINGS_TABLES.settings.map((f) => f.name),

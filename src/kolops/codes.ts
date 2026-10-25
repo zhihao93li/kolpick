@@ -40,6 +40,50 @@ export async function lookupCodes(url: string, key: string, codes: string[], fet
   return out;
 }
 
+/** A trial-code write the API refused, with its reason (CODE_TAKEN, DAILY_LIMIT, …); nothing was changed. */
+export class TrialCodeRefused extends Error {
+  constructor(public code: string, message: string) {
+    super(message);
+  }
+}
+
+async function writeTrial(url: string, key: string, path: string, body: object, fetchImpl: typeof fetch): Promise<{ created?: boolean; code: CodeInfo }> {
+  const res = await fetchImpl(`${url.replace(/\/+$/, "")}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify(body),
+  });
+  const data: any = await res.json().catch(() => ({}));
+  if (res.status === 401) throw new TrialCodeRefused("UNAUTHORIZED", "业务数据接口拒绝了体验码写密钥（401）。请向项目负责人确认后用 kol project set-trial-key 重新保存");
+  if (res.status === 503) throw new TrialCodeRefused("NOT_CONFIGURED", "项目后台还没有开通建体验码（503）");
+  if (!res.ok) throw new TrialCodeRefused(String(data.error ?? res.status), String(data.message ?? `业务数据接口出错（${res.status}）`));
+  return data;
+}
+
+/** Creates a trial code; asking again for the same followup returns the code made the first time. */
+export function createTrialCodeRemote(url: string, key: string, body: { code: string; maxUses: number; days: number; kolName: string; followupId: string; operator: string }, fetchImpl: typeof fetch = fetch) {
+  return writeTrial(url, key, "/trial-codes", body, fetchImpl);
+}
+
+/** Extends a trial code by `days` from the later of now and its current expiry. Not idempotent: never retried blindly. */
+export function extendTrialCodeRemote(url: string, key: string, code: string, body: { days: number; operator: string }, fetchImpl: typeof fetch = fetch) {
+  return writeTrial(url, key, `/trial-codes/${encodeURIComponent(code)}/extend`, body, fetchImpl);
+}
+
+/**
+ * `kol trial-check --code X`: whether a trial code may take this name. Trial and other platform codes share one
+ * namespace (case-insensitive); a partner code with the same name doesn't block it.
+ */
+export async function checkTrialName(ctx: Ctx, code: string, fetchImpl: typeof fetch = fetch) {
+  const key = listProjects().find((p) => p.name === ctx.cfg.project)?.dataApiKey;
+  if (!ctx.cfg.dataApi || !key) throw new Error("没有业务数据接口或接口密钥，查不了码名");
+  const info = await lookupCodes(ctx.cfg.dataApi, key, [code], fetchImpl);
+  const taken = info.get(`trial:${code.toLowerCase()}`) ?? info.get(`other:${code.toLowerCase()}`);
+  return taken
+    ? { 码名: code, 可用: false, 原因: `已经有这个码（${taken.kind === "trial" ? "体验码" : "平台券码"}，用了 ${taken.used ?? 0} 次）`, 现状: taken }
+    : { 码名: code, 可用: true };
+}
+
 /**
  * `kol codes`: refreshes 体验码已用 / 体验码上限 / 体验码到期 on open followups from the project's API, and lists
  * who used part of a trial, whose trial runs out soon, and how each 活动码 is doing.

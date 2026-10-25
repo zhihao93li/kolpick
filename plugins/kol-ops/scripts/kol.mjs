@@ -59691,7 +59691,8 @@ var TABLES = {
   mailboxes: "\u53D1\u4FE1\u90AE\u7BB1",
   templates: "\u6A21\u677F"
 };
-var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u5176\u4ED6"];
+var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u5176\u4ED6"];
+var TRIAL_ACTIONS = ["\u53D1\u7801", "\u5EF6\u671F"];
 var TEMPLATE_STATES = ["\u8349\u7A3F", "\u5F85\u5BA1\u6838", "\u5DF2\u6279\u51C6", "\u505C\u7528"];
 var SETTINGS_TABLES = {
   settings: [
@@ -59711,6 +59712,8 @@ var SETTINGS_TABLES = {
     { name: "\u4E0D\u50AC\u7684\u5BF9\u65B9\u8981\u6C42", type: "text" },
     { name: "\u4E0D\u50AC\u6E20\u9053", type: "text" },
     { name: "\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570", type: "number" },
+    { name: "\u4F53\u9A8C\u7801\u9ED8\u8BA4\u6B21\u6570", type: "number" },
+    { name: "\u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570", type: "number" },
     { name: "\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA", type: "text" },
     { name: "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3", type: "text" },
     { name: "\u8BF4\u660E", type: "text" }
@@ -59736,9 +59739,15 @@ var SETTINGS_TABLES = {
     { name: "\u5907\u6CE8", type: "text" }
   ]
 };
-var SYSTEM_FIELDS = {
+var EXTRA_FIELDS = {
   profiles: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }],
-  followups: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }]
+  followups: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }],
+  reviews: [
+    { name: "\u4F53\u9A8C\u7801\u52A8\u4F5C", type: "select", options: [...TRIAL_ACTIONS], multiple: false },
+    { name: "\u4F53\u9A8C\u7801", type: "text" },
+    { name: "\u4F53\u9A8C\u6B21\u6570", type: "number" },
+    { name: "\u4F53\u9A8C\u5929\u6570", type: "number" }
+  ]
 };
 var SETTING_DEFAULTS = {
   \u65F6\u533A: "+08:00",
@@ -59748,7 +59757,9 @@ var SETTING_DEFAULTS = {
   \u7B2C\u4E00\u6B21\u50AC\u4FE1\u5929\u6570: 5,
   \u7B2C\u4E8C\u6B21\u50AC\u4FE1\u5929\u6570: 7,
   \u7ED3\u6848\u5929\u6570: 7,
-  \u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570: 90
+  \u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570: 90,
+  \u4F53\u9A8C\u7801\u9ED8\u8BA4\u6B21\u6570: 3,
+  \u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570: 14
 };
 var REQUIRED_FIELDS = {
   profiles: [
@@ -59802,7 +59813,11 @@ var REQUIRED_FIELDS = {
     "\u5BA1\u6838\u9879",
     "\u8981\u4F60\u5B9A\u4EC0\u4E48",
     "\u6267\u884C\u65F6\u95F4",
-    "\u6267\u884C\u7ED3\u679C"
+    "\u6267\u884C\u7ED3\u679C",
+    "\u4F53\u9A8C\u7801\u52A8\u4F5C",
+    "\u4F53\u9A8C\u7801",
+    "\u4F53\u9A8C\u6B21\u6570",
+    "\u4F53\u9A8C\u5929\u6570"
   ],
   oplog: ["\u7C7B\u578B", "\u7ED3\u679C", "\u64CD\u4F5C", "\u8BF4\u660E", "\u6536\u4EF6\u4EBA\u660E\u7EC6", "\u90AE\u4EF6\u6B63\u6587", "\u53D1\u9001\u6570", "\u65F6\u95F4", "KOL", "\u6240\u5C5E\u8FD0\u884C"],
   runs: ["\u8FD0\u884C", "\u65B9\u5F0F", "\u7ED3\u679C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u675F\u65F6\u95F4", "\u5904\u7406\u6765\u4FE1", "\u53D1\u51FA\u90AE\u4EF6", "\u65B0\u589E\u5F85\u5BA1", "\u95EE\u9898\u4E0E\u5907\u6CE8"],
@@ -59859,6 +59874,7 @@ function configFrom(project, baseToken, s, mailboxRows) {
     },
     crossProjectCooldownDays: num(s["\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570"], SETTING_DEFAULTS.\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570),
     discovery: { country: text(s["\u627E\u4EBA\u56FD\u5BB6"]), language: text(s["\u627E\u4EBA\u8BED\u8A00"]) },
+    trial: { maxUses: num(s["\u4F53\u9A8C\u7801\u9ED8\u8BA4\u6B21\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u7801\u9ED8\u8BA4\u6B21\u6570), days: num(s["\u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570) },
     webhook: text(s["\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA"]),
     dataApi: text(s["\u4E1A\u52A1\u6570\u636E\u63A5\u53E3"])
   };
@@ -60160,8 +60176,8 @@ var Journal = class {
   get(key) {
     return this.entries.get(key);
   }
-  mark(key, state, messageId) {
-    const e = { key, state, messageId, at: (/* @__PURE__ */ new Date()).toISOString() };
+  mark(key, state, messageId, data) {
+    const e = { key, state, messageId, data, at: (/* @__PURE__ */ new Date()).toISOString() };
     this.entries.set(key, e);
     appendFileSync(this.file, JSON.stringify(e) + "\n");
   }
@@ -61149,10 +61165,10 @@ function removeProject(name) {
   if (r.default === name) r.default = Object.keys(r.projects)[0];
   save2(r);
 }
-function setDataApiKey(name, key) {
+function setDataApiKey(name, key, which = "dataApiKey") {
   const r = load();
   if (!r.projects[name]) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${name}\u300D\u7684\u9879\u76EE`);
-  r.projects[name].dataApiKey = key.trim();
+  r.projects[name][which] = key.trim();
   save2(r);
 }
 function resolveProject(name) {
@@ -61196,6 +61212,182 @@ async function contactedElsewhere(ctx) {
     }
   }
   return out;
+}
+
+// src/kolops/codes.ts
+var BATCH = 200;
+async function lookupCodes(url, key, codes, fetchImpl = fetch) {
+  const out = /* @__PURE__ */ new Map();
+  for (let i = 0; i < codes.length; i += BATCH) {
+    const res = await fetchImpl(`${url.replace(/\/+$/, "")}/codes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ codes: codes.slice(i, i + BATCH) })
+    });
+    if (res.status === 401) throw new Error("\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u62D2\u7EDD\u4E86\u5BC6\u94A5\uFF08401\uFF09\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u786E\u8BA4\u540E\u7528 kol project set-key \u91CD\u65B0\u4FDD\u5B58");
+    if (!res.ok) throw new Error(`\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u51FA\u9519\uFF08${res.status}\uFF09\uFF0C\u8FD9\u6B21\u5148\u4E0D\u540C\u6B65`);
+    const data = await res.json();
+    for (const c of data?.codes ?? []) if (c.found) out.set(`${c.kind}:${String(c.code).toLowerCase()}`, c);
+  }
+  return out;
+}
+var TrialCodeRefused = class extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+  }
+  code;
+};
+async function writeTrial(url, key, path, body, fetchImpl) {
+  const res = await fetchImpl(`${url.replace(/\/+$/, "")}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) throw new TrialCodeRefused("UNAUTHORIZED", "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u62D2\u7EDD\u4E86\u4F53\u9A8C\u7801\u5199\u5BC6\u94A5\uFF08401\uFF09\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u786E\u8BA4\u540E\u7528 kol project set-trial-key \u91CD\u65B0\u4FDD\u5B58");
+  if (res.status === 503) throw new TrialCodeRefused("NOT_CONFIGURED", "\u9879\u76EE\u540E\u53F0\u8FD8\u6CA1\u6709\u5F00\u901A\u5EFA\u4F53\u9A8C\u7801\uFF08503\uFF09");
+  if (!res.ok) throw new TrialCodeRefused(String(data.error ?? res.status), String(data.message ?? `\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u51FA\u9519\uFF08${res.status}\uFF09`));
+  return data;
+}
+function createTrialCodeRemote(url, key, body, fetchImpl = fetch) {
+  return writeTrial(url, key, "/trial-codes", body, fetchImpl);
+}
+function extendTrialCodeRemote(url, key, code, body, fetchImpl = fetch) {
+  return writeTrial(url, key, `/trial-codes/${encodeURIComponent(code)}/extend`, body, fetchImpl);
+}
+async function checkTrialName(ctx, code, fetchImpl = fetch) {
+  const key = listProjects().find((p) => p.name === ctx.cfg.project)?.dataApiKey;
+  if (!ctx.cfg.dataApi || !key) throw new Error("\u6CA1\u6709\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u6216\u63A5\u53E3\u5BC6\u94A5\uFF0C\u67E5\u4E0D\u4E86\u7801\u540D");
+  const info = await lookupCodes(ctx.cfg.dataApi, key, [code], fetchImpl);
+  const taken = info.get(`trial:${code.toLowerCase()}`) ?? info.get(`other:${code.toLowerCase()}`);
+  return taken ? { \u7801\u540D: code, \u53EF\u7528: false, \u539F\u56E0: `\u5DF2\u7ECF\u6709\u8FD9\u4E2A\u7801\uFF08${taken.kind === "trial" ? "\u4F53\u9A8C\u7801" : "\u5E73\u53F0\u5238\u7801"}\uFF0C\u7528\u4E86 ${taken.used ?? 0} \u6B21\uFF09`, \u73B0\u72B6: taken } : { \u7801\u540D: code, \u53EF\u7528: true };
+}
+async function syncCodes(ctx, o) {
+  const cfg = ctx.cfg;
+  if (!cfg.dataApi) throw new Error("\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\uFF0C\u8FD9\u4E2A\u9879\u76EE\u6CA1\u6CD5\u540C\u6B65\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801");
+  const key = listProjects().find((p) => p.name === cfg.project)?.dataApiKey;
+  if (!key) throw new Error(`\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u9879\u76EE\u300C${cfg.project}\u300D\u7684\u63A5\u53E3\u5BC6\u94A5\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u8981\uFF0C\u7136\u540E\u8FD0\u884C kol project set-key ${cfg.project} <\u5BC6\u94A5>`);
+  const s = await loadSnapshot(ctx.base, cfg);
+  const rows = [...s.followups.values()];
+  const open = rows.filter((f) => option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848" && (text(f["\u4F53\u9A8C\u7801"]) || text(f["\u6D3B\u52A8\u7801"])));
+  const codes = [...new Set(open.flatMap((f) => [text(f["\u4F53\u9A8C\u7801"]), text(f["\u6D3B\u52A8\u7801"])]).filter(Boolean))];
+  const info = await lookupCodes(cfg.dataApi, key, codes, o.fetchImpl);
+  const soon = Date.now() + 3 * 864e5;
+  const report = {
+    \u67E5\u4E86: codes.length,
+    \u66F4\u65B0: 0,
+    \u627E\u4E0D\u5230\u7684\u7801: [],
+    \u4F53\u9A8C\u7801\u7528\u4E86\u4E00\u90E8\u5206: [],
+    \u4F53\u9A8C\u7801\u4E09\u5929\u5185\u5230\u671F: [],
+    \u6D3B\u52A8\u7801: [],
+    \u8BD5\u8DD1: o.dryRun || void 0
+  };
+  const changes = {};
+  for (const f of open) {
+    const name = s.followups.has(f.record_id) ? displayName(s, s.followups.get(f.record_id)) : text(f["\u8D26\u53F7\u540D\u79F0"]);
+    const trial = text(f["\u4F53\u9A8C\u7801"]);
+    const t = trial ? info.get(`trial:${trial.toLowerCase()}`) : void 0;
+    if (trial && !t?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${trial}`);
+    if (t?.found) {
+      const change = {};
+      if (typeof t.used === "number" && t.used !== f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) change.\u4F53\u9A8C\u7801\u5DF2\u7528 = t.used;
+      if (t.maxUses != null && t.maxUses !== f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) change.\u4F53\u9A8C\u7801\u4E0A\u9650 = t.maxUses;
+      const expires = t.expiresAt ? Date.parse(t.expiresAt) : null;
+      if (expires != null && !Number.isNaN(expires) && cellTime(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) !== expires) {
+        change.\u4F53\u9A8C\u7801\u5230\u671F = stamp(expires, cfg.timezone);
+      }
+      if (Object.keys(change).length) changes[f.record_id] = change;
+      const used = t.used ?? 0;
+      if (t.maxUses && used > 0 && used < t.maxUses) report.\u4F53\u9A8C\u7801\u7528\u4E86\u4E00\u90E8\u5206.push({ name, \u4F53\u9A8C\u7801: trial, \u5DF2\u7528: used, \u4E0A\u9650: t.maxUses });
+      if (expires != null && expires >= Date.now() && expires <= soon && (!t.maxUses || used < t.maxUses)) {
+        report.\u4F53\u9A8C\u7801\u4E09\u5929\u5185\u5230\u671F.push({ name, \u4F53\u9A8C\u7801: trial, \u5230\u671F: stamp(expires, cfg.timezone).slice(0, 10), \u5DF2\u7528: used });
+      }
+    }
+    const partner = text(f["\u6D3B\u52A8\u7801"]);
+    const p = partner ? info.get(`partner:${partner.toLowerCase()}`) : void 0;
+    if (partner && !p?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${partner}`);
+    if (p?.found) {
+      report.\u6D3B\u52A8\u7801.push({ name, \u6D3B\u52A8\u7801: partner, \u4ED8\u6B3E\u8BA2\u5355: p.paidOrders ?? 0, \u9000\u6B3E\u8BA2\u5355: p.refundedOrders ?? 0, \u8BBF\u5BA2: p.visitors ?? 0 });
+    }
+  }
+  report.\u66F4\u65B0 = Object.keys(changes).length;
+  if (!o.dryRun && report.\u66F4\u65B0) {
+    await ctx.base.update(cfg.tables.followups, changes);
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u540C\u6B65\u4F53\u9A8C\u7801 ${report.\u66F4\u65B0} \u6761` });
+  }
+  return report;
+}
+
+// src/kolops/trial.ts
+var MAX_USES = 10;
+var MAX_DAYS = 60;
+var CODE_RULE = /^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$/;
+function suggestTrialCode(profile) {
+  const raw = text(profile?.["\u8D26\u53F7"]) || text(profile?.["\u8D26\u53F7\u540D\u79F0"]);
+  const name = raw.replace(/^@+/, "").replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^[_-]+/, "").slice(0, 64);
+  return CODE_RULE.test(name) ? name : "";
+}
+function trialPlan(cfg, review, followup, profile) {
+  const action = option(review["\u4F53\u9A8C\u7801\u52A8\u4F5C"]);
+  if (!action) return null;
+  if (!TRIAL_ACTIONS.includes(action)) return `\u4F53\u9A8C\u7801\u52A8\u4F5C\u300C${action}\u300D\u770B\u4E0D\u61C2\uFF0C\u53EA\u80FD\u662F ${TRIAL_ACTIONS.join(" \u6216 ")}`;
+  const code = text(review["\u4F53\u9A8C\u7801"]) || (action === "\u5EF6\u671F" ? text(followup?.["\u4F53\u9A8C\u7801"]) : suggestTrialCode(profile));
+  if (!CODE_RULE.test(code)) return code ? `\u4F53\u9A8C\u7801\u300C${code}\u300D\u53EA\u80FD\u7528\u5B57\u6BCD\u3001\u6570\u5B57\u3001_ \u548C -\uFF0C2 \u5230 64 \u4E2A\u5B57` : "\u6CA1\u5199\u4F53\u9A8C\u7801\uFF0C\u4E5F\u6CA1\u6CD5\u4ECE\u8D26\u53F7\u63A8\u51FA\u4E00\u4E2A";
+  const maxUses = Number(review["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses;
+  const days = Number(review["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days;
+  if (maxUses < 1 || maxUses > MAX_USES) return `\u4F53\u9A8C\u6B21\u6570 ${maxUses} \u8D85\u51FA 1\u2013${MAX_USES}`;
+  if (days < 1 || days > MAX_DAYS) return `\u4F53\u9A8C\u5929\u6570 ${days} \u8D85\u51FA 1\u2013${MAX_DAYS}`;
+  return { action, code, maxUses, days };
+}
+function dateWords(iso, tz) {
+  const d = stamp(Date.parse(iso), tz);
+  return `${Number(d.slice(5, 7))} \u6708 ${Number(d.slice(8, 10))} \u65E5`;
+}
+var PLACEHOLDERS = (code, uses, until) => ({
+  "{\u9AD4\u9A57\u78BC}": code,
+  "{\u4F53\u9A8C\u7801}": code,
+  "{\u6B21\u6578}": String(uses),
+  "{\u6B21\u6570}": String(uses),
+  "{\u5230\u671F\u65E5}": until
+});
+function missingPlaceholder(plan, draft) {
+  if (plan.action === "\u53D1\u7801" && !/\{(體驗碼|体验码)\}/.test(draft)) return "\u8349\u7A3F\u91CC\u6CA1\u6709 {\u9AD4\u9A57\u78BC}\uFF0C\u7801\u5EFA\u597D\u4E86\u4E5F\u586B\u4E0D\u8FDB\u4FE1\u91CC";
+  if (plan.action === "\u5EF6\u671F" && !draft.includes("{\u5230\u671F\u65E5}")) return "\u8349\u7A3F\u91CC\u6CA1\u6709 {\u5230\u671F\u65E5}\uFF0C\u5EF6\u671F\u540E\u7684\u65E5\u671F\u586B\u4E0D\u8FDB\u4FE1\u91CC";
+  return "";
+}
+function fillTrial(s, values) {
+  return Object.entries(values).reduce((acc, [k, v]) => acc.split(k).join(v), s);
+}
+function prepareTrial(ctx, plan, review, kolName, followupId) {
+  return async () => {
+    const key = `trial:${review.record_id}`;
+    let done = ctx.journal.get(key)?.data;
+    if (!done) {
+      const project = listProjects().find((p) => p.name === ctx.cfg.project);
+      if (!ctx.cfg.dataApi) throw new TrialCodeRefused("NO_API", "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\uFF0C\u6CA1\u6CD5\u5EFA\u4F53\u9A8C\u7801");
+      if (!project?.trialKey) throw new TrialCodeRefused("NO_KEY", `\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u9879\u76EE\u300C${ctx.cfg.project}\u300D\u7684\u4F53\u9A8C\u7801\u5199\u5BC6\u94A5\uFF0C\u8BF7\u8FD0\u884C kol project set-trial-key`);
+      const operator = ctx.me.name || ctx.me.id;
+      const r = plan.action === "\u53D1\u7801" ? await createTrialCodeRemote(ctx.cfg.dataApi, project.trialKey, { code: plan.code, maxUses: plan.maxUses, days: plan.days, kolName, followupId, operator }) : await extendTrialCodeRemote(ctx.cfg.dataApi, project.trialKey, plan.code, { days: plan.days, operator });
+      done = { code: r.code.code, maxUses: r.code.maxUses ?? plan.maxUses, used: r.code.used ?? 0, expiresAt: String(r.code.expiresAt) };
+      ctx.journal.mark(key, "prepared", void 0, done);
+    }
+    const until = dateWords(done.expiresAt, ctx.cfg.timezone);
+    const values = PLACEHOLDERS(done.code, done.maxUses, until);
+    const day2 = today(ctx.cfg);
+    const followup = plan.action === "\u53D1\u7801" ? {
+      \u9636\u6BB5: ["\u4F53\u9A8C\u4E2D"],
+      \u4F53\u9A8C\u7801: done.code,
+      \u4F53\u9A8C\u7801\u4E0A\u9650: done.maxUses,
+      \u4F53\u9A8C\u7801\u5DF2\u7528: done.used,
+      \u4F53\u9A8C\u7801\u5230\u671F: stamp(Date.parse(done.expiresAt), ctx.cfg.timezone),
+      \u4E0B\u4E00\u6B65: `${day2} \u53D1\u4E86\u4F53\u9A8C\u7801 ${done.code}\uFF08${done.maxUses} \u6B21\uFF0C${until}\u5230\u671F\uFF09`
+    } : { \u4F53\u9A8C\u7801\u5230\u671F: stamp(Date.parse(done.expiresAt), ctx.cfg.timezone), \u4E0B\u4E00\u6B65: `${day2} \u4F53\u9A8C\u7801 ${done.code} \u5EF6\u671F\u5230 ${until}` };
+    return { values, followup };
+  };
+}
+function trialNote(plan) {
+  return plan.action === "\u53D1\u7801" ? `\u53D1\u7801 ${plan.code}\uFF0C${plan.maxUses} \u6B21\uFF0C${plan.days} \u5929` : `\u4F53\u9A8C\u7801 ${plan.code} \u5EF6\u671F ${plan.days} \u5929`;
 }
 
 // src/kolops/send.ts
@@ -61271,8 +61463,23 @@ async function deliver(ctx, items, s, dryRun) {
       continue;
     }
     if (dryRun) {
-      report.sent.push({ name: o.name, recipient: o.recipient, mailbox: o.mailbox.address, kind: o.kind, messageId: "\uFF08\u8BD5\u8DD1\uFF0C\u6CA1\u6709\u53D1\u51FA\uFF09" });
+      const kind = o.prepareNote ? `${o.kind}\uFF08${o.prepareNote}\uFF09` : o.kind;
+      report.sent.push({ name: o.name, recipient: o.recipient, mailbox: o.mailbox.address, kind, messageId: "\uFF08\u8BD5\u8DD1\uFF0C\u6CA1\u6709\u53D1\u51FA\uFF09" });
       continue;
+    }
+    if (o.prepare) {
+      try {
+        const ready = await o.prepare();
+        o.subject = fillTrial(o.subject, ready.values);
+        o.body = fillTrial(o.body, ready.values);
+        o.after = { ...o.after, followup: { ...o.after?.followup, ...ready.followup } };
+      } catch (err) {
+        const why = `${o.prepareNote ?? "\u53D1\u4FE1\u524D\u7684\u51C6\u5907"}\u6CA1\u6709\u529E\u6210\uFF0C\u8FD9\u5C01\u4FE1\u6CA1\u53D1\uFF1A${err?.message ?? err}`;
+        report.failed.push({ key: o.key, name: o.name, reason: why });
+        await markFailed(ctx, o, why);
+        ctx.run.op({ type: "\u53D1\u51FA\u90AE\u4EF6", result: "\u5931\u8D25", action: `${o.kind}\uFF1A${o.name}`, detail: why, followup: o.followupId, recipients: o.recipient });
+        continue;
+      }
     }
     ctx.journal.mark(o.key, "sending");
     let sent;
@@ -61371,6 +61578,17 @@ async function sendApproved(ctx, opts) {
       continue;
     }
     const { subject, body } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
+    const plan = trialPlan(ctx.cfg, r, f, profileOf(s, f));
+    if (typeof plan === "string") {
+      skipped.push({ key: r.record_id, name, reason: plan });
+      continue;
+    }
+    const gap = plan ? missingPlaceholder(plan, `${subject}
+${body}`) : "";
+    if (gap) {
+      skipped.push({ key: r.record_id, name, reason: gap });
+      continue;
+    }
     items.push({
       key: `review:${r.record_id}`,
       followupId,
@@ -61381,7 +61599,8 @@ async function sendApproved(ctx, opts) {
       body,
       oncePerDay: false,
       kind: "\u56DE\u590D",
-      after: { review: r.record_id }
+      after: { review: r.record_id },
+      ...plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}
     });
   }
   const report = await deliver(ctx, items, s, opts.dryRun);
@@ -61535,7 +61754,7 @@ var BOUNCE_SENDER = /mailer-daemon|postmaster|mail-noreply.*bounce|delivery-?sta
 var AUTO_REPLY = /自動回覆|自动回复|自動回復|auto[- ]?reply|automatic reply|out of (the )?office|不在辦公室|不在办公室|休假中|已收到您的來信|已收到您的来信/i;
 var NOT_A_PERSON = /no-?reply|notifications?@|newsletter|mailer@|marketing@/i;
 var DEFAULT_DAYS = 3;
-var MAX_DAYS = 30;
+var MAX_DAYS2 = 30;
 var MAX_PER_MAILBOX = 400;
 async function syncInbox(ctx, opts) {
   const t = ctx.cfg.tables;
@@ -61637,7 +61856,7 @@ async function lastSync(ctx) {
   });
   const starts = runs.filter((r) => [RUN_TITLES.sync, RUN_TITLES.remind].some((title) => text(r["\u8FD0\u884C"]).startsWith(title))).map((r) => cellTime(r["\u5F00\u59CB\u65F6\u95F4"], ctx.cfg.timezone)).filter((ms) => ms != null && ms <= now);
   if (!starts.length) return now - DEFAULT_DAYS * 864e5;
-  return Math.max(Math.max(...starts) - 864e5, now - MAX_DAYS * 864e5);
+  return Math.max(Math.max(...starts) - 864e5, now - MAX_DAYS2 * 864e5);
 }
 function pickFollowup(s, ids) {
   return ids.find((id) => !["\u7ED3\u6848"].includes(option(s.followups.get(id)?.["\u9636\u6BB5"]))) ?? ids[0];
@@ -61798,7 +62017,7 @@ function purposeOf(fileName) {
   return "\u5176\u4ED6";
 }
 async function setupBase(base, o) {
-  const report = { dryRun: o.dryRun, \u5EFA\u8868: [], \u52A0\u5B57\u6BB5: [], \u5199\u5165\u9ED8\u8BA4\u8BBE\u7F6E: false, \u5BFC\u5165\u6A21\u677F: [], \u8BF4\u660E: "" };
+  const report = { dryRun: o.dryRun, \u5EFA\u8868: [], \u52A0\u5B57\u6BB5: [], \u52A0\u9009\u9879: [], \u5199\u5165\u9ED8\u8BA4\u8BBE\u7F6E: false, \u5BFC\u5165\u6A21\u677F: [], \u8BF4\u660E: "" };
   const fresh = /* @__PURE__ */ new Set();
   for (const [key, defs] of Object.entries(SETTINGS_TABLES)) {
     const table = TABLES[key];
@@ -61840,7 +62059,7 @@ async function setupBase(base, o) {
       }
     }
   }
-  for (const [key, defs] of Object.entries(SYSTEM_FIELDS)) {
+  for (const [key, defs] of Object.entries(EXTRA_FIELDS)) {
     const have = await base.fieldNames(TABLES[key]);
     if (have == null) continue;
     for (const f of defs.filter((d) => !have.includes(d.name))) {
@@ -61859,6 +62078,34 @@ async function setupBase(base, o) {
           "user"
         ]);
       }
+    }
+  }
+  const owned = [
+    ...Object.entries(SETTINGS_TABLES).flatMap(([k, defs]) => defs.map((f) => [TABLES[k], f])),
+    ...Object.entries(EXTRA_FIELDS).flatMap(([k, defs]) => defs.map((f) => [TABLES[k], f]))
+  ].filter(([, f]) => f.type === "select" && f.options);
+  for (const [table, f] of owned) {
+    if (fresh.has(table) || report.\u52A0\u5B57\u6BB5.includes(`${table}.${f.name}`)) continue;
+    const have = await base.fieldOptions(table, f.name);
+    const missing = have ? f.options.filter((x) => !have.includes(x)) : [];
+    if (!have || !missing.length) continue;
+    report.\u52A0\u9009\u9879.push(...missing.map((x) => `${table}.${f.name}\uFF1A${x}`));
+    if (!o.dryRun) {
+      await base.lark.json([
+        "base",
+        "+field-update",
+        "--base-token",
+        base.token,
+        "--table-id",
+        table,
+        "--field-id",
+        f.name,
+        "--json",
+        JSON.stringify(fieldJson({ ...f, options: [...have, ...missing] })),
+        "--as",
+        "user",
+        "--yes"
+      ]);
     }
   }
   const settingsRows = fresh.has(TABLES.settings) ? [] : await base.records(TABLES.settings);
@@ -62012,79 +62259,6 @@ async function postMetrics(ctx, o) {
   return report;
 }
 
-// src/kolops/codes.ts
-var BATCH = 200;
-async function lookupCodes(url, key, codes, fetchImpl = fetch) {
-  const out = /* @__PURE__ */ new Map();
-  for (let i = 0; i < codes.length; i += BATCH) {
-    const res = await fetchImpl(`${url.replace(/\/+$/, "")}/codes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ codes: codes.slice(i, i + BATCH) })
-    });
-    if (res.status === 401) throw new Error("\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u62D2\u7EDD\u4E86\u5BC6\u94A5\uFF08401\uFF09\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u786E\u8BA4\u540E\u7528 kol project set-key \u91CD\u65B0\u4FDD\u5B58");
-    if (!res.ok) throw new Error(`\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u51FA\u9519\uFF08${res.status}\uFF09\uFF0C\u8FD9\u6B21\u5148\u4E0D\u540C\u6B65`);
-    const data = await res.json();
-    for (const c of data?.codes ?? []) if (c.found) out.set(`${c.kind}:${String(c.code).toLowerCase()}`, c);
-  }
-  return out;
-}
-async function syncCodes(ctx, o) {
-  const cfg = ctx.cfg;
-  if (!cfg.dataApi) throw new Error("\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\uFF0C\u8FD9\u4E2A\u9879\u76EE\u6CA1\u6CD5\u540C\u6B65\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801");
-  const key = listProjects().find((p) => p.name === cfg.project)?.dataApiKey;
-  if (!key) throw new Error(`\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u9879\u76EE\u300C${cfg.project}\u300D\u7684\u63A5\u53E3\u5BC6\u94A5\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u8981\uFF0C\u7136\u540E\u8FD0\u884C kol project set-key ${cfg.project} <\u5BC6\u94A5>`);
-  const s = await loadSnapshot(ctx.base, cfg);
-  const rows = [...s.followups.values()];
-  const open = rows.filter((f) => option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848" && (text(f["\u4F53\u9A8C\u7801"]) || text(f["\u6D3B\u52A8\u7801"])));
-  const codes = [...new Set(open.flatMap((f) => [text(f["\u4F53\u9A8C\u7801"]), text(f["\u6D3B\u52A8\u7801"])]).filter(Boolean))];
-  const info = await lookupCodes(cfg.dataApi, key, codes, o.fetchImpl);
-  const soon = Date.now() + 3 * 864e5;
-  const report = {
-    \u67E5\u4E86: codes.length,
-    \u66F4\u65B0: 0,
-    \u627E\u4E0D\u5230\u7684\u7801: [],
-    \u4F53\u9A8C\u7801\u7528\u4E86\u4E00\u90E8\u5206: [],
-    \u4F53\u9A8C\u7801\u4E09\u5929\u5185\u5230\u671F: [],
-    \u6D3B\u52A8\u7801: [],
-    \u8BD5\u8DD1: o.dryRun || void 0
-  };
-  const changes = {};
-  for (const f of open) {
-    const name = s.followups.has(f.record_id) ? displayName(s, s.followups.get(f.record_id)) : text(f["\u8D26\u53F7\u540D\u79F0"]);
-    const trial = text(f["\u4F53\u9A8C\u7801"]);
-    const t = trial ? info.get(`trial:${trial.toLowerCase()}`) : void 0;
-    if (trial && !t?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${trial}`);
-    if (t?.found) {
-      const change = {};
-      if (typeof t.used === "number" && t.used !== f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) change.\u4F53\u9A8C\u7801\u5DF2\u7528 = t.used;
-      if (t.maxUses != null && t.maxUses !== f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) change.\u4F53\u9A8C\u7801\u4E0A\u9650 = t.maxUses;
-      const expires = t.expiresAt ? Date.parse(t.expiresAt) : null;
-      if (expires != null && !Number.isNaN(expires) && cellTime(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) !== expires) {
-        change.\u4F53\u9A8C\u7801\u5230\u671F = stamp(expires, cfg.timezone);
-      }
-      if (Object.keys(change).length) changes[f.record_id] = change;
-      const used = t.used ?? 0;
-      if (t.maxUses && used > 0 && used < t.maxUses) report.\u4F53\u9A8C\u7801\u7528\u4E86\u4E00\u90E8\u5206.push({ name, \u4F53\u9A8C\u7801: trial, \u5DF2\u7528: used, \u4E0A\u9650: t.maxUses });
-      if (expires != null && expires >= Date.now() && expires <= soon && (!t.maxUses || used < t.maxUses)) {
-        report.\u4F53\u9A8C\u7801\u4E09\u5929\u5185\u5230\u671F.push({ name, \u4F53\u9A8C\u7801: trial, \u5230\u671F: stamp(expires, cfg.timezone).slice(0, 10), \u5DF2\u7528: used });
-      }
-    }
-    const partner = text(f["\u6D3B\u52A8\u7801"]);
-    const p = partner ? info.get(`partner:${partner.toLowerCase()}`) : void 0;
-    if (partner && !p?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${partner}`);
-    if (p?.found) {
-      report.\u6D3B\u52A8\u7801.push({ name, \u6D3B\u52A8\u7801: partner, \u4ED8\u6B3E\u8BA2\u5355: p.paidOrders ?? 0, \u9000\u6B3E\u8BA2\u5355: p.refundedOrders ?? 0, \u8BBF\u5BA2: p.visitors ?? 0 });
-    }
-  }
-  report.\u66F4\u65B0 = Object.keys(changes).length;
-  if (!o.dryRun && report.\u66F4\u65B0) {
-    await ctx.base.update(cfg.tables.followups, changes);
-    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u540C\u6B65\u4F53\u9A8C\u7801 ${report.\u66F4\u65B0} \u6761` });
-  }
-  return report;
-}
-
 // src/kolops/notify.ts
 import { readFileSync as readFileSync7 } from "node:fs";
 var MAX_CHARS = 4e3;
@@ -62179,11 +62353,12 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   metrics [--budget 2]          \u53D1\u5E03\u540E\u7B2C 1/3/7/30 \u5929\uFF0C\u6293 Instagram\u3001YouTube\u3001TikTok \u5E16\u5B50\u7684\u64AD\u653E\u548C\u4E92\u52A8\u6570\u586B\u8FDB\u300C\u53D1\u5E03\u5185\u5BB9\u300D\uFF08\u82B1 Apify \u7684\u94B1\uFF09
   notify  --file \u6587\u672C\u6587\u4EF6        \u628A\u4E00\u6BB5\u6587\u5B57\u53D1\u5230\u9879\u76EE\u7684\u98DE\u4E66\u7FA4\uFF08\u300C\u8BBE\u7F6E\u300D\u91CC\u586B\u4E86\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\u624D\u53D1\uFF09
   codes                         \u4ECE\u9879\u76EE\u7684\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u540C\u6B65\u4F53\u9A8C\u7801\u5DF2\u7528\u6B21\u6570\u3001\u4E0A\u9650\u548C\u5230\u671F\u65E5\uFF0C\u5217\u51FA\u7528\u4E86\u4E00\u90E8\u5206\u3001\u5FEB\u5230\u671F\u7684\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801\u6982\u51B5
+  trial-check --code \u7801\u540D        \u770B\u8FD9\u4E2A\u7801\u540D\u80FD\u4E0D\u80FD\u7528\u6765\u5EFA\u4F53\u9A8C\u7801\uFF08\u53EA\u8BFB\uFF09
   whoami                        \u770B\u5F53\u524D\u767B\u5F55\u7684\u98DE\u4E66\u8D26\u53F7
   check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\u3001\u9879\u76EE\u7684\u98DE\u4E66\u8868\u7F3A\u4E0D\u7F3A\u8868\u548C\u5B57\u6BB5\uFF0C\u4EE5\u53CA\u600E\u4E48\u8865
 
   project add \u9879\u76EE\u540D \u98DE\u4E66\u8868\u94FE\u63A5  \u767B\u8BB0\u4E00\u4E2A\u9879\u76EE\uFF08\u5B83\u7684 KOL \u603B\u8868\uFF09\uFF1B\u7B2C\u4E00\u4E2A\u767B\u8BB0\u7684\u662F\u9ED8\u8BA4\u9879\u76EE
-  project list | default \u9879\u76EE\u540D | remove \u9879\u76EE\u540D | set-key \u9879\u76EE\u540D \u5BC6\u94A5
+  project list | default \u9879\u76EE\u540D | remove \u9879\u76EE\u540D | set-key \u9879\u76EE\u540D \u5BC6\u94A5 | set-trial-key \u9879\u76EE\u540D \u5199\u5BC6\u94A5
   setup-base [--import-templates \u6587\u4EF6\u5939] [--template-language \u8BED\u8A00]
                                 \u7ED9\u9879\u76EE\u7684\u98DE\u4E66\u8868\u8865\u4E0A\u300C\u8BBE\u7F6E\u300D\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u300C\u6A21\u677F\u300D\u8868\u548C\u7F3A\u7684\u5B57\u6BB5\uFF0C\u6CA1\u6709\u8BBE\u7F6E\u5C31\u5199\u4E00\u884C\u9ED8\u8BA4\u503C\uFF1B
                                 \u53EF\u628A\u6587\u4EF6\u5939\u91CC\u7684 .txt \u6A21\u677F\u5BFC\u5165\u6210\u300C\u5F85\u5BA1\u6838\u300D\u3002\u53EA\u52A0\u4E0D\u6539\uFF0C\u5148\u7528 --dry-run \u770B\u4F1A\u505A\u4EC0\u4E48
@@ -62243,6 +62418,14 @@ var COMMANDS = {
   },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
   codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
+  "trial-check": {
+    title: "",
+    writes: false,
+    run: (ctx, v) => {
+      need(v, "code");
+      return checkTrialName(ctx, String(v.code));
+    }
+  },
   notify: {
     title: "",
     writes: false,
@@ -62266,12 +62449,13 @@ async function projectCommand(args) {
   if (sub === "default" && a) return setDefaultProject(a), { \u9ED8\u8BA4\u9879\u76EE: a };
   if (sub === "remove" && a) return removeProject(a), { \u5DF2\u5220\u9664: a };
   if (sub === "set-key" && a && b) return setDataApiKey(a, b), { \u5DF2\u4FDD\u5B58: `${a} \u7684\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u5BC6\u94A5\uFF08\u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09` };
+  if (sub === "set-trial-key" && a && b) return setDataApiKey(a, b, "trialKey"), { \u5DF2\u4FDD\u5B58: `${a} \u7684\u4F53\u9A8C\u7801\u5199\u5BC6\u94A5\uFF08\u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09` };
   if (!sub || sub === "list") {
     const all = listProjects();
     const def = all.length ? resolveProject().name : "";
-    return all.map((p) => ({ \u9879\u76EE: p.name, \u9ED8\u8BA4: p.name === def, \u98DE\u4E66\u8868: p.baseToken, \u6709\u63A5\u53E3\u5BC6\u94A5: !!p.dataApiKey }));
+    return all.map((p) => ({ \u9879\u76EE: p.name, \u9ED8\u8BA4: p.name === def, \u98DE\u4E66\u8868: p.baseToken, \u6709\u63A5\u53E3\u5BC6\u94A5: !!p.dataApiKey, \u6709\u4F53\u9A8C\u7801\u5199\u5BC6\u94A5: !!p.trialKey }));
   }
-  throw new Error("\u7528\u6CD5\uFF1Akol project add|list|default|remove|set-key \u2026");
+  throw new Error("\u7528\u6CD5\uFF1Akol project add|list|default|remove|set-key|set-trial-key \u2026");
 }
 async function check(project) {
   const lark = new LarkCli(project?.baseToken ?? "");
@@ -62311,7 +62495,8 @@ async function main() {
       "template-language": str,
       apply: str,
       limit: str,
-      file: str
+      file: str,
+      code: str
     }
   });
   const name = positionals[0];

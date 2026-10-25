@@ -59,6 +59,23 @@
 | `used` | 已经用掉的次数，包括已付款和占用中的订单，以项目自己的口径为准 |
 | `paidOrders`、`refundedOrders`、`visitors` | 只有 `partner` 有：累计付款订单、退款订单、访客数（按访客去重） |
 
+## POST /trial-codes、POST /trial-codes/{码}/extend
+
+建体验码和延期，给「发体验码」「延期」这两种审核项用。可选：不开的话，这两步在项目后台手动做。
+
+- 用另一把**写密钥**：插件里 `kol project set-trial-key <项目名> <写密钥>`，请求头同样是 `Authorization: Bearer <写密钥>`。只读密钥必须建不了码。
+- 建码请求：
+
+```json
+{ "code": "deer_jay", "maxUses": 3, "days": 14, "kolName": "小鹿與阿哲", "followupId": "recXXXX", "operator": "钟嫣婷" }
+```
+
+  建出的码是 KOL 自己用的体验码（`kind: trial`），到期 = 现在 + `days`。同一个 `followupId` 用同一个码名再请求，要原样返回第一次建的码，不能建第二个（插件重试时依赖这一点）；码名被别的码占用返回 409。
+- 延期请求：`{ "days": 7, "operator": "钟嫣婷" }`，从「现在」和「原到期」中较晚的一个往后加。延期不要求幂等，插件自己保证同一条审核只延一次。
+- 两个接口都回 `{"code": {…}}`，形状和 `POST /codes` 里一条体验码相同（建码另有 `"created": true/false`）。
+- 项目自己定上限并拒绝超出的请求，插件按 TAFU 的上限先检查：次数 1–10，天数 1–60。
+- 错误时回 `{ "error": "代码", "message": "给人看的原因" }`，插件把 `message` 原样写进审核队列的执行结果。常见：`CODE_TAKEN`（409）、`DAILY_LIMIT`（429）、`NOT_A_TRIAL_CODE`（404）、`CODE_INACTIVE` / `NO_EXPIRY`（409）。
+
 ## GET /settlements?month=YYYY-MM
 
 某个月每个活动码的结算数字，用来填「月度结算」。插件暂时还没有用到这个接口，项目可以先不实现。
@@ -86,7 +103,7 @@
 
 ## 已实现的项目
 
-- TAFU：`POST /codes` 已实现（tafu-nodejs `apps/api/src/routes/kol-data.ts`，密钥是环境变量 `KOL_DATA_API_KEY`）；`GET /settlements` 还没做。
+- TAFU：`POST /codes` 已实现（tafu-nodejs `apps/api/src/routes/kol-data.ts`，密钥是环境变量 `KOL_DATA_API_KEY`）；建码和延期在 `apps/api/src/lib/kol/trial-codes.ts`，写密钥是 `KOL_TRIAL_CODE_KEY`，每个码最多 10 次、最长 60 天，24 小时内最多改 30 个码；`GET /settlements` 还没做。
 
 ## 错误
 

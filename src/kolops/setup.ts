@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { option, text, type Base } from "./base.js";
-import { REQUIRED_FIELDS, SETTING_DEFAULTS, SETTINGS_TABLES, SYSTEM_FIELDS, TABLES, type FieldDef, type TableKey } from "./schema.js";
+import { EXTRA_FIELDS, REQUIRED_FIELDS, SETTING_DEFAULTS, SETTINGS_TABLES, TABLES, type FieldDef, type TableKey } from "./schema.js";
 import { parseTemplateFile } from "./templates.js";
 
 function fieldJson(f: FieldDef): Record<string, unknown> {
@@ -25,6 +25,7 @@ export interface SetupReport {
   dryRun: boolean;
   建表: string[];
   加字段: string[];
+  加选项: string[];
   写入默认设置: boolean;
   导入模板: string[];
   说明: string;
@@ -36,7 +37,7 @@ export interface SetupReport {
  * deletes anything that is already there.
  */
 export async function setupBase(base: Base, o: { project: string; dryRun: boolean; importDir?: string; templateLanguage?: string }): Promise<SetupReport> {
-  const report: SetupReport = { dryRun: o.dryRun, 建表: [], 加字段: [], 写入默认设置: false, 导入模板: [], 说明: "" };
+  const report: SetupReport = { dryRun: o.dryRun, 建表: [], 加字段: [], 加选项: [], 写入默认设置: false, 导入模板: [], 说明: "" };
   const fresh = new Set<string>();
 
   for (const [key, defs] of Object.entries(SETTINGS_TABLES) as [keyof typeof SETTINGS_TABLES, FieldDef[]][]) {
@@ -60,7 +61,7 @@ export async function setupBase(base: Base, o: { project: string; dryRun: boolea
     }
   }
 
-  for (const [key, defs] of Object.entries(SYSTEM_FIELDS) as [TableKey, FieldDef[]][]) {
+  for (const [key, defs] of Object.entries(EXTRA_FIELDS) as [TableKey, FieldDef[]][]) {
     const have = await base.fieldNames(TABLES[key]);
     if (have == null) continue; // a base without this table is reported by check, not created here
     for (const f of defs.filter((d) => !have.includes(d.name))) {
@@ -69,6 +70,24 @@ export async function setupBase(base: Base, o: { project: string; dryRun: boolea
         await base.lark.json(["base", "+field-create", "--base-token", base.token, "--table-id", TABLES[key],
           "--json", JSON.stringify(fieldJson(f)), "--as", "user"]);
       }
+    }
+  }
+
+  // Select fields the plugin owns gain any option a newer plugin needs (模板.用途 got 发体验码 and 体验码延期).
+  const owned: [string, FieldDef][] = [
+    ...Object.entries(SETTINGS_TABLES).flatMap(([k, defs]) => defs.map((f) => [TABLES[k as TableKey], f] as [string, FieldDef])),
+    ...Object.entries(EXTRA_FIELDS).flatMap(([k, defs]) => defs!.map((f) => [TABLES[k as TableKey], f] as [string, FieldDef])),
+  ].filter(([, f]) => f.type === "select" && f.options);
+  for (const [table, f] of owned) {
+    if (fresh.has(table) || report.加字段.includes(`${table}.${f.name}`)) continue;
+    const have = await base.fieldOptions(table, f.name);
+    const missing = have ? f.options!.filter((x) => !have.includes(x)) : [];
+    if (!have || !missing.length) continue;
+    report.加选项.push(...missing.map((x) => `${table}.${f.name}：${x}`));
+    if (!o.dryRun) {
+      // Feishu replaces a select's whole option list, so the existing options go first, unchanged.
+      await base.lark.json(["base", "+field-update", "--base-token", base.token, "--table-id", table, "--field-id", f.name,
+        "--json", JSON.stringify(fieldJson({ ...f, options: [...have, ...missing] })), "--as", "user", "--yes"]);
     }
   }
 

@@ -1,7 +1,8 @@
 import { emailsIn, linkIds, option, text } from "./base.js";
 import { mailboxFor, sendingPaused, type Mailbox } from "./config.js";
 import type { Ctx } from "./ctx.js";
-import { blockedReason, displayName, followupEmails, loadSnapshot, type Snapshot } from "./data.js";
+import { blockedReason, displayName, followupEmails, loadSnapshot, profileOf, type Snapshot } from "./data.js";
+import { fillTrial, missingPlaceholder, prepareTrial, trialNote, trialPlan } from "./trial.js";
 import { LarkError, type Row } from "./lark.js";
 import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
 import { bounceStats, bouncePaused, otherSendingRun, stamp, todaysSends, type SendCounts } from "./ops.js";
@@ -32,6 +33,13 @@ export interface Outgoing {
   kind: "回复" | "邀约" | "催信";
   /** Base updates to make once the mail is out. */
   after?: { review?: string; followup?: Record<string, unknown>; createFollowup?: Record<string, unknown> };
+  /**
+   * A step that must succeed right before this mail goes out (creating or extending a trial code). It returns the
+   * placeholder values to fill into the subject and body, and more followup changes; if it throws, the mail is not sent.
+   */
+  prepare?: () => Promise<{ values: Record<string, string>; followup: Record<string, unknown> }>;
+  /** What `prepare` will do, for the dry run. */
+  prepareNote?: string;
 }
 
 export interface Skipped {
@@ -124,8 +132,23 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
       continue;
     }
     if (dryRun) {
-      report.sent.push({ name: o.name, recipient: o.recipient, mailbox: o.mailbox.address, kind: o.kind, messageId: "（试跑，没有发出）" });
+      const kind = o.prepareNote ? `${o.kind}（${o.prepareNote}）` : o.kind;
+      report.sent.push({ name: o.name, recipient: o.recipient, mailbox: o.mailbox.address, kind, messageId: "（试跑，没有发出）" });
       continue;
+    }
+    if (o.prepare) {
+      try {
+        const ready = await o.prepare();
+        o.subject = fillTrial(o.subject, ready.values);
+        o.body = fillTrial(o.body, ready.values);
+        o.after = { ...o.after, followup: { ...o.after?.followup, ...ready.followup } };
+      } catch (err: any) {
+        const why = `${o.prepareNote ?? "发信前的准备"}没有办成，这封信没发：${err?.message ?? err}`;
+        report.failed.push({ key: o.key, name: o.name, reason: why });
+        await markFailed(ctx, o, why);
+        ctx.run.op({ type: "发出邮件", result: "失败", action: `${o.kind}：${o.name}`, detail: why, followup: o.followupId, recipients: o.recipient });
+        continue;
+      }
     }
 
     ctx.journal.mark(o.key, "sending");
@@ -237,9 +260,20 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
       continue;
     }
     const { subject, body } = splitDraft(text(r["邮件草稿"]));
+    const plan = trialPlan(ctx.cfg, r, f, profileOf(s, f));
+    if (typeof plan === "string") {
+      skipped.push({ key: r.record_id, name, reason: plan });
+      continue;
+    }
+    const gap = plan ? missingPlaceholder(plan, `${subject}\n${body}`) : "";
+    if (gap) {
+      skipped.push({ key: r.record_id, name, reason: gap });
+      continue;
+    }
     items.push({
       key: `review:${r.record_id}`, followupId, name, recipient: emailsIn(r["收件人"])[0] ?? "",
       mailbox, subject, body, oncePerDay: false, kind: "回复", after: { review: r.record_id },
+      ...(plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}),
     });
   }
   const report = await deliver(ctx, items, s, opts.dryRun);
