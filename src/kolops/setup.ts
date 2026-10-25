@@ -21,6 +21,7 @@ export function purposeOf(fileName: string): string {
   if (/^体验[-\s]?到期/.test(fileName)) return "体验到期";
   if (fileName.startsWith("体验码延期")) return "体验码延期";
   if (fileName.startsWith("发体验码")) return "发体验码";
+  if (fileName.startsWith("发活动码")) return "发活动码";
   if (fileName.startsWith("体验")) return "体验跟进";
   return "其他";
 }

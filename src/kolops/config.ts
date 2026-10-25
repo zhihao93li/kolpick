@@ -37,6 +37,8 @@ export interface Config {
   trial: { maxUses: number; days: number };
   /** After how many days 体验跟进 nudges an unused or stalled trial, and how close to expiry it asks about extending. */
   trialNudge: { unusedDays: number; stalledDays: number; expiringDays: number };
+  /** Partner campaigns: the default fan discount, and profile 市场 → sales market pairs from 活动码市场. */
+  partner: { percentOff: number; markets: [string, string][] };
   webhook: string;
   dataApi: string;
 }
@@ -98,6 +100,10 @@ export function configFrom(project: string, baseToken: string, s: Row, mailboxRo
       unusedDays: num(s["体验未用提醒天数"], SETTING_DEFAULTS.体验未用提醒天数),
       stalledDays: num(s["体验停滞提醒天数"], SETTING_DEFAULTS.体验停滞提醒天数),
       expiringDays: num(s["体验到期提醒天数"], SETTING_DEFAULTS.体验到期提醒天数),
+    },
+    partner: {
+      percentOff: num(s["活动码粉丝折扣"], SETTING_DEFAULTS.活动码粉丝折扣),
+      markets: listOf(s["活动码市场"]).map((pair) => pair.split(/[=＝]/).map((x) => x.trim()) as [string, string]).filter(([a, b]) => a && b),
     },
     webhook: text(s["飞书群机器人"]),
     dataApi: text(s["业务数据接口"]),

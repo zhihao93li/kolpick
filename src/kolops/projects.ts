@@ -14,6 +14,7 @@ export interface Project {
   dataApiKey?: string;
   /** The separate key that may create and extend trial codes through that API. */
   trialKey?: string;
+  partnerKey?: string;
 }
 
 interface Registry {
@@ -85,7 +86,7 @@ export function removeProject(name: string): void {
   save(r);
 }
 
-export function setDataApiKey(name: string, key: string, which: "dataApiKey" | "trialKey" = "dataApiKey"): void {
+export function setDataApiKey(name: string, key: string, which: "dataApiKey" | "trialKey" | "partnerKey" = "dataApiKey"): void {
   const r = load();
   if (!r.projects[name]) throw new Error(`没有登记叫「${name}」的项目`);
   r.projects[name][which] = key.trim();

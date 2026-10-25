@@ -76,6 +76,30 @@
 - 项目自己定上限并拒绝超出的请求，插件按 TAFU 的上限先检查：次数 1–10，天数 1–60。
 - 错误时回 `{ "error": "代码", "message": "给人看的原因" }`，插件把 `message` 原样写进审核队列的执行结果。常见：`CODE_TAKEN`（409）、`DAILY_LIMIT`（429）、`NOT_A_TRIAL_CODE`（404）、`CODE_INACTIVE` / `NO_EXPIRY`（409）。
 
+## POST /partner-codes
+
+开合作活动码（KOL 的专属连结和粉丝优惠），给审核队列里批准过的「开活动码」用。可选：不开的话在项目后台手动建。
+
+- 用第三把**写密钥**：插件里 `kol project set-partner-key <项目名> <写密钥>`。只读密钥和体验码写密钥都必须开不了活动码。
+- 请求：
+
+```json
+{ "code": "deer_jay", "partnerName": "小鹿與阿哲", "contact": "deer@example.com", "market": "TW", "percentOff": 15,
+  "followupId": "recXXXX", "operator": "钟嫣婷" }
+```
+
+  - `partnerName` 是合作页顶部显示的名称，`contact` 写进合作方的联系方式。
+  - `market` 只能是项目支持的一个市场（TAFU：`CN` / `TW` / `GLOBAL`）。
+  - `percentOff` 是粉丝折扣，TAFU 允许 10–20，插件默认 15。分润固定用项目的标准阶梯（TAFU：`tiered_paid_v1`，30% / 35% / 40%），这个接口不能改。
+  - 从现在起生效，不设结束日期，不限次数。
+- 同一个 `followupId` 用同一个码名再请求，原样返回第一次开的活动（`"created": false`），不能开第二个；码名被别的活动占用返回 409 `CODE_TAKEN`。
+- 回 `{ "created": true, "code": {…} }`。`code` 和 `POST /codes` 里一条活动码的形状相同，另加：
+  - `refLink`：KOL 分享用的专属连结（完整网址）；
+  - `ledgerLink`：KOL 看自己业绩的只读账本（完整网址）。
+
+  插件把这两个和码名填进信里的 `{活動碼}`、`{專屬連結}`、`{帳本連結}`，不自己拼网址。
+- 错误同上：`{ "error": "代码", "message": "给人看的原因" }`。常见：`CODE_TAKEN`（409）、`INVALID_MARKET` / `INVALID_DISCOUNT`（400）、`DAILY_LIMIT`（429）。
+
 ## GET /settlements?month=YYYY-MM
 
 某个月每个活动码的结算数字，用来填「月度结算」。插件暂时还没有用到这个接口，项目可以先不实现。
@@ -103,7 +127,7 @@
 
 ## 已实现的项目
 
-- TAFU：`POST /codes` 已实现（tafu-nodejs `apps/api/src/routes/kol-data.ts`，密钥是环境变量 `KOL_DATA_API_KEY`）；建码和延期在 `apps/api/src/lib/kol/trial-codes.ts`，写密钥是 `KOL_TRIAL_CODE_KEY`，每个码最多 10 次、最长 60 天，24 小时内最多改 30 个码；`GET /settlements` 还没做。
+- TAFU：`POST /codes` 已实现（tafu-nodejs `apps/api/src/routes/kol-data.ts`，密钥是环境变量 `KOL_DATA_API_KEY`）；建码和延期在 `apps/api/src/lib/kol/trial-codes.ts`，写密钥是 `KOL_TRIAL_CODE_KEY`，每个码最多 10 次、最长 60 天，24 小时内最多改 30 个码；`POST /partner-codes` 正在做（写密钥 `KOL_PARTNER_CODE_KEY`）；`GET /settlements` 还没做。
 
 ## 错误
 

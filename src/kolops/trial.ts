@@ -5,6 +5,7 @@ import type { Ctx } from "./ctx.js";
 import type { Row } from "./lark.js";
 import { stamp, today } from "./ops.js";
 import { listProjects } from "./projects.js";
+import { partnerPlan, type PartnerPlan } from "./partner.js";
 import { TRIAL_ACTIONS } from "./schema.js";
 
 /** The project API's own limits (tafu-nodejs lib/kol/trial-codes.ts); checked here too so a bad item fails before anything is sent. */
@@ -13,7 +14,7 @@ const MAX_DAYS = 60;
 const CODE_RULE = /^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$/;
 
 export interface TrialPlan {
-  action: (typeof TRIAL_ACTIONS)[number];
+  action: "发码" | "延期";
   code: string;
   maxUses: number;
   days: number;
@@ -30,10 +31,14 @@ export function suggestTrialCode(profile: Row | undefined): string {
  * What a 审核队列 item asks for: null when it has no 体验码动作, a reason string when what it asks can't be done.
  * 发码 defaults the name to the KOL's account; 延期 defaults to the followup's current 体验码.
  */
-export function trialPlan(cfg: Config, review: Row, followup: Row | undefined, profile: Row | undefined): TrialPlan | string | null {
-  const action = option(review["体验码动作"]) as TrialPlan["action"];
+export function trialPlan(cfg: Config, review: Row, followup: Row | undefined, profile: Row | undefined): TrialPlan | PartnerPlan | string | null {
+  const action = option(review["体验码动作"]) as (typeof TRIAL_ACTIONS)[number];
   if (!action) return null;
-  if (!TRIAL_ACTIONS.includes(action)) return `体验码动作「${action}」看不懂，只能是 ${TRIAL_ACTIONS.join(" 或 ")}`;
+  if (!TRIAL_ACTIONS.includes(action)) return `体验码动作「${action}」看不懂，只能是 ${TRIAL_ACTIONS.join("、")}`;
+  if (action === "开活动码") {
+    const name = text(followup?.["账号名称"]) || text(profile?.["账号名称"]) || text(profile?.["账号"]);
+    return partnerPlan(cfg, review, followup, profile, suggestTrialCode(profile), name);
+  }
   const code = text(review["体验码"]) || (action === "延期" ? text(followup?.["体验码"]) : suggestTrialCode(profile));
   if (!CODE_RULE.test(code)) return code ? `体验码「${code}」只能用字母、数字、_ 和 -，2 到 64 个字` : "没写体验码，也没法从账号推出一个";
   const maxUses = Number(review["体验次数"]) || cfg.trial.maxUses;
@@ -60,7 +65,8 @@ const PLACEHOLDERS = (code: string, uses: number, until: string): Record<string,
 });
 
 /** The draft must name what it promises: a new code needs {體驗碼}, an extension needs {到期日}. */
-export function missingPlaceholder(plan: TrialPlan, draft: string): string {
+export function missingPlaceholder(plan: TrialPlan | PartnerPlan, draft: string): string {
+  if (plan.action === "开活动码") return /\{(專屬連結|专属连结)\}/.test(draft) ? "" : "草稿里没有 {專屬連結}，活动开好了连结也填不进信里";
   if (plan.action === "发码" && !/\{(體驗碼|体验码)\}/.test(draft)) return "草稿里没有 {體驗碼}，码建好了也填不进信里";
   if (plan.action === "延期" && !draft.includes("{到期日}")) return "草稿里没有 {到期日}，延期后的日期填不进信里";
   return "";

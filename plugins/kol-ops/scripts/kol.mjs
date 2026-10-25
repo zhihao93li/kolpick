@@ -59691,8 +59691,8 @@ var TABLES = {
   mailboxes: "\u53D1\u4FE1\u90AE\u7BB1",
   templates: "\u6A21\u677F"
 };
-var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u4F53\u9A8C\u672A\u7528", "\u4F53\u9A8C\u5230\u671F", "\u5176\u4ED6"];
-var TRIAL_ACTIONS = ["\u53D1\u7801", "\u5EF6\u671F"];
+var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u4F53\u9A8C\u672A\u7528", "\u4F53\u9A8C\u5230\u671F", "\u53D1\u6D3B\u52A8\u7801", "\u5176\u4ED6"];
+var TRIAL_ACTIONS = ["\u53D1\u7801", "\u5EF6\u671F", "\u5F00\u6D3B\u52A8\u7801"];
 var CLOSE_ACTIONS = ["\u7ED3\u6848", "\u6C38\u4E0D\u8054\u7CFB"];
 var CLOSE_REASONS = ["\u65E0\u56DE\u5E94", "\u9898\u6750\u4E0D\u7B26", "\u53EA\u63A5\u56FA\u5B9A\u8D39", "\u5B97\u6559\u4FE1\u4EF0", "\u9690\u79C1", "\u6863\u671F", "\u62D2\u7EDD", "\u56DE\u590D\u540E\u5931\u8054", "\u9000\u4FE1\u6216\u90AE\u7BB1\u65E0\u6548", "\u4F5C\u5E9F", "\u5176\u4ED6"];
 var TEMPLATE_STATES = ["\u8349\u7A3F", "\u5F85\u5BA1\u6838", "\u5DF2\u6279\u51C6", "\u505C\u7528"];
@@ -59719,6 +59719,8 @@ var SETTINGS_TABLES = {
     { name: "\u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570", type: "number" },
     { name: "\u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570", type: "number" },
     { name: "\u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570", type: "number" },
+    { name: "\u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263", type: "number" },
+    { name: "\u6D3B\u52A8\u7801\u5E02\u573A", type: "text" },
     { name: "\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA", type: "text" },
     { name: "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3", type: "text" },
     { name: "\u8BF4\u660E", type: "text" }
@@ -59746,12 +59748,16 @@ var SETTINGS_TABLES = {
 };
 var EXTRA_FIELDS = {
   profiles: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }],
-  followups: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }, { name: "\u4F53\u9A8C\u7801\u6700\u8FD1\u4F7F\u7528", type: "datetime" }],
+  followups: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }, { name: "\u4F53\u9A8C\u7801\u6700\u8FD1\u4F7F\u7528", type: "datetime" }, { name: "\u4E13\u5C5E\u8FDE\u7ED3", type: "text" }, { name: "\u8D26\u672C\u8FDE\u7ED3", type: "text" }],
   reviews: [
     { name: "\u4F53\u9A8C\u7801\u52A8\u4F5C", type: "select", options: [...TRIAL_ACTIONS], multiple: false },
     { name: "\u4F53\u9A8C\u7801", type: "text" },
     { name: "\u4F53\u9A8C\u6B21\u6570", type: "number" },
     { name: "\u4F53\u9A8C\u5929\u6570", type: "number" },
+    { name: "\u6D3B\u52A8\u7801", type: "text" },
+    { name: "\u7C89\u4E1D\u6298\u6263", type: "number" },
+    { name: "\u9500\u552E\u5E02\u573A", type: "text" },
+    { name: "\u5408\u4F5C\u9875\u540D\u79F0", type: "text" },
     { name: "\u53D1\u540E\u52A8\u4F5C", type: "select", options: [...CLOSE_ACTIONS], multiple: false },
     { name: "\u7ED3\u6848\u539F\u56E0", type: "select", options: CLOSE_REASONS, multiple: false }
   ]
@@ -59769,7 +59775,8 @@ var SETTING_DEFAULTS = {
   \u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570: 14,
   \u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570: 5,
   \u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570: 7,
-  \u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570: 2
+  \u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570: 2,
+  \u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263: 15
 };
 var REQUIRED_FIELDS = {
   profiles: [
@@ -59890,6 +59897,10 @@ function configFrom(project, baseToken, s, mailboxRows) {
       unusedDays: num(s["\u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570),
       stalledDays: num(s["\u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570),
       expiringDays: num(s["\u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570)
+    },
+    partner: {
+      percentOff: num(s["\u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263"], SETTING_DEFAULTS.\u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263),
+      markets: listOf(s["\u6D3B\u52A8\u7801\u5E02\u573A"]).map((pair) => pair.split(/[=＝]/).map((x) => x.trim())).filter(([a, b]) => a && b)
     },
     webhook: text(s["\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA"]),
     dataApi: text(s["\u4E1A\u52A1\u6570\u636E\u63A5\u53E3"])
@@ -60992,6 +61003,8 @@ var FOLLOWUP_FIELDS = [
   "\u4F53\u9A8C\u7801\u5230\u671F",
   "\u4F53\u9A8C\u7801\u6700\u8FD1\u4F7F\u7528",
   "\u6D3B\u52A8\u7801",
+  "\u4E13\u5C5E\u8FDE\u7ED3",
+  "\u8D26\u672C\u8FDE\u7ED3",
   "\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"
 ];
 async function loadSnapshot(base, cfg) {
@@ -61354,21 +61367,106 @@ async function syncCodes(ctx, o) {
   return report;
 }
 
+// src/kolops/partner.ts
+var CODE_RULE = /^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$/;
+function marketFor(cfg, profileMarket) {
+  const pairs = cfg.partner.markets;
+  return pairs.find(([from]) => from === profileMarket)?.[1] ?? pairs.find(([from]) => from === "\u5176\u4ED6")?.[1] ?? "";
+}
+function partnerPlan(cfg, review, followup, profile, suggested, name) {
+  const existing = text(followup?.["\u6D3B\u52A8\u7801"]);
+  if (existing) return `\u8FD9\u4F4D KOL \u5DF2\u7ECF\u6709\u6D3B\u52A8\u7801\u300C${existing}\u300D\uFF0C\u4E00\u4F4D KOL \u53EA\u5F00\u4E00\u4E2A`;
+  const code = text(review["\u6D3B\u52A8\u7801"]) || suggested;
+  if (!CODE_RULE.test(code)) return code ? `\u6D3B\u52A8\u7801\u300C${code}\u300D\u53EA\u80FD\u7528\u5B57\u6BCD\u3001\u6570\u5B57\u3001_ \u548C -\uFF0C2 \u5230 64 \u4E2A\u5B57` : "\u6CA1\u5199\u6D3B\u52A8\u7801\uFF0C\u4E5F\u6CA1\u6CD5\u4ECE\u8D26\u53F7\u63A8\u51FA\u4E00\u4E2A";
+  const market = text(review["\u9500\u552E\u5E02\u573A"]) || marketFor(cfg, option(profile?.["\u5E02\u573A"]));
+  if (!market) return `\u6863\u6848\u7684\u5E02\u573A\u300C${option(profile?.["\u5E02\u573A"]) || "\u7A7A"}\u300D\u5728\u300C\u8BBE\u7F6E\u300D\u7684\u6D3B\u52A8\u7801\u5E02\u573A\u91CC\u6CA1\u6709\u5BF9\u5E94\uFF0C\u8BF7\u5728\u5BA1\u6838\u9879\u586B\u9500\u552E\u5E02\u573A`;
+  const percentOff = Number(review["\u7C89\u4E1D\u6298\u6263"]) || cfg.partner.percentOff;
+  if (!Number.isInteger(percentOff) || percentOff < 1 || percentOff > 90) return `\u7C89\u4E1D\u6298\u6263 ${percentOff}% \u4E0D\u5BF9\uFF0C\u8981 1\u201390 \u7684\u6574\u6570`;
+  return {
+    action: "\u5F00\u6D3B\u52A8\u7801",
+    code,
+    market,
+    percentOff,
+    partnerName: text(review["\u5408\u4F5C\u9875\u540D\u79F0"]) || name,
+    contact: emailsIn(review["\u6536\u4EF6\u4EBA"])[0] ?? ""
+  };
+}
+function discountWords(percentOff) {
+  const rest = 100 - percentOff;
+  return `${rest % 10 ? rest : rest / 10} \u6298`;
+}
+function partnerValues(code, refLink, ledgerLink, percentOff) {
+  return {
+    "{\u6D3B\u52D5\u78BC}": code,
+    "{\u6D3B\u52A8\u7801}": code,
+    "{\u5C08\u5C6C\u9023\u7D50}": refLink,
+    "{\u4E13\u5C5E\u8FDE\u7ED3}": refLink,
+    "{\u5E33\u672C\u9023\u7D50}": ledgerLink,
+    "{\u8D26\u672C\u8FDE\u7ED3}": ledgerLink,
+    "{\u7C89\u7D72\u6298\u6263}": discountWords(percentOff),
+    "{\u7C89\u4E1D\u6298\u6263}": discountWords(percentOff)
+  };
+}
+async function createPartnerCodeRemote(url, key, body, fetchImpl = fetch) {
+  const res = await fetchImpl(`${url.replace(/\/+$/, "")}/partner-codes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) throw new TrialCodeRefused("UNAUTHORIZED", "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u62D2\u7EDD\u4E86\u6D3B\u52A8\u7801\u5199\u5BC6\u94A5\uFF08401\uFF09\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u786E\u8BA4\u540E\u7528 kol project set-partner-key \u91CD\u65B0\u4FDD\u5B58");
+  if (res.status === 503) throw new TrialCodeRefused("NOT_CONFIGURED", "\u9879\u76EE\u540E\u53F0\u8FD8\u6CA1\u6709\u5F00\u901A\u5F00\u6D3B\u52A8\u7801\uFF08503\uFF09");
+  if (!res.ok) throw new TrialCodeRefused(String(data.error ?? res.status), String(data.message ?? `\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u51FA\u9519\uFF08${res.status}\uFF09`));
+  return data;
+}
+function preparePartner(ctx, plan, review, followupId) {
+  return async () => {
+    const key = `partner:${review.record_id}`;
+    let done = ctx.journal.get(key)?.data;
+    if (!done) {
+      const project = listProjects().find((p) => p.name === ctx.cfg.project);
+      if (!ctx.cfg.dataApi) throw new TrialCodeRefused("NO_API", "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\uFF0C\u6CA1\u6CD5\u5F00\u6D3B\u52A8\u7801");
+      if (!project?.partnerKey) throw new TrialCodeRefused("NO_KEY", `\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u9879\u76EE\u300C${ctx.cfg.project}\u300D\u7684\u6D3B\u52A8\u7801\u5199\u5BC6\u94A5\uFF0C\u8BF7\u8FD0\u884C kol project set-partner-key`);
+      const { action, ...body } = plan;
+      const r = await createPartnerCodeRemote(ctx.cfg.dataApi, project.partnerKey, { ...body, followupId, operator: ctx.me.name || ctx.me.id });
+      if (!r.code?.refLink) throw new TrialCodeRefused("NO_LINK", "\u6D3B\u52A8\u7801\u5F00\u597D\u4E86\uFF0C\u4F46\u63A5\u53E3\u6CA1\u7ED9\u4E13\u5C5E\u8FDE\u7ED3\uFF0C\u8FD9\u5C01\u4FE1\u5148\u4E0D\u53D1\uFF1B\u8BF7\u5230\u9879\u76EE\u540E\u53F0\u770B\u8FD9\u4E2A\u6D3B\u52A8");
+      done = { code: r.code.code, refLink: r.code.refLink, ledgerLink: r.code.ledgerLink ?? "", percentOff: r.code.percentOff ?? plan.percentOff };
+      ctx.journal.mark(key, "prepared", void 0, done);
+    }
+    const values = partnerValues(done.code, done.refLink, done.ledgerLink, done.percentOff);
+    const followup = {
+      \u9636\u6BB5: ["\u5408\u4F5C\u4E2D"],
+      \u6D3B\u52A8\u7801: done.code,
+      \u4E13\u5C5E\u8FDE\u7ED3: done.refLink,
+      \u8D26\u672C\u8FDE\u7ED3: done.ledgerLink,
+      \u4E0B\u4E00\u6B65: `${today(ctx.cfg)} \u5F00\u4E86\u6D3B\u52A8\u7801 ${done.code}\uFF08\u7C89\u4E1D ${discountWords(done.percentOff)}\uFF09\uFF0C\u7B49\u5BF9\u65B9\u53D1\u5E03`
+    };
+    return { values, followup };
+  };
+}
+function partnerNote(plan) {
+  return `\u5F00\u6D3B\u52A8\u7801 ${plan.code}\uFF0C${plan.market}\uFF0C\u7C89\u4E1D ${discountWords(plan.percentOff)}`;
+}
+
 // src/kolops/trial.ts
 var MAX_USES = 10;
 var MAX_DAYS = 60;
-var CODE_RULE = /^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$/;
+var CODE_RULE2 = /^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$/;
 function suggestTrialCode(profile) {
   const raw = text(profile?.["\u8D26\u53F7"]) || text(profile?.["\u8D26\u53F7\u540D\u79F0"]);
   const name = raw.replace(/^@+/, "").replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^[_-]+/, "").slice(0, 64);
-  return CODE_RULE.test(name) ? name : "";
+  return CODE_RULE2.test(name) ? name : "";
 }
 function trialPlan(cfg, review, followup, profile) {
   const action = option(review["\u4F53\u9A8C\u7801\u52A8\u4F5C"]);
   if (!action) return null;
-  if (!TRIAL_ACTIONS.includes(action)) return `\u4F53\u9A8C\u7801\u52A8\u4F5C\u300C${action}\u300D\u770B\u4E0D\u61C2\uFF0C\u53EA\u80FD\u662F ${TRIAL_ACTIONS.join(" \u6216 ")}`;
+  if (!TRIAL_ACTIONS.includes(action)) return `\u4F53\u9A8C\u7801\u52A8\u4F5C\u300C${action}\u300D\u770B\u4E0D\u61C2\uFF0C\u53EA\u80FD\u662F ${TRIAL_ACTIONS.join("\u3001")}`;
+  if (action === "\u5F00\u6D3B\u52A8\u7801") {
+    const name = text(followup?.["\u8D26\u53F7\u540D\u79F0"]) || text(profile?.["\u8D26\u53F7\u540D\u79F0"]) || text(profile?.["\u8D26\u53F7"]);
+    return partnerPlan(cfg, review, followup, profile, suggestTrialCode(profile), name);
+  }
   const code = text(review["\u4F53\u9A8C\u7801"]) || (action === "\u5EF6\u671F" ? text(followup?.["\u4F53\u9A8C\u7801"]) : suggestTrialCode(profile));
-  if (!CODE_RULE.test(code)) return code ? `\u4F53\u9A8C\u7801\u300C${code}\u300D\u53EA\u80FD\u7528\u5B57\u6BCD\u3001\u6570\u5B57\u3001_ \u548C -\uFF0C2 \u5230 64 \u4E2A\u5B57` : "\u6CA1\u5199\u4F53\u9A8C\u7801\uFF0C\u4E5F\u6CA1\u6CD5\u4ECE\u8D26\u53F7\u63A8\u51FA\u4E00\u4E2A";
+  if (!CODE_RULE2.test(code)) return code ? `\u4F53\u9A8C\u7801\u300C${code}\u300D\u53EA\u80FD\u7528\u5B57\u6BCD\u3001\u6570\u5B57\u3001_ \u548C -\uFF0C2 \u5230 64 \u4E2A\u5B57` : "\u6CA1\u5199\u4F53\u9A8C\u7801\uFF0C\u4E5F\u6CA1\u6CD5\u4ECE\u8D26\u53F7\u63A8\u51FA\u4E00\u4E2A";
   const maxUses = Number(review["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses;
   const days = Number(review["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days;
   if (maxUses < 1 || maxUses > MAX_USES) return `\u4F53\u9A8C\u6B21\u6570 ${maxUses} \u8D85\u51FA 1\u2013${MAX_USES}`;
@@ -61391,6 +61489,7 @@ var PLACEHOLDERS = (code, uses, until) => ({
   "{\u5230\u671F\u65E5}": until
 });
 function missingPlaceholder(plan, draft) {
+  if (plan.action === "\u5F00\u6D3B\u52A8\u7801") return /\{(專屬連結|专属连结)\}/.test(draft) ? "" : "\u8349\u7A3F\u91CC\u6CA1\u6709 {\u5C08\u5C6C\u9023\u7D50}\uFF0C\u6D3B\u52A8\u5F00\u597D\u4E86\u8FDE\u7ED3\u4E5F\u586B\u4E0D\u8FDB\u4FE1\u91CC";
   if (plan.action === "\u53D1\u7801" && !/\{(體驗碼|体验码)\}/.test(draft)) return "\u8349\u7A3F\u91CC\u6CA1\u6709 {\u9AD4\u9A57\u78BC}\uFF0C\u7801\u5EFA\u597D\u4E86\u4E5F\u586B\u4E0D\u8FDB\u4FE1\u91CC";
   if (plan.action === "\u5EF6\u671F" && !draft.includes("{\u5230\u671F\u65E5}")) return "\u8349\u7A3F\u91CC\u6CA1\u6709 {\u5230\u671F\u65E5}\uFF0C\u5EF6\u671F\u540E\u7684\u65E5\u671F\u586B\u4E0D\u8FDB\u4FE1\u91CC";
   return "";
@@ -61610,7 +61709,10 @@ async function applyInbox(ctx, o) {
     };
     if (d.trial) {
       review["\u4F53\u9A8C\u7801\u52A8\u4F5C"] = [d.trial.action];
-      if (d.trial.code) review["\u4F53\u9A8C\u7801"] = d.trial.code;
+      if (d.trial.code) review[d.trial.action === "\u5F00\u6D3B\u52A8\u7801" ? "\u6D3B\u52A8\u7801" : "\u4F53\u9A8C\u7801"] = d.trial.code;
+      if (d.trial.percentOff) review["\u7C89\u4E1D\u6298\u6263"] = d.trial.percentOff;
+      if (d.trial.market) review["\u9500\u552E\u5E02\u573A"] = d.trial.market;
+      if (d.trial.pageName) review["\u5408\u4F5C\u9875\u540D\u79F0"] = d.trial.pageName;
       if (d.trial.uses) review["\u4F53\u9A8C\u6B21\u6570"] = d.trial.uses;
       if (d.trial.days) review["\u4F53\u9A8C\u5929\u6570"] = d.trial.days;
       const plan = trialPlan(cfg, review, f, profileOf(s, f));
@@ -61879,7 +61981,7 @@ ${body}`) : "";
       oncePerDay: false,
       kind: "\u56DE\u590D",
       after: { review: r.record_id, ...close ? { followup: close.followup, profile: close.profile } : {} },
-      ...plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}
+      ...plan?.action === "\u5F00\u6D3B\u52A8\u7801" ? { prepare: preparePartner(ctx, plan, r, followupId), prepareNote: partnerNote(plan) } : plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}
     });
   }
   const report = await deliver(ctx, items, s, opts.dryRun);
@@ -62296,6 +62398,7 @@ function purposeOf(fileName) {
   if (/^体验[-\s]?到期/.test(fileName)) return "\u4F53\u9A8C\u5230\u671F";
   if (fileName.startsWith("\u4F53\u9A8C\u7801\u5EF6\u671F")) return "\u4F53\u9A8C\u7801\u5EF6\u671F";
   if (fileName.startsWith("\u53D1\u4F53\u9A8C\u7801")) return "\u53D1\u4F53\u9A8C\u7801";
+  if (fileName.startsWith("\u53D1\u6D3B\u52A8\u7801")) return "\u53D1\u6D3B\u52A8\u7801";
   if (fileName.startsWith("\u4F53\u9A8C")) return "\u4F53\u9A8C\u8DDF\u8FDB";
   return "\u5176\u4ED6";
 }
@@ -62764,7 +62867,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\u3001\u9879\u76EE\u7684\u98DE\u4E66\u8868\u7F3A\u4E0D\u7F3A\u8868\u548C\u5B57\u6BB5\uFF0C\u4EE5\u53CA\u600E\u4E48\u8865
 
   project add \u9879\u76EE\u540D \u98DE\u4E66\u8868\u94FE\u63A5  \u767B\u8BB0\u4E00\u4E2A\u9879\u76EE\uFF08\u5B83\u7684 KOL \u603B\u8868\uFF09\uFF1B\u7B2C\u4E00\u4E2A\u767B\u8BB0\u7684\u662F\u9ED8\u8BA4\u9879\u76EE
-  project list | default \u9879\u76EE\u540D | remove \u9879\u76EE\u540D | set-key \u9879\u76EE\u540D \u5BC6\u94A5 | set-trial-key \u9879\u76EE\u540D \u5199\u5BC6\u94A5
+  project list | default \u9879\u76EE\u540D | remove \u9879\u76EE\u540D | set-key \u9879\u76EE\u540D \u5BC6\u94A5 | set-trial-key \u9879\u76EE\u540D \u5199\u5BC6\u94A5 | set-partner-key \u9879\u76EE\u540D \u5199\u5BC6\u94A5
   setup-base [--import-templates \u6587\u4EF6\u5939] [--template-language \u8BED\u8A00]
                                 \u7ED9\u9879\u76EE\u7684\u98DE\u4E66\u8868\u8865\u4E0A\u300C\u8BBE\u7F6E\u300D\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u300C\u6A21\u677F\u300D\u8868\u548C\u7F3A\u7684\u5B57\u6BB5\uFF0C\u6CA1\u6709\u8BBE\u7F6E\u5C31\u5199\u4E00\u884C\u9ED8\u8BA4\u503C\uFF1B
                                 \u53EF\u628A\u6587\u4EF6\u5939\u91CC\u7684 .txt \u6A21\u677F\u5BFC\u5165\u6210\u300C\u5F85\u5BA1\u6838\u300D\u3002\u53EA\u52A0\u4E0D\u6539\uFF0C\u5148\u7528 --dry-run \u770B\u4F1A\u505A\u4EC0\u4E48
@@ -62862,12 +62965,13 @@ async function projectCommand(args) {
   if (sub === "remove" && a) return removeProject(a), { \u5DF2\u5220\u9664: a };
   if (sub === "set-key" && a && b) return setDataApiKey(a, b), { \u5DF2\u4FDD\u5B58: `${a} \u7684\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u5BC6\u94A5\uFF08\u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09` };
   if (sub === "set-trial-key" && a && b) return setDataApiKey(a, b, "trialKey"), { \u5DF2\u4FDD\u5B58: `${a} \u7684\u4F53\u9A8C\u7801\u5199\u5BC6\u94A5\uFF08\u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09` };
+  if (sub === "set-partner-key" && a && b) return setDataApiKey(a, b, "partnerKey"), { \u5DF2\u4FDD\u5B58: `${a} \u7684\u6D3B\u52A8\u7801\u5199\u5BC6\u94A5\uFF08\u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF09` };
   if (!sub || sub === "list") {
     const all = listProjects();
     const def = all.length ? resolveProject().name : "";
-    return all.map((p) => ({ \u9879\u76EE: p.name, \u9ED8\u8BA4: p.name === def, \u98DE\u4E66\u8868: p.baseToken, \u6709\u63A5\u53E3\u5BC6\u94A5: !!p.dataApiKey, \u6709\u4F53\u9A8C\u7801\u5199\u5BC6\u94A5: !!p.trialKey }));
+    return all.map((p) => ({ \u9879\u76EE: p.name, \u9ED8\u8BA4: p.name === def, \u98DE\u4E66\u8868: p.baseToken, \u6709\u63A5\u53E3\u5BC6\u94A5: !!p.dataApiKey, \u6709\u4F53\u9A8C\u7801\u5199\u5BC6\u94A5: !!p.trialKey, \u6709\u6D3B\u52A8\u7801\u5199\u5BC6\u94A5: !!p.partnerKey }));
   }
-  throw new Error("\u7528\u6CD5\uFF1Akol project add|list|default|remove|set-key|set-trial-key \u2026");
+  throw new Error("\u7528\u6CD5\uFF1Akol project add|list|default|remove|set-key|set-trial-key|set-partner-key \u2026");
 }
 async function check(project) {
   const lark = new LarkCli(project?.baseToken ?? "");

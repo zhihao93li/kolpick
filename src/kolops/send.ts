@@ -3,6 +3,7 @@ import { mailboxFor, sendingPaused, type Mailbox } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import { blockedReason, displayName, followupEmails, loadSnapshot, profileOf, type Snapshot } from "./data.js";
 import { fillTrial, missingPlaceholder, prepareTrial, trialNote, trialPlan } from "./trial.js";
+import { partnerNote, preparePartner } from "./partner.js";
 import { LarkError, type Row } from "./lark.js";
 import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
 import { bounceStats, bouncePaused, otherSendingRun, stamp, today, todaysSends, type SendCounts } from "./ops.js";
@@ -292,7 +293,8 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
       key: `review:${r.record_id}`, followupId, name, recipient: emailsIn(r["收件人"])[0] ?? "",
       mailbox, subject, body, oncePerDay: false, kind: "回复",
       after: { review: r.record_id, ...(close ? { followup: close.followup, profile: close.profile } : {}) },
-      ...(plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}),
+      ...(plan?.action === "开活动码" ? { prepare: preparePartner(ctx, plan, r, followupId), prepareNote: partnerNote(plan) }
+        : plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}),
     });
   }
   const report = await deliver(ctx, items, s, opts.dryRun);

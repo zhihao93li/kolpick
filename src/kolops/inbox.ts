@@ -156,7 +156,8 @@ export interface InboxDecision {
   draft?: string;
   /** Who the reply goes to; defaults to the sender of the mail. */
   to?: string;
-  trial?: { action: "发码" | "延期"; code?: string; uses?: number; days?: number };
+  /** A code to create, extend or (开活动码) a partner campaign to open before the reply goes out. */
+  trial?: { action: "发码" | "延期" | "开活动码"; code?: string; uses?: number; days?: number; percentOff?: number; market?: string; pageName?: string };
   /** For 拒绝: what happens to the followup once approved. */
   after?: (typeof CLOSE_ACTIONS)[number];
   reason?: string;
@@ -234,7 +235,10 @@ export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean })
     };
     if (d.trial) {
       review["体验码动作"] = [d.trial.action];
-      if (d.trial.code) review["体验码"] = d.trial.code;
+      if (d.trial.code) review[d.trial.action === "开活动码" ? "活动码" : "体验码"] = d.trial.code;
+      if (d.trial.percentOff) review["粉丝折扣"] = d.trial.percentOff;
+      if (d.trial.market) review["销售市场"] = d.trial.market;
+      if (d.trial.pageName) review["合作页名称"] = d.trial.pageName;
       if (d.trial.uses) review["体验次数"] = d.trial.uses;
       if (d.trial.days) review["体验天数"] = d.trial.days;
       const plan = trialPlan(cfg, review as any, f, profileOf(s, f));

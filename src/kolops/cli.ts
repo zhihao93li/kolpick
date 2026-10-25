@@ -47,7 +47,7 @@ const HELP = `kol <命令> [选项]
   check                         检查飞书授权是否齐全、项目的飞书表缺不缺表和字段，以及怎么补
 
   project add 项目名 飞书表链接  登记一个项目（它的 KOL 总表）；第一个登记的是默认项目
-  project list | default 项目名 | remove 项目名 | set-key 项目名 密钥 | set-trial-key 项目名 写密钥
+  project list | default 项目名 | remove 项目名 | set-key 项目名 密钥 | set-trial-key 项目名 写密钥 | set-partner-key 项目名 写密钥
   setup-base [--import-templates 文件夹] [--template-language 语言]
                                 给项目的飞书表补上「设置」「发信邮箱」「模板」表和缺的字段，没有设置就写一行默认值；
                                 可把文件夹里的 .txt 模板导入成「待审核」。只加不改，先用 --dry-run 看会做什么
@@ -134,12 +134,13 @@ async function projectCommand(args: string[]): Promise<unknown> {
   if (sub === "remove" && a) return removeProject(a), { 已删除: a };
   if (sub === "set-key" && a && b) return setDataApiKey(a, b), { 已保存: `${a} 的业务数据接口密钥（只存在这台电脑上）` };
   if (sub === "set-trial-key" && a && b) return setDataApiKey(a, b, "trialKey"), { 已保存: `${a} 的体验码写密钥（只存在这台电脑上）` };
+  if (sub === "set-partner-key" && a && b) return setDataApiKey(a, b, "partnerKey"), { 已保存: `${a} 的活动码写密钥（只存在这台电脑上）` };
   if (!sub || sub === "list") {
     const all = listProjects();
     const def = all.length ? resolveProject().name : "";
-    return all.map((p) => ({ 项目: p.name, 默认: p.name === def, 飞书表: p.baseToken, 有接口密钥: !!p.dataApiKey, 有体验码写密钥: !!p.trialKey }));
+    return all.map((p) => ({ 项目: p.name, 默认: p.name === def, 飞书表: p.baseToken, 有接口密钥: !!p.dataApiKey, 有体验码写密钥: !!p.trialKey, 有活动码写密钥: !!p.partnerKey }));
   }
-  throw new Error("用法：kol project add|list|default|remove|set-key|set-trial-key …");
+  throw new Error("用法：kol project add|list|default|remove|set-key|set-trial-key|set-partner-key …");
 }
 
 /** `kol check`: login scopes always; the project's base too when one is registered. */

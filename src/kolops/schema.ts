@@ -28,9 +28,10 @@ export interface FieldDef {
   multiple?: boolean;
 }
 
-export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "发体验码", "体验码延期", "体验未用", "体验到期", "其他"] as const;
+export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "发体验码", "体验码延期", "体验未用", "体验到期", "发活动码", "其他"] as const;
 /** What an approved 审核队列 item asks the plugin to do with a trial code before it sends the reply. */
-export const TRIAL_ACTIONS = ["发码", "延期"] as const;
+/** 体验码动作: create or extend a trial code, or open a partner campaign (活动码), right before the approved reply goes out. */
+export const TRIAL_ACTIONS = ["发码", "延期", "开活动码"] as const;
 /** What an approved 审核队列 item does to the KOL once it is carried out: close the followup, or also never write again. */
 export const CLOSE_ACTIONS = ["结案", "永不联系"] as const;
 /** The 结案原因 options of KOL 跟进, which 审核队列 offers too. */
@@ -61,6 +62,8 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
     { name: "体验未用提醒天数", type: "number" },
     { name: "体验停滞提醒天数", type: "number" },
     { name: "体验到期提醒天数", type: "number" },
+    { name: "活动码粉丝折扣", type: "number" },
+    { name: "活动码市场", type: "text" },
     { name: "飞书群机器人", type: "text" },
     { name: "业务数据接口", type: "text" },
     { name: "说明", type: "text" },
@@ -94,12 +97,16 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
  */
 export const EXTRA_FIELDS: Partial<Record<TableKey, FieldDef[]>> = {
   profiles: [{ name: "更新时间", type: "updated_at" }],
-  followups: [{ name: "更新时间", type: "updated_at" }, { name: "体验码最近使用", type: "datetime" }],
+  followups: [{ name: "更新时间", type: "updated_at" }, { name: "体验码最近使用", type: "datetime" }, { name: "专属连结", type: "text" }, { name: "账本连结", type: "text" }],
   reviews: [
     { name: "体验码动作", type: "select", options: [...TRIAL_ACTIONS], multiple: false },
     { name: "体验码", type: "text" },
     { name: "体验次数", type: "number" },
     { name: "体验天数", type: "number" },
+    { name: "活动码", type: "text" },
+    { name: "粉丝折扣", type: "number" },
+    { name: "销售市场", type: "text" },
+    { name: "合作页名称", type: "text" },
     { name: "发后动作", type: "select", options: [...CLOSE_ACTIONS], multiple: false },
     { name: "结案原因", type: "select", options: CLOSE_REASONS, multiple: false },
   ],
@@ -120,6 +127,7 @@ export const SETTING_DEFAULTS = {
   体验未用提醒天数: 5,
   体验停滞提醒天数: 7,
   体验到期提醒天数: 2,
+  活动码粉丝折扣: 15,
 } as const;
 
 /** Fields of the existing tables that the commands can't work without; `kol check` looks for these. */
