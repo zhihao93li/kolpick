@@ -9,6 +9,7 @@
 ### 准备
 
 - 电脑上装好 Node.js 22 或更新的版本（终端里 `node --version` 能看到 v22 以上）。
+- lark-cli 用 1.0.73 到 1.0.98 之间的版本（`lark-cli --version`）。这两个版本都实测过；更新版本先让 Claude 跑一遍 `kol.mjs check` 和几个命令的 `--dry-run` 再用。
 - 电脑上装好 lark-cli，并用公司飞书账号登录过。
 - 你的 GitHub 账号能访问私有仓库 zhihao93li/kolpick，没有权限就找项目负责人加。
 
