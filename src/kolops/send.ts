@@ -8,6 +8,7 @@ import { LarkError, type Row } from "./lark.js";
 import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
 import { bounceStats, bouncePaused, otherSendingRun, stamp, today, todaysSends, type SendCounts } from "./ops.js";
 import { closeChanges } from "./inbox.js";
+import { undeliverable } from "./mx.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
 
@@ -94,6 +95,7 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
   const [counts, bounces] = await Promise.all([todaysSends(ctx.base, ctx.cfg), bounceStats(ctx.base, ctx.cfg)]);
   const gap = Math.ceil(60_000 / Math.max(1, ctx.cfg.perMinute));
   const t = ctx.cfg.tables;
+  const domains = new Map<string, Promise<string>>();
 
   for (const o of items) {
     const prior = ctx.journal.get(o.key);
@@ -124,7 +126,7 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
       }
     }
 
-    let reason = bouncePaused(o.mailbox, bounces) || checkOne(o, s, counts, senders);
+    let reason = bouncePaused(o.mailbox, bounces) || checkOne(o, s, counts, senders) || (o.recipient ? await undeliverable(o.recipient, domains) : "");
     if (!reason && companyFull(ctx, counts, o.followupId)) reason = `全公司今天的外部收件人额度（${ctx.cfg.companyDailyExternal} 人）已用完`;
     if (reason) {
       report.skipped.push({ key: o.key, name: o.name, reason });

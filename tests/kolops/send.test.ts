@@ -195,3 +195,24 @@ describe("reply subjects", () => {
     expect(args[args.indexOf("--subject") + 1]).toBe("Re: 合作");
   });
 });
+
+describe("recipient domain", () => {
+  it("holds back mail to a domain that can't take it, and suggests the likely spelling", async () => {
+    const p = lark.table(T.profiles)[0];
+    p["公开邮箱"] = "anan@gmial.com";
+    review({ 收件人: "anan@gmial.com", 邮件草稿: "主题：合作\n呂爸您好" });
+    const r = await sendApproved(ctx, { dryRun: false });
+    expect(r.sent).toHaveLength(0);
+    expect(r.skipped[0].reason).toBe("邮箱域名 gmial.com 多半是拼错了，是不是 gmail.com？");
+    expect(lark.sent).toHaveLength(0);
+  });
+});
+
+it("judges domains by MX, then by address, and catches slips of common ones", async () => {
+  const { undeliverable } = await import("../../src/kolops/mx.js");
+  const cache = new Map();
+  expect(await undeliverable("a@ms35.hinet.net", cache)).toBe("");
+  expect(await undeliverable("a@gmial.com", cache)).toBe("邮箱域名 gmial.com 多半是拼错了，是不是 gmail.com？");
+  expect(await undeliverable("a@nowhere.invalid", cache)).toBe("邮箱域名 nowhere.invalid 不存在（拼错了或已经停用）");
+  expect(await undeliverable("a@example.com", cache)).toBe("");
+});

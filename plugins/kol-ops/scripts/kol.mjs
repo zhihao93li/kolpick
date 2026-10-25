@@ -30489,7 +30489,7 @@ var require_dist9 = __commonJS({
     var socks_1 = require_build();
     var agent_base_1 = require_dist8();
     var debug_1 = __importDefault2(require_src());
-    var dns = __importStar2(__require("dns"));
+    var dns2 = __importStar2(__require("dns"));
     var net = __importStar2(__require("net"));
     var tls = __importStar2(__require("tls"));
     var url_1 = __require("url");
@@ -30570,7 +30570,7 @@ var require_dist9 = __commonJS({
           throw new Error("No `host` defined!");
         }
         let { host } = opts;
-        const { port, lookup: lookupFn = dns.lookup } = opts;
+        const { port, lookup: lookupFn = dns2.lookup } = opts;
         if (shouldLookup) {
           host = await new Promise((resolve, reject) => {
             lookupFn(host, {}, (err, res) => {
@@ -32210,33 +32210,33 @@ var require_transfer = __commonJS({
       }
     };
     function uploadFrom(source, config) {
-      const resolver = new TransferResolver(config.ftp, config.tracker);
+      const resolver2 = new TransferResolver(config.ftp, config.tracker);
       const fullCommand = `${config.command} ${config.remotePath}`;
       return config.ftp.handle(fullCommand, (res, task) => {
         if (res instanceof Error) {
-          resolver.onError(task, res);
+          resolver2.onError(task, res);
         } else if (res.code === 150 || res.code === 125) {
           const dataSocket = config.ftp.dataSocket;
           if (!dataSocket) {
-            resolver.onError(task, new Error("Upload should begin but no data connection is available."));
+            resolver2.onError(task, new Error("Upload should begin but no data connection is available."));
             return;
           }
           const canUpload = "getCipher" in dataSocket ? dataSocket.getCipher() !== void 0 : true;
           onConditionOrEvent(canUpload, dataSocket, "secureConnect", () => {
             config.ftp.log(`Uploading to ${(0, netUtils_1.describeAddress)(dataSocket)} (${(0, netUtils_1.describeTLS)(dataSocket)})`);
-            resolver.onDataStart(config.remotePath, config.type);
+            resolver2.onDataStart(config.remotePath, config.type);
             (0, stream_1.pipeline)(source, dataSocket, (err) => {
               if (err) {
-                resolver.onError(task, err);
+                resolver2.onError(task, err);
               } else {
-                resolver.onDataDone(task);
+                resolver2.onDataDone(task);
               }
             });
           });
         } else if ((0, parseControlResponse_1.positiveCompletion)(res.code)) {
-          resolver.onControlDone(task, res);
+          resolver2.onControlDone(task, res);
         } else if ((0, parseControlResponse_1.positiveIntermediate)(res.code)) {
-          resolver.onUnexpectedRequest(res);
+          resolver2.onUnexpectedRequest(res);
         }
       });
     }
@@ -32244,31 +32244,31 @@ var require_transfer = __commonJS({
       if (!config.ftp.dataSocket) {
         throw new Error("Download will be initiated but no data connection is available.");
       }
-      const resolver = new TransferResolver(config.ftp, config.tracker);
+      const resolver2 = new TransferResolver(config.ftp, config.tracker);
       return config.ftp.handle(config.command, (res, task) => {
         if (res instanceof Error) {
-          resolver.onError(task, res);
+          resolver2.onError(task, res);
         } else if (res.code === 150 || res.code === 125) {
           const dataSocket = config.ftp.dataSocket;
           if (!dataSocket) {
-            resolver.onError(task, new Error("Download should begin but no data connection is available."));
+            resolver2.onError(task, new Error("Download should begin but no data connection is available."));
             return;
           }
           config.ftp.log(`Downloading from ${(0, netUtils_1.describeAddress)(dataSocket)} (${(0, netUtils_1.describeTLS)(dataSocket)})`);
-          resolver.onDataStart(config.remotePath, config.type);
+          resolver2.onDataStart(config.remotePath, config.type);
           (0, stream_1.pipeline)(dataSocket, destination, (err) => {
             if (err) {
-              resolver.onError(task, err);
+              resolver2.onError(task, err);
             } else {
-              resolver.onDataDone(task);
+              resolver2.onDataDone(task);
             }
           });
         } else if (res.code === 350) {
           config.ftp.send("RETR " + config.remotePath);
         } else if ((0, parseControlResponse_1.positiveCompletion)(res.code)) {
-          resolver.onControlDone(task, res);
+          resolver2.onControlDone(task, res);
         } else if ((0, parseControlResponse_1.positiveIntermediate)(res.code)) {
-          resolver.onUnexpectedRequest(res);
+          resolver2.onUnexpectedRequest(res);
         }
       });
     }
@@ -34296,11 +34296,11 @@ var require_keyword = __commonJS({
         return (lead - 55296) * 1024 + (trail - 56320) + 65536;
       }
       function isIdentifierNameES6(id) {
-        var i, iz, ch, lowCh, check2;
+        var i, iz, ch, lowCh, check3;
         if (id.length === 0) {
           return false;
         }
-        check2 = code.isIdentifierStartES6;
+        check3 = code.isIdentifierStartES6;
         for (i = 0, iz = id.length; i < iz; ++i) {
           ch = id.charCodeAt(i);
           if (55296 <= ch && ch <= 56319) {
@@ -34314,10 +34314,10 @@ var require_keyword = __commonJS({
             }
             ch = decodeUtf16(ch, lowCh);
           }
-          if (!check2(ch)) {
+          if (!check3(ch)) {
             return false;
           }
-          check2 = code.isIdentifierPartES6;
+          check3 = code.isIdentifierPartES6;
         }
         return true;
       }
@@ -44380,11 +44380,11 @@ var require_esprima = __commonJS({
                   case "}":
                     regex = false;
                     if (this.values[this.curly - 3] === "function") {
-                      var check2 = this.values[this.curly - 4];
-                      regex = check2 ? !this.beforeFunctionExpression(check2) : false;
+                      var check3 = this.values[this.curly - 4];
+                      regex = check3 ? !this.beforeFunctionExpression(check3) : false;
                     } else if (this.values[this.curly - 4] === "function") {
-                      var check2 = this.values[this.curly - 5];
-                      regex = check2 ? !this.beforeFunctionExpression(check2) : true;
+                      var check3 = this.values[this.curly - 5];
+                      regex = check3 ? !this.beforeFunctionExpression(check3) : true;
                     }
                     break;
                   default:
@@ -48635,17 +48635,17 @@ var require_dist14 = __commonJS({
         ..._opts,
         sandbox: context
       };
-      const resolver = (0, degenerator_1.compile)(qjs, str, "FindProxyForURL", opts);
+      const resolver2 = (0, degenerator_1.compile)(qjs, str, "FindProxyForURL", opts);
       function FindProxyForURL(url, _host) {
         const urlObj = typeof url === "string" ? new URL(url) : url;
         const host = _host || urlObj.hostname;
         if (!host) {
           throw new TypeError("Could not determine `host`");
         }
-        return resolver(urlObj.href, host);
+        return resolver2(urlObj.href, host);
       }
       Object.defineProperty(FindProxyForURL, "toString", {
-        value: () => resolver.toString(),
+        value: () => resolver2.toString(),
         enumerable: false
       });
       return FindProxyForURL;
@@ -52003,13 +52003,13 @@ var require_dist17 = __commonJS({
       async connect(req, opts) {
         const { secureEndpoint } = opts;
         const isWebSocket = req.getHeader("upgrade") === "websocket";
-        const resolver = await this.getResolver();
+        const resolver2 = await this.getResolver();
         const protocol = secureEndpoint ? "https:" : "http:";
         const host = opts.host && net.isIPv6(opts.host) ? `[${opts.host}]` : opts.host;
         const defaultPort = secureEndpoint ? 443 : 80;
         const url = Object.assign(new url_1.URL(req.path, `${protocol}//${host}`), defaultPort ? void 0 : { port: opts.port });
         debug("url: %s", url);
-        let result = await resolver(url);
+        let result = await resolver2(url);
         if (!result) {
           result = "DIRECT";
         }
@@ -55086,7 +55086,7 @@ var require_cjs3 = __commonJS({
           mongoDbWriteTestRemoveOlderThanSecs = 15
         } = options2;
         if (!Array.isArray(checks)) throw new Error('Parameter "check" must be an array');
-        checks.map((check2) => this._validateCheck(check2));
+        checks.map((check3) => this._validateCheck(check3));
         this.checks = checks;
         this.redisPrefix = redisPrefix;
         this.redisTtlSecs = redisTtlSecs;
@@ -55095,34 +55095,34 @@ var require_cjs3 = __commonJS({
         this.mongoDbWriteTestRemoveOlderThanSecs = mongoDbWriteTestRemoveOlderThanSecs;
       }
       async ensureIsHealthy() {
-        for (const check2 of this.checks) {
+        for (const check3 of this.checks) {
           try {
-            const checkPromise = this._performCheck(check2);
+            const checkPromise = this._performCheck(check3);
             await timeoutPromise(checkPromise, this.checkTimeoutMillis, "Check has timed-out");
           } catch (_err) {
             const err = _err;
-            throw new Error(`Health check test "${check2.type}" failed with an error: ${err.message}"`);
+            throw new Error(`Health check test "${check3.type}" failed with an error: ${err.message}"`);
           }
         }
       }
-      _validateCheck(check2) {
-        if (!(check2.type in CHECK_TYPES)) throw new Error(`Check type "${check2.type}" is invalid`);
-        if (typeof check2.client !== "object")
-          throw new Error(`Check client must be an object got "${typeof check2.client}" instead`);
+      _validateCheck(check3) {
+        if (!(check3.type in CHECK_TYPES)) throw new Error(`Check type "${check3.type}" is invalid`);
+        if (typeof check3.client !== "object")
+          throw new Error(`Check client must be an object got "${typeof check3.client}" instead`);
       }
-      async _performCheck(check2) {
-        switch (check2.type) {
+      async _performCheck(check3) {
+        switch (check3.type) {
           case "MONGODB_PING":
-            return this._testMongoDbPing(check2);
+            return this._testMongoDbPing(check3);
           case "MONGODB_READ":
-            return this._testMongoDbRead(check2);
+            return this._testMongoDbRead(check3);
           case "MONGODB_WRITE":
-            return this._testMongoDbWrite(check2);
+            return this._testMongoDbWrite(check3);
           case "REDIS_PING":
-            return this._testRedisPing(check2);
+            return this._testRedisPing(check3);
           case "REDIS":
           case "REDIS_WRITE":
-            return this._testRedisWrite(check2);
+            return this._testRedisWrite(check3);
           default:
             throw new Error("Unknown check type");
         }
@@ -61762,6 +61762,47 @@ async function applyInbox(ctx, o) {
   return report;
 }
 
+// src/kolops/mx.ts
+import { promises as dns } from "node:dns";
+var resolver = (d) => dns.resolveMx(d);
+var hosts = (d) => dns.resolve4(d).catch(() => dns.resolve6(d));
+async function undeliverable(address, cache) {
+  const domain = address.split("@")[1]?.trim().toLowerCase() ?? "";
+  if (!domain) return "\u6536\u4EF6\u4EBA\u90AE\u7BB1\u683C\u5F0F\u4E0D\u5BF9";
+  if (!cache.has(domain)) cache.set(domain, check(domain));
+  return cache.get(domain);
+}
+async function check(domain) {
+  try {
+    const mx = await resolver(domain);
+    if (!mx.length || mx.every((r) => !r.exchange || r.exchange === ".")) return `\u90AE\u7BB1\u57DF\u540D ${domain} \u58F0\u660E\u4E0D\u6536\u90AE\u4EF6`;
+    return "";
+  } catch (err) {
+    if (err?.code === "ENOTFOUND") return `\u90AE\u7BB1\u57DF\u540D ${domain} \u4E0D\u5B58\u5728\uFF08\u62FC\u9519\u4E86\u6216\u5DF2\u7ECF\u505C\u7528\uFF09${typoHint(domain)}`;
+    if (err?.code !== "ENODATA") return "";
+    const hint = typoHint(domain);
+    if (hint) return `\u90AE\u7BB1\u57DF\u540D ${domain} \u591A\u534A\u662F\u62FC\u9519\u4E86${hint}`;
+    const addresses = await hosts(domain).catch(() => []);
+    return addresses.length ? "" : `\u90AE\u7BB1\u57DF\u540D ${domain} \u6CA1\u6709\u6536\u4FE1\u670D\u52A1\u5668\uFF08\u6CA1\u6709 MX \u8BB0\u5F55\uFF0C\u4E5F\u6CA1\u6709\u5730\u5740\uFF09`;
+  }
+}
+var COMMON = ["gmail.com", "yahoo.com", "yahoo.com.tw", "hotmail.com", "outlook.com", "icloud.com", "msn.com", "live.com", "qq.com", "163.com"];
+function typoHint(domain) {
+  const near = COMMON.find((c) => c !== domain && distance(c, domain) <= 2);
+  return near ? `\uFF0C\u662F\u4E0D\u662F ${near}\uFF1F` : "";
+}
+function distance(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+  }
+  return d[a.length][b.length];
+}
+
 // src/kolops/send.ts
 var SENDING_TYPES = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"];
 function isApproved(r) {
@@ -61801,6 +61842,7 @@ async function deliver(ctx, items, s, dryRun) {
   const [counts, bounces] = await Promise.all([todaysSends(ctx.base, ctx.cfg), bounceStats(ctx.base, ctx.cfg)]);
   const gap = Math.ceil(6e4 / Math.max(1, ctx.cfg.perMinute));
   const t = ctx.cfg.tables;
+  const domains = /* @__PURE__ */ new Map();
   for (const o of items) {
     const prior = ctx.journal.get(o.key);
     if (prior?.state === "recorded" || prior?.state === "sent") {
@@ -61825,7 +61867,7 @@ async function deliver(ctx, items, s, dryRun) {
         if (!o.subject) o.subject = replySubject(latest.subject);
       }
     }
-    let reason = bouncePaused(o.mailbox, bounces) || checkOne(o, s, counts, senders);
+    let reason = bouncePaused(o.mailbox, bounces) || checkOne(o, s, counts, senders) || (o.recipient ? await undeliverable(o.recipient, domains) : "");
     if (!reason && companyFull(ctx, counts, o.followupId)) reason = `\u5168\u516C\u53F8\u4ECA\u5929\u7684\u5916\u90E8\u6536\u4EF6\u4EBA\u989D\u5EA6\uFF08${ctx.cfg.companyDailyExternal} \u4EBA\uFF09\u5DF2\u7528\u5B8C`;
     if (reason) {
       report.skipped.push({ key: o.key, name: o.name, reason });
@@ -63005,7 +63047,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
                                 \u7ED9\u9879\u76EE\u7684\u98DE\u4E66\u8868\u8865\u4E0A\u300C\u8BBE\u7F6E\u300D\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u300C\u6A21\u677F\u300D\u8868\u548C\u7F3A\u7684\u5B57\u6BB5\uFF0C\u6CA1\u6709\u8BBE\u7F6E\u5C31\u5199\u4E00\u884C\u9ED8\u8BA4\u503C\uFF1B
                                 \u53EF\u628A\u6587\u4EF6\u5939\u91CC\u7684 .txt \u6A21\u677F\u5BFC\u5165\u6210\u300C\u5F85\u5BA1\u6838\u300D\u3002\u53EA\u52A0\u4E0D\u6539\uFF0C\u5148\u7528 --dry-run \u770B\u4F1A\u505A\u4EC0\u4E48
 
-\u6BCF\u5C01\u4FE1\u53D1\u51FA\u524D\u90FD\u4F1A\u68C0\u67E5\uFF1A\u6682\u505C\u5F00\u5173\u3001\u6C38\u4E0D\u8054\u7CFB\u3001\u6536\u4EF6\u4EBA\u662F\u4E0D\u662F\u8FD9\u4F4D KOL\u3001\u5F53\u5929\u989D\u5EA6\u3001\u662F\u5426\u91CD\u590D\u3002
+\u6BCF\u5C01\u4FE1\u53D1\u51FA\u524D\u90FD\u4F1A\u68C0\u67E5\uFF1A\u6682\u505C\u5F00\u5173\u3001\u6C38\u4E0D\u8054\u7CFB\u3001\u6536\u4EF6\u4EBA\u662F\u4E0D\u662F\u8FD9\u4F4D KOL\u3001\u6536\u4EF6\u4EBA\u90AE\u7BB1\u7684\u57DF\u540D\u80FD\u4E0D\u80FD\u6536\u4FE1\u3001\u5F53\u5929\u989D\u5EA6\u3001\u662F\u5426\u91CD\u590D\u3002
 \u901A\u7528\u9009\u9879\uFF1A--project \u9879\u76EE\u540D \u9009\u9879\u76EE\uFF08\u4E0D\u5199\u5C31\u7528\u9ED8\u8BA4\u9879\u76EE\uFF09\uFF1B--dry-run \u53EA\u68C0\u67E5\u3001\u5217\u51FA\u4F1A\u505A\u4EC0\u4E48\uFF0C\u4E0D\u53D1\u4FE1\u4E5F\u4E0D\u6539\u8868\uFF1B--scheduled \u7531\u5B9A\u65F6\u4EFB\u52A1\u8C03\u7528\u3002
 \u7ED3\u679C\u4EE5 JSON \u6253\u5370\u5230\u6807\u51C6\u8F93\u51FA\u3002`;
 var list = (v) => v ? String(v).split(",").map((x) => x.trim()).filter(Boolean) : [];
@@ -63107,7 +63149,7 @@ async function projectCommand(args) {
   }
   throw new Error("\u7528\u6CD5\uFF1Akol project add|list|default|remove|set-key|set-trial-key|set-partner-key \u2026");
 }
-async function check(project) {
+async function check2(project) {
   const lark = new LarkCli(project?.baseToken ?? "");
   const auth = await checkAuth(lark);
   if (!project) return { ...auth, \u9879\u76EE: "\u8FD9\u53F0\u7535\u8111\u8FD8\u6CA1\u6709\u767B\u8BB0\u9879\u76EE\uFF08kol project add <\u9879\u76EE\u540D> <\u98DE\u4E66\u8868\u94FE\u63A5>\uFF09" };
@@ -63165,7 +63207,7 @@ async function main() {
         project2 = resolveProject(values.project);
       } catch {
       }
-      return print(await check(project2));
+      return print(await check2(project2));
     }
     const project = resolveProject(values.project);
     const lark = new LarkCli(project.baseToken);
