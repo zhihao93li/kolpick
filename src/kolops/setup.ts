@@ -17,6 +17,10 @@ export function purposeOf(fileName: string): string {
   if (fileName.startsWith("邀约")) return "邀约";
   if (/^催信[-\s]?1/.test(fileName)) return "催信 1";
   if (/^催信[-\s]?2/.test(fileName)) return "催信 2";
+  if (/^体验[-\s]?未用/.test(fileName)) return "体验未用";
+  if (/^体验[-\s]?到期/.test(fileName)) return "体验到期";
+  if (fileName.startsWith("体验码延期")) return "体验码延期";
+  if (fileName.startsWith("发体验码")) return "发体验码";
   if (fileName.startsWith("体验")) return "体验跟进";
   return "其他";
 }

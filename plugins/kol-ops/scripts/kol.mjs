@@ -59691,7 +59691,7 @@ var TABLES = {
   mailboxes: "\u53D1\u4FE1\u90AE\u7BB1",
   templates: "\u6A21\u677F"
 };
-var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u5176\u4ED6"];
+var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u4F53\u9A8C\u672A\u7528", "\u4F53\u9A8C\u5230\u671F", "\u5176\u4ED6"];
 var TRIAL_ACTIONS = ["\u53D1\u7801", "\u5EF6\u671F"];
 var CLOSE_ACTIONS = ["\u7ED3\u6848", "\u6C38\u4E0D\u8054\u7CFB"];
 var CLOSE_REASONS = ["\u65E0\u56DE\u5E94", "\u9898\u6750\u4E0D\u7B26", "\u53EA\u63A5\u56FA\u5B9A\u8D39", "\u5B97\u6559\u4FE1\u4EF0", "\u9690\u79C1", "\u6863\u671F", "\u62D2\u7EDD", "\u56DE\u590D\u540E\u5931\u8054", "\u9000\u4FE1\u6216\u90AE\u7BB1\u65E0\u6548", "\u4F5C\u5E9F", "\u5176\u4ED6"];
@@ -59716,6 +59716,9 @@ var SETTINGS_TABLES = {
     { name: "\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570", type: "number" },
     { name: "\u4F53\u9A8C\u7801\u9ED8\u8BA4\u6B21\u6570", type: "number" },
     { name: "\u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570", type: "number" },
+    { name: "\u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570", type: "number" },
+    { name: "\u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570", type: "number" },
+    { name: "\u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570", type: "number" },
     { name: "\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA", type: "text" },
     { name: "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3", type: "text" },
     { name: "\u8BF4\u660E", type: "text" }
@@ -59743,7 +59746,7 @@ var SETTINGS_TABLES = {
 };
 var EXTRA_FIELDS = {
   profiles: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }],
-  followups: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }],
+  followups: [{ name: "\u66F4\u65B0\u65F6\u95F4", type: "updated_at" }, { name: "\u4F53\u9A8C\u7801\u6700\u8FD1\u4F7F\u7528", type: "datetime" }],
   reviews: [
     { name: "\u4F53\u9A8C\u7801\u52A8\u4F5C", type: "select", options: [...TRIAL_ACTIONS], multiple: false },
     { name: "\u4F53\u9A8C\u7801", type: "text" },
@@ -59763,7 +59766,10 @@ var SETTING_DEFAULTS = {
   \u7ED3\u6848\u5929\u6570: 7,
   \u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570: 90,
   \u4F53\u9A8C\u7801\u9ED8\u8BA4\u6B21\u6570: 3,
-  \u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570: 14
+  \u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570: 14,
+  \u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570: 5,
+  \u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570: 7,
+  \u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570: 2
 };
 var REQUIRED_FIELDS = {
   profiles: [
@@ -59880,6 +59886,11 @@ function configFrom(project, baseToken, s, mailboxRows) {
     crossProjectCooldownDays: num(s["\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570"], SETTING_DEFAULTS.\u8DE8\u9879\u76EE\u51B7\u5374\u5929\u6570),
     discovery: { country: text(s["\u627E\u4EBA\u56FD\u5BB6"]), language: text(s["\u627E\u4EBA\u8BED\u8A00"]) },
     trial: { maxUses: num(s["\u4F53\u9A8C\u7801\u9ED8\u8BA4\u6B21\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u7801\u9ED8\u8BA4\u6B21\u6570), days: num(s["\u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u7801\u9ED8\u8BA4\u5929\u6570) },
+    trialNudge: {
+      unusedDays: num(s["\u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570),
+      stalledDays: num(s["\u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570),
+      expiringDays: num(s["\u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570"], SETTING_DEFAULTS.\u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570)
+    },
     webhook: text(s["\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA"]),
     dataApi: text(s["\u4E1A\u52A1\u6570\u636E\u63A5\u53E3"])
   };
@@ -60127,7 +60138,7 @@ function stamp(ms = Date.now(), tz = "+08:00") {
 function today(cfg, ms = Date.now()) {
   return dayOf(ms, cfg.timezone);
 }
-var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65", inbox: "\u6279\u91CF\u5904\u7406\u6765\u4FE1" };
+var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65", inbox: "\u6279\u91CF\u5904\u7406\u6765\u4FE1", trialFollowup: "\u4F53\u9A8C\u8DDF\u8FDB" };
 var SENDING_RUNS = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 var LOCK_MINUTES = 30;
 async function otherSendingRun(base, cfg, selfId) {
@@ -60979,6 +60990,7 @@ var FOLLOWUP_FIELDS = [
   "\u4F53\u9A8C\u7801\u4E0A\u9650",
   "\u4F53\u9A8C\u7801\u5DF2\u7528",
   "\u4F53\u9A8C\u7801\u5230\u671F",
+  "\u4F53\u9A8C\u7801\u6700\u8FD1\u4F7F\u7528",
   "\u6D3B\u52A8\u7801",
   "\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"
 ];
@@ -61311,7 +61323,10 @@ async function syncCodes(ctx, o) {
     if (trial && !t?.found) report.\u627E\u4E0D\u5230\u7684\u7801.push(`${name}\uFF1A${trial}`);
     if (t?.found) {
       const change = {};
-      if (typeof t.used === "number" && t.used !== f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) change.\u4F53\u9A8C\u7801\u5DF2\u7528 = t.used;
+      if (typeof t.used === "number" && t.used !== f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) {
+        change.\u4F53\u9A8C\u7801\u5DF2\u7528 = t.used;
+        if (t.used > (Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0)) change.\u4F53\u9A8C\u7801\u6700\u8FD1\u4F7F\u7528 = stamp(Date.now(), cfg.timezone);
+      }
       if (t.maxUses != null && t.maxUses !== f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) change.\u4F53\u9A8C\u7801\u4E0A\u9650 = t.maxUses;
       const expires = t.expiresAt ? Date.parse(t.expiresAt) : null;
       if (expires != null && !Number.isNaN(expires) && cellTime(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) !== expires) {
@@ -62277,6 +62292,10 @@ function purposeOf(fileName) {
   if (fileName.startsWith("\u9080\u7EA6")) return "\u9080\u7EA6";
   if (/^催信[-\s]?1/.test(fileName)) return "\u50AC\u4FE1 1";
   if (/^催信[-\s]?2/.test(fileName)) return "\u50AC\u4FE1 2";
+  if (/^体验[-\s]?未用/.test(fileName)) return "\u4F53\u9A8C\u672A\u7528";
+  if (/^体验[-\s]?到期/.test(fileName)) return "\u4F53\u9A8C\u5230\u671F";
+  if (fileName.startsWith("\u4F53\u9A8C\u7801\u5EF6\u671F")) return "\u4F53\u9A8C\u7801\u5EF6\u671F";
+  if (fileName.startsWith("\u53D1\u4F53\u9A8C\u7801")) return "\u53D1\u4F53\u9A8C\u7801";
   if (fileName.startsWith("\u4F53\u9A8C")) return "\u4F53\u9A8C\u8DDF\u8FDB";
   return "\u5176\u4ED6";
 }
@@ -62545,6 +62564,125 @@ async function notifyGroup(cfg, o) {
   return { \u53D1\u9001: true, \u5B57\u6570: message.length };
 }
 
+// src/kolops/trialfollow.ts
+var DAY = 864e5;
+var TRIAL_NUDGES = {
+  \u5230\u671F: { purpose: "\u4F53\u9A8C\u5230\u671F", tag: "[\u4F53\u9A8C\u5230\u671F]" },
+  \u672A\u7528: { purpose: "\u4F53\u9A8C\u672A\u7528", tag: "[\u4F53\u9A8C\u672A\u7528]" },
+  \u505C\u6EDE: { purpose: "\u4F53\u9A8C\u8DDF\u8FDB", tag: "[\u4F53\u9A8C\u505C\u6EDE]" }
+};
+function trialDue(cfg, f, name, now = Date.now()) {
+  const code = text(f["\u4F53\u9A8C\u7801"]);
+  if (!code || option(f["\u9636\u6BB5"]) === "\u7ED3\u6848") return null;
+  const used = Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0;
+  const max = Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0;
+  const expires = cellTime(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone);
+  if (expires == null || expires <= now || max && used >= max) return null;
+  const r = cfg.trialNudge;
+  const last = Math.max(cellTime(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], cfg.timezone) ?? 0, cellTime(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], cfg.timezone) ?? 0);
+  const quiet = last ? Math.floor((now - last) / DAY) : Infinity;
+  const until = stamp(expires, cfg.timezone).slice(0, 10);
+  if (expires - now <= r.expiringDays * DAY) {
+    return { kind: "\u5230\u671F", key: `${TRIAL_NUDGES.\u5230\u671F.tag} ${name} ${code} ${until}`, why: `\u4F53\u9A8C\u7801 ${code} ${until} \u5230\u671F\uFF0C\u8FD8\u5269 ${max ? max - used : "?"} \u6B21\uFF0C\u95EE\u8981\u4E0D\u8981\u5EF6\u671F` };
+  }
+  if (used === 0 && quiet >= r.unusedDays) {
+    return { kind: "\u672A\u7528", key: `${TRIAL_NUDGES.\u672A\u7528.tag} ${name} ${code}`, why: `\u4F53\u9A8C\u7801 ${code} \u8FD8\u6CA1\u7528\u8FC7\uFF0C${quiet === Infinity ? "\u4E00\u76F4" : `${quiet} \u5929`}\u6CA1\u6709\u5F80\u6765` };
+  }
+  const lastUse = cellTime(f["\u4F53\u9A8C\u7801\u6700\u8FD1\u4F7F\u7528"], cfg.timezone) ?? 0;
+  const idle = Math.floor((now - Math.max(lastUse, last)) / DAY);
+  if (used > 0 && idle >= r.stalledDays) {
+    return { kind: "\u505C\u6EDE", key: `${TRIAL_NUDGES.\u505C\u6EDE.tag} ${name} ${code} ${used}`, why: `\u4F53\u9A8C\u7801 ${code} \u7528\u4E86 ${used}/${max || "?"} \u6B21\uFF0C${idle} \u5929\u6CA1\u6709\u65B0\u52A8\u9759` };
+  }
+  return null;
+}
+async function trialFollowup(ctx, o) {
+  const cfg = ctx.cfg;
+  const t = cfg.tables;
+  const now = o.now ?? Date.now();
+  const [s, reviews, templates] = await Promise.all([
+    loadSnapshot(ctx.base, cfg),
+    ctx.base.records(t.reviews, { fields: ["\u5BA1\u6838\u9879", "\u72B6\u6001", "KOL"] }),
+    loadTemplates(ctx.base, cfg)
+  ]);
+  const done = new Set(reviews.map((r) => text(r["\u5BA1\u6838\u9879"])).filter((x) => x.startsWith("[\u4F53\u9A8C")));
+  const waiting = new Set(reviews.filter((r) => ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"].includes(option(r["\u72B6\u6001"]))).flatMap((r) => linkIds(r["KOL"])));
+  const report = {
+    \u63D0\u4EA4\u5BA1\u6838: [],
+    \u8981\u624B\u52A8\u8DDF\u8FDB: [],
+    \u7F3A\u6A21\u677F: [],
+    \u8BD5\u8DD1: o.dryRun || void 0
+  };
+  const rows = [];
+  const handOver = {};
+  const missing = /* @__PURE__ */ new Map();
+  for (const f of s.followups.values()) {
+    const name = displayName(s, f);
+    const due = trialDue(cfg, f, name, now);
+    if (!due || done.has(due.key)) continue;
+    if (["\u6211\u4EEC", "\u7B49\u4F60\u5BA1\u6838"].includes(option(f["\u5F53\u524D\u8F6E\u5230\u8C01"])) || waiting.has(f.record_id)) continue;
+    const mb = mailboxFor(cfg, option(f["\u8054\u7CFB\u6E20\u9053"]));
+    if (!mb) {
+      report.\u8981\u624B\u52A8\u8DDF\u8FDB.push({ name, \u7C7B\u578B: due.kind, \u539F\u56E0: `${due.why}\uFF08${option(f["\u8054\u7CFB\u6E20\u9053"]) || "\u6CA1\u586B\u8054\u7CFB\u6E20\u9053"}\uFF0C\u63D2\u4EF6\u53D1\u4E0D\u4E86\uFF09` });
+      continue;
+    }
+    const p = profileOf(s, f);
+    const tpl = pickTemplate(templates, TRIAL_NUDGES[due.kind].purpose, text(p?.["\u8A9E\u8A00"]));
+    if (!tpl) {
+      const purpose = TRIAL_NUDGES[due.kind].purpose;
+      missing.set(purpose, [...missing.get(purpose) ?? [], name]);
+      continue;
+    }
+    const used = Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0;
+    const max = Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0;
+    const expiresIso = new Date(cellTime(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone)).toISOString();
+    const call = text(p?.["\u79F0\u547C"]) || name;
+    let mail;
+    try {
+      mail = render(tpl, {
+        \u7A31\u547C: call,
+        \u79F0\u547C: call,
+        \u8D26\u53F7\u540D\u79F0: name,
+        \u9AD4\u9A57\u78BC: text(f["\u4F53\u9A8C\u7801"]),
+        \u4F53\u9A8C\u7801: text(f["\u4F53\u9A8C\u7801"]),
+        \u5DF2\u7528: String(used),
+        \u5269\u9918: String(Math.max(0, max - used)),
+        \u5269\u4F59: String(Math.max(0, max - used)),
+        \u6B21\u6578: String(max),
+        \u6B21\u6570: String(max),
+        \u5230\u671F\u65E5: expiryWords(expiresIso, cfg.timezone),
+        // The first hand-written template says 「原期限{已於 / 將於} {M 月 D 日}到期」.
+        "\u5DF2\u65BC / \u5C07\u65BC": "\u5C07\u65BC",
+        "M \u6708 D \u65E5": dateWords(expiresIso, cfg.timezone)
+      });
+    } catch (err) {
+      if (!(err instanceof MissingValue)) throw err;
+      report.\u8981\u624B\u52A8\u8DDF\u8FDB.push({ name, \u7C7B\u578B: due.kind, \u539F\u56E0: `${due.why}\uFF1B${err.message}` });
+      continue;
+    }
+    report.\u63D0\u4EA4\u5BA1\u6838.push({ name, \u7C7B\u578B: due.kind, \u539F\u56E0: due.why });
+    rows.push({
+      \u7C7B\u578B: ["\u56DE\u590D\u90AE\u4EF6"],
+      \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"],
+      KOL: [{ id: f.record_id }],
+      \u63D0\u51FA\u65F6\u95F4: stamp(now, cfg.timezone),
+      \u5BA1\u6838\u9879: due.key,
+      \u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE: `${due.why}\u3002\u6309\u300C${tpl.name}\u300D\u6A21\u677F\u5199\u7684`,
+      \u53D1\u9001\u6E20\u9053: [mb.channel],
+      \u6536\u4EF6\u4EBA: followupEmails(s, f)[0] ?? "",
+      \u90AE\u4EF6\u8349\u7A3F: mail.subject ? `\u4E3B\u9898\uFF1A${mail.subject}
+${mail.body}` : mail.body
+    });
+    handOver[f.record_id] = { \u5F53\u524D\u8F6E\u5230\u8C01: ["\u7B49\u4F60\u5BA1\u6838"] };
+  }
+  report.\u7F3A\u6A21\u677F = [...missing].map(([m, names]) => `\u300C\u6A21\u677F\u300D\u8868\u91CC\u8FD8\u6CA1\u6709\u5DF2\u6279\u51C6\u7684\u300C${m}\u300D\u6A21\u677F\uFF0C${names.length} \u4F4D\u5148\u6CA1\u63D0\u4EA4\uFF1A${names.join("\u3001")}`);
+  if (o.dryRun || !rows.length) return report;
+  await ctx.base.create(t.reviews, rows);
+  await ctx.base.update(t.followups, handOver);
+  ctx.run.counts.\u65B0\u589E\u5F85\u5BA1 += rows.length;
+  ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u4F53\u9A8C\u8DDF\u8FDB\u63D0\u4EA4\u5BA1\u6838 ${rows.length} \u6761` });
+  return report;
+}
+
 // src/kolops/today.ts
 async function todayLists(ctx) {
   const cfg = ctx.cfg;
@@ -62620,6 +62758,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   metrics [--budget 2]          \u53D1\u5E03\u540E\u7B2C 1/3/7/30 \u5929\uFF0C\u6293 Instagram\u3001YouTube\u3001TikTok \u5E16\u5B50\u7684\u64AD\u653E\u548C\u4E92\u52A8\u6570\u586B\u8FDB\u300C\u53D1\u5E03\u5185\u5BB9\u300D\uFF08\u82B1 Apify \u7684\u94B1\uFF09
   notify  --file \u6587\u672C\u6587\u4EF6        \u628A\u4E00\u6BB5\u6587\u5B57\u53D1\u5230\u9879\u76EE\u7684\u98DE\u4E66\u7FA4\uFF08\u300C\u8BBE\u7F6E\u300D\u91CC\u586B\u4E86\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\u624D\u53D1\uFF09
   codes                         \u4ECE\u9879\u76EE\u7684\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u540C\u6B65\u4F53\u9A8C\u7801\u5DF2\u7528\u6B21\u6570\u3001\u4E0A\u9650\u548C\u5230\u671F\u65E5\uFF0C\u5217\u51FA\u7528\u4E86\u4E00\u90E8\u5206\u3001\u5FEB\u5230\u671F\u7684\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801\u6982\u51B5
+  trial-followup                \u4F53\u9A8C\u7801\u53D1\u51FA 5 \u5929\u6CA1\u7528\u3001\u7528\u4E86\u4E00\u90E8\u5206\u540E 7 \u5929\u6CA1\u52A8\u9759\u30012 \u5929\u5185\u5230\u671F\u7684\uFF0C\u6309\u5DF2\u6279\u51C6\u7684\u6A21\u677F\u5199\u597D\u56DE\u4FE1\u653E\u8FDB\u5BA1\u6838\u961F\u5217\uFF08\u5929\u6570\u5728\u300C\u8BBE\u7F6E\u300D\u91CC\uFF09
   trial-check --code \u7801\u540D        \u770B\u8FD9\u4E2A\u7801\u540D\u80FD\u4E0D\u80FD\u7528\u6765\u5EFA\u4F53\u9A8C\u7801\uFF08\u53EA\u8BFB\uFF09
   whoami                        \u770B\u5F53\u524D\u767B\u5F55\u7684\u98DE\u4E66\u8D26\u53F7
   check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\u3001\u9879\u76EE\u7684\u98DE\u4E66\u8868\u7F3A\u4E0D\u7F3A\u8868\u548C\u5B57\u6BB5\uFF0C\u4EE5\u53CA\u600E\u4E48\u8865
@@ -62690,6 +62829,7 @@ var COMMANDS = {
   },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
   codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
+  "trial-followup": { title: RUN_TITLES.trialFollowup, writes: true, run: (ctx, v) => trialFollowup(ctx, { dryRun: !!v["dry-run"] }) },
   "trial-check": {
     title: "",
     writes: false,

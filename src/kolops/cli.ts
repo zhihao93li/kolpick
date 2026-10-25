@@ -18,6 +18,7 @@ import { checkTrialName, syncCodes } from "./codes.js";
 import { notifyGroup } from "./notify.js";
 import { applyInbox, listInbox } from "./inbox.js";
 import { syncInbox } from "./sync.js";
+import { trialFollowup } from "./trialfollow.js";
 import { todayLists } from "./today.js";
 
 const HELP = `kol <命令> [选项]
@@ -40,6 +41,7 @@ const HELP = `kol <命令> [选项]
   metrics [--budget 2]          发布后第 1/3/7/30 天，抓 Instagram、YouTube、TikTok 帖子的播放和互动数填进「发布内容」（花 Apify 的钱）
   notify  --file 文本文件        把一段文字发到项目的飞书群（「设置」里填了飞书群机器人才发）
   codes                         从项目的业务数据接口同步体验码已用次数、上限和到期日，列出用了一部分、快到期的体验码和活动码概况
+  trial-followup                体验码发出 5 天没用、用了一部分后 7 天没动静、2 天内到期的，按已批准的模板写好回信放进审核队列（天数在「设置」里）
   trial-check --code 码名        看这个码名能不能用来建体验码（只读）
   whoami                        看当前登录的飞书账号
   check                         检查飞书授权是否齐全、项目的飞书表缺不缺表和字段，以及怎么补
@@ -100,6 +102,7 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
   },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
   codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
+  "trial-followup": { title: RUN_TITLES.trialFollowup, writes: true, run: (ctx, v) => trialFollowup(ctx, { dryRun: !!v["dry-run"] }) },
   "trial-check": {
     title: "", writes: false,
     run: (ctx, v) => {

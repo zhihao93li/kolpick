@@ -28,7 +28,7 @@ export interface FieldDef {
   multiple?: boolean;
 }
 
-export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "发体验码", "体验码延期", "其他"] as const;
+export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "发体验码", "体验码延期", "体验未用", "体验到期", "其他"] as const;
 /** What an approved 审核队列 item asks the plugin to do with a trial code before it sends the reply. */
 export const TRIAL_ACTIONS = ["发码", "延期"] as const;
 /** What an approved 审核队列 item does to the KOL once it is carried out: close the followup, or also never write again. */
@@ -58,6 +58,9 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
     { name: "跨项目冷却天数", type: "number" },
     { name: "体验码默认次数", type: "number" },
     { name: "体验码默认天数", type: "number" },
+    { name: "体验未用提醒天数", type: "number" },
+    { name: "体验停滞提醒天数", type: "number" },
+    { name: "体验到期提醒天数", type: "number" },
     { name: "飞书群机器人", type: "text" },
     { name: "业务数据接口", type: "text" },
     { name: "说明", type: "text" },
@@ -91,7 +94,7 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
  */
 export const EXTRA_FIELDS: Partial<Record<TableKey, FieldDef[]>> = {
   profiles: [{ name: "更新时间", type: "updated_at" }],
-  followups: [{ name: "更新时间", type: "updated_at" }],
+  followups: [{ name: "更新时间", type: "updated_at" }, { name: "体验码最近使用", type: "datetime" }],
   reviews: [
     { name: "体验码动作", type: "select", options: [...TRIAL_ACTIONS], multiple: false },
     { name: "体验码", type: "text" },
@@ -114,6 +117,9 @@ export const SETTING_DEFAULTS = {
   跨项目冷却天数: 90,
   体验码默认次数: 3,
   体验码默认天数: 14,
+  体验未用提醒天数: 5,
+  体验停滞提醒天数: 7,
+  体验到期提醒天数: 2,
 } as const;
 
 /** Fields of the existing tables that the commands can't work without; `kol check` looks for these. */

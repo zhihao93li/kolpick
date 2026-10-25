@@ -54,8 +54,8 @@ it("adds 更新时间 to 档案 and 跟进 when a base lacks it", async () => {
   const lark = olderBase();
   lark.schemas![TABLES.profiles] = lark.schemas![TABLES.profiles].filter((f) => f !== "更新时间");
   const r = await setupBase(new Base(lark, BASE), { project: "p", dryRun: false });
-  expect(r.加字段).toEqual([`${TABLES.profiles}.更新时间`]);
-  expect(lark.created.at(-1)!.join(" ")).toContain('"type":"updated_at"');
+  expect(r.加字段).toEqual([`${TABLES.profiles}.更新时间`, `${TABLES.followups}.体验码最近使用`]);
+  expect(lark.created.map((c) => c.join(" ")).join("\n")).toContain('"type":"updated_at"');
 });
 
 it("adds the trial-code fields to 审核队列 and the new purposes to 模板.用途, keeping existing options", async () => {
@@ -65,7 +65,7 @@ it("adds the trial-code fields to 审核队列 and the new purposes to 模板.�
   await setupBase(base, { project: "p", dryRun: false });
   lark.options["用途"] = ["邀约", "催信 1", "催信 2", "体验跟进", "其他"];
   const r = await setupBase(base, { project: "p", dryRun: false });
-  expect(r.加选项).toEqual(["模板.用途：发体验码", "模板.用途：体验码延期"]);
-  expect(lark.options["用途"]).toEqual(["邀约", "催信 1", "催信 2", "体验跟进", "其他", "发体验码", "体验码延期"]);
+  expect(r.加选项).toEqual(["模板.用途：发体验码", "模板.用途：体验码延期", "模板.用途：体验未用", "模板.用途：体验到期"]);
+  expect(lark.options["用途"]).toEqual(["邀约", "催信 1", "催信 2", "体验跟进", "其他", "发体验码", "体验码延期", "体验未用", "体验到期"]);
   expect(lark.schemas![TABLES.reviews]).toEqual(expect.arrayContaining(["体验码动作", "体验码", "体验次数", "体验天数"]));
 });

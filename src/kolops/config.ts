@@ -35,6 +35,8 @@ export interface Config {
   discovery: { country: string; language: string };
   /** Defaults for a trial code when the 审核队列 item leaves 体验次数 / 体验天数 empty. */
   trial: { maxUses: number; days: number };
+  /** After how many days 体验跟进 nudges an unused or stalled trial, and how close to expiry it asks about extending. */
+  trialNudge: { unusedDays: number; stalledDays: number; expiringDays: number };
   webhook: string;
   dataApi: string;
 }
@@ -92,6 +94,11 @@ export function configFrom(project: string, baseToken: string, s: Row, mailboxRo
     crossProjectCooldownDays: num(s["跨项目冷却天数"], SETTING_DEFAULTS.跨项目冷却天数),
     discovery: { country: text(s["找人国家"]), language: text(s["找人语言"]) },
     trial: { maxUses: num(s["体验码默认次数"], SETTING_DEFAULTS.体验码默认次数), days: num(s["体验码默认天数"], SETTING_DEFAULTS.体验码默认天数) },
+    trialNudge: {
+      unusedDays: num(s["体验未用提醒天数"], SETTING_DEFAULTS.体验未用提醒天数),
+      stalledDays: num(s["体验停滞提醒天数"], SETTING_DEFAULTS.体验停滞提醒天数),
+      expiringDays: num(s["体验到期提醒天数"], SETTING_DEFAULTS.体验到期提醒天数),
+    },
     webhook: text(s["飞书群机器人"]),
     dataApi: text(s["业务数据接口"]),
   };

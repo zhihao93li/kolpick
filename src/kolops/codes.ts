@@ -116,7 +116,11 @@ export async function syncCodes(ctx: Ctx, o: { dryRun: boolean; fetchImpl?: type
     if (trial && !t?.found) report.找不到的码.push(`${name}：${trial}`);
     if (t?.found) {
       const change: Record<string, unknown> = {};
-      if (typeof t.used === "number" && t.used !== f["体验码已用"]) change.体验码已用 = t.used;
+      if (typeof t.used === "number" && t.used !== f["体验码已用"]) {
+        change.体验码已用 = t.used;
+        // Uses only go up; the day they did is when the KOL last tried something, which 体验跟进 waits on.
+        if (t.used > (Number(f["体验码已用"]) || 0)) change.体验码最近使用 = stamp(Date.now(), cfg.timezone);
+      }
       if (t.maxUses != null && t.maxUses !== f["体验码上限"]) change.体验码上限 = t.maxUses;
       const expires = t.expiresAt ? Date.parse(t.expiresAt) : null;
       if (expires != null && !Number.isNaN(expires) && cellTime(f["体验码到期"], cfg.timezone) !== expires) {
