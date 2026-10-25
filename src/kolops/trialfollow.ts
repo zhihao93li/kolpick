@@ -4,6 +4,7 @@ import type { Ctx } from "./ctx.js";
 import { displayName, followupEmails, loadSnapshot, profileOf } from "./data.js";
 import type { Row } from "./lark.js";
 import { stamp } from "./ops.js";
+import { closeDeclined } from "./reviews.js";
 import { loadTemplates, MissingValue, pickTemplate, render } from "./templates.js";
 import { dateWords, expiryWords } from "./trial.js";
 
@@ -63,6 +64,8 @@ export async function trialFollowup(ctx: Ctx, o: { dryRun: boolean; now?: number
   const cfg = ctx.cfg;
   const t = cfg.tables;
   const now = o.now ?? Date.now();
+  // Withdraw what the reviewer turned down first, so those KOLs are no longer counted as waiting on review.
+  const withdrawn = await closeDeclined(ctx, { dryRun: o.dryRun });
   const [s, reviews, templates] = await Promise.all([
     loadSnapshot(ctx.base, cfg),
     ctx.base.records(t.reviews, { fields: ["审核项", "状态", "KOL"] }),
@@ -75,6 +78,7 @@ export async function trialFollowup(ctx: Ctx, o: { dryRun: boolean; now?: number
     提交审核: [] as { name: string; 类型: Nudge; 原因: string }[],
     要手动跟进: [] as { name: string; 类型: Nudge; 原因: string }[],
     缺模板: [] as string[],
+    审核不发已撤回: withdrawn,
     试跑: o.dryRun || undefined,
   };
   const rows: Record<string, unknown>[] = [];

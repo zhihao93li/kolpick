@@ -59531,7 +59531,7 @@ var require_dist19 = __commonJS({
 });
 
 // src/kolops/cli.ts
-import { readFileSync as readFileSync9 } from "node:fs";
+import { readFileSync as readFileSync10 } from "node:fs";
 import { parseArgs } from "node:util";
 
 // src/kolops/base.ts
@@ -60170,7 +60170,7 @@ function stamp(ms = Date.now(), tz = "+08:00") {
 function today(cfg, ms = Date.now()) {
   return dayOf(ms, cfg.timezone);
 }
-var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65", inbox: "\u6279\u91CF\u5904\u7406\u6765\u4FE1", trialFollowup: "\u4F53\u9A8C\u8DDF\u8FDB", posts: "\u53D1\u73B0\u53D1\u5E03" };
+var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65", inbox: "\u6279\u91CF\u5904\u7406\u6765\u4FE1", trialFollowup: "\u4F53\u9A8C\u8DDF\u8FDB", posts: "\u53D1\u73B0\u53D1\u5E03", revise: "\u6309\u610F\u89C1\u91CD\u5199" };
 var SENDING_RUNS = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 var LOCK_MINUTES = 30;
 async function otherSendingRun(base, cfg, selfId) {
@@ -61832,12 +61832,111 @@ async function senderDomain(domain) {
   return { \u57DF\u540D: domain, SPF: spf || null, DMARC: dmarc || null, \u95EE\u9898: problems, DKIM: "\u5728\u98DE\u4E66\u7BA1\u7406\u540E\u53F0\u300C\u90AE\u7BB1 \u2192 \u57DF\u540D\u7BA1\u7406\u300D\u91CC\u786E\u8BA4 DKIM \u5DF2\u751F\u6548" };
 }
 
+// src/kolops/reviews.ts
+import { readFileSync as readFileSync7 } from "node:fs";
+function reviewState(r) {
+  const p = option(r["\u5904\u7406"]);
+  const res = option(r["\u5BA1\u6838\u7ED3\u679C"]);
+  if (p === "\u4E0D\u53D1" || ["\u5148\u4E0D\u53D1", "\u4E0D\u540C\u610F"].includes(res)) return "declined";
+  if (p === "\u6539" || res === "\u9000\u56DE\u4FEE\u6539") return "revise";
+  if (p === "\u53D1\uFF0F\u540C\u610F") return "approved";
+  return "pending";
+}
+function isApproved(r) {
+  return reviewState(r) === "approved";
+}
+var OPEN = ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"];
+var REVIEW_FIELDS = ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u72B6\u6001", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "KOL", "\u4F60\u7684\u610F\u89C1", "\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE", "\u90AE\u4EF6\u8349\u7A3F", "\u53D1\u9001\u6E20\u9053", "\u4F53\u9A8C\u7801\u52A8\u4F5C", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u6B21\u6570", "\u4F53\u9A8C\u5929\u6570", "\u6D3B\u52A8\u7801", "\u7C89\u4E1D\u6298\u6263", "\u9500\u552E\u5E02\u573A", "\u5408\u4F5C\u9875\u540D\u79F0"];
+async function openReviews(ctx) {
+  return ctx.base.records(ctx.cfg.tables.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", OPEN]] }, fields: REVIEW_FIELDS });
+}
+async function closeDeclined(ctx, o) {
+  const t = ctx.cfg.tables;
+  const all = o.reviews ?? await openReviews(ctx);
+  const declined = all.filter((r) => reviewState(r) === "declined");
+  if (!declined.length) return [];
+  const s = await loadSnapshot(ctx.base, ctx.cfg);
+  const stillOpen = new Set(all.filter((r) => reviewState(r) !== "declined").flatMap((r) => linkIds(r["KOL"])));
+  const now = stamp(Date.now(), ctx.cfg.timezone);
+  const day2 = today(ctx.cfg);
+  const names = [];
+  const reviewChanges = {};
+  const followupChanges = {};
+  for (const r of declined) {
+    const fid = linkIds(r["KOL"])[0] ?? "";
+    const f = s.followups.get(fid);
+    const why = text(r["\u4F60\u7684\u610F\u89C1"]);
+    names.push(f ? displayName(s, f) : text(r["\u5BA1\u6838\u9879"]));
+    reviewChanges[r.record_id] = { \u72B6\u6001: ["\u5DF2\u64A4\u56DE"], \u6267\u884C\u65F6\u95F4: now, \u6267\u884C\u7ED3\u679C: `\u5BA1\u6838\u9009\u4E86\u4E0D\u53D1\uFF0C\u6CA1\u6709\u53D1\u51FA${why ? `\uFF08${why}\uFF09` : ""}`.slice(0, 2e3) };
+    if (!f || option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]) !== "\u7B49\u4F60\u5BA1\u6838" || stillOpen.has(fid)) continue;
+    const lastIn = cellTime(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], ctx.cfg.timezone) ?? 0;
+    const lastOut = cellTime(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], ctx.cfg.timezone) ?? 0;
+    followupChanges[fid] = {
+      \u5F53\u524D\u8F6E\u5230\u8C01: [lastIn > lastOut ? "\u65E0\u9700\u52A8\u4F5C" : "KOL"],
+      \u4E0B\u4E00\u6B65: `${day2} \u5BA1\u6838\u4E0D\u53D1\uFF1A${text(r["\u5BA1\u6838\u9879"])}${why ? `\uFF08${why}\uFF09` : ""}`.slice(0, 500)
+    };
+  }
+  if (o.dryRun) return names;
+  await ctx.base.update(t.reviews, reviewChanges);
+  if (Object.keys(followupChanges).length) await ctx.base.update(t.followups, followupChanges);
+  ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u5BA1\u6838\u4E0D\u53D1\u7684\u64A4\u56DE ${names.length} \u6761` });
+  return names;
+}
+async function toRevise(ctx) {
+  const s = await loadSnapshot(ctx.base, ctx.cfg);
+  const items = (await openReviews(ctx)).filter((r) => reviewState(r) === "revise");
+  return {
+    \u8981\u6539: items.map((r) => {
+      const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
+      return {
+        review: r.record_id,
+        kol: f ? displayName(s, f) : "",
+        \u5BA1\u6838\u9879: text(r["\u5BA1\u6838\u9879"]),
+        \u610F\u89C1: text(r["\u4F60\u7684\u610F\u89C1"]) || "\uFF08\u6CA1\u5199\u610F\u89C1\uFF0C\u95EE\u540C\u4E8B\u8981\u6539\u54EA\u91CC\uFF09",
+        \u8349\u7A3F: text(r["\u90AE\u4EF6\u8349\u7A3F"]),
+        \u4F53\u9A8C\u7801\u52A8\u4F5C: option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"]) || void 0
+      };
+    }),
+    \u8BF4\u660E: '\u6309\u610F\u89C1\u91CD\u5199\u540E\u5199\u6210 [{"review": "rec\u2026", "draft": "\u65B0\u8349\u7A3F", "note": "\u6539\u4E86\u4EC0\u4E48"}]\uFF0C\u7528 revise --apply \u63D0\u4EA4\uFF0C\u4F1A\u91CD\u65B0\u9001\u5BA1'
+  };
+}
+async function applyRevisions(ctx, o) {
+  const list2 = JSON.parse(readFileSync7(o.file, "utf8"));
+  const s = await loadSnapshot(ctx.base, ctx.cfg);
+  const open = new Map((await openReviews(ctx)).map((r) => [r.record_id, r]));
+  const errors = [];
+  const changes = {};
+  for (const x of list2) {
+    const r = open.get(x.review);
+    if (!r || reviewState(r) !== "revise") {
+      errors.push(`${x.review}\uFF1A\u4E0D\u662F\u5F85\u4FEE\u6539\u7684\u5BA1\u6838\u9879`);
+      continue;
+    }
+    const draft = (x.draft ?? "").trim();
+    if (!draft) {
+      errors.push(`${x.review}\uFF1A\u65B0\u8349\u7A3F\u662F\u7A7A\u7684`);
+      continue;
+    }
+    const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
+    const plan = trialPlan(ctx.cfg, r, f, profileOf(s, f));
+    const problem = typeof plan === "string" ? plan : plan ? missingPlaceholder(plan, draft) : "";
+    if (problem) {
+      errors.push(`${x.review}\uFF1A${problem}`);
+      continue;
+    }
+    const history = [text(r["\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE"]), `${today(ctx.cfg)} \u6309\u610F\u89C1\u6539\uFF1A${text(r["\u4F60\u7684\u610F\u89C1"]) || "\uFF08\u6CA1\u5199\uFF09"}${x.note ? ` \u2192 ${x.note}` : ""}`].filter(Boolean).join("\n");
+    changes[x.review] = { \u90AE\u4EF6\u8349\u7A3F: draft, \u5904\u7406: null, \u5BA1\u6838\u7ED3\u679C: null, \u4F60\u7684\u610F\u89C1: "", \u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE: history.slice(0, 5e3), \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"] };
+  }
+  if (errors.length) return { \u5199\u5165: 0, \u95EE\u9898: errors, \u8BF4\u660E: "\u6709\u95EE\u9898\u7684\u6539\u597D\u4E4B\u524D\uFF0C\u4E00\u6761\u90FD\u6CA1\u5199" };
+  if (!o.dryRun && list2.length) {
+    await ctx.base.update(ctx.cfg.tables.reviews, changes);
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u6309\u5BA1\u6838\u610F\u89C1\u91CD\u5199 ${list2.length} \u6761` });
+  }
+  return { \u5199\u5165: o.dryRun ? 0 : list2.length, \u8BD5\u8DD1: o.dryRun || void 0 };
+}
+
 // src/kolops/send.ts
 var SENDING_TYPES = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"];
-function isApproved(r) {
-  const no = ["\u9000\u56DE\u4FEE\u6539", "\u5148\u4E0D\u53D1", "\u4E0D\u540C\u610F"].includes(option(r["\u5BA1\u6838\u7ED3\u679C"]));
-  return option(r["\u5904\u7406"]) === "\u53D1\uFF0F\u540C\u610F" && !no;
-}
 function checkOne(o, s, counts, knownSenders) {
   const f = s.followups.get(o.followupId);
   if (!f) return "\u627E\u4E0D\u5230\u5BF9\u5E94\u7684\u8DDF\u8FDB\u8BB0\u5F55";
@@ -62062,7 +62161,8 @@ ${body}`) : "";
   }
   const report = await deliver(ctx, items, s, opts.dryRun);
   report.skipped.unshift(...skipped);
-  return { ...report, notEmail, closed };
+  const withdrawn = opts.only?.length ? [] : await closeDeclined(ctx, { dryRun: opts.dryRun, reviews });
+  return { ...report, notEmail, closed, withdrawn };
 }
 
 // src/kolops/templates.ts
@@ -62456,7 +62556,7 @@ async function reminderCounts(ctx, s) {
 }
 
 // src/kolops/setup.ts
-import { existsSync as existsSync5, readdirSync, readFileSync as readFileSync7 } from "node:fs";
+import { existsSync as existsSync5, readdirSync, readFileSync as readFileSync8 } from "node:fs";
 import { join as join5 } from "node:path";
 function fieldJson(f) {
   return {
@@ -62608,7 +62708,7 @@ async function setupBase(base, o) {
     const rows = readdirSync(o.importDir).filter((f) => f.endsWith(".txt")).sort().flatMap((file2) => {
       const name = file2.slice(0, -4);
       if (names.has(name)) return [];
-      const { subject, body } = parseTemplateFile(readFileSync7(join5(o.importDir, file2), "utf8"));
+      const { subject, body } = parseTemplateFile(readFileSync8(join5(o.importDir, file2), "utf8"));
       report.\u5BFC\u5165\u6A21\u677F.push(name);
       return [{
         \u540D\u79F0: name,
@@ -62884,11 +62984,11 @@ function ownerMatches(owner, profileUrl, inputUrl) {
 }
 
 // src/kolops/notify.ts
-import { readFileSync as readFileSync8 } from "node:fs";
+import { readFileSync as readFileSync9 } from "node:fs";
 var MAX_CHARS = 4e3;
 async function notifyGroup(cfg, o) {
   if (!cfg.webhook) return { \u53D1\u9001: false, \u539F\u56E0: "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\uFF0C\u8DF3\u8FC7" };
-  const body = readFileSync8(o.file, "utf8").trim();
+  const body = readFileSync9(o.file, "utf8").trim();
   if (!body) throw new Error(`${o.file} \u662F\u7A7A\u7684`);
   const head = body.startsWith("KOL") ? "" : `KOL\uFF5C${cfg.project}
 `;
@@ -62940,6 +63040,7 @@ async function trialFollowup(ctx, o) {
   const cfg = ctx.cfg;
   const t = cfg.tables;
   const now = o.now ?? Date.now();
+  const withdrawn = await closeDeclined(ctx, { dryRun: o.dryRun });
   const [s, reviews, templates] = await Promise.all([
     loadSnapshot(ctx.base, cfg),
     ctx.base.records(t.reviews, { fields: ["\u5BA1\u6838\u9879", "\u72B6\u6001", "KOL"] }),
@@ -62951,6 +63052,7 @@ async function trialFollowup(ctx, o) {
     \u63D0\u4EA4\u5BA1\u6838: [],
     \u8981\u624B\u52A8\u8DDF\u8FDB: [],
     \u7F3A\u6A21\u677F: [],
+    \u5BA1\u6838\u4E0D\u53D1\u5DF2\u64A4\u56DE: withdrawn,
     \u8BD5\u8DD1: o.dryRun || void 0
   };
   const rows = [];
@@ -63037,7 +63139,7 @@ async function todayLists(ctx) {
     }),
     ctx.base.records(t.reviews, {
       filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838"]]] },
-      fields: ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u63D0\u51FA\u65F6\u95F4", "KOL", "\u72B6\u6001", "\u53D1\u9001\u6E20\u9053"]
+      fields: ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u63D0\u51FA\u65F6\u95F4", "KOL", "\u72B6\u6001", "\u53D1\u9001\u6E20\u9053", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "\u4F60\u7684\u610F\u89C1"]
     })
   ]);
   const trials = [...s.followups.values()].filter((f) => ["\u4F53\u9A8C\u4E2D", "\u5DF2\u7EA6\u53D1\u5E03"].includes(option(f["\u9636\u6BB5"])));
@@ -63056,21 +63158,25 @@ async function todayLists(ctx) {
     \u9636\u6BB5: option(f["\u9636\u6BB5"]),
     \u4E0B\u4E00\u6B65: text(f["\u4E0B\u4E00\u6B65"])
   }));
+  function item(r) {
+    const ch = option(r["\u53D1\u9001\u6E20\u9053"]);
+    return {
+      id: r.record_id,
+      \u5BA1\u6838\u9879: text(r["\u5BA1\u6838\u9879"]),
+      \u7C7B\u578B: option(r["\u7C7B\u578B"]),
+      kol: name(linkIds(r["KOL"])[0] ?? ""),
+      ...ch && ch !== "\u4E0D\u53D1\u90AE\u4EF6" ? { \u53D1\u9001\u6E20\u9053: ch, \u63D2\u4EF6\u80FD\u53D1: pluginChannel(ch) } : {}
+    };
+  }
   const due = [...s.followups.values()].filter((f) => nextStep(cfg, f, 0, d).kind === "remind").length;
   return {
     \u65E5\u671F: d,
     \u5F85\u5904\u7406\u6765\u4FE1: pendingMail.map((r) => ({ kol: name(linkIds(r["KOL"])[0] ?? ""), \u4E3B\u9898: text(r["\u6458\u8981"]), \u65E5\u671F: day(r["\u65E5\u671F"], cfg.timezone), \u6E20\u9053: option(r["\u6E20\u9053"]) })),
     \u8F6E\u5230\u6211\u4EEC: ourTurn,
-    \u7B49\u4F60\u5BA1\u6838: reviews.map((r) => {
-      const ch = option(r["\u53D1\u9001\u6E20\u9053"]);
-      return {
-        id: r.record_id,
-        \u5BA1\u6838\u9879: text(r["\u5BA1\u6838\u9879"]),
-        \u7C7B\u578B: option(r["\u7C7B\u578B"]),
-        kol: name(linkIds(r["KOL"])[0] ?? ""),
-        ...ch && ch !== "\u4E0D\u53D1\u90AE\u4EF6" ? { \u53D1\u9001\u6E20\u9053: ch, \u63D2\u4EF6\u80FD\u53D1: pluginChannel(ch) } : {}
-      };
-    }),
+    \u7B49\u4F60\u5BA1\u6838: reviews.filter((r) => reviewState(r) === "pending").map(item),
+    \u5DF2\u6279\u51C6\u5F85\u53D1: reviews.filter((r) => reviewState(r) === "approved").map(item),
+    \u8981\u6539: reviews.filter((r) => reviewState(r) === "revise").map((r) => ({ ...item(r), \u610F\u89C1: text(r["\u4F60\u7684\u610F\u89C1"]) })),
+    \u5BA1\u6838\u4E0D\u53D1\u5F85\u64A4\u56DE: reviews.filter((r) => reviewState(r) === "declined").map(item),
     \u5176\u4ED6\u6E20\u9053\u8981\u624B\u52A8\u5904\u7406: otherChannels,
     \u4F53\u9A8C\u7801\u4E09\u5929\u5185\u5230\u671F: trials.filter((f) => option(f["\u9636\u6BB5"]) === "\u4F53\u9A8C\u4E2D" && day(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) && day(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) <= addDays(d, 3)).map((f) => ({ name: text(f["\u8D26\u53F7\u540D\u79F0"]), \u4F53\u9A8C\u7801: text(f["\u4F53\u9A8C\u7801"]), \u5230\u671F: day(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) })),
     \u4E03\u5929\u5185\u7EA6\u5B9A\u53D1\u5E03: trials.filter((f) => option(f["\u9636\u6BB5"]) === "\u5DF2\u7EA6\u53D1\u5E03" && day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], cfg.timezone) && day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], cfg.timezone) <= addDays(d, 7)).map((f) => ({ name: text(f["\u8D26\u53F7\u540D\u79F0"]), \u53D1\u5E03\u65E5\u671F: day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], cfg.timezone) })),
@@ -63086,7 +63192,9 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   inbox   [--limit 30]          \u5217\u51FA\u5F85\u5904\u7406\u7684\u6765\u4FE1\uFF1A\u5BF9\u65B9\u539F\u8BDD\u3001\u8DDF\u8FDB\u9636\u6BB5\u3001\u4F53\u9A8C\u7801\u3001\u5EFA\u8BAE\u7801\u540D\uFF08\u53EA\u8BFB\uFF09
   inbox   --apply \u6587\u4EF6.json      \u6309\u51B3\u5B9A\u6587\u4EF6\u628A\u8FD9\u6279\u6765\u4FE1\u4E00\u6B21\u63D0\u4EA4\u5230\u5BA1\u6838\u961F\u5217\uFF08\u60F3\u4F53\u9A8C / \u8981\u56DE\u590D / \u62D2\u7EDD / \u4E0D\u7528\u56DE\uFF09\uFF0C
                                 \u53D6\u6D88\u5F85\u5904\u7406\uFF1B\u6709\u4E00\u6761\u4E0D\u5BF9\u5C31\u4E00\u6761\u90FD\u4E0D\u5199
-  send    [--only rec1,rec2]    \u53D1\u51FA\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u6279\u51C6\u3001\u8FD8\u6CA1\u53D1\u7684\u4FE1\uFF0C\u6267\u884C\u6279\u51C6\u9879\u7684\u53D1\u540E\u52A8\u4F5C\uFF08\u7ED3\u6848 / \u6C38\u4E0D\u8054\u7CFB\uFF09
+  send    [--only rec1,rec2]    \u53D1\u51FA\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u6279\u51C6\u3001\u8FD8\u6CA1\u53D1\u7684\u4FE1\uFF0C\u6267\u884C\u6279\u51C6\u9879\u7684\u53D1\u540E\u52A8\u4F5C\uFF08\u7ED3\u6848 / \u6C38\u4E0D\u8054\u7CFB\uFF09\uFF0C\u64A4\u56DE\u5BA1\u6838\u9009\u4E86\u300C\u4E0D\u53D1\u300D\u7684
+  revise                        \u5217\u51FA\u5BA1\u6838\u9009\u4E86\u300C\u6539\u300D\u7684\u9879\uFF0C\u9644\u5BA1\u6838\u610F\u89C1\u548C\u539F\u8349\u7A3F\uFF08\u53EA\u8BFB\uFF09
+  revise  --apply \u6587\u4EF6.json      \u628A\u6309\u610F\u89C1\u91CD\u5199\u7684\u8349\u7A3F\u653E\u56DE\u539F\u5BA1\u6838\u9879\uFF0C\u6E05\u6389\u5904\u7406\u3001\u91CD\u65B0\u9001\u5BA1\uFF1B\u6709\u4E00\u6761\u4E0D\u5BF9\u5C31\u4E00\u6761\u90FD\u4E0D\u5199
   invite  --batch \u6279\u6B21 --template \u6A21\u677F --mailbox \u90AE\u7BB1 --approval \u5BA1\u6838\u8BB0\u5F55 --profiles rec1,rec2 | --profiles-file \u6587\u4EF6
                                 \u7ED9\u4E00\u6279\u6863\u6848\u53D1\u9080\u7EA6\u5E76\u5EFA\u8DDF\u8FDB\u8BB0\u5F55\uFF08\u6279\u6B21\u8981\u5148\u5728\u5BA1\u6838\u961F\u5217\u91CC\u6279\u51C6\uFF09
   remind                        \u5148\u540C\u6B65\u6536\u4EF6\u7BB1\uFF0C\u518D\u6309\u89C4\u5219\u53D1\u7B2C 1/2 \u6B21\u50AC\u4FE1\uFF0C\u4E24\u6B21\u90FD\u6CA1\u56DE\u7684\u7ED3\u6848
@@ -63129,7 +63237,7 @@ var COMMANDS = {
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
-      const profiles = v["profiles-file"] ? list(readFileSync9(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
+      const profiles = v["profiles-file"] ? list(readFileSync10(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
       if (!profiles.length) throw new Error("\u6CA1\u6709\u7ED9\u8981\u9080\u7EA6\u7684\u6863\u6848\u8BB0\u5F55\uFF08--profiles \u6216 --profiles-file\uFF09");
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }
@@ -63168,6 +63276,11 @@ var COMMANDS = {
     title: RUN_TITLES.inbox,
     writes: true,
     run: (ctx, v) => v.apply ? applyInbox(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] }) : listInbox(ctx, { limit: Number(v.limit ?? 30) })
+  },
+  revise: {
+    title: RUN_TITLES.revise,
+    writes: true,
+    run: (ctx, v) => v.apply ? applyRevisions(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] }) : toRevise(ctx)
   },
   posts: { title: RUN_TITLES.posts, writes: true, run: (ctx, v) => findPosts(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 1), days: v.days ? Number(v.days) : void 0 }) },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
@@ -63262,7 +63375,7 @@ async function main() {
     return cmd || values.help ? 0 : 1;
   }
   let ctx;
-  const logged = cmd.writes && !values["dry-run"] && !((name === "classify" || name === "inbox") && !values.apply);
+  const logged = cmd.writes && !values["dry-run"] && !(["classify", "inbox", "revise"].includes(name) && !values.apply);
   try {
     if (name === "project") return print(await projectCommand(positionals.slice(1)));
     if (name === "check") {

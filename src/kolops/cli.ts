@@ -18,6 +18,7 @@ import { findPosts } from "./posts.js";
 import { checkTrialName, syncCodes } from "./codes.js";
 import { notifyGroup } from "./notify.js";
 import { applyInbox, listInbox } from "./inbox.js";
+import { applyRevisions, toRevise } from "./reviews.js";
 import { syncInbox } from "./sync.js";
 import { trialFollowup } from "./trialfollow.js";
 import { todayLists } from "./today.js";
@@ -29,7 +30,9 @@ const HELP = `kol <命令> [选项]
   inbox   [--limit 30]          列出待处理的来信：对方原话、跟进阶段、体验码、建议码名（只读）
   inbox   --apply 文件.json      按决定文件把这批来信一次提交到审核队列（想体验 / 要回复 / 拒绝 / 不用回），
                                 取消待处理；有一条不对就一条都不写
-  send    [--only rec1,rec2]    发出审核队列里已批准、还没发的信，执行批准项的发后动作（结案 / 永不联系）
+  send    [--only rec1,rec2]    发出审核队列里已批准、还没发的信，执行批准项的发后动作（结案 / 永不联系），撤回审核选了「不发」的
+  revise                        列出审核选了「改」的项，附审核意见和原草稿（只读）
+  revise  --apply 文件.json      把按意见重写的草稿放回原审核项，清掉处理、重新送审；有一条不对就一条都不写
   invite  --batch 批次 --template 模板 --mailbox 邮箱 --approval 审核记录 --profiles rec1,rec2 | --profiles-file 文件
                                 给一批档案发邀约并建跟进记录（批次要先在审核队列里批准）
   remind                        先同步收件箱，再按规则发第 1/2 次催信，两次都没回的结案
@@ -101,6 +104,10 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
   inbox: {
     title: RUN_TITLES.inbox, writes: true,
     run: (ctx, v) => (v.apply ? applyInbox(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] }) : listInbox(ctx, { limit: Number(v.limit ?? 30) })),
+  },
+  revise: {
+    title: RUN_TITLES.revise, writes: true,
+    run: (ctx, v) => (v.apply ? applyRevisions(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] }) : toRevise(ctx)),
   },
   posts: { title: RUN_TITLES.posts, writes: true, run: (ctx, v) => findPosts(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 1), days: v.days ? Number(v.days) : undefined }) },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
@@ -178,7 +185,7 @@ async function main(): Promise<number> {
 
   let ctx: Ctx | undefined;
   // Listing what to classify or answer only reads; only --apply belongs in 运行记录.
-  const logged = cmd.writes && !values["dry-run"] && !((name === "classify" || name === "inbox") && !values.apply);
+  const logged = cmd.writes && !values["dry-run"] && !(["classify", "inbox", "revise"].includes(name) && !values.apply);
   try {
     if (name === "project") return print(await projectCommand(positionals.slice(1)));
     if (name === "check") {

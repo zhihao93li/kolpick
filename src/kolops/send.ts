@@ -9,14 +9,11 @@ import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./m
 import { bounceStats, bouncePaused, otherSendingRun, stamp, today, todaysSends, type SendCounts } from "./ops.js";
 import { closeChanges } from "./inbox.js";
 import { undeliverable } from "./mx.js";
+import { closeDeclined, isApproved } from "./reviews.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
 
-/** Approval is 处理 = 发／同意. The older 审核结果 column can no longer approve, but a no left there still holds an item back. */
-export function isApproved(r: Row): boolean {
-  const no = ["退回修改", "先不发", "不同意"].includes(option(r["审核结果"]));
-  return option(r["处理"]) === "发／同意" && !no;
-}
+export { isApproved };
 
 export interface Outgoing {
   key: string;
@@ -239,7 +236,7 @@ async function sendRetryingConflicts(ctx: Ctx, mail: Parameters<Ctx["mail"]["sen
  * `kol send`: everything approved in 审核队列 that is an email and hasn't gone out yet. An approved item that
  * sends nothing but has a 发后动作 (a refusal left unanswered) is carried out here too.
  */
-export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: string[] }): Promise<SendReport & { notEmail: number; closed: string[] }> {
+export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: string[] }): Promise<SendReport & { notEmail: number; closed: string[]; withdrawn: string[] }> {
   const t = ctx.cfg.tables;
   const [s, reviews] = await Promise.all([
     loadSnapshot(ctx.base, ctx.cfg),
@@ -301,5 +298,7 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
   }
   const report = await deliver(ctx, items, s, opts.dryRun);
   report.skipped.unshift(...skipped);
-  return { ...report, notEmail, closed };
+  // Items the reviewer chose 不发 for are withdrawn here, so their KOLs stop waiting on review.
+  const withdrawn = opts.only?.length ? [] : await closeDeclined(ctx, { dryRun: opts.dryRun, reviews });
+  return { ...report, notEmail, closed, withdrawn };
 }
