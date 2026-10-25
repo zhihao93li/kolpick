@@ -59721,6 +59721,8 @@ var SETTINGS_TABLES = {
     { name: "\u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570", type: "number" },
     { name: "\u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263", type: "number" },
     { name: "\u6D3B\u52A8\u7801\u5E02\u573A", type: "text" },
+    { name: "\u53D1\u5E03\u8BC6\u522B\u8BCD", type: "text" },
+    { name: "\u53D1\u5E03\u56DE\u770B\u5929\u6570", type: "number" },
     { name: "\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA", type: "text" },
     { name: "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3", type: "text" },
     { name: "\u8BF4\u660E", type: "text" }
@@ -59776,7 +59778,8 @@ var SETTING_DEFAULTS = {
   \u4F53\u9A8C\u672A\u7528\u63D0\u9192\u5929\u6570: 5,
   \u4F53\u9A8C\u505C\u6EDE\u63D0\u9192\u5929\u6570: 7,
   \u4F53\u9A8C\u5230\u671F\u63D0\u9192\u5929\u6570: 2,
-  \u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263: 15
+  \u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263: 15,
+  \u53D1\u5E03\u56DE\u770B\u5929\u6570: 14
 };
 var REQUIRED_FIELDS = {
   profiles: [
@@ -59902,6 +59905,8 @@ function configFrom(project, baseToken, s, mailboxRows) {
       percentOff: num(s["\u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263"], SETTING_DEFAULTS.\u6D3B\u52A8\u7801\u7C89\u4E1D\u6298\u6263),
       markets: listOf(s["\u6D3B\u52A8\u7801\u5E02\u573A"]).map((pair) => pair.split(/[=＝]/).map((x) => x.trim())).filter(([a, b]) => a && b)
     },
+    postWords: listOf(s["\u53D1\u5E03\u8BC6\u522B\u8BCD"]),
+    postLookbackDays: num(s["\u53D1\u5E03\u56DE\u770B\u5929\u6570"], SETTING_DEFAULTS.\u53D1\u5E03\u56DE\u770B\u5929\u6570),
     webhook: text(s["\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA"]),
     dataApi: text(s["\u4E1A\u52A1\u6570\u636E\u63A5\u53E3"])
   };
@@ -60149,7 +60154,7 @@ function stamp(ms = Date.now(), tz = "+08:00") {
 function today(cfg, ms = Date.now()) {
   return dayOf(ms, cfg.timezone);
 }
-var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65", inbox: "\u6279\u91CF\u5904\u7406\u6765\u4FE1", trialFollowup: "\u4F53\u9A8C\u8DDF\u8FDB" };
+var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65", inbox: "\u6279\u91CF\u5904\u7406\u6765\u4FE1", trialFollowup: "\u4F53\u9A8C\u8DDF\u8FDB", posts: "\u53D1\u73B0\u53D1\u5E03" };
 var SENDING_RUNS = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 var LOCK_MINUTES = 30;
 async function otherSendingRun(base, cfg, selfId) {
@@ -62546,7 +62551,7 @@ function duePosts(rows, now, tz) {
   const out = { due: [], missed: [], unsupported: [] };
   for (const r of rows) {
     const published = cellTime(r["\u53D1\u5E03\u65E5\u671F"], tz);
-    const url = text(r["\u5185\u5BB9\u94FE\u63A5"]);
+    const url = urlIn(text(r["\u5185\u5BB9\u94FE\u63A5"]));
     const platform = option(r["\u5E73\u53F0"]);
     if (published == null || !url) continue;
     for (const d of CHECKPOINTS) {
@@ -62560,6 +62565,9 @@ function duePosts(rows, now, tz) {
     }
   }
   return out;
+}
+function urlIn(cell) {
+  return cell.match(/\]\((https?:[^)\s]+)\)/)?.[1] ?? cell.trim();
 }
 function postKey(url) {
   const u = url.trim();
@@ -62643,6 +62651,130 @@ async function postMetrics(ctx, o) {
     ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u53D1\u5E03\u6570\u636E ${report.\u5DF2\u586B} \u6761`, detail: `${dayOf(Date.now(), ctx.cfg.timezone)} \u6293\u53D6` });
   }
   return report;
+}
+
+// src/kolops/posts.ts
+var WATCH_STAGES = ["\u5DF2\u7EA6\u53D1\u5E03", "\u5408\u4F5C\u4E2D", "\u5DF2\u53D1\u5E03"];
+var PER_PROFILE = 10;
+var ACTOR_FOR2 = { Instagram: "ig_post", TikTok: "tt_post", YouTube: "yt_video" };
+function handleFrom(url, re) {
+  return url.match(re)?.[1] ?? "";
+}
+function profileInput(key, profiles, since) {
+  if (key === "ig_post") return { directUrls: profiles, resultsType: "posts", resultsLimit: PER_PROFILE, onlyPostsNewerThan: since };
+  if (key === "tt_post") {
+    const handles = profiles.map((u) => handleFrom(u, /tiktok\.com\/@([\w.]+)/i) || u.replace(/^@/, ""));
+    return { profiles: handles, resultsPerPage: PER_PROFILE, oldestPostDateUnified: since, shouldDownloadVideos: false, shouldDownloadCovers: false };
+  }
+  return { startUrls: profiles.map((url) => ({ url })), maxResults: PER_PROFILE, maxResultsShorts: PER_PROFILE, maxResultStreams: 0, oldestPostDate: since };
+}
+function postOf(it) {
+  const url = String(it.url ?? it.webVideoUrl ?? it.postUrl ?? (it.shortCode ? `https://www.instagram.com/p/${it.shortCode}/` : ""));
+  const caption = String(it.caption ?? it.text ?? it.title ?? "") + (it.description ? `
+${it.description}` : "");
+  const when = it.timestamp ?? it.createTimeISO ?? it.date ?? it.uploadDate;
+  const at = when ? Date.parse(String(when)) : null;
+  const kind = String(it.productType ?? it.type ?? "").toLowerCase();
+  const form = /youtu/.test(url) ? /\/shorts\//.test(url) ? "\u77ED\u89C6\u9891" : "\u957F\u7247" : it.webVideoUrl || /clips|video|reel/.test(kind) ? "\u77ED\u89C6\u9891" : /sidecar|image/.test(kind) ? "\u8D34\u6587" : "\u5176\u4ED6";
+  const owner = String(it.ownerUsername ?? it.authorMeta?.name ?? it.channelUrl ?? "").toLowerCase();
+  return { url, caption, at: at == null || Number.isNaN(at) ? null : at, form, owner };
+}
+function mentions(caption, words) {
+  const c = caption.toLowerCase();
+  return words.find((w) => w && c.includes(w.toLowerCase())) ?? "";
+}
+var MemoryLedger2 = class {
+  async find() {
+    return null;
+  }
+  async started() {
+  }
+  async finished() {
+  }
+};
+async function findPosts(ctx, o) {
+  const cfg = ctx.cfg;
+  const t = cfg.tables;
+  const now = o.now ?? Date.now();
+  if (!cfg.postWords.length) throw new Error("\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u300C\u53D1\u5E03\u8BC6\u522B\u8BCD\u300D\uFF08\u6BD4\u5982 tafu\u3001@tafu_me\u3001tafu.me\uFF09\uFF0C\u4E0D\u77E5\u9053\u54EA\u4E9B\u5E16\u5B50\u662F\u5728\u8BB2\u8FD9\u4E2A\u9879\u76EE");
+  const [s, posts] = await Promise.all([loadSnapshot(ctx.base, cfg), ctx.base.records(t.posts, { fields: ["\u5185\u5BB9\u94FE\u63A5", "KOL"] })]);
+  const known = new Set(posts.map((p) => postKey(urlIn(text(p["\u5185\u5BB9\u94FE\u63A5"])))));
+  const watched = [];
+  const skipped = [];
+  for (const f of s.followups.values()) {
+    if (!WATCH_STAGES.includes(option(f["\u9636\u6BB5"]))) continue;
+    const p = profileOf(s, f);
+    const name = displayName(s, f);
+    const platform = option(p?.["\u4E3B\u8981\u5E73\u53F0"]);
+    const profileUrl = text(p?.["\u4E3B\u9875\u94FE\u63A5"]);
+    if (!ACTOR_FOR2[platform] || !profileUrl) {
+      skipped.push(`${name}\uFF1A${platform || "\u6CA1\u586B\u4E3B\u8981\u5E73\u53F0"}${profileUrl ? "" : "\uFF0C\u6CA1\u6709\u4E3B\u9875\u94FE\u63A5"}\uFF0C\u6293\u4E0D\u4E86`);
+      continue;
+    }
+    watched.push({ followupId: f.record_id, name, platform, profileUrl, words: [...cfg.postWords, text(f["\u6D3B\u52A8\u7801"])].filter(Boolean) });
+  }
+  const since = dayOf(now - (o.days ?? cfg.postLookbackDays) * 864e5, cfg.timezone);
+  const byPlatform = /* @__PURE__ */ new Map();
+  for (const w of watched) byPlatform.set(w.platform, [...byPlatform.get(w.platform) ?? [], w]);
+  const cost = [...byPlatform].reduce((sum, [p, list2]) => sum + estimate(ACTOR_FOR2[p], list2.length * PER_PROFILE), 0);
+  const report = {
+    \u770B\u4E86: watched.length,
+    \u4ECE: since,
+    \u4F30\u8BA1\u82B1\u8D39\u7F8E\u5143: Number(cost.toFixed(2)),
+    \u65B0\u53D1\u73B0: [],
+    \u6293\u4E0D\u4E86: skipped,
+    \u6CA1\u6293\u5230: [],
+    \u8BD5\u8DD1: o.dryRun || void 0
+  };
+  if (o.dryRun || !watched.length) return report;
+  if (cost > o.budget) throw new Error(`\u4F30\u8BA1\u8981 $${cost.toFixed(2)}\uFF0C\u8D85\u8FC7\u9884\u7B97 $${o.budget}\u3002\u52A0\u5927 --budget \u6216\u51CF\u5C11 --days \u518D\u8DD1`);
+  const runner = o.runner ?? new ApifyRunner(apifyToken(), o.budget, new MemoryLedger2());
+  const rows = [];
+  const moved = {};
+  const today2 = dayOf(now, cfg.timezone);
+  for (const [platform, list2] of byPlatform) {
+    const items = await runner.run(ACTOR_FOR2[platform], profileInput(ACTOR_FOR2[platform], list2.map((w) => w.profileUrl), since), list2.length * PER_PROFILE);
+    const seen = /* @__PURE__ */ new Set();
+    for (const it of items) {
+      const post = postOf(it);
+      if (!post.url) continue;
+      const key = postKey(post.url);
+      const w = list2.find((x) => ownerMatches(post.owner, x.profileUrl, String(it.inputUrl ?? ""))) ?? (list2.length === 1 ? list2[0] : void 0);
+      if (!w) continue;
+      seen.add(w.followupId);
+      if (known.has(key) || post.at != null && dayOf(post.at, cfg.timezone) < since) continue;
+      const hit = mentions(post.caption, w.words);
+      if (!hit) continue;
+      known.add(key);
+      const published = post.at != null ? stamp(post.at, cfg.timezone) : "";
+      report.\u65B0\u53D1\u73B0.push({ name: w.name, \u94FE\u63A5: post.url, \u547D\u4E2D: hit, \u53D1\u5E03\u65E5\u671F: published.slice(0, 10) });
+      rows.push({
+        KOL: [{ id: w.followupId }],
+        \u5E73\u53F0: [platform],
+        \u5F62\u5F0F: [post.form],
+        \u5185\u5BB9\u94FE\u63A5: post.url,
+        \u5185\u5BB9\u6807\u9898: post.caption.replace(/\s+/g, " ").trim().slice(0, 80),
+        ...published ? { \u53D1\u5E03\u65E5\u671F: published } : {},
+        \u5907\u6CE8: `${today2} kol posts \u81EA\u52A8\u53D1\u73B0\uFF08\u6587\u6848\u91CC\u6709\u300C${hit}\u300D\uFF09\uFF0C\u8BF7\u6838\u5BF9`
+      });
+      const f = s.followups.get(w.followupId);
+      if (option(f["\u9636\u6BB5"]) === "\u5DF2\u7EA6\u53D1\u5E03") moved[w.followupId] = { \u9636\u6BB5: ["\u5DF2\u53D1\u5E03"], \u4E0B\u4E00\u6B65: `${today2} \u53D1\u73B0\u5DF2\u53D1\u5E03\uFF1A${post.url}` };
+    }
+    for (const w of list2) if (!seen.has(w.followupId)) report.\u6CA1\u6293\u5230.push(`${w.name}\uFF08${w.profileUrl}\uFF09`);
+  }
+  if (rows.length) {
+    await ctx.base.create(t.posts, rows);
+    if (Object.keys(moved).length) await ctx.base.update(t.followups, moved);
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u81EA\u52A8\u53D1\u73B0\u53D1\u5E03 ${rows.length} \u6761` });
+  }
+  return report;
+}
+function ownerMatches(owner, profileUrl, inputUrl) {
+  const p = profileUrl.toLowerCase().replace(/[?#].*$/, "").replace(/\/+$/, "");
+  if (inputUrl && inputUrl.toLowerCase().replace(/[?#].*$/, "").replace(/\/+$/, "") === p) return true;
+  if (!owner) return false;
+  const handle = p.match(/(?:instagram\.com|tiktok\.com\/@|youtube\.com\/@)\/?([\w.-]+)/)?.[1] ?? "";
+  return Boolean(handle) && (owner === handle || owner.includes(handle));
 }
 
 // src/kolops/notify.ts
@@ -62858,6 +62990,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   classify --batch \u5165\u5E93\u6279\u6B21 [--limit 50]
                                 \u5217\u51FA\u8FD9\u6279\u91CC\u8FD8\u6CA1\u586B\u5408\u4F5C\u9080\u7EA6\u65B9\u5411\u3001\u5E02\u573A\u3001\u8A9E\u8A00\u3001\u5185\u5BB9\u7C7B\u578B\u3001\u79F0\u547C\u7684\u4EBA\uFF0C\u9644\u7B80\u4ECB\u548C\u53EF\u9009\u503C\uFF08\u53EA\u8BFB\uFF09
   classify --apply \u6587\u4EF6.json     \u6309\u6587\u4EF6\u5199\u5165\u4E0A\u9762\u8FD9\u51E0\u4E2A\u5B57\u6BB5\uFF08{"rec\u2026": {"\u5E02\u573A": "\u53F0\u6E7E", \u2026}}\uFF09\uFF0C\u6709\u4E00\u4E2A\u503C\u4E0D\u5BF9\u5C31\u4E00\u6761\u90FD\u4E0D\u5199
+  posts   [--budget 1] [--days N] \u770B\u5DF2\u7EA6\u53D1\u5E03\u3001\u5408\u4F5C\u4E2D\u3001\u5DF2\u53D1\u5E03\u7684 KOL \u6700\u8FD1\u7684\u5E16\u5B50\uFF0C\u6587\u6848\u91CC\u6709\u300C\u8BBE\u7F6E\u300D\u7684\u53D1\u5E03\u8BC6\u522B\u8BCD\u6216\u4ED6\u7684\u6D3B\u52A8\u7801\u7684\uFF0C\u8BB0\u8FDB\u300C\u53D1\u5E03\u5185\u5BB9\u300D\uFF08\u82B1 Apify \u7684\u94B1\uFF09
   metrics [--budget 2]          \u53D1\u5E03\u540E\u7B2C 1/3/7/30 \u5929\uFF0C\u6293 Instagram\u3001YouTube\u3001TikTok \u5E16\u5B50\u7684\u64AD\u653E\u548C\u4E92\u52A8\u6570\u586B\u8FDB\u300C\u53D1\u5E03\u5185\u5BB9\u300D\uFF08\u82B1 Apify \u7684\u94B1\uFF09
   notify  --file \u6587\u672C\u6587\u4EF6        \u628A\u4E00\u6BB5\u6587\u5B57\u53D1\u5230\u9879\u76EE\u7684\u98DE\u4E66\u7FA4\uFF08\u300C\u8BBE\u7F6E\u300D\u91CC\u586B\u4E86\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\u624D\u53D1\uFF09
   codes                         \u4ECE\u9879\u76EE\u7684\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u540C\u6B65\u4F53\u9A8C\u7801\u5DF2\u7528\u6B21\u6570\u3001\u4E0A\u9650\u548C\u5230\u671F\u65E5\uFF0C\u5217\u51FA\u7528\u4E86\u4E00\u90E8\u5206\u3001\u5FEB\u5230\u671F\u7684\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801\u6982\u51B5
@@ -62930,6 +63063,7 @@ var COMMANDS = {
     writes: true,
     run: (ctx, v) => v.apply ? applyInbox(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] }) : listInbox(ctx, { limit: Number(v.limit ?? 30) })
   },
+  posts: { title: RUN_TITLES.posts, writes: true, run: (ctx, v) => findPosts(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 1), days: v.days ? Number(v.days) : void 0 }) },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
   codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
   "trial-followup": { title: RUN_TITLES.trialFollowup, writes: true, run: (ctx, v) => trialFollowup(ctx, { dryRun: !!v["dry-run"] }) },

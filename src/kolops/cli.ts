@@ -14,6 +14,7 @@ import { sendApproved } from "./send.js";
 import { checkBase, setupBase } from "./setup.js";
 import { applyClassification, toClassify } from "./classify.js";
 import { postMetrics } from "./metrics.js";
+import { findPosts } from "./posts.js";
 import { checkTrialName, syncCodes } from "./codes.js";
 import { notifyGroup } from "./notify.js";
 import { applyInbox, listInbox } from "./inbox.js";
@@ -38,6 +39,7 @@ const HELP = `kol <命令> [选项]
   classify --batch 入库批次 [--limit 50]
                                 列出这批里还没填合作邀约方向、市场、語言、内容类型、称呼的人，附简介和可选值（只读）
   classify --apply 文件.json     按文件写入上面这几个字段（{"rec…": {"市场": "台湾", …}}），有一个值不对就一条都不写
+  posts   [--budget 1] [--days N] 看已约发布、合作中、已发布的 KOL 最近的帖子，文案里有「设置」的发布识别词或他的活动码的，记进「发布内容」（花 Apify 的钱）
   metrics [--budget 2]          发布后第 1/3/7/30 天，抓 Instagram、YouTube、TikTok 帖子的播放和互动数填进「发布内容」（花 Apify 的钱）
   notify  --file 文本文件        把一段文字发到项目的飞书群（「设置」里填了飞书群机器人才发）
   codes                         从项目的业务数据接口同步体验码已用次数、上限和到期日，列出用了一部分、快到期的体验码和活动码概况
@@ -100,6 +102,7 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
     title: RUN_TITLES.inbox, writes: true,
     run: (ctx, v) => (v.apply ? applyInbox(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] }) : listInbox(ctx, { limit: Number(v.limit ?? 30) })),
   },
+  posts: { title: RUN_TITLES.posts, writes: true, run: (ctx, v) => findPosts(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 1), days: v.days ? Number(v.days) : undefined }) },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
   codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
   "trial-followup": { title: RUN_TITLES.trialFollowup, writes: true, run: (ctx, v) => trialFollowup(ctx, { dryRun: !!v["dry-run"] }) },

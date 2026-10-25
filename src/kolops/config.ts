@@ -39,6 +39,9 @@ export interface Config {
   trialNudge: { unusedDays: number; stalledDays: number; expiringDays: number };
   /** Partner campaigns: the default fan discount, and profile 市场 → sales market pairs from 活动码市场. */
   partner: { percentOff: number; markets: [string, string][] };
+  /** `kol posts`: words that mark a post as being about the project, and how many days back each check reads. */
+  postWords: string[];
+  postLookbackDays: number;
   webhook: string;
   dataApi: string;
 }
@@ -105,6 +108,8 @@ export function configFrom(project: string, baseToken: string, s: Row, mailboxRo
       percentOff: num(s["活动码粉丝折扣"], SETTING_DEFAULTS.活动码粉丝折扣),
       markets: listOf(s["活动码市场"]).map((pair) => pair.split(/[=＝]/).map((x) => x.trim()) as [string, string]).filter(([a, b]) => a && b),
     },
+    postWords: listOf(s["发布识别词"]),
+    postLookbackDays: num(s["发布回看天数"], SETTING_DEFAULTS.发布回看天数),
     webhook: text(s["飞书群机器人"]),
     dataApi: text(s["业务数据接口"]),
   };

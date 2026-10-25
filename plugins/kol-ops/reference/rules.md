@@ -8,7 +8,7 @@
 node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" <命令> [选项]
 ```
 
-命令：`today`、`sync`、`inbox`、`send`、`invite`、`remind`、`find`、`classify`、`metrics`、`codes`、`trial-followup`、`trial-check`、`notify`、`whoami`、`check`、`project`、`setup-base`。`--help` 看完整参数。
+命令：`today`、`sync`、`inbox`、`send`、`invite`、`remind`、`find`、`classify`、`metrics`、`codes`、`trial-followup`、`posts`、`trial-check`、`notify`、`whoami`、`check`、`project`、`setup-base`。`--help` 看完整参数。
 
 ## 项目
 

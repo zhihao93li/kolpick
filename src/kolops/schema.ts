@@ -64,6 +64,8 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
     { name: "体验到期提醒天数", type: "number" },
     { name: "活动码粉丝折扣", type: "number" },
     { name: "活动码市场", type: "text" },
+    { name: "发布识别词", type: "text" },
+    { name: "发布回看天数", type: "number" },
     { name: "飞书群机器人", type: "text" },
     { name: "业务数据接口", type: "text" },
     { name: "说明", type: "text" },
@@ -128,6 +130,7 @@ export const SETTING_DEFAULTS = {
   体验停滞提醒天数: 7,
   体验到期提醒天数: 2,
   活动码粉丝折扣: 15,
+  发布回看天数: 14,
 } as const;
 
 /** Fields of the existing tables that the commands can't work without; `kol check` looks for these. */

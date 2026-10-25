@@ -23,7 +23,7 @@ export function duePosts(rows: Row[], now: number, tz: string): { due: Due[]; mi
   const out = { due: [] as Due[], missed: [] as string[], unsupported: [] as string[] };
   for (const r of rows) {
     const published = cellTime(r["发布日期"], tz);
-    const url = text(r["内容链接"]);
+    const url = urlIn(text(r["内容链接"]));
     const platform = option(r["平台"]);
     if (published == null || !url) continue;
     for (const d of CHECKPOINTS) {
@@ -37,6 +37,11 @@ export function duePosts(rows: Row[], now: number, tz: string): { due: Due[]; mi
     }
   }
   return out;
+}
+
+/** A 发布内容 cell may hold a markdown link ([url](url)); the URL inside is what counts. */
+export function urlIn(cell: string): string {
+  return cell.match(/\]\((https?:[^)\s]+)\)/)?.[1] ?? cell.trim();
 }
 
 /** Stable key of a post URL, so a scraper's result can be matched to the row that asked for it. */
