@@ -43,10 +43,16 @@ export function trialPlan(cfg: Config, review: Row, followup: Row | undefined, p
   return { action, code, maxUses, days };
 }
 
-/** 「11 月 8 日」 in the base's zone. */
+/** 「11 月 8 日」 in the base's zone, for notes in the table. */
 export function dateWords(iso: string, tz: string): string {
   const d = stamp(Date.parse(iso), tz);
   return `${Number(d.slice(5, 7))} 月 ${Number(d.slice(8, 10))} 日`;
+}
+
+/** 「2026 年 11 月 8 日 10:23」 for the mail: the code stops working at that minute, as the hand-written mails said. */
+export function expiryWords(iso: string, tz: string): string {
+  const d = stamp(Date.parse(iso), tz);
+  return `${d.slice(0, 4)} 年 ${dateWords(iso, tz)} ${d.slice(11, 16)}`;
 }
 
 const PLACEHOLDERS = (code: string, uses: number, until: string): Record<string, string> => ({
@@ -92,7 +98,7 @@ export function prepareTrial(ctx: Ctx, plan: TrialPlan, review: Row, kolName: st
       ctx.journal.mark(key, "prepared", undefined, done);
     }
     const until = dateWords(done.expiresAt, ctx.cfg.timezone);
-    const values = PLACEHOLDERS(done.code, done.maxUses, until);
+    const values = PLACEHOLDERS(done.code, done.maxUses, expiryWords(done.expiresAt, ctx.cfg.timezone));
     const day = today(ctx.cfg);
     const followup = plan.action === "发码"
       ? { 阶段: ["体验中"], 体验码: done.code, 体验码上限: done.maxUses, 体验码已用: done.used, 体验码到期: stamp(Date.parse(done.expiresAt), ctx.cfg.timezone),

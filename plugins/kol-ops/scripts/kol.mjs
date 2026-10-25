@@ -61344,6 +61344,10 @@ function dateWords(iso, tz) {
   const d = stamp(Date.parse(iso), tz);
   return `${Number(d.slice(5, 7))} \u6708 ${Number(d.slice(8, 10))} \u65E5`;
 }
+function expiryWords(iso, tz) {
+  const d = stamp(Date.parse(iso), tz);
+  return `${d.slice(0, 4)} \u5E74 ${dateWords(iso, tz)} ${d.slice(11, 16)}`;
+}
 var PLACEHOLDERS = (code, uses, until) => ({
   "{\u9AD4\u9A57\u78BC}": code,
   "{\u4F53\u9A8C\u7801}": code,
@@ -61373,7 +61377,7 @@ function prepareTrial(ctx, plan, review, kolName, followupId) {
       ctx.journal.mark(key, "prepared", void 0, done);
     }
     const until = dateWords(done.expiresAt, ctx.cfg.timezone);
-    const values = PLACEHOLDERS(done.code, done.maxUses, until);
+    const values = PLACEHOLDERS(done.code, done.maxUses, expiryWords(done.expiresAt, ctx.cfg.timezone));
     const day2 = today(ctx.cfg);
     const followup = plan.action === "\u53D1\u7801" ? {
       \u9636\u6BB5: ["\u4F53\u9A8C\u4E2D"],

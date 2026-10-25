@@ -65,7 +65,7 @@ describe("issuing a trial code with the reply", () => {
     const args = lark.sent[0].args;
     expect(args).toContain("+reply");
     expect(args[args.indexOf("--subject") + 1]).toBe("Re: 想送 小鹿 一份合盤");
-    expect(args[args.indexOf("--body") + 1]).toContain("體驗碼是 deer_jay，可以用 3 次，11 月 8 日前有效。");
+    expect(args[args.indexOf("--body") + 1]).toContain("體驗碼是 deer_jay，可以用 3 次，2026 年 11 月 8 日 10:00前有效。");
     expect(lark.table(T.followups).find((x) => x.record_id === fid)).toMatchObject({
       阶段: ["体验中"], 体验码: "deer_jay", 体验码上限: 3, 体验码已用: 0, 体验码到期: "2026-11-08 10:00", 当前轮到谁: ["KOL"] });
     expect(lark.table(T.reviews).find((x) => x.record_id === rid)!["状态"]).toEqual(["已执行"]);
