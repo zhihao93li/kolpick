@@ -10,13 +10,10 @@ import { closeChanges } from "./inbox.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
 
-/** 处理 / 审核结果 overlap in the base; either one saying yes counts, either one saying no wins. */
+/** Approval is 处理 = 发／同意. The older 审核结果 column can no longer approve, but a no left there still holds an item back. */
 export function isApproved(r: Row): boolean {
-  const p = option(r["处理"]);
-  const res = option(r["审核结果"]);
-  const yes = p === "发／同意" || res === "确认发送" || res === "同意";
-  const no = ["改", "不发"].includes(p) || ["退回修改", "先不发", "不同意"].includes(res);
-  return yes && !no && r["确认发出"] === true;
+  const no = ["退回修改", "先不发", "不同意"].includes(option(r["审核结果"]));
+  return option(r["处理"]) === "发／同意" && !no;
 }
 
 export interface Outgoing {

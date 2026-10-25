@@ -96,7 +96,7 @@ it("files the batch for review, unticks the mail and hands the KOL to review", a
 it("carries out an approved refusal with no mail: closes the followup and, for 永不联系, the profile", async () => {
   await applyInbox(ctx, { dryRun: false, file: decisions([{ contact: c2, category: "拒绝", after: "永不联系", reason: "隐私" }]) });
   const rid = lark.table(T.reviews)[0].record_id;
-  Object.assign(lark.table(T.reviews)[0], { 处理: ["发／同意"], 确认发出: true });
+  Object.assign(lark.table(T.reviews)[0], { 处理: ["发／同意"] });
   const r = await sendApproved(ctx, { dryRun: false });
   expect(r.closed).toEqual(["小鹿與阿哲"]);
   expect(lark.sent).toHaveLength(0);
@@ -107,7 +107,7 @@ it("carries out an approved refusal with no mail: closes the followup and, for �
 
 it("sends a closing reply first, then closes", async () => {
   await applyInbox(ctx, { dryRun: false, file: decisions([{ contact: c2, category: "拒绝", draft: "了解，謝謝回覆！", after: "结案", reason: "档期" }]) });
-  Object.assign(lark.table(T.reviews)[0], { 处理: ["发／同意"], 确认发出: true });
+  Object.assign(lark.table(T.reviews)[0], { 处理: ["发／同意"] });
   const r = await sendApproved(ctx, { dryRun: false });
   expect(r.sent).toHaveLength(1);
   expect(lark.table(T.followups)[0]).toMatchObject({ 阶段: ["结案"], 结案原因: ["档期"], 当前轮到谁: ["无需动作"] });

@@ -46,7 +46,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 function review(fields: Record<string, any> = {}) {
-  return lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["回复邮件"], 处理: ["发／同意"], 确认发出: true, 发送渠道: ["hello@tafu.me"],
+  return lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["回复邮件"], 处理: ["发／同意"], 发送渠道: ["hello@tafu.me"],
     收件人: "deer@example.com", KOL: [{ id: fid }], 审核项: "发体验码给小鹿", 体验码动作: ["发码"], 邮件草稿: DRAFT.replace("{稱呼}", "小鹿"), ...fields });
 }
 

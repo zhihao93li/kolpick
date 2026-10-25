@@ -19,7 +19,7 @@ let fid: string;
 
 function review(fields: Record<string, any> = {}): string {
   return lark.add(T.reviews, {
-    状态: ["待你审核"], 类型: ["回复邮件"], 处理: ["发／同意"], 确认发出: true, 发送渠道: ["hello@tafu.me"],
+    状态: ["待你审核"], 类型: ["回复邮件"], 处理: ["发／同意"], 发送渠道: ["hello@tafu.me"],
     收件人: "anan@example.com", 邮件草稿: "呂爸您好，\n\n当然可以。", KOL: [{ id: fid }], 审核项: "安安的回信", ...fields,
   });
 }
@@ -35,11 +35,12 @@ beforeEach(() => {
 });
 
 describe("isApproved", () => {
-  it("needs a yes and the 确认发出 tick, and any no wins", () => {
-    expect(isApproved({ record_id: "a", 处理: ["发／同意"], 确认发出: true })).toBe(true);
-    expect(isApproved({ record_id: "a", 处理: ["发／同意"], 确认发出: false })).toBe(false);
-    expect(isApproved({ record_id: "a", 审核结果: ["确认发送"], 确认发出: true })).toBe(true);
-    expect(isApproved({ record_id: "a", 处理: ["发／同意"], 审核结果: ["先不发"], 确认发出: true })).toBe(false);
+  it("goes by 处理 alone, and a no in 审核结果 still holds an item back", () => {
+    expect(isApproved({ record_id: "a", 处理: ["发／同意"] })).toBe(true);
+    expect(isApproved({ record_id: "a", 处理: ["发／同意"], 确认发出: false })).toBe(true);
+    expect(isApproved({ record_id: "a", 处理: ["改"] })).toBe(false);
+    expect(isApproved({ record_id: "a", 审核结果: ["确认发送"], 确认发出: true })).toBe(false);
+    expect(isApproved({ record_id: "a", 处理: ["发／同意"], 审核结果: ["先不发"] })).toBe(false);
   });
 });
 

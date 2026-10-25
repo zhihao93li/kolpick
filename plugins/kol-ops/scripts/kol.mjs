@@ -59809,7 +59809,6 @@ var REQUIRED_FIELDS = {
     "\u72B6\u6001",
     "\u5904\u7406",
     "\u5BA1\u6838\u7ED3\u679C",
-    "\u786E\u8BA4\u53D1\u51FA",
     "KOL",
     "\u6536\u4EF6\u4EBA",
     "\u53D1\u9001\u6E20\u9053",
@@ -61644,11 +61643,8 @@ async function applyInbox(ctx, o) {
 // src/kolops/send.ts
 var SENDING_TYPES = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"];
 function isApproved(r) {
-  const p = option(r["\u5904\u7406"]);
-  const res = option(r["\u5BA1\u6838\u7ED3\u679C"]);
-  const yes = p === "\u53D1\uFF0F\u540C\u610F" || res === "\u786E\u8BA4\u53D1\u9001" || res === "\u540C\u610F";
-  const no = ["\u6539", "\u4E0D\u53D1"].includes(p) || ["\u9000\u56DE\u4FEE\u6539", "\u5148\u4E0D\u53D1", "\u4E0D\u540C\u610F"].includes(res);
-  return yes && !no && r["\u786E\u8BA4\u53D1\u51FA"] === true;
+  const no = ["\u9000\u56DE\u4FEE\u6539", "\u5148\u4E0D\u53D1", "\u4E0D\u540C\u610F"].includes(option(r["\u5BA1\u6838\u7ED3\u679C"]));
+  return option(r["\u5904\u7406"]) === "\u53D1\uFF0F\u540C\u610F" && !no;
 }
 function checkOne(o, s, counts, knownSenders) {
   const f = s.followups.get(o.followupId);
