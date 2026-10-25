@@ -59531,7 +59531,7 @@ var require_dist19 = __commonJS({
 });
 
 // src/kolops/cli.ts
-import { readFileSync as readFileSync8 } from "node:fs";
+import { readFileSync as readFileSync9 } from "node:fs";
 import { parseArgs } from "node:util";
 
 // src/kolops/base.ts
@@ -59693,6 +59693,8 @@ var TABLES = {
 };
 var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u5176\u4ED6"];
 var TRIAL_ACTIONS = ["\u53D1\u7801", "\u5EF6\u671F"];
+var CLOSE_ACTIONS = ["\u7ED3\u6848", "\u6C38\u4E0D\u8054\u7CFB"];
+var CLOSE_REASONS = ["\u65E0\u56DE\u5E94", "\u9898\u6750\u4E0D\u7B26", "\u53EA\u63A5\u56FA\u5B9A\u8D39", "\u5B97\u6559\u4FE1\u4EF0", "\u9690\u79C1", "\u6863\u671F", "\u62D2\u7EDD", "\u56DE\u590D\u540E\u5931\u8054", "\u9000\u4FE1\u6216\u90AE\u7BB1\u65E0\u6548", "\u4F5C\u5E9F", "\u5176\u4ED6"];
 var TEMPLATE_STATES = ["\u8349\u7A3F", "\u5F85\u5BA1\u6838", "\u5DF2\u6279\u51C6", "\u505C\u7528"];
 var SETTINGS_TABLES = {
   settings: [
@@ -59746,7 +59748,9 @@ var EXTRA_FIELDS = {
     { name: "\u4F53\u9A8C\u7801\u52A8\u4F5C", type: "select", options: [...TRIAL_ACTIONS], multiple: false },
     { name: "\u4F53\u9A8C\u7801", type: "text" },
     { name: "\u4F53\u9A8C\u6B21\u6570", type: "number" },
-    { name: "\u4F53\u9A8C\u5929\u6570", type: "number" }
+    { name: "\u4F53\u9A8C\u5929\u6570", type: "number" },
+    { name: "\u53D1\u540E\u52A8\u4F5C", type: "select", options: [...CLOSE_ACTIONS], multiple: false },
+    { name: "\u7ED3\u6848\u539F\u56E0", type: "select", options: CLOSE_REASONS, multiple: false }
   ]
 };
 var SETTING_DEFAULTS = {
@@ -59817,7 +59821,9 @@ var REQUIRED_FIELDS = {
     "\u4F53\u9A8C\u7801\u52A8\u4F5C",
     "\u4F53\u9A8C\u7801",
     "\u4F53\u9A8C\u6B21\u6570",
-    "\u4F53\u9A8C\u5929\u6570"
+    "\u4F53\u9A8C\u5929\u6570",
+    "\u53D1\u540E\u52A8\u4F5C",
+    "\u7ED3\u6848\u539F\u56E0"
   ],
   oplog: ["\u7C7B\u578B", "\u7ED3\u679C", "\u64CD\u4F5C", "\u8BF4\u660E", "\u6536\u4EF6\u4EBA\u660E\u7EC6", "\u90AE\u4EF6\u6B63\u6587", "\u53D1\u9001\u6570", "\u65F6\u95F4", "KOL", "\u6240\u5C5E\u8FD0\u884C"],
   runs: ["\u8FD0\u884C", "\u65B9\u5F0F", "\u7ED3\u679C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u675F\u65F6\u95F4", "\u5904\u7406\u6765\u4FE1", "\u53D1\u51FA\u90AE\u4EF6", "\u65B0\u589E\u5F85\u5BA1", "\u95EE\u9898\u4E0E\u5907\u6CE8"],
@@ -60004,12 +60010,15 @@ function authHint(missing) {
 }
 var LarkError = class extends Error {
   /** True when lark-cli answered with an API error: the call was refused, so nothing happened. */
-  constructor(message, definite = false) {
+  constructor(message, definite = false, transport = false) {
     super(message);
     this.definite = definite;
+    this.transport = transport;
   }
   definite;
+  transport;
 };
+var READS = /* @__PURE__ */ new Set(["+record-list", "+field-list", "+messages", "+message", "+triage", "+thread", "user_mailbox.messages"]);
 var LarkCli = class {
   constructor(baseToken, bin = process.env.KOL_LARK_CLI || "lark-cli") {
     this.baseToken = baseToken;
@@ -60048,7 +60057,18 @@ var LarkCli = class {
     }
     return rows;
   }
-  async raw(args, cwd) {
+  async raw(args) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.once(args);
+      } catch (err) {
+        const retry = err instanceof LarkError && err.transport && READS.has(args[1]) && attempt < 4;
+        if (!retry) throw err;
+        await new Promise((r) => setTimeout(r, 2e3 * attempt));
+      }
+    }
+  }
+  async once(args, cwd) {
     try {
       const { stdout } = await exec(this.bin, args, { cwd, maxBuffer: 64 * 1024 * 1024 });
       return stdout;
@@ -60066,7 +60086,8 @@ var LarkCli = class {
         const missing = envelope.error.missing_scopes ?? [];
         throw new LarkError(missing.length ? authHint(missing) : `\u98DE\u4E66\u767B\u5F55\u6709\u95EE\u9898\uFF1A${envelope.error.message}\u3002\u8BF7\u5728\u7EC8\u7AEF\u8FD0\u884C lark-cli auth login \u91CD\u65B0\u767B\u5F55`, true);
       }
-      throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${detail.slice(0, 800)}`, envelope?.ok === false);
+      const transport = envelope?.error?.type === "network";
+      throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${detail.slice(0, 800)}`, envelope?.ok === false && !transport, transport);
     }
   }
 };
@@ -60107,7 +60128,7 @@ function stamp(ms = Date.now(), tz = "+08:00") {
 function today(cfg, ms = Date.now()) {
   return dayOf(ms, cfg.timezone);
 }
-var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65" };
+var RUN_TITLES = { sync: "\u6536\u4FE1\u540C\u6B65", send: "\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1", invite: "\u53D1\u9080\u7EA6", remind: "\u50AC\u4FE1\u548C\u7ED3\u6848", find: "\u627E KOL", classify: "\u8865\u5168\u6863\u6848", metrics: "\u53D1\u5E03\u6570\u636E", codes: "\u4F53\u9A8C\u7801\u540C\u6B65", inbox: "\u6279\u91CF\u5904\u7406\u6765\u4FE1" };
 var SENDING_RUNS = [RUN_TITLES.send, RUN_TITLES.invite, RUN_TITLES.remind];
 var LOCK_MINUTES = 30;
 async function otherSendingRun(base, cfg, selfId) {
@@ -61394,6 +61415,232 @@ function trialNote(plan) {
   return plan.action === "\u53D1\u7801" ? `\u53D1\u7801 ${plan.code}\uFF0C${plan.maxUses} \u6B21\uFF0C${plan.days} \u5929` : `\u4F53\u9A8C\u7801 ${plan.code} \u5EF6\u671F ${plan.days} \u5929`;
 }
 
+// src/kolops/inbox.ts
+import { readFileSync as readFileSync6 } from "node:fs";
+var INBOX_CATEGORIES = ["\u60F3\u4F53\u9A8C", "\u8981\u56DE\u590D", "\u62D2\u7EDD", "\u4E0D\u7528\u56DE"];
+var QUOTE_MARKERS = [
+  /(<[^>\s]+>\s*)?於\s*\d{4}\s*年.{0,40}?(寫道|写道)\s*[:：]/,
+  /(<[^>\s]+>\s*)?在\s*\d{4}\s*年.{0,40}?(写道|寫道)\s*[:：]/,
+  /On .{5,120}? wrote:/,
+  /(^|\s)(发件人|寄件者|From)\s*[:：]/,
+  /-{2,}\s*(原始邮件|原始郵件|Original Message)/i,
+  /\n\s*>/
+];
+function ownWords(body) {
+  let cut = body.length;
+  for (const re of QUOTE_MARKERS) {
+    const m = re.exec(body);
+    if (!m || m.index >= cut) continue;
+    const line = body.lastIndexOf("\n", m.index);
+    const lead = line >= 0 ? body.slice(line, m.index) : "";
+    cut = line >= 0 && lead.length <= 40 && !/[。！？!?，,]/.test(lead) ? line : m.index;
+  }
+  return body.slice(0, cut).replace(/\s+/g, " ").trim().slice(0, 1500);
+}
+async function listInbox(ctx, o) {
+  const cfg = ctx.cfg;
+  const [s, pending] = await Promise.all([
+    loadSnapshot(ctx.base, cfg),
+    ctx.base.records(cfg.tables.contacts, {
+      filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
+      fields: ["Message ID", "\u6E20\u9053", "\u6458\u8981", "\u65E5\u671F", "KOL", "\u5F85\u5904\u7406", "\u65B9\u5411"]
+    })
+  ]);
+  const time = (r) => cellTime(r["\u65E5\u671F"], cfg.timezone) ?? 0;
+  pending.sort((a, b) => time(a) - time(b));
+  const batch = pending.slice(0, o.limit);
+  const lastSent = /* @__PURE__ */ new Map();
+  if (batch.length) {
+    const sent = await ctx.base.records(cfg.tables.contacts, {
+      filter: { logic: "and", conditions: [["\u65B9\u5411", "intersects", ["\u53D1\u51FA"]], onOrAfter("\u65E5\u671F", dayOf(time(batch[0]), cfg.timezone))] },
+      fields: ["KOL", "\u65E5\u671F", "\u65B9\u5411"]
+    });
+    for (const r of sent) for (const id of linkIds(r["KOL"])) lastSent.set(id, Math.max(lastSent.get(id) ?? 0, time(r)));
+  }
+  const answered = (r) => {
+    const at = lastSent.get(linkIds(r["KOL"])[0] ?? "") ?? 0;
+    return at > time(r) ? stamp(at, cfg.timezone) : null;
+  };
+  const bodies = /* @__PURE__ */ new Map();
+  const byMailbox = /* @__PURE__ */ new Map();
+  for (const r of batch) {
+    const mb = mailboxFor(cfg, option(r["\u6E20\u9053"]));
+    if (mb && text(r["Message ID"])) byMailbox.set(mb.address, [...byMailbox.get(mb.address) ?? [], text(r["Message ID"])]);
+  }
+  for (const [mailbox, ids] of byMailbox) {
+    const data = await ctx.base.lark.json(["mail", "+messages", "--mailbox", mailbox, "--message-ids", ids.join(","), "--html=false", "--format", "json", "--as", "user"]);
+    for (const m of data?.messages ?? []) {
+      bodies.set(String(m.message_id), { from: addressOf(String(m.head_from?.mail_address ?? "")), text: ownWords(String(m.body_plain_text ?? "")) });
+    }
+  }
+  const suggestions = /* @__PURE__ */ new Map();
+  for (const r of batch) {
+    const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
+    if (f && !text(f["\u4F53\u9A8C\u7801"])) {
+      const name = suggestTrialCode(profileOf(s, f));
+      if (name) suggestions.set(f.record_id, name);
+    }
+  }
+  const taken = /* @__PURE__ */ new Set();
+  const key = listProjects().find((p) => p.name === cfg.project)?.dataApiKey;
+  const checked = Boolean(cfg.dataApi && key && suggestions.size);
+  if (checked) {
+    const info = await lookupCodes(cfg.dataApi, key, [...new Set(suggestions.values())]).catch(() => /* @__PURE__ */ new Map());
+    for (const k of info.keys()) taken.add(k.slice(k.indexOf(":") + 1));
+  }
+  return {
+    \u5F85\u5904\u7406\u603B\u6570: pending.length,
+    \u8FD9\u4E00\u6279: batch.length,
+    \u4E4B\u540E\u5DF2\u56DE\u8FC7\u4FE1: batch.filter(answered).length,
+    \u5206\u7C7B: INBOX_CATEGORIES,
+    \u8BF4\u660E: "\u300C\u4E4B\u540E\u56DE\u8FC7\u4FE1\u300D\u6709\u65E5\u671F\u7684\uFF0C\u591A\u534A\u5DF2\u7ECF\u624B\u52A8\u56DE\u8FC7\uFF0C\u53EA\u662F\u6CA1\u53D6\u6D88\u5F85\u5904\u7406\uFF0C\u4E00\u822C\u9009\u4E0D\u7528\u56DE\u3002\u9010\u5C01\u5224\u65AD\u5206\u7C7B\uFF0C\u5199\u6210\u51B3\u5B9A\u6587\u4EF6\u518D\u7528 inbox --apply \u63D0\u4EA4\u3002\u60F3\u4F53\u9A8C\uFF1A\u8349\u7A3F\u7528 {\u9AD4\u9A57\u78BC}{\u6B21\u6578}{\u5230\u671F\u65E5}\uFF1B\u62D2\u7EDD\uFF1A\u53D1\u540E\u52A8\u4F5C\u9009\u7ED3\u6848\u6216\u6C38\u4E0D\u8054\u7CFB\u5E76\u7ED9\u7ED3\u6848\u539F\u56E0\uFF1B\u4E0D\u7528\u56DE\uFF1A\u53EA\u53D6\u6D88\u5F85\u5904\u7406\u3002",
+    \u6765\u4FE1: batch.map((r) => {
+      const fid = linkIds(r["KOL"])[0] ?? "";
+      const f = s.followups.get(fid);
+      const mb = mailboxFor(cfg, option(r["\u6E20\u9053"]));
+      const b = bodies.get(text(r["Message ID"]));
+      const suggested = suggestions.get(fid);
+      return {
+        contact: r.record_id,
+        kol: f ? displayName(s, f) : "\uFF08\u6CA1\u5173\u8054\u8DDF\u8FDB\uFF09",
+        followup: fid || null,
+        \u9636\u6BB5: f ? option(f["\u9636\u6BB5"]) : "",
+        \u4F53\u9A8C\u7801: f ? text(f["\u4F53\u9A8C\u7801"]) || null : null,
+        \u4F53\u9A8C\u7801\u5230\u671F: f && cellTime(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone) ? stamp(cellTime(f["\u4F53\u9A8C\u7801\u5230\u671F"], cfg.timezone), cfg.timezone) : null,
+        \u6E20\u9053: option(r["\u6E20\u9053"]),
+        \u63D2\u4EF6\u80FD\u56DE: Boolean(mb),
+        from: b?.from ?? "",
+        \u4E3B\u9898: text(r["\u6458\u8981"]),
+        \u65E5\u671F: stamp(time(r), cfg.timezone),
+        \u4E4B\u540E\u56DE\u8FC7\u4FE1: answered(r),
+        \u5185\u5BB9: b?.text ?? (mb ? "\uFF08\u8BFB\u4E0D\u5230\u6B63\u6587\uFF09" : "\uFF08\u8FD9\u4E2A\u6E20\u9053\u63D2\u4EF6\u8BFB\u4E0D\u4E86\uFF0C\u8BF7\u624B\u52A8\u770B\uFF09"),
+        ...suggested ? { \u5EFA\u8BAE\u7801\u540D: suggested, \u7801\u540D\u53EF\u7528: checked ? !taken.has(suggested.toLowerCase()) : "\u6CA1\u67E5\uFF08\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u63A5\u53E3\u5BC6\u94A5\uFF09" } : {}
+      };
+    })
+  };
+}
+function closeChanges(review, profile, day2) {
+  const action = option(review["\u53D1\u540E\u52A8\u4F5C"]);
+  if (!action) return null;
+  if (!CLOSE_ACTIONS.includes(action)) return `\u53D1\u540E\u52A8\u4F5C\u300C${action}\u300D\u770B\u4E0D\u61C2\uFF0C\u53EA\u80FD\u662F ${CLOSE_ACTIONS.join(" \u6216 ")}`;
+  const reason = option(review["\u7ED3\u6848\u539F\u56E0"]);
+  if (!reason) return "\u9009\u4E86\u53D1\u540E\u52A8\u4F5C\u4F46\u6CA1\u9009\u7ED3\u6848\u539F\u56E0";
+  const followup = { \u9636\u6BB5: ["\u7ED3\u6848"], \u7ED3\u6848\u539F\u56E0: [reason], \u5F53\u524D\u8F6E\u5230\u8C01: ["\u65E0\u9700\u52A8\u4F5C"], \u4E0B\u4E00\u6B65: `${day2} ${action}\uFF08${reason}\uFF09` };
+  if (action !== "\u6C38\u4E0D\u8054\u7CFB") return { followup };
+  if (!profile) return "\u8981\u6807\u6C38\u4E0D\u8054\u7CFB\uFF0C\u4F46\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u6863\u6848";
+  return { followup, profile: [profile.record_id, { \u8054\u7CFB\u8BB8\u53EF: ["\u6C38\u4E0D\u8054\u7CFB"], \u8054\u7CFB\u8BB8\u53EF\u539F\u56E0: `${day2} ${reason}` }] };
+}
+async function applyInbox(ctx, o) {
+  const cfg = ctx.cfg;
+  const t = cfg.tables;
+  const decisions = JSON.parse(readFileSync6(o.file, "utf8"));
+  const s = await loadSnapshot(ctx.base, cfg);
+  const pending = new Map((await ctx.base.records(t.contacts, {
+    filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
+    fields: ["Message ID", "\u6E20\u9053", "\u6458\u8981", "KOL", "\u5F85\u5904\u7406", "\u65B9\u5411"]
+  })).map((r) => [r.record_id, r]));
+  const errors = [];
+  const reviews = [];
+  const untick = {};
+  const handOver = {};
+  const now = stamp(Date.now(), cfg.timezone);
+  for (const d of decisions) {
+    const c = pending.get(d.contact);
+    const where = `${d.contact}`;
+    if (!c) {
+      errors.push(`${where}\uFF1A\u4E0D\u662F\u5F85\u5904\u7406\u7684\u6765\u4FE1\uFF08\u53EF\u80FD\u5DF2\u7ECF\u5904\u7406\u8FC7\uFF09`);
+      continue;
+    }
+    if (!INBOX_CATEGORIES.includes(d.category)) {
+      errors.push(`${where}\uFF1A\u5206\u7C7B\u300C${d.category}\u300D\u4E0D\u5BF9\uFF0C\u53EA\u80FD\u662F ${INBOX_CATEGORIES.join("\u3001")}`);
+      continue;
+    }
+    const fid = linkIds(c["KOL"])[0] ?? "";
+    const f = s.followups.get(fid);
+    const name = f ? displayName(s, f) : where;
+    untick[d.contact] = { \u5F85\u5904\u7406: false };
+    if (d.category === "\u4E0D\u7528\u56DE") continue;
+    if (!f) {
+      errors.push(`${where}\uFF1A\u8FD9\u5C01\u4FE1\u6CA1\u5173\u8054\u8DDF\u8FDB\u8BB0\u5F55\uFF0C\u53EA\u80FD\u9009\u300C\u4E0D\u7528\u56DE\u300D`);
+      continue;
+    }
+    const mb = mailboxFor(cfg, option(c["\u6E20\u9053"]));
+    const draft = (d.draft ?? "").trim();
+    const replying = d.category !== "\u62D2\u7EDD" || Boolean(draft);
+    if (replying && !mb) {
+      errors.push(`${where}\uFF08${name}\uFF09\uFF1A\u6E20\u9053\u300C${option(c["\u6E20\u9053"])}\u300D\u63D2\u4EF6\u53D1\u4E0D\u4E86\uFF0C\u8BF7\u624B\u52A8\u56DE\uFF0C\u6216\u9009\u300C\u4E0D\u7528\u56DE\u300D`);
+      continue;
+    }
+    if (replying && !draft) {
+      errors.push(`${where}\uFF08${name}\uFF09\uFF1A\u300C${d.category}\u300D\u8981\u5199\u56DE\u590D\u8349\u7A3F`);
+      continue;
+    }
+    if (d.category === "\u60F3\u4F53\u9A8C" && d.trial?.action !== "\u53D1\u7801" && !text(f["\u4F53\u9A8C\u7801"])) {
+      errors.push(`${where}\uFF08${name}\uFF09\uFF1A\u60F3\u4F53\u9A8C\u4F46\u6CA1\u6709\u53D1\u7801\uFF0C\u4E5F\u6CA1\u6709\u73B0\u6210\u7684\u4F53\u9A8C\u7801`);
+      continue;
+    }
+    if (d.category === "\u62D2\u7EDD" && (!d.after || !CLOSE_ACTIONS.includes(d.after) || !d.reason || !CLOSE_REASONS.includes(d.reason))) {
+      errors.push(`${where}\uFF08${name}\uFF09\uFF1A\u62D2\u7EDD\u8981\u9009\u53D1\u540E\u52A8\u4F5C\uFF08${CLOSE_ACTIONS.join(" / ")}\uFF09\u548C\u7ED3\u6848\u539F\u56E0\uFF08${CLOSE_REASONS.join(" / ")}\uFF09`);
+      continue;
+    }
+    const review = {
+      \u7C7B\u578B: [replying ? "\u56DE\u590D\u90AE\u4EF6" : "\u51B3\u5B9A"],
+      \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"],
+      KOL: [{ id: fid }],
+      \u63D0\u51FA\u65F6\u95F4: now,
+      \u5BA1\u6838\u9879: `[\u6279\u91CF] ${d.category} ${name}${d.label ? `\uFF1A${d.label}` : ""}`.slice(0, 200),
+      ...d.note ? { \u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE: d.note } : {},
+      \u53D1\u9001\u6E20\u9053: [replying ? mb.channel : "\u4E0D\u53D1\u90AE\u4EF6"],
+      ...replying ? { \u6536\u4EF6\u4EBA: d.to ?? "", \u90AE\u4EF6\u8349\u7A3F: draft } : {},
+      ...d.after ? { \u53D1\u540E\u52A8\u4F5C: [d.after], \u7ED3\u6848\u539F\u56E0: [d.reason] } : {}
+    };
+    if (d.trial) {
+      review["\u4F53\u9A8C\u7801\u52A8\u4F5C"] = [d.trial.action];
+      if (d.trial.code) review["\u4F53\u9A8C\u7801"] = d.trial.code;
+      if (d.trial.uses) review["\u4F53\u9A8C\u6B21\u6570"] = d.trial.uses;
+      if (d.trial.days) review["\u4F53\u9A8C\u5929\u6570"] = d.trial.days;
+      const plan = trialPlan(cfg, review, f, profileOf(s, f));
+      const problem = typeof plan === "string" ? plan : plan ? missingPlaceholder(plan, draft) : "";
+      if (problem) {
+        errors.push(`${where}\uFF08${name}\uFF09\uFF1A${problem}`);
+        continue;
+      }
+    }
+    reviews.push({ ...review, _contact: d.contact, _from: c });
+    handOver[fid] = { \u5F53\u524D\u8F6E\u5230\u8C01: ["\u7B49\u4F60\u5BA1\u6838"] };
+  }
+  if (errors.length) return { \u5199\u5165: 0, \u95EE\u9898: errors, \u8BF4\u660E: "\u6709\u95EE\u9898\u7684\u51B3\u5B9A\u6539\u597D\u4E4B\u524D\uFF0C\u4E00\u6761\u90FD\u6CA1\u5199" };
+  const needSender = reviews.filter((r) => r["\u90AE\u4EF6\u8349\u7A3F"] && !r["\u6536\u4EF6\u4EBA"]);
+  if (needSender.length) {
+    const byMailbox = /* @__PURE__ */ new Map();
+    for (const r of needSender) {
+      const c = r._from;
+      const mb = mailboxFor(cfg, option(c["\u6E20\u9053"]));
+      byMailbox.set(mb.address, [...byMailbox.get(mb.address) ?? [], c]);
+    }
+    const senders = /* @__PURE__ */ new Map();
+    for (const [mailbox, rows2] of byMailbox) {
+      const data = await ctx.base.lark.json(["mail", "+messages", "--mailbox", mailbox, "--message-ids", rows2.map((c) => text(c["Message ID"])).join(","), "--html=false", "--format", "json", "--as", "user"]);
+      for (const m of data?.messages ?? []) senders.set(String(m.message_id), addressOf(String(m.head_from?.mail_address ?? "")));
+    }
+    for (const r of needSender) r["\u6536\u4EF6\u4EBA"] = senders.get(text(r._from["Message ID"])) ?? "";
+  }
+  const rows = reviews.map(({ _contact, _from, ...r }) => r);
+  const report = {
+    \u5199\u5165: rows.length,
+    \u53EA\u6807\u4E3A\u5DF2\u5904\u7406: Object.keys(untick).length - rows.length,
+    \u6309\u5206\u7C7B: Object.fromEntries(INBOX_CATEGORIES.map((k) => [k, decisions.filter((d) => d.category === k).length])),
+    \u8BD5\u8DD1: o.dryRun || void 0
+  };
+  if (o.dryRun) return report;
+  if (rows.length) await ctx.base.create(t.reviews, rows);
+  await ctx.base.update(t.contacts, untick);
+  if (Object.keys(handOver).length) await ctx.base.update(t.followups, handOver);
+  ctx.run.counts.\u65B0\u589E\u5F85\u5BA1 += rows.length;
+  ctx.run.op({ type: "\u6765\u4FE1\u5904\u7406", result: "\u5B8C\u6210", action: `\u6279\u91CF\u5904\u7406\u6765\u4FE1 ${decisions.length} \u5C01\uFF0C\u63D0\u4EA4\u5BA1\u6838 ${rows.length} \u6761` });
+  return report;
+}
+
 // src/kolops/send.ts
 var SENDING_TYPES = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"];
 function isApproved(r) {
@@ -61520,6 +61767,7 @@ async function deliver(ctx, items, s, dryRun) {
         [o.followupId]: { \u6700\u8FD1\u8054\u7CFB\u65E5\u671F: now, \u5F53\u524D\u8F6E\u5230\u8C01: ["KOL"], ...o.after?.followup ?? {} }
       });
     }
+    if (o.after?.profile) await ctx.base.update(t.profiles, { [o.after.profile[0]]: o.after.profile[1] });
     if (o.after?.review) {
       await ctx.base.update(t.reviews, {
         [o.after.review]: { \u72B6\u6001: ["\u5DF2\u6267\u884C"], \u6267\u884C\u65F6\u95F4: now, \u6267\u884C\u7ED3\u679C: `\u5DF2\u4ECE ${o.mailbox.address} \u53D1\u7ED9 ${o.recipient}\uFF08${sent.messageId}\uFF09` }
@@ -61565,17 +61813,33 @@ async function sendApproved(ctx, opts) {
   const chosen = reviews.filter((r) => isApproved(r) && (!opts.only?.length || opts.only.includes(r.record_id)));
   const items = [];
   const skipped = [];
+  const closed = [];
+  const day2 = today(ctx.cfg);
   let notEmail = 0;
   for (const r of chosen) {
     const type = option(r["\u7C7B\u578B"]);
     const channel = option(r["\u53D1\u9001\u6E20\u9053"]);
-    if (!SENDING_TYPES.includes(type) || channel === "\u4E0D\u53D1\u90AE\u4EF6") {
-      notEmail++;
-      continue;
-    }
     const followupId = linkIds(r["KOL"])[0] ?? "";
     const f = s.followups.get(followupId);
     const name = f ? displayName(s, f) : text(r["\u5BA1\u6838\u9879"]);
+    const close = f ? closeChanges(r, profileOf(s, f), day2) : null;
+    if (typeof close === "string") {
+      skipped.push({ key: r.record_id, name, reason: close });
+      continue;
+    }
+    if (!SENDING_TYPES.includes(type) || channel === "\u4E0D\u53D1\u90AE\u4EF6") {
+      if (!close) {
+        notEmail++;
+        continue;
+      }
+      closed.push(name);
+      if (opts.dryRun) continue;
+      await ctx.base.update(t.followups, { [followupId]: close.followup });
+      if (close.profile) await ctx.base.update(t.profiles, { [close.profile[0]]: close.profile[1] });
+      await ctx.base.update(t.reviews, { [r.record_id]: { \u72B6\u6001: ["\u5DF2\u6267\u884C"], \u6267\u884C\u65F6\u95F4: stamp(Date.now(), ctx.cfg.timezone), \u6267\u884C\u7ED3\u679C: `\u6CA1\u53D1\u4FE1\uFF0C${option(r["\u53D1\u540E\u52A8\u4F5C"])}\uFF08${option(r["\u7ED3\u6848\u539F\u56E0"])}\uFF09` } });
+      ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `${option(r["\u53D1\u540E\u52A8\u4F5C"])}\uFF08${option(r["\u7ED3\u6848\u539F\u56E0"])}\uFF09\uFF1A${name}`, followup: followupId });
+      continue;
+    }
     const mailbox = mailboxFor(ctx.cfg, channel || option(f?.["\u8054\u7CFB\u6E20\u9053"]));
     if (!mailbox) {
       skipped.push({ key: r.record_id, name, reason: `\u53D1\u9001\u6E20\u9053\u300C${channel || "\u672A\u586B"}\u300D\u4E0D\u662F\u63D2\u4EF6\u80FD\u53D1\u7684\u98DE\u4E66\u90AE\u7BB1` });
@@ -61603,13 +61867,13 @@ ${body}`) : "";
       body,
       oncePerDay: false,
       kind: "\u56DE\u590D",
-      after: { review: r.record_id },
+      after: { review: r.record_id, ...close ? { followup: close.followup, profile: close.profile } : {} },
       ...plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}
     });
   }
   const report = await deliver(ctx, items, s, opts.dryRun);
   report.skipped.unshift(...skipped);
-  return { ...report, notEmail };
+  return { ...report, notEmail, closed };
 }
 
 // src/kolops/templates.ts
@@ -62003,7 +62267,7 @@ async function reminderCounts(ctx, s) {
 }
 
 // src/kolops/setup.ts
-import { existsSync as existsSync5, readdirSync, readFileSync as readFileSync6 } from "node:fs";
+import { existsSync as existsSync5, readdirSync, readFileSync as readFileSync7 } from "node:fs";
 import { join as join5 } from "node:path";
 function fieldJson(f) {
   return {
@@ -62124,7 +62388,7 @@ async function setupBase(base, o) {
     const rows = readdirSync(o.importDir).filter((f) => f.endsWith(".txt")).sort().flatMap((file2) => {
       const name = file2.slice(0, -4);
       if (names.has(name)) return [];
-      const { subject, body } = parseTemplateFile(readFileSync6(join5(o.importDir, file2), "utf8"));
+      const { subject, body } = parseTemplateFile(readFileSync7(join5(o.importDir, file2), "utf8"));
       report.\u5BFC\u5165\u6A21\u677F.push(name);
       return [{
         \u540D\u79F0: name,
@@ -62264,11 +62528,11 @@ async function postMetrics(ctx, o) {
 }
 
 // src/kolops/notify.ts
-import { readFileSync as readFileSync7 } from "node:fs";
+import { readFileSync as readFileSync8 } from "node:fs";
 var MAX_CHARS = 4e3;
 async function notifyGroup(cfg, o) {
   if (!cfg.webhook) return { \u53D1\u9001: false, \u539F\u56E0: "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\uFF0C\u8DF3\u8FC7" };
-  const body = readFileSync7(o.file, "utf8").trim();
+  const body = readFileSync8(o.file, "utf8").trim();
   if (!body) throw new Error(`${o.file} \u662F\u7A7A\u7684`);
   const head = body.startsWith("KOL") ? "" : `KOL\uFF5C${cfg.project}
 `;
@@ -62344,7 +62608,10 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
 
   today                         \u4ECA\u5929\u7684\u6E05\u5355\uFF1A\u5F85\u5904\u7406\u6765\u4FE1\u3001\u8F6E\u5230\u6211\u4EEC\u3001\u7B49\u4F60\u5BA1\u6838\u3001\u4F53\u9A8C\u7801\u5FEB\u5230\u671F\u3001\u5FEB\u5230\u7684\u53D1\u5E03\uFF08\u53EA\u8BFB\uFF09
   sync    [--days N]            \u628A\u5404\u90AE\u7BB1\u4ECE\u4E0A\u6B21\u540C\u6B65\u4EE5\u6765\u7684\u6765\u4FE1\u540C\u6B65\u8FDB\u63A5\u89E6\u8BB0\u5F55\uFF08--days \u6539\u6210\u53EA\u770B\u6700\u8FD1 N \u5929\uFF09\uFF0C\u6765\u4FE1\u7684 KOL \u6539\u6210\u300C\u8F6E\u5230\u6211\u4EEC\u300D
-  send    [--only rec1,rec2]    \u53D1\u51FA\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u6279\u51C6\u3001\u8FD8\u6CA1\u53D1\u7684\u4FE1
+  inbox   [--limit 30]          \u5217\u51FA\u5F85\u5904\u7406\u7684\u6765\u4FE1\uFF1A\u5BF9\u65B9\u539F\u8BDD\u3001\u8DDF\u8FDB\u9636\u6BB5\u3001\u4F53\u9A8C\u7801\u3001\u5EFA\u8BAE\u7801\u540D\uFF08\u53EA\u8BFB\uFF09
+  inbox   --apply \u6587\u4EF6.json      \u6309\u51B3\u5B9A\u6587\u4EF6\u628A\u8FD9\u6279\u6765\u4FE1\u4E00\u6B21\u63D0\u4EA4\u5230\u5BA1\u6838\u961F\u5217\uFF08\u60F3\u4F53\u9A8C / \u8981\u56DE\u590D / \u62D2\u7EDD / \u4E0D\u7528\u56DE\uFF09\uFF0C
+                                \u53D6\u6D88\u5F85\u5904\u7406\uFF1B\u6709\u4E00\u6761\u4E0D\u5BF9\u5C31\u4E00\u6761\u90FD\u4E0D\u5199
+  send    [--only rec1,rec2]    \u53D1\u51FA\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u6279\u51C6\u3001\u8FD8\u6CA1\u53D1\u7684\u4FE1\uFF0C\u6267\u884C\u6279\u51C6\u9879\u7684\u53D1\u540E\u52A8\u4F5C\uFF08\u7ED3\u6848 / \u6C38\u4E0D\u8054\u7CFB\uFF09
   invite  --batch \u6279\u6B21 --template \u6A21\u677F --mailbox \u90AE\u7BB1 --approval \u5BA1\u6838\u8BB0\u5F55 --profiles rec1,rec2 | --profiles-file \u6587\u4EF6
                                 \u7ED9\u4E00\u6279\u6863\u6848\u53D1\u9080\u7EA6\u5E76\u5EFA\u8DDF\u8FDB\u8BB0\u5F55\uFF08\u6279\u6B21\u8981\u5148\u5728\u5BA1\u6838\u961F\u5217\u91CC\u6279\u51C6\uFF09
   remind                        \u5148\u540C\u6B65\u6536\u4EF6\u7BB1\uFF0C\u518D\u6309\u89C4\u5219\u53D1\u7B2C 1/2 \u6B21\u50AC\u4FE1\uFF0C\u4E24\u6B21\u90FD\u6CA1\u56DE\u7684\u7ED3\u6848
@@ -62385,7 +62652,7 @@ var COMMANDS = {
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
-      const profiles = v["profiles-file"] ? list(readFileSync8(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
+      const profiles = v["profiles-file"] ? list(readFileSync9(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
       if (!profiles.length) throw new Error("\u6CA1\u6709\u7ED9\u8981\u9080\u7EA6\u7684\u6863\u6848\u8BB0\u5F55\uFF08--profiles \u6216 --profiles-file\uFF09");
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }
@@ -62419,6 +62686,11 @@ var COMMANDS = {
       need(v, "batch");
       return toClassify(ctx, { batch: v.batch, limit: Number(v.limit ?? 50) });
     }
+  },
+  inbox: {
+    title: RUN_TITLES.inbox,
+    writes: true,
+    run: (ctx, v) => v.apply ? applyInbox(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] }) : listInbox(ctx, { limit: Number(v.limit ?? 30) })
   },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
   codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
@@ -62510,7 +62782,7 @@ async function main() {
     return cmd || values.help ? 0 : 1;
   }
   let ctx;
-  const logged = cmd.writes && !values["dry-run"] && !(name === "classify" && !values.apply);
+  const logged = cmd.writes && !values["dry-run"] && !((name === "classify" || name === "inbox") && !values.apply);
   try {
     if (name === "project") return print(await projectCommand(positionals.slice(1)));
     if (name === "check") {

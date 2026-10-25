@@ -40,10 +40,13 @@ export function authHint(missing: string[]): string {
 
 export class LarkError extends Error {
   /** True when lark-cli answered with an API error: the call was refused, so nothing happened. */
-  constructor(message: string, public definite = false) {
+  constructor(message: string, public definite = false, public transport = false) {
     super(message);
   }
 }
+
+/** lark-cli commands that only read, so a dropped connection can simply be tried again. */
+const READS = new Set(["+record-list", "+field-list", "+messages", "+message", "+triage", "+thread", "user_mailbox.messages"]);
 
 export class LarkCli implements Lark {
   constructor(private baseToken: string, private bin = process.env.KOL_LARK_CLI || "lark-cli") {}
@@ -68,7 +71,19 @@ export class LarkCli implements Lark {
     return rows;
   }
 
-  private async raw(args: string[], cwd?: string): Promise<string> {
+  private async raw(args: string[]): Promise<string> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.once(args);
+      } catch (err) {
+        const retry = err instanceof LarkError && err.transport && READS.has(args[1]) && attempt < 4;
+        if (!retry) throw err;
+        await new Promise((r) => setTimeout(r, 2_000 * attempt));
+      }
+    }
+  }
+
+  private async once(args: string[], cwd?: string): Promise<string> {
     try {
       const { stdout } = await exec(this.bin, args, { cwd, maxBuffer: 64 * 1024 * 1024 });
       return stdout;
@@ -86,7 +101,9 @@ export class LarkCli implements Lark {
         const missing: string[] = envelope.error.missing_scopes ?? [];
         throw new LarkError(missing.length ? authHint(missing) : `飞书登录有问题：${envelope.error.message}。请在终端运行 lark-cli auth login 重新登录`, true);
       }
-      throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} 失败：${detail.slice(0, 800)}`, envelope?.ok === false);
+      // A dropped connection says nothing about whether the call reached Feishu, so it is never definite.
+      const transport = envelope?.error?.type === "network";
+      throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} 失败：${detail.slice(0, 800)}`, envelope?.ok === false && !transport, transport);
     }
   }
 }

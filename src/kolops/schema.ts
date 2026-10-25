@@ -31,6 +31,10 @@ export interface FieldDef {
 export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "发体验码", "体验码延期", "其他"] as const;
 /** What an approved 审核队列 item asks the plugin to do with a trial code before it sends the reply. */
 export const TRIAL_ACTIONS = ["发码", "延期"] as const;
+/** What an approved 审核队列 item does to the KOL once it is carried out: close the followup, or also never write again. */
+export const CLOSE_ACTIONS = ["结案", "永不联系"] as const;
+/** The 结案原因 options of KOL 跟进, which 审核队列 offers too. */
+export const CLOSE_REASONS = ["无回应", "题材不符", "只接固定费", "宗教信仰", "隐私", "档期", "拒绝", "回复后失联", "退信或邮箱无效", "作废", "其他"];
 export const TEMPLATE_STATES = ["草稿", "待审核", "已批准", "停用"] as const;
 
 /** The settings tables, in creation order. The first field of each is its primary field. */
@@ -82,7 +86,8 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
 
 /**
  * Fields setup-base adds to tables a project already has: 更新时间 lets the commands read only what changed
- * (cache.ts); the 审核队列 fields carry a trial code to create or extend before the reply goes out.
+ * (cache.ts); the 审核队列 fields carry a trial code to create or extend before the reply goes out, and what
+ * happens to the followup after it.
  */
 export const EXTRA_FIELDS: Partial<Record<TableKey, FieldDef[]>> = {
   profiles: [{ name: "更新时间", type: "updated_at" }],
@@ -92,6 +97,8 @@ export const EXTRA_FIELDS: Partial<Record<TableKey, FieldDef[]>> = {
     { name: "体验码", type: "text" },
     { name: "体验次数", type: "number" },
     { name: "体验天数", type: "number" },
+    { name: "发后动作", type: "select", options: [...CLOSE_ACTIONS], multiple: false },
+    { name: "结案原因", type: "select", options: CLOSE_REASONS, multiple: false },
   ],
 };
 
@@ -117,7 +124,7 @@ export const REQUIRED_FIELDS: Partial<Record<TableKey, string[]>> = {
     "下次跟进日期", "最近联系日期", "最后来信日期", "下一步", "结案原因", "更新时间"],
   contacts: ["方向", "渠道", "Message ID", "摘要", "内容", "日期", "待处理", "KOL"],
   reviews: ["类型", "状态", "处理", "审核结果", "确认发出", "KOL", "收件人", "发送渠道", "邮件草稿", "审核项", "要你定什么",
-    "执行时间", "执行结果", "体验码动作", "体验码", "体验次数", "体验天数"],
+    "执行时间", "执行结果", "体验码动作", "体验码", "体验次数", "体验天数", "发后动作", "结案原因"],
   oplog: ["类型", "结果", "操作", "说明", "收件人明细", "邮件正文", "发送数", "时间", "KOL", "所属运行"],
   runs: ["运行", "方式", "结果", "开始时间", "结束时间", "处理来信", "发出邮件", "新增待审", "问题与备注"],
   settings: SETTINGS_TABLES.settings.map((f) => f.name),

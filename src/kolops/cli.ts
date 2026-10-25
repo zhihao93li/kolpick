@@ -16,6 +16,7 @@ import { applyClassification, toClassify } from "./classify.js";
 import { postMetrics } from "./metrics.js";
 import { checkTrialName, syncCodes } from "./codes.js";
 import { notifyGroup } from "./notify.js";
+import { applyInbox, listInbox } from "./inbox.js";
 import { syncInbox } from "./sync.js";
 import { todayLists } from "./today.js";
 
@@ -23,7 +24,10 @@ const HELP = `kol <命令> [选项]
 
   today                         今天的清单：待处理来信、轮到我们、等你审核、体验码快到期、快到的发布（只读）
   sync    [--days N]            把各邮箱从上次同步以来的来信同步进接触记录（--days 改成只看最近 N 天），来信的 KOL 改成「轮到我们」
-  send    [--only rec1,rec2]    发出审核队列里已批准、还没发的信
+  inbox   [--limit 30]          列出待处理的来信：对方原话、跟进阶段、体验码、建议码名（只读）
+  inbox   --apply 文件.json      按决定文件把这批来信一次提交到审核队列（想体验 / 要回复 / 拒绝 / 不用回），
+                                取消待处理；有一条不对就一条都不写
+  send    [--only rec1,rec2]    发出审核队列里已批准、还没发的信，执行批准项的发后动作（结案 / 永不联系）
   invite  --batch 批次 --template 模板 --mailbox 邮箱 --approval 审核记录 --profiles rec1,rec2 | --profiles-file 文件
                                 给一批档案发邀约并建跟进记录（批次要先在审核队列里批准）
   remind                        先同步收件箱，再按规则发第 1/2 次催信，两次都没回的结案
@@ -89,6 +93,10 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
       need(v, "batch");
       return toClassify(ctx, { batch: v.batch, limit: Number(v.limit ?? 50) });
     },
+  },
+  inbox: {
+    title: RUN_TITLES.inbox, writes: true,
+    run: (ctx, v) => (v.apply ? applyInbox(ctx, { file: String(v.apply), dryRun: !!v["dry-run"] }) : listInbox(ctx, { limit: Number(v.limit ?? 30) })),
   },
   metrics: { title: RUN_TITLES.metrics, writes: true, run: (ctx, v) => postMetrics(ctx, { dryRun: !!v["dry-run"], budget: Number(v.budget ?? 2) }) },
   codes: { title: RUN_TITLES.codes, writes: true, run: (ctx, v) => syncCodes(ctx, { dryRun: !!v["dry-run"] }) },
@@ -162,8 +170,8 @@ async function main(): Promise<number> {
   }
 
   let ctx: Ctx | undefined;
-  // Listing what to classify only reads; only --apply belongs in 运行记录.
-  const logged = cmd.writes && !values["dry-run"] && !(name === "classify" && !values.apply);
+  // Listing what to classify or answer only reads; only --apply belongs in 运行记录.
+  const logged = cmd.writes && !values["dry-run"] && !((name === "classify" || name === "inbox") && !values.apply);
   try {
     if (name === "project") return print(await projectCommand(positionals.slice(1)));
     if (name === "check") {

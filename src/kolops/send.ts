@@ -5,7 +5,8 @@ import { blockedReason, displayName, followupEmails, loadSnapshot, profileOf, ty
 import { fillTrial, missingPlaceholder, prepareTrial, trialNote, trialPlan } from "./trial.js";
 import { LarkError, type Row } from "./lark.js";
 import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
-import { bounceStats, bouncePaused, otherSendingRun, stamp, todaysSends, type SendCounts } from "./ops.js";
+import { bounceStats, bouncePaused, otherSendingRun, stamp, today, todaysSends, type SendCounts } from "./ops.js";
+import { closeChanges } from "./inbox.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
 
@@ -32,7 +33,7 @@ export interface Outgoing {
   oncePerDay: boolean;
   kind: "回复" | "邀约" | "催信";
   /** Base updates to make once the mail is out. */
-  after?: { review?: string; followup?: Record<string, unknown>; createFollowup?: Record<string, unknown> };
+  after?: { review?: string; followup?: Record<string, unknown>; createFollowup?: Record<string, unknown>; profile?: [string, Record<string, unknown>] };
   /**
    * A step that must succeed right before this mail goes out (creating or extending a trial code). It returns the
    * placeholder values to fill into the subject and body, and more followup changes; if it throws, the mail is not sent.
@@ -188,6 +189,7 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
         [o.followupId]: { 最近联系日期: now, 当前轮到谁: ["KOL"], ...(o.after?.followup ?? {}) },
       });
     }
+    if (o.after?.profile) await ctx.base.update(t.profiles, { [o.after.profile[0]]: o.after.profile[1] });
     if (o.after?.review) {
       await ctx.base.update(t.reviews, {
         [o.after.review]: { 状态: ["已执行"], 执行时间: now, 执行结果: `已从 ${o.mailbox.address} 发给 ${o.recipient}（${sent.messageId}）` },
@@ -233,8 +235,11 @@ async function sendRetryingConflicts(ctx: Ctx, mail: Parameters<Ctx["mail"]["sen
   }
 }
 
-/** `kol send`: everything approved in 审核队列 that is an email and hasn't gone out yet. */
-export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: string[] }): Promise<SendReport & { notEmail: number }> {
+/**
+ * `kol send`: everything approved in 审核队列 that is an email and hasn't gone out yet. An approved item that
+ * sends nothing but has a 发后动作 (a refusal left unanswered) is carried out here too.
+ */
+export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: string[] }): Promise<SendReport & { notEmail: number; closed: string[] }> {
   const t = ctx.cfg.tables;
   const [s, reviews] = await Promise.all([
     loadSnapshot(ctx.base, ctx.cfg),
@@ -243,17 +248,33 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
   const chosen = reviews.filter((r) => isApproved(r) && (!opts.only?.length || opts.only.includes(r.record_id)));
   const items: Outgoing[] = [];
   const skipped: Skipped[] = [];
+  const closed: string[] = [];
+  const day = today(ctx.cfg);
   let notEmail = 0;
   for (const r of chosen) {
     const type = option(r["类型"]);
     const channel = option(r["发送渠道"]);
-    if (!SENDING_TYPES.includes(type) || channel === "不发邮件") {
-      notEmail++;
-      continue;
-    }
     const followupId = linkIds(r["KOL"])[0] ?? "";
     const f = s.followups.get(followupId);
     const name = f ? displayName(s, f) : text(r["审核项"]);
+    const close = f ? closeChanges(r, profileOf(s, f), day) : null;
+    if (typeof close === "string") {
+      skipped.push({ key: r.record_id, name, reason: close });
+      continue;
+    }
+    if (!SENDING_TYPES.includes(type) || channel === "不发邮件") {
+      if (!close) {
+        notEmail++;
+        continue;
+      }
+      closed.push(name);
+      if (opts.dryRun) continue;
+      await ctx.base.update(t.followups, { [followupId]: close.followup });
+      if (close.profile) await ctx.base.update(t.profiles, { [close.profile[0]]: close.profile[1] });
+      await ctx.base.update(t.reviews, { [r.record_id]: { 状态: ["已执行"], 执行时间: stamp(Date.now(), ctx.cfg.timezone), 执行结果: `没发信，${option(r["发后动作"])}（${option(r["结案原因"])}）` } });
+      ctx.run.op({ type: "飞书变更", result: "完成", action: `${option(r["发后动作"])}（${option(r["结案原因"])}）：${name}`, followup: followupId });
+      continue;
+    }
     const mailbox = mailboxFor(ctx.cfg, channel || option(f?.["联系渠道"]));
     if (!mailbox) {
       skipped.push({ key: r.record_id, name, reason: `发送渠道「${channel || "未填"}」不是插件能发的飞书邮箱` });
@@ -272,11 +293,12 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
     }
     items.push({
       key: `review:${r.record_id}`, followupId, name, recipient: emailsIn(r["收件人"])[0] ?? "",
-      mailbox, subject, body, oncePerDay: false, kind: "回复", after: { review: r.record_id },
+      mailbox, subject, body, oncePerDay: false, kind: "回复",
+      after: { review: r.record_id, ...(close ? { followup: close.followup, profile: close.profile } : {}) },
       ...(plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}),
     });
   }
   const report = await deliver(ctx, items, s, opts.dryRun);
   report.skipped.unshift(...skipped);
-  return { ...report, notEmail };
+  return { ...report, notEmail, closed };
 }

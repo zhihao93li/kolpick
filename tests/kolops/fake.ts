@@ -81,7 +81,8 @@ export class FakeLark implements Lark {
       return { messages: list };
     }
     if (svc === "mail" && cmd === "+messages") {
-      return { messages: flag("--message-ids").split(",").map((id) => ({ message_id: id, body_plain_text: this.bodies[id] ?? "" })) };
+      const from = (id: string) => Object.values(this.inbox).flat().find((m) => m.message_id === id)?.from.replace(/.*</, "").replace(">", "") ?? "";
+      return { messages: flag("--message-ids").split(",").map((id) => ({ message_id: id, head_from: { mail_address: from(id) }, body_plain_text: this.bodies[id] ?? "" })) };
     }
     if (svc === "mail" && (cmd === "+send" || cmd === "+reply")) {
       if (this.failSend && this.failSendTimes-- > 0) throw this.failSend;
