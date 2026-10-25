@@ -62876,12 +62876,11 @@ function profileInput(key, profiles, since) {
 }
 function postOf(it) {
   const url = String(it.url ?? it.webVideoUrl ?? it.postUrl ?? (it.shortCode ? `https://www.instagram.com/p/${it.shortCode}/` : ""));
-  const caption = String(it.caption ?? it.text ?? it.title ?? "") + (it.description ? `
-${it.description}` : "");
+  const caption = [it.title, it.caption, it.text, it.description].filter((x) => typeof x === "string" && x).join("\n");
   const when = it.timestamp ?? it.createTimeISO ?? it.date ?? it.uploadDate;
   const at = when ? Date.parse(String(when)) : null;
   const kind = String(it.productType ?? it.type ?? "").toLowerCase();
-  const form = /youtu/.test(url) ? /\/shorts\//.test(url) ? "\u77ED\u89C6\u9891" : "\u957F\u7247" : it.webVideoUrl || /clips|video|reel/.test(kind) ? "\u77ED\u89C6\u9891" : /sidecar|image/.test(kind) ? "\u8D34\u6587" : "\u5176\u4ED6";
+  const form = /youtu/.test(url) ? kind === "shorts" || /\/shorts\//.test(url) ? "\u77ED\u89C6\u9891" : "\u957F\u7247" : it.webVideoUrl || /clips|video|reel/.test(kind) ? "\u77ED\u89C6\u9891" : /sidecar|image/.test(kind) ? "\u8D34\u6587" : "\u5176\u4ED6";
   const owner = String(it.ownerUsername ?? it.authorMeta?.name ?? it.channelUrl ?? "").toLowerCase();
   return { url, caption, at: at == null || Number.isNaN(at) ? null : at, form, owner };
 }
@@ -62945,7 +62944,8 @@ async function findPosts(ctx, o) {
       const post = postOf(it);
       if (!post.url) continue;
       const key = postKey(post.url);
-      const w = list2.find((x) => ownerMatches(post.owner, x.profileUrl, String(it.inputUrl ?? ""))) ?? (list2.length === 1 ? list2[0] : void 0);
+      const input = String(it.inputUrl ?? it.inputChannelUrl ?? it.fromYTUrl ?? "");
+      const w = list2.find((x) => ownerMatches(post.owner, x.profileUrl, input)) ?? (list2.length === 1 ? list2[0] : void 0);
       if (!w) continue;
       seen.add(w.followupId);
       if (known.has(key) || post.at != null && dayOf(post.at, cfg.timezone) < since) continue;

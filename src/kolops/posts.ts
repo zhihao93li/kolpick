@@ -39,11 +39,12 @@ export function profileInput(key: ActorKey, profiles: string[], since: string): 
 /** The fields 发布内容 needs from one scraped post; the actors name them differently. */
 export function postOf(it: Item): { url: string; caption: string; at: number | null; form: string; owner: string } {
   const url = String(it.url ?? it.webVideoUrl ?? it.postUrl ?? (it.shortCode ? `https://www.instagram.com/p/${it.shortCode}/` : ""));
-  const caption = String(it.caption ?? it.text ?? it.title ?? "") + (it.description ? `\n${it.description}` : "");
+  // Instagram has caption, TikTok text, YouTube a title plus its description in text: read them all.
+  const caption = [it.title, it.caption, it.text, it.description].filter((x) => typeof x === "string" && x).join("\n");
   const when = it.timestamp ?? it.createTimeISO ?? it.date ?? it.uploadDate;
   const at = when ? Date.parse(String(when)) : null;
   const kind = String(it.productType ?? it.type ?? "").toLowerCase();
-  const form = /youtu/.test(url) ? (/\/shorts\//.test(url) ? "短视频" : "长片")
+  const form = /youtu/.test(url) ? (kind === "shorts" || /\/shorts\//.test(url) ? "短视频" : "长片")
     : it.webVideoUrl || /clips|video|reel/.test(kind) ? "短视频"
     : /sidecar|image/.test(kind) ? "贴文" : "其他";
   const owner = String(it.ownerUsername ?? it.authorMeta?.name ?? it.channelUrl ?? "").toLowerCase();
@@ -115,7 +116,9 @@ export async function findPosts(ctx: Ctx, o: { dryRun: boolean; budget: number; 
       if (!post.url) continue;
       const key = postKey(post.url);
       // An actor given several profiles returns them mixed; match each post back to its KOL by the profile it came from.
-      const w = list.find((x) => ownerMatches(post.owner, x.profileUrl, String(it.inputUrl ?? ""))) ?? (list.length === 1 ? list[0] : undefined);
+      // Instagram reports the profile it was given as inputUrl, YouTube as inputChannelUrl.
+      const input = String(it.inputUrl ?? it.inputChannelUrl ?? it.fromYTUrl ?? "");
+      const w = list.find((x) => ownerMatches(post.owner, x.profileUrl, input)) ?? (list.length === 1 ? list[0] : undefined);
       if (!w) continue;
       seen.add(w.followupId);
       if (known.has(key) || (post.at != null && dayOf(post.at, cfg.timezone) < since)) continue;

@@ -55,6 +55,8 @@ it("reads posts the way each scraper gives them", () => {
   expect(postOf(items[0])).toMatchObject({ url: "https://www.instagram.com/reel/NEW1/", form: "短视频", owner: "deer_jay" });
   expect(postOf(items[2]).form).toBe("贴文");
   expect(postOf({ url: "https://www.youtube.com/shorts/abcdefghijk", title: "x", date: "2026-10-01" }).form).toBe("短视频");
+  const yt = postOf({ url: "https://www.youtube.com/watch?v=abcdefghijk", type: "shorts", title: "我的 TAFU 合盤", text: "說明欄", date: "2026-10-01" });
+  expect(yt).toMatchObject({ form: "短视频", caption: "我的 TAFU 合盤\n說明欄" });
   expect(postOf({ webVideoUrl: "https://www.tiktok.com/@deer/video/1", text: "x", createTimeISO: "2026-10-01T00:00:00Z" }).form).toBe("短视频");
   expect(mentions("看了 TAFU 的報告", ["tafu"])).toBe("tafu");
   expect(urlIn("[https://a.com/p/1](https://a.com/p/1)")).toBe("https://a.com/p/1");
