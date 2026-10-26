@@ -7,6 +7,8 @@ description: 每天的定时任务，或运营同事说「跑一下每日例行�
 
 先读 `${CLAUDE_PLUGIN_ROOT}/reference/rules.md`。
 
+定时任务要设在项目的执行电脑上（`kol executor` 看）。这台电脑不是执行电脑的话，下面的命令都会报错，就只跑 `today` 并在总结最前面说明。每条命令一次只跑一件：决策台正在发信时，命令会等它做完再跑。
+
 ## 每天要跑的
 
 1. `node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" remind --scheduled`
