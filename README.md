@@ -1,6 +1,6 @@
 # kolpick · KOL 运营插件
 
-一个 Claude 桌面版插件（kol-ops），给运营同事做 KOL 外联：找人和公开邮箱、发邀约、收信、审核后发信、催信和结案。人在本机的决策台网页上做决定，执行器排队执行，Claude 只做准备。数据放在 Postgres（还没切过去的项目仍在飞书多维表格），收发信用飞书邮箱（经本机 lark-cli）。找人和查邮箱调用 Apify 上的现成 actor，支持 Instagram、YouTube、TikTok。
+一个 Claude 桌面版插件（kol-ops），给运营同事做 KOL 外联：找人和公开邮箱、发邀约、收信、审核后发信、催信和结案。人在本机的决策台网页上做决定，执行器排队执行，Claude 只做准备。数据现在在飞书多维表格（测试项目 tafu-test 在 Postgres），以后所有项目一次切换到新的关系数据库（见 [docs/database-design.md](docs/database-design.md)）；收发信用飞书邮箱（经本机 lark-cli）。找人和查邮箱调用 Apify 上的现成 actor，支持 Instagram、YouTube、TikTok。
 
 安装和使用说明见 [plugins/kol-ops/README.md](plugins/kol-ops/README.md)。
 
@@ -12,7 +12,7 @@
 | `src/kolops/` | `kol.mjs` 的源码：各个命令、发信前的检查、执行器，以及项目表的标准结构（`schema.ts`） |
 | `src/kolops/console/` | 决策台（`kol console`）的本机服务和页面 |
 | `src/kolops/store/` | 存储层：项目表放在 Postgres 时，由它接住所有读写表的命令（`pg.ts`），加上本机副本、备份和 `kol db` 命令 |
-| `src/discovery/` | 找人和查邮箱：actor 列表和价格（`apify.ts`）、各平台步骤（`pipeline.ts`）、整体流程（`run.ts`） |
+| `src/discovery/` | 找人和查邮箱：actor 列表和价格（`apify.ts`）、各平台步骤（`pipeline.ts`）、整体流程（`run.ts`）；为什么这样选见 design.md 第十一节 |
 | `src/scripts/build-plugin.ts` | 把 `src/kolops/cli.ts` 打包成 `plugins/kol-ops/scripts/kol.mjs` |
 | `.claude-plugin/marketplace.json` | 让 `/plugin marketplace add zhihao93li/kolpick#stable` 能找到插件 |
 
@@ -56,12 +56,11 @@ git switch stable && git cherry-pick <修复的提交号> && git push origin sta
 
 | 文档 | 管什么 | 给谁看 |
 | --- | --- | --- |
-| [docs/design.md](docs/design.md) | 系统设计、规则、已定的事、接下来做什么、改过的方向 | 你和开发 |
-| [docs/database-design.md](docs/database-design.md) | 数据库设计v1.9定稿：22张关系表、所有发送入口的约束、历史提醒迁移、收信补扫、一次切换与回退；尚未实施 | 产品、开发、测试与数据分析 |
-| [docs/discovery.md](docs/discovery.md) | 找人和查邮箱为什么这样选（实测结论、成本、风险） | 开发 |
+| [docs/design.md](docs/design.md) | 系统设计、规则、找人和查邮箱为什么这样选、已定的事、接下来做什么、改过的方向 | 你和开发 |
+| [docs/database-design.md](docs/database-design.md) | 数据库设计v1.10定稿：22张关系表、所有发送入口的约束、跟进的自动规则、历史提醒迁移、收信补扫、一次切换与回退；尚未实施 | 产品、开发、测试与数据分析 |
 | [docs/data-api.md](docs/data-api.md) | 项目后台要开的 `kol-data` 接口约定 | 项目后台的开发 |
 | 本文件 | 仓库结构、开发、发布 | 开发 |
-| [plugins/kol-ops/README.md](plugins/kol-ops/README.md) | 安装、接入项目、日常用法、切换到 Postgres 的步骤 | 运营同事 |
+| [plugins/kol-ops/README.md](plugins/kol-ops/README.md) | 安装、接入项目、日常用法、切换到新数据库时要做什么 | 运营同事 |
 | `plugins/kol-ops/reference/rules.md` | Claude 必须遵守的共同规则 | Claude |
 | `plugins/kol-ops/reference/fields.md` | 项目表的表名、字段、选项 | Claude |
 | `plugins/kol-ops/skills/*/SKILL.md` | 每个技能的步骤 | Claude |
