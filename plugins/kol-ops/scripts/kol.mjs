@@ -391,11 +391,11 @@ function __asyncValues(o) {
     }, reject);
   }
 }
-function __makeTemplateObject(cooked, raw) {
+function __makeTemplateObject(cooked, raw2) {
   if (Object.defineProperty) {
-    Object.defineProperty(cooked, "raw", { value: raw });
+    Object.defineProperty(cooked, "raw", { value: raw2 });
   } else {
-    cooked.raw = raw;
+    cooked.raw = raw2;
   }
   return cooked;
 }
@@ -16545,7 +16545,7 @@ var require_common = __commonJS({
 var require_browser = __commonJS({
   "node_modules/debug/src/browser.js"(exports, module) {
     exports.formatArgs = formatArgs;
-    exports.save = save3;
+    exports.save = save4;
     exports.load = load2;
     exports.useColors = useColors;
     exports.storage = localstorage();
@@ -16672,7 +16672,7 @@ var require_browser = __commonJS({
     }
     exports.log = console.debug || console.log || (() => {
     });
-    function save3(namespaces) {
+    function save4(namespaces) {
       try {
         if (namespaces) {
           exports.storage.setItem("debug", namespaces);
@@ -16719,7 +16719,7 @@ var require_node = __commonJS({
     exports.init = init;
     exports.log = log;
     exports.formatArgs = formatArgs;
-    exports.save = save3;
+    exports.save = save4;
     exports.load = load2;
     exports.useColors = useColors;
     exports.destroy = util.deprecate(
@@ -16855,7 +16855,7 @@ var require_node = __commonJS({
     function log(...args) {
       return process.stderr.write(util.formatWithOptions(exports.inspectOpts, ...args) + "\n");
     }
-    function save3(namespaces) {
+    function save4(namespaces) {
       if (namespaces) {
         process.env.DEBUG = namespaces;
       } else {
@@ -34537,7 +34537,7 @@ var require_util2 = __commonJS({
       return path;
     }
     exports.normalize = normalize;
-    function join8(aRoot, aPath) {
+    function join9(aRoot, aPath) {
       if (aRoot === "") {
         aRoot = ".";
       }
@@ -34569,7 +34569,7 @@ var require_util2 = __commonJS({
       }
       return joined;
     }
-    exports.join = join8;
+    exports.join = join9;
     exports.isAbsolute = function(aPath) {
       return aPath.charAt(0) === "/" || urlRegexp.test(aPath);
     };
@@ -34742,7 +34742,7 @@ var require_util2 = __commonJS({
             parsed.path = parsed.path.substring(0, index + 1);
           }
         }
-        sourceURL = join8(urlGenerate(parsed), sourceURL);
+        sourceURL = join9(urlGenerate(parsed), sourceURL);
       }
       return normalize(sourceURL);
     }
@@ -36544,7 +36544,7 @@ var require_escodegen = __commonJS({
       function noEmptySpace() {
         return space ? space : " ";
       }
-      function join8(left, right) {
+      function join9(left, right) {
         var leftSource, rightSource, leftCharCode, rightCharCode;
         leftSource = toSourceNodeWhenNeeded(left).toString();
         if (leftSource.length === 0) {
@@ -36633,9 +36633,9 @@ var require_escodegen = __commonJS({
         return "/*" + comment.value + "*/";
       }
       function addComments(stmt, result) {
-        var i, len, comment, save3, tailingToStatement, specialBase, fragment2, extRange, range, prevRange, prefix, infix, suffix, count;
+        var i, len, comment, save4, tailingToStatement, specialBase, fragment2, extRange, range, prevRange, prefix, infix, suffix, count;
         if (stmt.leadingComments && stmt.leadingComments.length > 0) {
-          save3 = result;
+          save4 = result;
           if (preserveBlankLines) {
             comment = stmt.leadingComments[0];
             result = [];
@@ -36682,7 +36682,7 @@ var require_escodegen = __commonJS({
               result.push(addIndent(fragment2));
             }
           }
-          result.push(addIndent(save3));
+          result.push(addIndent(save4));
         }
         if (stmt.trailingComments) {
           if (preserveBlankLines) {
@@ -36875,8 +36875,8 @@ var require_escodegen = __commonJS({
           } else {
             result.push(that.generateExpression(stmt.left, Precedence.Call, E_TTT));
           }
-          result = join8(result, operator);
-          result = [join8(
+          result = join9(result, operator);
+          result = [join9(
             result,
             that.generateExpression(stmt.right, Precedence.Assignment, E_TTT)
           ), ")"];
@@ -37019,11 +37019,11 @@ var require_escodegen = __commonJS({
           var result, fragment2;
           result = ["class"];
           if (stmt.id) {
-            result = join8(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
+            result = join9(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
           }
           if (stmt.superClass) {
-            fragment2 = join8("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
-            result = join8(result, fragment2);
+            fragment2 = join9("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
+            result = join9(result, fragment2);
           }
           result.push(space);
           result.push(this.generateStatement(stmt.body, S_TFFT));
@@ -37036,9 +37036,9 @@ var require_escodegen = __commonJS({
           return escapeDirective(stmt.directive) + this.semicolon(flags);
         },
         DoWhileStatement: function(stmt, flags) {
-          var result = join8("do", this.maybeBlock(stmt.body, S_TFFF));
+          var result = join9("do", this.maybeBlock(stmt.body, S_TFFF));
           result = this.maybeBlockSuffix(stmt.body, result);
-          return join8(result, [
+          return join9(result, [
             "while" + space + "(",
             this.generateExpression(stmt.test, Precedence.Sequence, E_TTT),
             ")" + this.semicolon(flags)
@@ -37074,11 +37074,11 @@ var require_escodegen = __commonJS({
         ExportDefaultDeclaration: function(stmt, flags) {
           var result = ["export"], bodyFlags;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
-          result = join8(result, "default");
+          result = join9(result, "default");
           if (isStatement(stmt.declaration)) {
-            result = join8(result, this.generateStatement(stmt.declaration, bodyFlags));
+            result = join9(result, this.generateStatement(stmt.declaration, bodyFlags));
           } else {
-            result = join8(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
+            result = join9(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
           }
           return result;
         },
@@ -37086,15 +37086,15 @@ var require_escodegen = __commonJS({
           var result = ["export"], bodyFlags, that = this;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
           if (stmt.declaration) {
-            return join8(result, this.generateStatement(stmt.declaration, bodyFlags));
+            return join9(result, this.generateStatement(stmt.declaration, bodyFlags));
           }
           if (stmt.specifiers) {
             if (stmt.specifiers.length === 0) {
-              result = join8(result, "{" + space + "}");
+              result = join9(result, "{" + space + "}");
             } else if (stmt.specifiers[0].type === Syntax.ExportBatchSpecifier) {
-              result = join8(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
+              result = join9(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
             } else {
-              result = join8(result, "{");
+              result = join9(result, "{");
               withIndent(function(indent2) {
                 var i, iz;
                 result.push(newline);
@@ -37112,7 +37112,7 @@ var require_escodegen = __commonJS({
               result.push(base + "}");
             }
             if (stmt.source) {
-              result = join8(result, [
+              result = join9(result, [
                 "from" + space,
                 // ModuleSpecifier
                 this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -37200,7 +37200,7 @@ var require_escodegen = __commonJS({
           ];
           cursor = 0;
           if (stmt.specifiers[cursor].type === Syntax.ImportDefaultSpecifier) {
-            result = join8(result, [
+            result = join9(result, [
               this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
             ]);
             ++cursor;
@@ -37210,7 +37210,7 @@ var require_escodegen = __commonJS({
               result.push(",");
             }
             if (stmt.specifiers[cursor].type === Syntax.ImportNamespaceSpecifier) {
-              result = join8(result, [
+              result = join9(result, [
                 space,
                 this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
               ]);
@@ -37239,7 +37239,7 @@ var require_escodegen = __commonJS({
               }
             }
           }
-          result = join8(result, [
+          result = join9(result, [
             "from" + space,
             // ModuleSpecifier
             this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -37293,7 +37293,7 @@ var require_escodegen = __commonJS({
           return result;
         },
         ThrowStatement: function(stmt, flags) {
-          return [join8(
+          return [join9(
             "throw",
             this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
           ), this.semicolon(flags)];
@@ -37304,7 +37304,7 @@ var require_escodegen = __commonJS({
           result = this.maybeBlockSuffix(stmt.block, result);
           if (stmt.handlers) {
             for (i = 0, iz = stmt.handlers.length; i < iz; ++i) {
-              result = join8(result, this.generateStatement(stmt.handlers[i], S_TFFF));
+              result = join9(result, this.generateStatement(stmt.handlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(stmt.handlers[i].body, result);
               }
@@ -37312,7 +37312,7 @@ var require_escodegen = __commonJS({
           } else {
             guardedHandlers = stmt.guardedHandlers || [];
             for (i = 0, iz = guardedHandlers.length; i < iz; ++i) {
-              result = join8(result, this.generateStatement(guardedHandlers[i], S_TFFF));
+              result = join9(result, this.generateStatement(guardedHandlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(guardedHandlers[i].body, result);
               }
@@ -37320,13 +37320,13 @@ var require_escodegen = __commonJS({
             if (stmt.handler) {
               if (Array.isArray(stmt.handler)) {
                 for (i = 0, iz = stmt.handler.length; i < iz; ++i) {
-                  result = join8(result, this.generateStatement(stmt.handler[i], S_TFFF));
+                  result = join9(result, this.generateStatement(stmt.handler[i], S_TFFF));
                   if (stmt.finalizer || i + 1 !== iz) {
                     result = this.maybeBlockSuffix(stmt.handler[i].body, result);
                   }
                 }
               } else {
-                result = join8(result, this.generateStatement(stmt.handler, S_TFFF));
+                result = join9(result, this.generateStatement(stmt.handler, S_TFFF));
                 if (stmt.finalizer) {
                   result = this.maybeBlockSuffix(stmt.handler.body, result);
                 }
@@ -37334,7 +37334,7 @@ var require_escodegen = __commonJS({
             }
           }
           if (stmt.finalizer) {
-            result = join8(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
+            result = join9(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
           }
           return result;
         },
@@ -37368,7 +37368,7 @@ var require_escodegen = __commonJS({
           withIndent(function() {
             if (stmt.test) {
               result = [
-                join8("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
+                join9("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
                 ":"
               ];
             } else {
@@ -37416,9 +37416,9 @@ var require_escodegen = __commonJS({
             result.push(this.maybeBlock(stmt.consequent, S_TFFF));
             result = this.maybeBlockSuffix(stmt.consequent, result);
             if (stmt.alternate.type === Syntax.IfStatement) {
-              result = join8(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
+              result = join9(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
             } else {
-              result = join8(result, join8("else", this.maybeBlock(stmt.alternate, bodyFlags)));
+              result = join9(result, join9("else", this.maybeBlock(stmt.alternate, bodyFlags)));
             }
           } else {
             result.push(this.maybeBlock(stmt.consequent, bodyFlags));
@@ -37519,7 +37519,7 @@ var require_escodegen = __commonJS({
         },
         ReturnStatement: function(stmt, flags) {
           if (stmt.argument) {
-            return [join8(
+            return [join9(
               "return",
               this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
             ), this.semicolon(flags)];
@@ -37608,14 +37608,14 @@ var require_escodegen = __commonJS({
           if (leftSource.charCodeAt(leftSource.length - 1) === 47 && esutils.code.isIdentifierPartES5(expr.operator.charCodeAt(0))) {
             result = [fragment2, noEmptySpace(), expr.operator];
           } else {
-            result = join8(fragment2, expr.operator);
+            result = join9(fragment2, expr.operator);
           }
           fragment2 = this.generateExpression(expr.right, rightPrecedence, flags);
           if (expr.operator === "/" && fragment2.toString().charAt(0) === "/" || expr.operator.slice(-1) === "<" && fragment2.toString().slice(0, 3) === "!--") {
             result.push(noEmptySpace());
             result.push(fragment2);
           } else {
-            result = join8(result, fragment2);
+            result = join9(result, fragment2);
           }
           if (expr.operator === "in" && !(flags & F_ALLOW_IN)) {
             return ["(", result, ")"];
@@ -37655,7 +37655,7 @@ var require_escodegen = __commonJS({
           var result, length, i, iz, itemFlags;
           length = expr["arguments"].length;
           itemFlags = flags & F_ALLOW_UNPARATH_NEW && !parentheses && length === 0 ? E_TFT : E_TFF;
-          result = join8(
+          result = join9(
             "new",
             this.generateExpression(expr.callee, Precedence.New, itemFlags)
           );
@@ -37705,11 +37705,11 @@ var require_escodegen = __commonJS({
           var result, fragment2, rightCharCode, leftSource, leftCharCode;
           fragment2 = this.generateExpression(expr.argument, Precedence.Unary, E_TTT);
           if (space === "") {
-            result = join8(expr.operator, fragment2);
+            result = join9(expr.operator, fragment2);
           } else {
             result = [expr.operator];
             if (expr.operator.length > 2) {
-              result = join8(result, fragment2);
+              result = join9(result, fragment2);
             } else {
               leftSource = toSourceNodeWhenNeeded(result).toString();
               leftCharCode = leftSource.charCodeAt(leftSource.length - 1);
@@ -37732,7 +37732,7 @@ var require_escodegen = __commonJS({
             result = "yield";
           }
           if (expr.argument) {
-            result = join8(
+            result = join9(
               result,
               this.generateExpression(expr.argument, Precedence.Yield, E_TTT)
             );
@@ -37740,7 +37740,7 @@ var require_escodegen = __commonJS({
           return parenthesize(result, Precedence.Yield, precedence);
         },
         AwaitExpression: function(expr, precedence, flags) {
-          var result = join8(
+          var result = join9(
             expr.all ? "await*" : "await",
             this.generateExpression(expr.argument, Precedence.Await, E_TTT)
           );
@@ -37823,11 +37823,11 @@ var require_escodegen = __commonJS({
           var result, fragment2;
           result = ["class"];
           if (expr.id) {
-            result = join8(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
+            result = join9(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
           }
           if (expr.superClass) {
-            fragment2 = join8("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
-            result = join8(result, fragment2);
+            fragment2 = join9("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
+            result = join9(result, fragment2);
           }
           result.push(space);
           result.push(this.generateStatement(expr.body, S_TFFT));
@@ -37842,7 +37842,7 @@ var require_escodegen = __commonJS({
           }
           if (expr.kind === "get" || expr.kind === "set") {
             fragment2 = [
-              join8(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
+              join9(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
               this.generateFunctionBody(expr.value)
             ];
           } else {
@@ -37852,7 +37852,7 @@ var require_escodegen = __commonJS({
               this.generateFunctionBody(expr.value)
             ];
           }
-          return join8(result, fragment2);
+          return join9(result, fragment2);
         },
         Property: function(expr, precedence, flags) {
           if (expr.kind === "get" || expr.kind === "set") {
@@ -37997,12 +37997,12 @@ var require_escodegen = __commonJS({
           return result;
         },
         Literal: function(expr, precedence, flags) {
-          var raw;
+          var raw2;
           if (expr.hasOwnProperty("raw") && parse2 && extra.raw) {
             try {
-              raw = parse2(expr.raw).body[0].expression;
-              if (raw.type === Syntax.Literal) {
-                if (raw.value === expr.value) {
+              raw2 = parse2(expr.raw).body[0].expression;
+              if (raw2.type === Syntax.Literal) {
+                if (raw2.value === expr.value) {
                   return expr.raw;
                 }
               }
@@ -38047,7 +38047,7 @@ var require_escodegen = __commonJS({
               for (i = 0, iz = expr.blocks.length; i < iz; ++i) {
                 fragment2 = that.generateExpression(expr.blocks[i], Precedence.Sequence, E_TTT);
                 if (i > 0 || extra.moz.comprehensionExpressionStartsWithAssignment) {
-                  result = join8(result, fragment2);
+                  result = join9(result, fragment2);
                 } else {
                   result.push(fragment2);
                 }
@@ -38055,13 +38055,13 @@ var require_escodegen = __commonJS({
             });
           }
           if (expr.filter) {
-            result = join8(result, "if" + space);
+            result = join9(result, "if" + space);
             fragment2 = this.generateExpression(expr.filter, Precedence.Sequence, E_TTT);
-            result = join8(result, ["(", fragment2, ")"]);
+            result = join9(result, ["(", fragment2, ")"]);
           }
           if (!extra.moz.comprehensionExpressionStartsWithAssignment) {
             fragment2 = this.generateExpression(expr.body, Precedence.Assignment, E_TTT);
-            result = join8(result, fragment2);
+            result = join9(result, fragment2);
           }
           result.push(expr.type === Syntax.GeneratorExpression ? ")" : "]");
           return result;
@@ -38077,8 +38077,8 @@ var require_escodegen = __commonJS({
           } else {
             fragment2 = this.generateExpression(expr.left, Precedence.Call, E_TTT);
           }
-          fragment2 = join8(fragment2, expr.of ? "of" : "in");
-          fragment2 = join8(fragment2, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
+          fragment2 = join9(fragment2, expr.of ? "of" : "in");
+          fragment2 = join9(fragment2, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
           return ["for" + space + "(", fragment2, ")"];
         },
         SpreadElement: function(expr, precedence, flags) {
@@ -38947,8 +38947,8 @@ var require_esprima = __commonJS({
                 if (token.type !== 8) {
                   this.throwUnexpectedToken(token);
                 }
-                var raw = this.getTokenRaw(token);
-                return this.finalize(node, new Node.Literal(token.value, raw));
+                var raw2 = this.getTokenRaw(token);
+                return this.finalize(node, new Node.Literal(token.value, raw2));
               };
               JSXParser2.prototype.parseJSXExpressionAttribute = function() {
                 var node = this.createJSXNode();
@@ -39049,8 +39049,8 @@ var require_esprima = __commonJS({
                   var node = this.createJSXChildNode();
                   var token = this.nextJSXText();
                   if (token.start < token.end) {
-                    var raw = this.getTokenRaw(token);
-                    var child = this.finalize(node, new JSXNode.JSXText(token.value, raw));
+                    var raw2 = this.getTokenRaw(token);
+                    var child = this.finalize(node, new JSXNode.JSXText(token.value, raw2));
                     children.push(child);
                   }
                   if (this.scanner.source[this.scanner.index] === "{") {
@@ -39261,10 +39261,10 @@ var require_esprima = __commonJS({
             })();
             exports2.JSXSpreadAttribute = JSXSpreadAttribute;
             var JSXText = /* @__PURE__ */ (function() {
-              function JSXText2(value, raw) {
+              function JSXText2(value, raw2) {
                 this.type = jsx_syntax_1.JSXSyntax.JSXText;
                 this.value = value;
-                this.raw = raw;
+                this.raw = raw2;
               }
               return JSXText2;
             })();
@@ -39686,10 +39686,10 @@ var require_esprima = __commonJS({
             })();
             exports2.LabeledStatement = LabeledStatement;
             var Literal = /* @__PURE__ */ (function() {
-              function Literal2(value, raw) {
+              function Literal2(value, raw2) {
                 this.type = syntax_1.Syntax.Literal;
                 this.value = value;
-                this.raw = raw;
+                this.raw = raw2;
               }
               return Literal2;
             })();
@@ -39763,10 +39763,10 @@ var require_esprima = __commonJS({
             })();
             exports2.Property = Property;
             var RegexLiteral = /* @__PURE__ */ (function() {
-              function RegexLiteral2(value, raw, pattern, flags) {
+              function RegexLiteral2(value, raw2, pattern, flags) {
                 this.type = syntax_1.Syntax.Literal;
                 this.value = value;
-                this.raw = raw;
+                this.raw = raw2;
                 this.regex = { pattern, flags };
               }
               return RegexLiteral2;
@@ -40385,7 +40385,7 @@ var require_esprima = __commonJS({
               Parser2.prototype.parsePrimaryExpression = function() {
                 var node = this.createNode();
                 var expr;
-                var token, raw;
+                var token, raw2;
                 switch (this.lookahead.type) {
                   case 3:
                     if ((this.context.isModule || this.context.await) && this.lookahead.value === "await") {
@@ -40401,22 +40401,22 @@ var require_esprima = __commonJS({
                     this.context.isAssignmentTarget = false;
                     this.context.isBindingElement = false;
                     token = this.nextToken();
-                    raw = this.getTokenRaw(token);
-                    expr = this.finalize(node, new Node.Literal(token.value, raw));
+                    raw2 = this.getTokenRaw(token);
+                    expr = this.finalize(node, new Node.Literal(token.value, raw2));
                     break;
                   case 1:
                     this.context.isAssignmentTarget = false;
                     this.context.isBindingElement = false;
                     token = this.nextToken();
-                    raw = this.getTokenRaw(token);
-                    expr = this.finalize(node, new Node.Literal(token.value === "true", raw));
+                    raw2 = this.getTokenRaw(token);
+                    expr = this.finalize(node, new Node.Literal(token.value === "true", raw2));
                     break;
                   case 5:
                     this.context.isAssignmentTarget = false;
                     this.context.isBindingElement = false;
                     token = this.nextToken();
-                    raw = this.getTokenRaw(token);
-                    expr = this.finalize(node, new Node.Literal(null, raw));
+                    raw2 = this.getTokenRaw(token);
+                    expr = this.finalize(node, new Node.Literal(null, raw2));
                     break;
                   case 10:
                     expr = this.parseTemplateLiteral();
@@ -40439,8 +40439,8 @@ var require_esprima = __commonJS({
                         this.context.isBindingElement = false;
                         this.scanner.index = this.startMarker.index;
                         token = this.nextRegexToken();
-                        raw = this.getTokenRaw(token);
-                        expr = this.finalize(node, new Node.RegexLiteral(token.regex, raw, token.pattern, token.flags));
+                        raw2 = this.getTokenRaw(token);
+                        expr = this.finalize(node, new Node.RegexLiteral(token.regex, raw2, token.pattern, token.flags));
                         break;
                       default:
                         expr = this.throwUnexpectedToken(this.nextToken());
@@ -40552,8 +40552,8 @@ var require_esprima = __commonJS({
                     if (this.context.strict && token.octal) {
                       this.tolerateUnexpectedToken(token, messages_1.Messages.StrictOctalLiteral);
                     }
-                    var raw = this.getTokenRaw(token);
-                    key = this.finalize(node, new Node.Literal(token.value, raw));
+                    var raw2 = this.getTokenRaw(token);
+                    key = this.finalize(node, new Node.Literal(token.value, raw2));
                     break;
                   case 3:
                   case 1:
@@ -40670,9 +40670,9 @@ var require_esprima = __commonJS({
                 assert_1.assert(this.lookahead.head, "Template literal must start with a template head");
                 var node = this.createNode();
                 var token = this.nextToken();
-                var raw = token.value;
+                var raw2 = token.value;
                 var cooked = token.cooked;
-                return this.finalize(node, new Node.TemplateElement({ raw, cooked }, token.tail));
+                return this.finalize(node, new Node.TemplateElement({ raw: raw2, cooked }, token.tail));
               };
               Parser2.prototype.parseTemplateElement = function() {
                 if (this.lookahead.type !== 10) {
@@ -40680,9 +40680,9 @@ var require_esprima = __commonJS({
                 }
                 var node = this.createNode();
                 var token = this.nextToken();
-                var raw = token.value;
+                var raw2 = token.value;
                 var cooked = token.cooked;
-                return this.finalize(node, new Node.TemplateElement({ raw, cooked }, token.tail));
+                return this.finalize(node, new Node.TemplateElement({ raw: raw2, cooked }, token.tail));
               };
               Parser2.prototype.parseTemplateLiteral = function() {
                 var node = this.createNode();
@@ -42632,8 +42632,8 @@ var require_esprima = __commonJS({
                   this.throwError(messages_1.Messages.InvalidModuleSpecifier);
                 }
                 var token = this.nextToken();
-                var raw = this.getTokenRaw(token);
-                return this.finalize(node, new Node.Literal(token.value, raw));
+                var raw2 = this.getTokenRaw(token);
+                return this.finalize(node, new Node.Literal(token.value, raw2));
               };
               Parser2.prototype.parseImportSpecifier = function() {
                 var node = this.createNode();
@@ -53432,11 +53432,11 @@ var require_cjs3 = __commonJS({
       weightedAverage: () => weightedAverage
     });
     module.exports = __toCommonJS2(index_exports);
-    var import_node_crypto4 = __toESM2(__require("crypto"));
+    var import_node_crypto5 = __toESM2(__require("crypto"));
     var import_log = __toESM2(require_cjs2());
     function cryptoRandomObjectId(length = 17) {
       const chars = "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      const bytes = import_node_crypto4.default.randomBytes(length);
+      const bytes = import_node_crypto5.default.randomBytes(length);
       let str = "";
       for (let i = bytes.length - 1; i >= 0; i--) {
         str += chars[(bytes[i] | 0) % chars.length];
@@ -53445,7 +53445,7 @@ var require_cjs3 = __commonJS({
     }
     __name(cryptoRandomObjectId, "cryptoRandomObjectId");
     function deterministicUniqueId(key, length = 17) {
-      return import_node_crypto4.default.createHash("sha256").update(key).digest("base64").replace(/(\+|\/|=)/g, "x").substr(0, length);
+      return import_node_crypto5.default.createHash("sha256").update(key).digest("base64").replace(/(\+|\/|=)/g, "x").substr(0, length);
     }
     __name(deterministicUniqueId, "deterministicUniqueId");
     function getRandomInt(maxExcluded) {
@@ -59531,7 +59531,7 @@ var require_dist19 = __commonJS({
 });
 
 // src/kolops/cli.ts
-import { readFileSync as readFileSync12 } from "node:fs";
+import { readFileSync as readFileSync13 } from "node:fs";
 import { parseArgs } from "node:util";
 
 // src/kolops/lark.ts
@@ -60953,8 +60953,8 @@ async function applyClassification(ctx, o) {
       continue;
     }
     const change = {};
-    for (const [field, raw] of Object.entries(values2 ?? {})) {
-      const v = String(raw ?? "").trim();
+    for (const [field, raw2] of Object.entries(values2 ?? {})) {
+      const v = String(raw2 ?? "").trim();
       if (!v) continue;
       if (field === "\u79F0\u547C") change[field] = v.replace(/^@/, "");
       else if (CLASSIFY_SELECTS.includes(field)) {
@@ -61510,8 +61510,8 @@ var MAX_USES = 10;
 var MAX_DAYS = 60;
 var CODE_RULE2 = /^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$/;
 function suggestTrialCode(profile) {
-  const raw = text(profile?.["\u8D26\u53F7"]) || text(profile?.["\u8D26\u53F7\u540D\u79F0"]);
-  const name = raw.replace(/^@+/, "").replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^[_-]+/, "").slice(0, 64);
+  const raw2 = text(profile?.["\u8D26\u53F7"]) || text(profile?.["\u8D26\u53F7\u540D\u79F0"]);
+  const name = raw2.replace(/^@+/, "").replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^[_-]+/, "").slice(0, 64);
   return CODE_RULE2.test(name) ? name : "";
 }
 function trialPlan(cfg, review2, followup, profile) {
@@ -62545,8 +62545,8 @@ function render(t, values2) {
   });
   return { subject: fill(t.subject), body: fill(t.body) };
 }
-function parseTemplateFile(raw) {
-  const s = raw.replace(/\r\n/g, "\n");
+function parseTemplateFile(raw2) {
+  const s = raw2.replace(/\r\n/g, "\n");
   const m = s.match(/^\s*(?:主旨|主题|Subject)\s*[:：]\s*(.+)\n/i);
   return { subject: m ? m[1].trim() : "", body: (m ? s.slice(m[0].length) : s).trim() };
 }
@@ -64566,8 +64566,9 @@ setInterval(function () { loadOverview().then(function () { if (!location.hash |
 var PAGE = page_default;
 
 // src/kolops/store/db.ts
-import { existsSync as existsSync7, mkdirSync as mkdirSync3, readdirSync as readdirSync2, readFileSync as readFileSync11, unlinkSync as unlinkSync2, writeFileSync as writeFileSync5 } from "node:fs";
-import { join as join7 } from "node:path";
+import { createHash as createHash2 } from "node:crypto";
+import { existsSync as existsSync7, mkdirSync as mkdirSync4, readdirSync as readdirSync2, readFileSync as readFileSync12, unlinkSync as unlinkSync2, writeFileSync as writeFileSync6 } from "node:fs";
+import { join as join8 } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
 // node_modules/postgres/src/index.js
@@ -66719,12 +66720,15 @@ create or replace function kol.bool(t text) returns boolean language plpgsql imm
 `;
 var COMPUTED = /* @__PURE__ */ new Set(["formula", "lookup", "created_at", "updated_at", "created_by", "modified_by", "auto_number"]);
 var PgStore = class {
-  constructor(project, sql) {
+  /** With a cache, whole tables are read through a local copy that only fetches changed rows. */
+  constructor(project, sql, cache) {
     this.project = project;
     this.sql = sql;
+    this.cache = cache;
   }
   project;
   sql;
+  cache;
   meta = null;
   tz = "+08:00";
   // --- What the plugin asks for ---
@@ -66775,8 +66779,8 @@ var PgStore = class {
     const defs = await this.fieldsOf(name);
     const ids2 = [];
     await this.sql.tx(async (q) => {
-      for (const raw of rows) {
-        const fields = this.normalize(name, defs, raw);
+      for (const raw2 of rows) {
+        const fields = this.normalize(name, defs, raw2);
         const id = newId();
         await q.query("insert into kol.records (project, tbl, id, fields) values ($1, $2, $3, $4::text::jsonb)", [this.project, name, id, JSON.stringify(dropNulls(fields))]);
         await this.syncLinks(q, name, defs, id, {}, fields);
@@ -66784,14 +66788,15 @@ var PgStore = class {
       }
       await this.saveNewOptions(q, name, defs);
     });
+    this.cache?.invalidate();
     return ids2;
   }
   async update(table, changes) {
     const name = await this.tableName(table);
     const defs = await this.fieldsOf(name);
     await this.sql.tx(async (q) => {
-      for (const [id, raw] of Object.entries(changes)) {
-        const fields = this.normalize(name, defs, raw);
+      for (const [id, raw2] of Object.entries(changes)) {
+        const fields = this.normalize(name, defs, raw2);
         const [old] = await q.query("select fields from kol.records where project = $1 and tbl = $2 and id = $3 for update", [this.project, name, id]);
         if (!old) throw new Error(`${name} \u91CC\u6CA1\u6709 ${id} \u8FD9\u4E00\u6761`);
         const cleared = Object.keys(fields).filter((k) => fields[k] == null);
@@ -66803,16 +66808,17 @@ var PgStore = class {
       }
       await this.saveNewOptions(q, name, defs);
     });
+    this.cache?.invalidate();
   }
   // --- Reading ---
   /** Every row of a table (or only these ids), with formulas and system fields filled in. */
   async load(name, ids2) {
     const defs = await this.fieldsOf(name);
-    const rows = await this.sql.query(
-      `select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2${ids2 ? " and id in (select jsonb_array_elements_text($3::text::jsonb))" : ""} order by seq`,
-      ids2 ? [this.project, name, JSON.stringify(ids2)] : [this.project, name]
-    );
-    const out = rows.map((r) => ({ record_id: r.id, ...r.fields }));
+    const rows = ids2 ? await this.sql.query(
+      "select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb)) order by seq",
+      [this.project, name, JSON.stringify(ids2)]
+    ) : await this.all(name);
+    const out = rows.map((r) => ({ record_id: r.id, ...this.cache ? structuredClone(r.fields) : r.fields }));
     for (const d of defs) {
       if (d.type === "created_at" || d.type === "updated_at") {
         rows.forEach((r, i) => out[i][d.name] = iso(new Date(d.type === "created_at" ? r.created_at : r.updated_at).getTime(), this.tz));
@@ -66820,6 +66826,10 @@ var PgStore = class {
     }
     for (const d of defs.filter((x) => x.type === "formula")) await this.formula(name, defs, d, out);
     return out;
+  }
+  async all(name) {
+    if (this.cache) return this.cache.rows(this.sql, this.project, name);
+    return this.sql.query("select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 order by seq", [this.project, name]);
   }
   /**
    * The lookups Feishu bases use, `[link].[field].LISTCOMBINE().UNIQUE()` and `[link].[field].MAX()`, worked out
@@ -66834,7 +66844,8 @@ var PgStore = class {
     }
     const target = await this.tableName(link.link_table);
     const ids2 = [...new Set(rows.flatMap((r) => linkIdsOf(r[link.name])))];
-    const linked = ids2.length ? await this.sql.query("select id, fields from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb))", [this.project, target, JSON.stringify(ids2)]) : [];
+    const wanted = new Set(ids2);
+    const linked = !ids2.length ? [] : this.cache ? (await this.all(target)).filter((x) => wanted.has(x.id)) : await this.sql.query("select id, fields from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb))", [this.project, target, JSON.stringify(ids2)]);
     const byId = new Map(linked.map((x) => [x.id, x.fields]));
     for (const r of rows) {
       const values2 = linkIdsOf(r[link.name]).flatMap((id) => {
@@ -66852,10 +66863,10 @@ var PgStore = class {
   }
   // --- Writing ---
   /** Values the way Feishu stores them; unknown and computed fields are refused, as the plugin treats them as bugs. */
-  normalize(table, defs, raw) {
+  normalize(table, defs, raw2) {
     const out = {};
     const bad = [];
-    for (const [k, v] of Object.entries(raw ?? {})) {
+    for (const [k, v] of Object.entries(raw2 ?? {})) {
       const d = defs.find((x) => x.name === k);
       if (!d) bad.push(`${k}\uFF08\u6CA1\u6709\u8FD9\u4E2A\u5B57\u6BB5\uFF09`);
       else if (COMPUTED.has(d.type)) bad.push(`${k}\uFF08\u81EA\u52A8\u7B97\u7684\u5B57\u6BB5\uFF0C\u4E0D\u80FD\u5199\uFF09`);
@@ -67052,6 +67063,82 @@ function matches(r, filter, tz) {
   return filter?.logic === "or" ? conds.some(test) : conds.every(test);
 }
 
+// src/kolops/store/rowcache.ts
+import { mkdirSync as mkdirSync3, readFileSync as readFileSync11, renameSync as renameSync2, writeFileSync as writeFileSync5 } from "node:fs";
+import { join as join7 } from "node:path";
+var FULL_EVERY_MS2 = 24 * 36e5;
+var OVERLAP_MS2 = 5 * 6e4;
+var FRESH_MS = 3e3;
+var RowCache = class {
+  constructor(dir) {
+    this.dir = dir;
+  }
+  dir;
+  mem = /* @__PURE__ */ new Map();
+  checked = /* @__PURE__ */ new Map();
+  /** Forget that tables were just checked, so the next read sees this run's own writes. */
+  invalidate() {
+    this.checked.clear();
+  }
+  async rows(sql, project, tbl) {
+    const file2 = join7(this.dir, `${tbl.replace(/[^\w一-鿿-]/g, "_")}.json`);
+    let cache = this.mem.get(tbl) ?? readCache(file2);
+    if (cache && Date.now() - (this.checked.get(tbl) ?? 0) < FRESH_MS) return cache.rows;
+    const read = await sql.tx(async (q) => {
+      await q.query("set transaction isolation level repeatable read");
+      const [s] = await q.query(
+        "select now() as now, count(*)::int as n, coalesce(min(seq), 0)::text as lo, coalesce(max(seq), 0)::text as hi from kol.records where project = $1 and tbl = $2",
+        [project, tbl]
+      );
+      const now = new Date(s.now).getTime();
+      const usable = cache && now - cache.fullAt < FULL_EVERY_MS2;
+      const since = usable ? new Date(cache.readAt - OVERLAP_MS2).toISOString() : null;
+      const rows = await q.query(
+        `select id, fields, created_at, updated_at, seq::text as seq from kol.records where project = $1 and tbl = $2${since ? " and updated_at >= $3" : ""} order by seq`,
+        since ? [project, tbl, since] : [project, tbl]
+      );
+      return { now, n: s.n, lo: Number(s.lo), hi: Number(s.hi), full: !since, rows: rows.map(raw) };
+    });
+    let next = null;
+    if (!read.full) {
+      const byId = new Map(cache.rows.map((r) => [r.id, r]));
+      for (const r of read.rows) byId.set(r.id, r);
+      const merged = [...byId.values()].sort((a, b2) => a.seq - b2.seq);
+      const same = merged.length === read.n && (merged[0]?.seq ?? 0) === read.lo && (merged.at(-1)?.seq ?? 0) === read.hi;
+      if (same) next = { ...cache, readAt: read.now, rows: merged };
+    }
+    if (!next) {
+      next = read.full ? { readAt: read.now, fullAt: read.now, rows: read.rows } : await this.full(sql, project, tbl);
+    }
+    this.mem.set(tbl, next);
+    this.checked.set(tbl, Date.now());
+    if (read.full || read.rows.length || next.fullAt === next.readAt) save3(this.dir, file2, next);
+    return next.rows;
+  }
+  async full(sql, project, tbl) {
+    const [{ now }] = await sql.query("select now() as now");
+    const rows = await sql.query("select id, fields, created_at, updated_at, seq::text as seq from kol.records where project = $1 and tbl = $2 order by seq", [project, tbl]);
+    const at = new Date(now).getTime();
+    return { readAt: at, fullAt: at, rows: rows.map(raw) };
+  }
+};
+function raw(r) {
+  return { id: r.id, fields: r.fields, created_at: new Date(r.created_at).getTime(), updated_at: new Date(r.updated_at).getTime(), seq: Number(r.seq) };
+}
+function readCache(file2) {
+  try {
+    const c = JSON.parse(readFileSync11(file2, "utf8"));
+    return Array.isArray(c?.rows) && typeof c.readAt === "number" ? c : null;
+  } catch {
+    return null;
+  }
+}
+function save3(dir, file2, data) {
+  mkdirSync3(dir, { recursive: true, mode: 448 });
+  writeFileSync5(`${file2}.tmp`, JSON.stringify(data), { mode: 384 });
+  renameSync2(`${file2}.tmp`, file2);
+}
+
 // src/kolops/store/db.ts
 function connect(url) {
   const sql = src_default(url, { max: 4, onnotice: () => {
@@ -67077,9 +67164,13 @@ function withStores(inner, defaultToken) {
     const p = byToken.get(token);
     if (!p) return null;
     let s = stores.get(token);
-    if (!s) stores.set(token, s = new PgStore(p.name, shared(p.database)));
+    if (!s) stores.set(token, s = new PgStore(p.name, shared(p.database), new RowCache(cacheDir(p.name, p.database))));
     return s;
   });
+}
+function cacheDir(project, url) {
+  const db = createHash2("sha256").update(url.replace(/\/\/([^:@/]+):[^@]+@/, "//$1@")).digest("hex").slice(0, 10);
+  return join8(dataDir(), "cache", `db-${project.replace(/[^\w一-鿿-]/g, "_")}-${db}`);
 }
 var NOT_STORED = /* @__PURE__ */ new Set(["formula", "lookup", "created_at", "updated_at", "modified_by", "auto_number"]);
 async function readFeishu(lark, baseToken, project, onTable) {
@@ -67152,23 +67243,23 @@ async function exportProject(sql, project) {
 }
 var KEEP_BACKUPS = 30;
 function backupDir(project) {
-  const dir = join7(dataDir(), "backups", project.replace(/[^\w一-鿿-]/g, "_"));
-  mkdirSync3(dir, { recursive: true, mode: 448 });
+  const dir = join8(dataDir(), "backups", project.replace(/[^\w一-鿿-]/g, "_"));
+  mkdirSync4(dir, { recursive: true, mode: 448 });
   return dir;
 }
 async function backup(sql, project, dir = backupDir(project)) {
   const snap = await exportProject(sql, project);
-  const file2 = join7(dir, `${dayOf(Date.now())}.json.gz`);
-  writeFileSync5(file2, gzipSync(JSON.stringify(snap)), { mode: 384 });
+  const file2 = join8(dir, `${dayOf(Date.now())}.json.gz`);
+  writeFileSync6(file2, gzipSync(JSON.stringify(snap)), { mode: 384 });
   const old = readdirSync2(dir).filter((f) => f.endsWith(".json.gz")).sort().reverse().slice(KEEP_BACKUPS);
-  for (const f of old) unlinkSync2(join7(dir, f));
+  for (const f of old) unlinkSync2(join8(dir, f));
   return { file: file2, rows: snap.records.length };
 }
 function hasBackupToday(project) {
-  return existsSync7(join7(backupDir(project), `${dayOf(Date.now())}.json.gz`));
+  return existsSync7(join8(backupDir(project), `${dayOf(Date.now())}.json.gz`));
 }
 function readBackup(file2) {
-  const snap = JSON.parse(gunzipSync(readFileSync11(file2)).toString("utf8"));
+  const snap = JSON.parse(gunzipSync(readFileSync12(file2)).toString("utf8"));
   if (snap?.version !== 1 || !Array.isArray(snap.records)) throw new Error(`${file2} \u4E0D\u662F kol db backup \u751F\u6210\u7684\u5907\u4EFD`);
   return snap;
 }
@@ -68091,13 +68182,13 @@ function ids(v) {
   return list3;
 }
 async function body(req) {
-  let raw = "";
+  let raw2 = "";
   for await (const chunk of req) {
-    raw += chunk;
-    if (raw.length > 1e6) throw new Error("\u8BF7\u6C42\u592A\u5927");
+    raw2 += chunk;
+    if (raw2.length > 1e6) throw new Error("\u8BF7\u6C42\u592A\u5927");
   }
   try {
-    return raw ? JSON.parse(raw) : {};
+    return raw2 ? JSON.parse(raw2) : {};
   } catch {
     throw new Error("\u8BF7\u6C42\u7684\u5185\u5BB9\u4E0D\u662F JSON");
   }
@@ -68256,7 +68347,7 @@ var COMMANDS = {
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
-      const profiles = v["profiles-file"] ? list2(readFileSync12(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list2(v.profiles);
+      const profiles = v["profiles-file"] ? list2(readFileSync13(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list2(v.profiles);
       if (!profiles.length) throw new Error("\u6CA1\u6709\u7ED9\u8981\u9080\u7EA6\u7684\u6863\u6848\u8BB0\u5F55\uFF08--profiles \u6216 --profiles-file\uFF09");
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }

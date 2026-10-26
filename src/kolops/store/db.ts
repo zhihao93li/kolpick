@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
@@ -7,6 +8,7 @@ import type { Lark } from "../lark.js";
 import { dataDir } from "../ops.js";
 import { listProjects } from "../projects.js";
 import { PgStore, SCHEMA_SQL, StoreLark, type FieldDef, type Sql } from "./pg.js";
+import { RowCache } from "./rowcache.js";
 
 /** A Postgres connection through the `postgres` driver. */
 export function connect(url: string): Sql & { exec(text: string): Promise<void> } {
@@ -39,9 +41,15 @@ export function withStores(inner: Lark, defaultToken: string): Lark {
     const p = byToken.get(token);
     if (!p) return null;
     let s = stores.get(token);
-    if (!s) stores.set(token, (s = new PgStore(p.name, shared(p.database!))));
+    if (!s) stores.set(token, (s = new PgStore(p.name, shared(p.database!), new RowCache(cacheDir(p.name, p.database!)))));
     return s;
   });
+}
+
+/** Where a project's local copy of its database tables lives; one per database, so switching databases starts afresh. */
+export function cacheDir(project: string, url: string): string {
+  const db = createHash("sha256").update(url.replace(/\/\/([^:@/]+):[^@]+@/, "//$1@")).digest("hex").slice(0, 10);
+  return join(dataDir(), "cache", `db-${project.replace(/[^\w一-鿿-]/g, "_")}-${db}`);
 }
 
 // --- Copying a Feishu base in, backups ---

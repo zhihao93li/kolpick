@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Base, cellTime, onOrAfter } from "../../src/kolops/base.js";
 import { backup, createViews, ensureSchema, loadSnapshot, projectCounts, readBackup, type Snapshot } from "../../src/kolops/store/db.js";
 import { PgStore, StoreLark, type Sql } from "../../src/kolops/store/pg.js";
+import { RowCache } from "../../src/kolops/store/rowcache.js";
 import { FakeLark } from "./fake.js";
 
 type Db = Sql & { exec(text: string): Promise<void> };
@@ -133,5 +134,57 @@ describe("a project kept in Postgres", () => {
     fake.add("KOL 跟进", { 账号名称: "飞书那边" });
     expect(await base.lark.records("KOL 跟进", { baseToken: "anotherFeishuBase" })).toMatchObject([{ 账号名称: "飞书那边" }]);
     expect(await base.lark.json(["contact", "+get-user"])).toMatchObject({ user: { name: "测试运营" } });
+  });
+});
+
+describe("a local copy of database tables", () => {
+  /** A base reading through a cache in `dir`, as a new run of the plugin would (nothing in memory yet). */
+  const cachedBase = (dir: string, sql: Sql = db) => {
+    const store = new PgStore("p", sql, new RowCache(dir));
+    return new Base(new StoreLark(new FakeLark(), TOKEN, (t) => (t === TOKEN ? store : null)), TOKEN);
+  };
+  /** The record queries a run sends, to tell a full read from a read of changed rows. */
+  const watched = () => {
+    const sent: string[] = [];
+    const wrap = (q: Sql): Sql => ({ query: (text, params) => (sent.push(text), q.query(text, params)), tx: (fn) => q.tx((t) => fn(wrap(t))), end: () => q.end() });
+    return { sql: wrap(db), reads: () => sent.filter((t) => t.startsWith("select id, fields")) };
+  };
+
+  it("reads the same rows as the database, then only the rows that changed", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "kol-rows-"));
+    expect(await cachedBase(dir).records("KOL 跟进")).toEqual(await base.records("KOL 跟进"));
+
+    await base.update("KOL 档案", { recP1: { 公开邮箱: "new@example.com" } });
+    await base.create("KOL 档案", [{ 账号名称: "新人" }]);
+    const w = watched();
+    const rows = await cachedBase(dir, w.sql).records("KOL 档案");
+    expect(rows.map((r) => [r["账号名称"], r["公开邮箱"]])).toEqual([["安安", "new@example.com"], ["新人", undefined]]);
+    expect(w.reads().every((t) => t.includes("updated_at >="))).toBe(true);
+    // The lookup on 跟进 reads 档案 through the same copy.
+    expect((await cachedBase(dir).records("KOL 跟进"))[0]["公开邮箱"]).toBe("new@example.com");
+  });
+
+  it("sees its own writes at once and hands out copies", async () => {
+    const b = cachedBase(mkdtempSync(join(tmpdir(), "kol-rows-")));
+    const [first] = await b.records("KOL 跟进");
+    first["阶段"].push("改坏了");
+    await b.update("KOL 跟进", { recF1: { 账号名称: "安安改名" } });
+    const [again] = await b.records("KOL 跟进");
+    expect(again).toMatchObject({ 账号名称: "安安改名", 阶段: ["已回复"] });
+  });
+
+  it("reads in full when rows were deleted or the project was restored", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "kol-rows-"));
+    await cachedBase(dir).records("接触记录");
+    await base.create("接触记录", [{ 摘要: "要删的" }]);
+    await cachedBase(dir).records("接触记录");
+    await db.query("delete from kol.records where project = 'p' and tbl = '接触记录' and fields->>'摘要' = '要删的'");
+    expect((await cachedBase(dir).records("接触记录")).map((r) => r["摘要"])).toEqual(["你好"]);
+
+    // A restore puts back rows with their old update times, which a read of changed rows alone would miss.
+    const snap = snapshot();
+    snap.records.find((r) => r.id === "recC1")!.fields["摘要"] = "恢复的";
+    await loadSnapshot(db, snap, "p", true);
+    expect((await cachedBase(dir).records("接触记录")).map((r) => r["摘要"])).toEqual(["恢复的"]);
   });
 });

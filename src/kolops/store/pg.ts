@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { cellTime, dayOf } from "../base.js";
 import type { Lark, RecordQuery, Row } from "../lark.js";
+import type { RowCache } from "./rowcache.js";
 
 /**
  * A project's tables kept in Postgres instead of a Feishu base, in the same shape: every table, its fields and
@@ -61,7 +62,8 @@ export class PgStore {
   private meta: Promise<Map<string, { feishuId: string; fields: FieldDef[] }>> | null = null;
   private tz = "+08:00";
 
-  constructor(public project: string, public sql: Sql) {}
+  /** With a cache, whole tables are read through a local copy that only fetches changed rows. */
+  constructor(public project: string, public sql: Sql, private cache?: RowCache) {}
 
   // --- What the plugin asks for ---
 
@@ -123,6 +125,7 @@ export class PgStore {
       }
       await this.saveNewOptions(q, name, defs);
     });
+    this.cache?.invalidate();
     return ids;
   }
 
@@ -142,6 +145,7 @@ export class PgStore {
       }
       await this.saveNewOptions(q, name, defs);
     });
+    this.cache?.invalidate();
   }
 
   // --- Reading ---
@@ -149,10 +153,12 @@ export class PgStore {
   /** Every row of a table (or only these ids), with formulas and system fields filled in. */
   private async load(name: string, ids?: string[]): Promise<Row[]> {
     const defs = await this.fieldsOf(name);
-    const rows = await this.sql.query(
-      `select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2${ids ? " and id in (select jsonb_array_elements_text($3::text::jsonb))" : ""} order by seq`,
-      ids ? [this.project, name, JSON.stringify(ids)] : [this.project, name]);
-    const out: Row[] = rows.map((r) => ({ record_id: r.id, ...r.fields }));
+    const rows = ids
+      ? await this.sql.query("select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb)) order by seq",
+        [this.project, name, JSON.stringify(ids)])
+      : await this.all(name);
+    // Copies, so a caller changing a row it got can't change the cached one.
+    const out: Row[] = rows.map((r) => ({ record_id: r.id, ...(this.cache ? structuredClone(r.fields) : r.fields) }));
     for (const d of defs) {
       if (d.type === "created_at" || d.type === "updated_at") {
         rows.forEach((r, i) => (out[i][d.name] = iso(new Date(d.type === "created_at" ? r.created_at : r.updated_at).getTime(), this.tz)));
@@ -160,6 +166,11 @@ export class PgStore {
     }
     for (const d of defs.filter((x) => x.type === "formula")) await this.formula(name, defs, d, out);
     return out;
+  }
+
+  private async all(name: string): Promise<{ id: string; fields: Record<string, any>; created_at: unknown; updated_at: unknown }[]> {
+    if (this.cache) return this.cache.rows(this.sql, this.project, name);
+    return this.sql.query("select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 order by seq", [this.project, name]);
   }
 
   /**
@@ -175,7 +186,10 @@ export class PgStore {
     }
     const target = await this.tableName(link.link_table!);
     const ids = [...new Set(rows.flatMap((r) => linkIdsOf(r[link.name])))];
-    const linked = ids.length ? await this.sql.query("select id, fields from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb))", [this.project, target, JSON.stringify(ids)]) : [];
+    const wanted = new Set(ids);
+    const linked = !ids.length ? []
+      : this.cache ? (await this.all(target)).filter((x) => wanted.has(x.id))
+      : await this.sql.query("select id, fields from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb))", [this.project, target, JSON.stringify(ids)]);
     const byId = new Map(linked.map((x) => [x.id, x.fields]));
     for (const r of rows) {
       const values = linkIdsOf(r[link.name]).flatMap((id) => {
