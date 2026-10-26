@@ -68,6 +68,8 @@ export const SETTINGS_TABLES: Record<"settings" | "mailboxes" | "templates", Fie
     { name: "发布回看天数", type: "number" },
     { name: "飞书群机器人", type: "text" },
     { name: "业务数据接口", type: "text" },
+    { name: "执行电脑", type: "text" },
+    { name: "只认决策台的同意", type: "checkbox" },
     { name: "说明", type: "text" },
   ],
   mailboxes: [
@@ -114,6 +116,10 @@ export const EXTRA_FIELDS: Partial<Record<TableKey, FieldDef[]>> = {
     { name: "合作页名称", type: "text" },
     { name: "发后动作", type: "select", options: [...CLOSE_ACTIONS], multiple: false },
     { name: "结案原因", type: "select", options: CLOSE_REASONS, multiple: false },
+    { name: "同意来源", type: "text" },
+    { name: "同意人", type: "text" },
+    { name: "同意时间", type: "datetime" },
+    { name: "内容指纹", type: "text" },
   ],
 };
 

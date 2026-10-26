@@ -60,6 +60,10 @@ export interface Config {
   postLookbackDays: number;
   webhook: string;
   dataApi: string;
+  /** 设置.执行电脑: the one computer allowed to send, write codes and read the inbox; "" lets any computer. */
+  executor: string;
+  /** 设置.只认决策台的同意: approvals count only when made in the decision console. */
+  consoleOnlyApprovals: boolean;
 }
 
 // Not on spaces: option names such as 「IG 私信」 contain them.
@@ -132,6 +136,8 @@ export function configFrom(project: string, baseToken: string, s: Row, mailboxRo
     postLookbackDays: num(s["发布回看天数"], SETTING_DEFAULTS.发布回看天数),
     webhook: text(s["飞书群机器人"]),
     dataApi: text(s["业务数据接口"]),
+    executor: text(s["执行电脑"]),
+    consoleOnlyApprovals: s["只认决策台的同意"] === true || option(s["只认决策台的同意"]) === "true",
   };
 }
 

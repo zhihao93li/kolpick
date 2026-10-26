@@ -23,6 +23,7 @@ import { syncInbox } from "./sync.js";
 import { trialFollowup } from "./trialfollow.js";
 import { todayLists } from "./today.js";
 import { startConsole } from "./console/server.js";
+import { ExecutorLock, lockHolder, machine, machineLabel, notExecutor } from "./executor.js";
 
 const HELP = `kol <命令> [选项]
 
@@ -52,6 +53,7 @@ const HELP = `kol <命令> [选项]
   trial-followup                体验码发出 5 天没用、用了一部分后 7 天没动静、2 天内到期的，按已批准的模板写好回信放进审核队列（天数在「设置」里）
   trial-check --code 码名        看这个码名能不能用来建体验码（只读）
   whoami                        看当前登录的飞书账号
+  executor [claim]              看这台电脑是不是项目的执行电脑（只有它能发信、收信、建码、找人）；claim 把这台电脑设成执行电脑
   check                         检查飞书授权是否齐全、项目的飞书表缺不缺表和字段，以及怎么补
 
   project add 项目名 飞书表链接  登记一个项目（它的 KOL 总表）；第一个登记的是默认项目
@@ -133,6 +135,7 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
   // Handled in main(): it keeps running until stopped.
   console: { title: "", writes: false, run: async () => null },
+  executor: { title: "", writes: false, run: async () => null },
   // These three are handled in main(): they must work before the project's settings can be read.
   check: { title: "", writes: false, run: async () => null },
   project: { title: "", writes: false, run: async () => null },
@@ -215,8 +218,18 @@ async function main(): Promise<number> {
       print({ 地址: url, 说明: "决策台已经打开（这一版只读）。只有这台电脑能访问；按 Ctrl+C 关掉。" });
       return new Promise<number>(() => {});
     }
-    if (logged) await ctx.run.start();
-    const result = await cmd.run(ctx, values);
+    if (name === "executor") return print(await executorCommand(ctx, positionals[1]));
+    const executes = EXECUTES.includes(name) && !values["dry-run"];
+    if (executes) {
+      const why = notExecutor(cfg);
+      if (why) throw new Error(why);
+    }
+    const go = async () => {
+      if (logged) await ctx!.run.start();
+      return cmd.run(ctx!, values);
+    };
+    // Everything that reaches outside the base runs one at a time on this computer; wait for a run in progress.
+    const result = executes ? await ExecutorLock.run(cmd.title || name, go, { waitMs: 10 * 60_000 }) : await go();
     if (logged) await ctx.run.finish(hasFailures(result) ? "部分完成" : "完成");
     return print(result);
   } catch (err: any) {
@@ -227,6 +240,28 @@ async function main(): Promise<number> {
     console.error(`出错：${err?.message ?? err}`);
     return 2;
   }
+}
+
+/** Commands that send, read the inbox, write codes or spend Apify money: only the executor computer runs them. */
+const EXECUTES = ["sync", "send", "invite", "remind", "find", "posts", "metrics", "codes", "trial-followup"];
+
+/** `kol executor`: whether this computer is the project's executor; `claim` makes it so. */
+async function executorCommand(ctx: Ctx, sub: string | undefined): Promise<unknown> {
+  const me = machine();
+  if (sub === "claim") {
+    const [row] = await ctx.base.records(ctx.cfg.tables.settings, { fields: ["执行电脑"] });
+    if (!row) throw new Error("「设置」表是空的");
+    await ctx.base.update(ctx.cfg.tables.settings, { [row.record_id]: { 执行电脑: machineLabel(me) } });
+    return { 执行电脑: machineLabel(me), 说明: "以后只有这台电脑能发信、收信、建码、找人" };
+  }
+  if (sub) throw new Error("用法：kol executor [claim]");
+  const holder = lockHolder();
+  return {
+    这台电脑: machineLabel(me),
+    设置里的执行电脑: ctx.cfg.executor || "（没填：哪台电脑都能执行）",
+    能执行: !notExecutor(ctx.cfg, me),
+    正在做: holder ? `${holder.what}（${new Date(holder.since).toLocaleString("zh-CN", { hour12: false })} 开始）` : "没有",
+  };
 }
 
 function print(result: unknown): number {

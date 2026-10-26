@@ -17259,8 +17259,8 @@ var require_agent = __commonJS({
             socket = net_1.default.connect(proxy);
           }
           const headers = Object.assign({}, proxy.headers);
-          const hostname = `${opts.host}:${opts.port}`;
-          let payload = `CONNECT ${hostname} HTTP/1.1\r
+          const hostname2 = `${opts.host}:${opts.port}`;
+          let payload = `CONNECT ${hostname2} HTTP/1.1\r
 `;
           if (proxy.auth) {
             headers["Proxy-Authorization"] = `Basic ${Buffer.from(proxy.auth).toString("base64")}`;
@@ -19706,15 +19706,15 @@ var require_axios = __commonJS({
     function getProxyForUrl(url2) {
       var parsedUrl = (typeof url2 === "string" ? parseUrl(url2) : url2) || {};
       var proto = parsedUrl.protocol;
-      var hostname = parsedUrl.host;
+      var hostname2 = parsedUrl.host;
       var port = parsedUrl.port;
-      if (typeof hostname !== "string" || !hostname || typeof proto !== "string") {
+      if (typeof hostname2 !== "string" || !hostname2 || typeof proto !== "string") {
         return "";
       }
       proto = proto.split(":", 1)[0];
-      hostname = hostname.replace(/:\d*$/, "");
+      hostname2 = hostname2.replace(/:\d*$/, "");
       port = parseInt(port) || DEFAULT_PORTS$1[proto] || 0;
-      if (!shouldProxy(hostname, port)) {
+      if (!shouldProxy(hostname2, port)) {
         return "";
       }
       var proxy = getEnv(proto + "_proxy") || getEnv("all_proxy");
@@ -19723,7 +19723,7 @@ var require_axios = __commonJS({
       }
       return proxy;
     }
-    function shouldProxy(hostname, port) {
+    function shouldProxy(hostname2, port) {
       var NO_PROXY = getEnv("no_proxy").toLowerCase();
       if (!NO_PROXY) {
         return true;
@@ -19742,12 +19742,12 @@ var require_axios = __commonJS({
           return true;
         }
         if (!/^[.*]/.test(parsedProxyHostname)) {
-          return hostname !== parsedProxyHostname;
+          return hostname2 !== parsedProxyHostname;
         }
         if (parsedProxyHostname.charAt(0) === "*") {
           parsedProxyHostname = parsedProxyHostname.slice(1);
         }
-        return !hostname.endsWith(parsedProxyHostname);
+        return !hostname2.endsWith(parsedProxyHostname);
       });
     }
     function getEnv(key) {
@@ -20304,14 +20304,14 @@ var require_axios = __commonJS({
       }
       return host.indexOf(":") !== -1 ? ipv6ToBytes(host) : ipv4ToBytes(host);
     };
-    var normalizeNoProxyHost = (hostname) => {
-      if (!hostname) {
-        return hostname;
+    var normalizeNoProxyHost = (hostname2) => {
+      if (!hostname2) {
+        return hostname2;
       }
-      if (hostname.charAt(0) === "[" && hostname.charAt(hostname.length - 1) === "]") {
-        hostname = hostname.slice(1, -1);
+      if (hostname2.charAt(0) === "[" && hostname2.charAt(hostname2.length - 1) === "]") {
+        hostname2 = hostname2.slice(1, -1);
       }
-      const trimmed = trimTrailingDots(hostname);
+      const trimmed = trimTrailingDots(hostname2);
       const ipv4 = normalizeIPAddress(trimmed);
       if (ipv4 !== trimmed) {
         return ipv4;
@@ -20419,8 +20419,8 @@ var require_axios = __commonJS({
         return true;
       }
       const port = Number.parseInt(parsed.port, 10) || DEFAULT_PORTS[parsed.protocol.split(":", 1)[0]] || 0;
-      const hostname = normalizeNoProxyHost(parsed.hostname.toLowerCase());
-      const hostnameBytes = ipToBytes(hostname);
+      const hostname2 = normalizeNoProxyHost(parsed.hostname.toLowerCase());
+      const hostnameBytes = ipToBytes(hostname2);
       return noProxy.split(/[\s,]+/).some((entry) => {
         if (!entry) {
           return false;
@@ -20444,9 +20444,9 @@ var require_axios = __commonJS({
           entryHost = entryHost.slice(1);
         }
         if (entryHost.charAt(0) === ".") {
-          return hostname.endsWith(entryHost);
+          return hostname2.endsWith(entryHost);
         }
-        return hostname === entryHost || isLoopback(hostname) && isLoopback(entryHost);
+        return hostname2 === entryHost || isLoopback(hostname2) && isLoopback(entryHost);
       });
     }
     function speedometer(samplesCount, min) {
@@ -20929,8 +20929,8 @@ var require_axios = __commonJS({
         return normalized;
       }
       const callbackLookup = callbackify(lookup, (value) => utils$1.isArray(value) ? value : [value]);
-      normalized = (hostname, opt, cb) => {
-        callbackLookup(hostname, opt, (err, arg0, arg1) => {
+      normalized = (hostname2, opt, cb) => {
+        callbackLookup(hostname2, opt, (err, arg0, arg1) => {
           if (err) {
             return cb(err);
           }
@@ -25012,15 +25012,15 @@ var require_proxy_from_env = __commonJS({
     function getProxyForUrl(url) {
       var parsedUrl = typeof url === "string" ? parseUrl(url) : url || {};
       var proto = parsedUrl.protocol;
-      var hostname = parsedUrl.host;
+      var hostname2 = parsedUrl.host;
       var port = parsedUrl.port;
-      if (typeof hostname !== "string" || !hostname || typeof proto !== "string") {
+      if (typeof hostname2 !== "string" || !hostname2 || typeof proto !== "string") {
         return "";
       }
       proto = proto.split(":", 1)[0];
-      hostname = hostname.replace(/:\d*$/, "");
+      hostname2 = hostname2.replace(/:\d*$/, "");
       port = parseInt(port) || DEFAULT_PORTS[proto] || 0;
-      if (!shouldProxy(hostname, port)) {
+      if (!shouldProxy(hostname2, port)) {
         return "";
       }
       var proxy = getEnv("npm_config_" + proto + "_proxy") || getEnv(proto + "_proxy") || getEnv("npm_config_proxy") || getEnv("all_proxy");
@@ -25029,7 +25029,7 @@ var require_proxy_from_env = __commonJS({
       }
       return proxy;
     }
-    function shouldProxy(hostname, port) {
+    function shouldProxy(hostname2, port) {
       var NO_PROXY = (getEnv("npm_config_no_proxy") || getEnv("no_proxy")).toLowerCase();
       if (!NO_PROXY) {
         return true;
@@ -25048,12 +25048,12 @@ var require_proxy_from_env = __commonJS({
           return true;
         }
         if (!/^[.*]/.test(parsedProxyHostname)) {
-          return hostname !== parsedProxyHostname;
+          return hostname2 !== parsedProxyHostname;
         }
         if (parsedProxyHostname.charAt(0) === "*") {
           parsedProxyHostname = parsedProxyHostname.slice(1);
         }
-        return !stringEndsWith.call(hostname, parsedProxyHostname);
+        return !stringEndsWith.call(hostname2, parsedProxyHostname);
       });
     }
     function getEnv(key) {
@@ -25354,8 +25354,8 @@ var require_dist6 = __commonJS({
       setRequestProps(req, opts) {
         const { proxy } = this;
         const protocol = opts.secureEndpoint ? "https:" : "http:";
-        const hostname = req.getHeader("host") || "localhost";
-        const base = `${protocol}//${hostname}`;
+        const hostname2 = req.getHeader("host") || "localhost";
+        const base = `${protocol}//${hostname2}`;
         const url = new url_1.URL(req.path, base);
         if (opts.port !== 80) {
           url.port = String(opts.port);
@@ -34537,7 +34537,7 @@ var require_util2 = __commonJS({
       return path;
     }
     exports.normalize = normalize;
-    function join6(aRoot, aPath) {
+    function join7(aRoot, aPath) {
       if (aRoot === "") {
         aRoot = ".";
       }
@@ -34569,7 +34569,7 @@ var require_util2 = __commonJS({
       }
       return joined;
     }
-    exports.join = join6;
+    exports.join = join7;
     exports.isAbsolute = function(aPath) {
       return aPath.charAt(0) === "/" || urlRegexp.test(aPath);
     };
@@ -34742,7 +34742,7 @@ var require_util2 = __commonJS({
             parsed.path = parsed.path.substring(0, index + 1);
           }
         }
-        sourceURL = join6(urlGenerate(parsed), sourceURL);
+        sourceURL = join7(urlGenerate(parsed), sourceURL);
       }
       return normalize(sourceURL);
     }
@@ -36544,7 +36544,7 @@ var require_escodegen = __commonJS({
       function noEmptySpace() {
         return space ? space : " ";
       }
-      function join6(left, right) {
+      function join7(left, right) {
         var leftSource, rightSource, leftCharCode, rightCharCode;
         leftSource = toSourceNodeWhenNeeded(left).toString();
         if (leftSource.length === 0) {
@@ -36875,8 +36875,8 @@ var require_escodegen = __commonJS({
           } else {
             result.push(that.generateExpression(stmt.left, Precedence.Call, E_TTT));
           }
-          result = join6(result, operator);
-          result = [join6(
+          result = join7(result, operator);
+          result = [join7(
             result,
             that.generateExpression(stmt.right, Precedence.Assignment, E_TTT)
           ), ")"];
@@ -37019,11 +37019,11 @@ var require_escodegen = __commonJS({
           var result, fragment;
           result = ["class"];
           if (stmt.id) {
-            result = join6(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
+            result = join7(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
           }
           if (stmt.superClass) {
-            fragment = join6("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
-            result = join6(result, fragment);
+            fragment = join7("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
+            result = join7(result, fragment);
           }
           result.push(space);
           result.push(this.generateStatement(stmt.body, S_TFFT));
@@ -37036,9 +37036,9 @@ var require_escodegen = __commonJS({
           return escapeDirective(stmt.directive) + this.semicolon(flags);
         },
         DoWhileStatement: function(stmt, flags) {
-          var result = join6("do", this.maybeBlock(stmt.body, S_TFFF));
+          var result = join7("do", this.maybeBlock(stmt.body, S_TFFF));
           result = this.maybeBlockSuffix(stmt.body, result);
-          return join6(result, [
+          return join7(result, [
             "while" + space + "(",
             this.generateExpression(stmt.test, Precedence.Sequence, E_TTT),
             ")" + this.semicolon(flags)
@@ -37074,11 +37074,11 @@ var require_escodegen = __commonJS({
         ExportDefaultDeclaration: function(stmt, flags) {
           var result = ["export"], bodyFlags;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
-          result = join6(result, "default");
+          result = join7(result, "default");
           if (isStatement(stmt.declaration)) {
-            result = join6(result, this.generateStatement(stmt.declaration, bodyFlags));
+            result = join7(result, this.generateStatement(stmt.declaration, bodyFlags));
           } else {
-            result = join6(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
+            result = join7(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
           }
           return result;
         },
@@ -37086,15 +37086,15 @@ var require_escodegen = __commonJS({
           var result = ["export"], bodyFlags, that = this;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
           if (stmt.declaration) {
-            return join6(result, this.generateStatement(stmt.declaration, bodyFlags));
+            return join7(result, this.generateStatement(stmt.declaration, bodyFlags));
           }
           if (stmt.specifiers) {
             if (stmt.specifiers.length === 0) {
-              result = join6(result, "{" + space + "}");
+              result = join7(result, "{" + space + "}");
             } else if (stmt.specifiers[0].type === Syntax.ExportBatchSpecifier) {
-              result = join6(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
+              result = join7(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
             } else {
-              result = join6(result, "{");
+              result = join7(result, "{");
               withIndent(function(indent2) {
                 var i, iz;
                 result.push(newline);
@@ -37112,7 +37112,7 @@ var require_escodegen = __commonJS({
               result.push(base + "}");
             }
             if (stmt.source) {
-              result = join6(result, [
+              result = join7(result, [
                 "from" + space,
                 // ModuleSpecifier
                 this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -37200,7 +37200,7 @@ var require_escodegen = __commonJS({
           ];
           cursor = 0;
           if (stmt.specifiers[cursor].type === Syntax.ImportDefaultSpecifier) {
-            result = join6(result, [
+            result = join7(result, [
               this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
             ]);
             ++cursor;
@@ -37210,7 +37210,7 @@ var require_escodegen = __commonJS({
               result.push(",");
             }
             if (stmt.specifiers[cursor].type === Syntax.ImportNamespaceSpecifier) {
-              result = join6(result, [
+              result = join7(result, [
                 space,
                 this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
               ]);
@@ -37239,7 +37239,7 @@ var require_escodegen = __commonJS({
               }
             }
           }
-          result = join6(result, [
+          result = join7(result, [
             "from" + space,
             // ModuleSpecifier
             this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -37293,7 +37293,7 @@ var require_escodegen = __commonJS({
           return result;
         },
         ThrowStatement: function(stmt, flags) {
-          return [join6(
+          return [join7(
             "throw",
             this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
           ), this.semicolon(flags)];
@@ -37304,7 +37304,7 @@ var require_escodegen = __commonJS({
           result = this.maybeBlockSuffix(stmt.block, result);
           if (stmt.handlers) {
             for (i = 0, iz = stmt.handlers.length; i < iz; ++i) {
-              result = join6(result, this.generateStatement(stmt.handlers[i], S_TFFF));
+              result = join7(result, this.generateStatement(stmt.handlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(stmt.handlers[i].body, result);
               }
@@ -37312,7 +37312,7 @@ var require_escodegen = __commonJS({
           } else {
             guardedHandlers = stmt.guardedHandlers || [];
             for (i = 0, iz = guardedHandlers.length; i < iz; ++i) {
-              result = join6(result, this.generateStatement(guardedHandlers[i], S_TFFF));
+              result = join7(result, this.generateStatement(guardedHandlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(guardedHandlers[i].body, result);
               }
@@ -37320,13 +37320,13 @@ var require_escodegen = __commonJS({
             if (stmt.handler) {
               if (Array.isArray(stmt.handler)) {
                 for (i = 0, iz = stmt.handler.length; i < iz; ++i) {
-                  result = join6(result, this.generateStatement(stmt.handler[i], S_TFFF));
+                  result = join7(result, this.generateStatement(stmt.handler[i], S_TFFF));
                   if (stmt.finalizer || i + 1 !== iz) {
                     result = this.maybeBlockSuffix(stmt.handler[i].body, result);
                   }
                 }
               } else {
-                result = join6(result, this.generateStatement(stmt.handler, S_TFFF));
+                result = join7(result, this.generateStatement(stmt.handler, S_TFFF));
                 if (stmt.finalizer) {
                   result = this.maybeBlockSuffix(stmt.handler.body, result);
                 }
@@ -37334,7 +37334,7 @@ var require_escodegen = __commonJS({
             }
           }
           if (stmt.finalizer) {
-            result = join6(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
+            result = join7(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
           }
           return result;
         },
@@ -37368,7 +37368,7 @@ var require_escodegen = __commonJS({
           withIndent(function() {
             if (stmt.test) {
               result = [
-                join6("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
+                join7("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
                 ":"
               ];
             } else {
@@ -37416,9 +37416,9 @@ var require_escodegen = __commonJS({
             result.push(this.maybeBlock(stmt.consequent, S_TFFF));
             result = this.maybeBlockSuffix(stmt.consequent, result);
             if (stmt.alternate.type === Syntax.IfStatement) {
-              result = join6(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
+              result = join7(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
             } else {
-              result = join6(result, join6("else", this.maybeBlock(stmt.alternate, bodyFlags)));
+              result = join7(result, join7("else", this.maybeBlock(stmt.alternate, bodyFlags)));
             }
           } else {
             result.push(this.maybeBlock(stmt.consequent, bodyFlags));
@@ -37519,7 +37519,7 @@ var require_escodegen = __commonJS({
         },
         ReturnStatement: function(stmt, flags) {
           if (stmt.argument) {
-            return [join6(
+            return [join7(
               "return",
               this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
             ), this.semicolon(flags)];
@@ -37608,14 +37608,14 @@ var require_escodegen = __commonJS({
           if (leftSource.charCodeAt(leftSource.length - 1) === 47 && esutils.code.isIdentifierPartES5(expr.operator.charCodeAt(0))) {
             result = [fragment, noEmptySpace(), expr.operator];
           } else {
-            result = join6(fragment, expr.operator);
+            result = join7(fragment, expr.operator);
           }
           fragment = this.generateExpression(expr.right, rightPrecedence, flags);
           if (expr.operator === "/" && fragment.toString().charAt(0) === "/" || expr.operator.slice(-1) === "<" && fragment.toString().slice(0, 3) === "!--") {
             result.push(noEmptySpace());
             result.push(fragment);
           } else {
-            result = join6(result, fragment);
+            result = join7(result, fragment);
           }
           if (expr.operator === "in" && !(flags & F_ALLOW_IN)) {
             return ["(", result, ")"];
@@ -37655,7 +37655,7 @@ var require_escodegen = __commonJS({
           var result, length, i, iz, itemFlags;
           length = expr["arguments"].length;
           itemFlags = flags & F_ALLOW_UNPARATH_NEW && !parentheses && length === 0 ? E_TFT : E_TFF;
-          result = join6(
+          result = join7(
             "new",
             this.generateExpression(expr.callee, Precedence.New, itemFlags)
           );
@@ -37705,11 +37705,11 @@ var require_escodegen = __commonJS({
           var result, fragment, rightCharCode, leftSource, leftCharCode;
           fragment = this.generateExpression(expr.argument, Precedence.Unary, E_TTT);
           if (space === "") {
-            result = join6(expr.operator, fragment);
+            result = join7(expr.operator, fragment);
           } else {
             result = [expr.operator];
             if (expr.operator.length > 2) {
-              result = join6(result, fragment);
+              result = join7(result, fragment);
             } else {
               leftSource = toSourceNodeWhenNeeded(result).toString();
               leftCharCode = leftSource.charCodeAt(leftSource.length - 1);
@@ -37732,7 +37732,7 @@ var require_escodegen = __commonJS({
             result = "yield";
           }
           if (expr.argument) {
-            result = join6(
+            result = join7(
               result,
               this.generateExpression(expr.argument, Precedence.Yield, E_TTT)
             );
@@ -37740,7 +37740,7 @@ var require_escodegen = __commonJS({
           return parenthesize(result, Precedence.Yield, precedence);
         },
         AwaitExpression: function(expr, precedence, flags) {
-          var result = join6(
+          var result = join7(
             expr.all ? "await*" : "await",
             this.generateExpression(expr.argument, Precedence.Await, E_TTT)
           );
@@ -37823,11 +37823,11 @@ var require_escodegen = __commonJS({
           var result, fragment;
           result = ["class"];
           if (expr.id) {
-            result = join6(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
+            result = join7(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
           }
           if (expr.superClass) {
-            fragment = join6("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
-            result = join6(result, fragment);
+            fragment = join7("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
+            result = join7(result, fragment);
           }
           result.push(space);
           result.push(this.generateStatement(expr.body, S_TFFT));
@@ -37842,7 +37842,7 @@ var require_escodegen = __commonJS({
           }
           if (expr.kind === "get" || expr.kind === "set") {
             fragment = [
-              join6(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
+              join7(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
               this.generateFunctionBody(expr.value)
             ];
           } else {
@@ -37852,7 +37852,7 @@ var require_escodegen = __commonJS({
               this.generateFunctionBody(expr.value)
             ];
           }
-          return join6(result, fragment);
+          return join7(result, fragment);
         },
         Property: function(expr, precedence, flags) {
           if (expr.kind === "get" || expr.kind === "set") {
@@ -38047,7 +38047,7 @@ var require_escodegen = __commonJS({
               for (i = 0, iz = expr.blocks.length; i < iz; ++i) {
                 fragment = that.generateExpression(expr.blocks[i], Precedence.Sequence, E_TTT);
                 if (i > 0 || extra.moz.comprehensionExpressionStartsWithAssignment) {
-                  result = join6(result, fragment);
+                  result = join7(result, fragment);
                 } else {
                   result.push(fragment);
                 }
@@ -38055,13 +38055,13 @@ var require_escodegen = __commonJS({
             });
           }
           if (expr.filter) {
-            result = join6(result, "if" + space);
+            result = join7(result, "if" + space);
             fragment = this.generateExpression(expr.filter, Precedence.Sequence, E_TTT);
-            result = join6(result, ["(", fragment, ")"]);
+            result = join7(result, ["(", fragment, ")"]);
           }
           if (!extra.moz.comprehensionExpressionStartsWithAssignment) {
             fragment = this.generateExpression(expr.body, Precedence.Assignment, E_TTT);
-            result = join6(result, fragment);
+            result = join7(result, fragment);
           }
           result.push(expr.type === Syntax.GeneratorExpression ? ")" : "]");
           return result;
@@ -38077,8 +38077,8 @@ var require_escodegen = __commonJS({
           } else {
             fragment = this.generateExpression(expr.left, Precedence.Call, E_TTT);
           }
-          fragment = join6(fragment, expr.of ? "of" : "in");
-          fragment = join6(fragment, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
+          fragment = join7(fragment, expr.of ? "of" : "in");
+          fragment = join7(fragment, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
           return ["for" + space + "(", fragment, ")"];
         },
         SpreadElement: function(expr, precedence, flags) {
@@ -53432,11 +53432,11 @@ var require_cjs3 = __commonJS({
       weightedAverage: () => weightedAverage
     });
     module.exports = __toCommonJS2(index_exports);
-    var import_node_crypto = __toESM2(__require("crypto"));
+    var import_node_crypto2 = __toESM2(__require("crypto"));
     var import_log = __toESM2(require_cjs2());
     function cryptoRandomObjectId(length = 17) {
       const chars = "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      const bytes = import_node_crypto.default.randomBytes(length);
+      const bytes = import_node_crypto2.default.randomBytes(length);
       let str = "";
       for (let i = bytes.length - 1; i >= 0; i--) {
         str += chars[(bytes[i] | 0) % chars.length];
@@ -53445,7 +53445,7 @@ var require_cjs3 = __commonJS({
     }
     __name(cryptoRandomObjectId, "cryptoRandomObjectId");
     function deterministicUniqueId(key, length = 17) {
-      return import_node_crypto.default.createHash("sha256").update(key).digest("base64").replace(/(\+|\/|=)/g, "x").substr(0, length);
+      return import_node_crypto2.default.createHash("sha256").update(key).digest("base64").replace(/(\+|\/|=)/g, "x").substr(0, length);
     }
     __name(deterministicUniqueId, "deterministicUniqueId");
     function getRandomInt(maxExcluded) {
@@ -55432,7 +55432,7 @@ var require_cjs3 = __commonJS({
     };
     __name(_WebhookPayloadTemplate, "WebhookPayloadTemplate");
     var WebhookPayloadTemplate = _WebhookPayloadTemplate;
-    var import_node_crypto2 = __toESM2(__require("crypto"));
+    var import_node_crypto22 = __toESM2(__require("crypto"));
     var ENCRYPTION_ALGORITHM = "aes-256-gcm";
     var ENCRYPTION_KEY_LENGTH = 32;
     var ENCRYPTION_IV_LENGTH = 16;
@@ -55440,13 +55440,13 @@ var require_cjs3 = __commonJS({
     function publicEncrypt({ publicKey, value }) {
       const key = cryptoRandomObjectId(ENCRYPTION_KEY_LENGTH);
       const initVector = cryptoRandomObjectId(ENCRYPTION_IV_LENGTH);
-      const cipher = import_node_crypto2.default.createCipheriv(ENCRYPTION_ALGORITHM, key, initVector);
+      const cipher = import_node_crypto22.default.createCipheriv(ENCRYPTION_ALGORITHM, key, initVector);
       const bufferFromValue = Buffer.from(value, "utf-8");
       const bufferFromKey = Buffer.from(key, "utf-8");
       const bufferFromInitVector = Buffer.from(initVector, "utf-8");
       const passwordBuffer = Buffer.concat([bufferFromKey, bufferFromInitVector]);
       const encryptedValue = Buffer.concat([cipher.update(bufferFromValue), cipher.final(), cipher.getAuthTag()]);
-      const encryptedPassword = import_node_crypto2.default.publicEncrypt(publicKey, passwordBuffer);
+      const encryptedPassword = import_node_crypto22.default.publicEncrypt(publicKey, passwordBuffer);
       return {
         encryptedPassword: encryptedPassword.toString("base64"),
         encryptedValue: encryptedValue.toString("base64")
@@ -55456,7 +55456,7 @@ var require_cjs3 = __commonJS({
     function privateDecrypt({ privateKey, encryptedPassword, encryptedValue }) {
       const encryptedValueBuffer = Buffer.from(encryptedValue, "base64");
       const encryptedPasswordBuffer = Buffer.from(encryptedPassword, "base64");
-      const passwordBuffer = import_node_crypto2.default.privateDecrypt(privateKey, encryptedPasswordBuffer);
+      const passwordBuffer = import_node_crypto22.default.privateDecrypt(privateKey, encryptedPasswordBuffer);
       if (passwordBuffer.length !== ENCRYPTION_KEY_LENGTH + ENCRYPTION_IV_LENGTH) {
         throw new Error("privateDecrypt: Decryption failed, invalid password length!");
       }
@@ -55464,7 +55464,7 @@ var require_cjs3 = __commonJS({
       const encryptedDataBuffer = encryptedValueBuffer.slice(0, encryptedValueBuffer.length - ENCRYPTION_AUTH_TAG_LENGTH);
       const encryptionKeyBuffer = passwordBuffer.slice(0, ENCRYPTION_KEY_LENGTH);
       const initVectorBuffer = passwordBuffer.slice(ENCRYPTION_KEY_LENGTH);
-      const decipher = import_node_crypto2.default.createDecipheriv(ENCRYPTION_ALGORITHM, encryptionKeyBuffer, initVectorBuffer);
+      const decipher = import_node_crypto22.default.createDecipheriv(ENCRYPTION_ALGORITHM, encryptionKeyBuffer, initVectorBuffer);
       decipher.setAuthTag(authTagBuffer);
       return Buffer.concat([decipher.update(encryptedDataBuffer), decipher.final()]).toString("utf-8");
     }
@@ -59531,7 +59531,7 @@ var require_dist19 = __commonJS({
 });
 
 // src/kolops/cli.ts
-import { readFileSync as readFileSync10 } from "node:fs";
+import { readFileSync as readFileSync11 } from "node:fs";
 import { parseArgs } from "node:util";
 
 // src/kolops/lark.ts
@@ -59868,6 +59868,8 @@ var SETTINGS_TABLES = {
     { name: "\u53D1\u5E03\u56DE\u770B\u5929\u6570", type: "number" },
     { name: "\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA", type: "text" },
     { name: "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3", type: "text" },
+    { name: "\u6267\u884C\u7535\u8111", type: "text" },
+    { name: "\u53EA\u8BA4\u51B3\u7B56\u53F0\u7684\u540C\u610F", type: "checkbox" },
     { name: "\u8BF4\u660E", type: "text" }
   ],
   mailboxes: [
@@ -59907,7 +59909,11 @@ var EXTRA_FIELDS = {
     { name: "\u9500\u552E\u5E02\u573A", type: "text" },
     { name: "\u5408\u4F5C\u9875\u540D\u79F0", type: "text" },
     { name: "\u53D1\u540E\u52A8\u4F5C", type: "select", options: [...CLOSE_ACTIONS], multiple: false },
-    { name: "\u7ED3\u6848\u539F\u56E0", type: "select", options: CLOSE_REASONS, multiple: false }
+    { name: "\u7ED3\u6848\u539F\u56E0", type: "select", options: CLOSE_REASONS, multiple: false },
+    { name: "\u540C\u610F\u6765\u6E90", type: "text" },
+    { name: "\u540C\u610F\u4EBA", type: "text" },
+    { name: "\u540C\u610F\u65F6\u95F4", type: "datetime" },
+    { name: "\u5185\u5BB9\u6307\u7EB9", type: "text" }
   ]
 };
 var SETTING_DEFAULTS = {
@@ -60067,7 +60073,9 @@ function configFrom(project, baseToken, s, mailboxRows, now = Date.now()) {
     postWords: listOf(s["\u53D1\u5E03\u8BC6\u522B\u8BCD"]),
     postLookbackDays: num(s["\u53D1\u5E03\u56DE\u770B\u5929\u6570"], SETTING_DEFAULTS.\u53D1\u5E03\u56DE\u770B\u5929\u6570),
     webhook: text(s["\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA"]),
-    dataApi: text(s["\u4E1A\u52A1\u6570\u636E\u63A5\u53E3"])
+    dataApi: text(s["\u4E1A\u52A1\u6570\u636E\u63A5\u53E3"]),
+    executor: text(s["\u6267\u884C\u7535\u8111"]),
+    consoleOnlyApprovals: s["\u53EA\u8BA4\u51B3\u7B56\u53F0\u7684\u540C\u610F"] === true || option(s["\u53EA\u8BA4\u51B3\u7B56\u53F0\u7684\u540C\u610F"]) === "true"
   };
 }
 function mailboxFor(cfg, channel) {
@@ -61947,6 +61955,131 @@ async function applyRevisions(ctx, o) {
   return { \u5199\u5165: o.dryRun ? 0 : list2.length, \u8BD5\u8DD1: o.dryRun || void 0 };
 }
 
+// src/kolops/executor.ts
+import { randomUUID } from "node:crypto";
+import { existsSync as existsSync5, openSync, readFileSync as readFileSync8, unlinkSync, writeFileSync as writeFileSync4, closeSync } from "node:fs";
+import { hostname } from "node:os";
+import { join as join5 } from "node:path";
+function machine() {
+  const file2 = join5(dataDir(), "machine.json");
+  if (existsSync5(file2)) {
+    try {
+      const m2 = JSON.parse(readFileSync8(file2, "utf8"));
+      if (m2?.id) return { id: String(m2.id), name: String(m2.name ?? hostname()) };
+    } catch {
+    }
+  }
+  const m = { id: randomUUID().slice(0, 8), name: hostname().replace(/\.local$/, "") };
+  writeFileSync4(file2, JSON.stringify(m, null, 2));
+  return m;
+}
+function machineLabel(m) {
+  return `${m.name}\uFF08${m.id}\uFF09`;
+}
+function notExecutor(cfg, m = machine()) {
+  if (!cfg.executor || cfg.executor.includes(m.id)) return "";
+  return `\u8FD9\u53F0\u7535\u8111\uFF08${machineLabel(m)}\uFF09\u4E0D\u662F\u8FD9\u4E2A\u9879\u76EE\u7684\u6267\u884C\u7535\u8111\u3002\u300C\u8BBE\u7F6E\u300D\u8868\u91CC\u7684\u6267\u884C\u7535\u8111\u662F\u300C${cfg.executor}\u300D\uFF1A\u53D1\u4FE1\u3001\u6536\u4FE1\u3001\u5EFA\u7801\u3001\u627E\u4EBA\u53EA\u5728\u90A3\u53F0\u7535\u8111\u4E0A\u505A\u3002\u8FD9\u53F0\u7535\u8111\u53EF\u4EE5\u770B\u3001\u5199\u8349\u7A3F\u3001\u63D0\u4EA4\u5F85\u51B3\u5B9A\u3002\u8981\u6362\u6267\u884C\u7535\u8111\uFF0C\u5728\u65B0\u7535\u8111\u4E0A\u8FD0\u884C kol executor claim`;
+}
+var STALE_MS = 9e4;
+var BEAT_MS = 2e4;
+function lockPath() {
+  return join5(dataDir(), "executor.lock");
+}
+function alive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err?.code === "EPERM";
+  }
+}
+function lockHolder(now = Date.now()) {
+  try {
+    const l = JSON.parse(readFileSync8(lockPath(), "utf8"));
+    if (now - l.beat > STALE_MS || !alive(l.pid)) return null;
+    return l;
+  } catch {
+    return null;
+  }
+}
+var ExecutorBusy = class extends Error {
+};
+var ExecutorLock = class _ExecutorLock {
+  constructor(what) {
+    this.what = what;
+  }
+  what;
+  timer = null;
+  /**
+   * Takes the lock, waiting up to `waitMs` while another run holds it. A lock left by a run that died is taken
+   * over. Throws ExecutorBusy when the wait runs out.
+   */
+  static async acquire(what, o = {}) {
+    const sleep = o.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+    const deadline = Date.now() + (o.waitMs ?? 0);
+    for (; ; ) {
+      if (_ExecutorLock.tryTake(what)) {
+        const lock = new _ExecutorLock(what);
+        lock.timer = setInterval(() => lock.beat(), BEAT_MS);
+        lock.timer.unref();
+        return lock;
+      }
+      const holder = lockHolder();
+      if (Date.now() >= deadline) {
+        throw new ExecutorBusy(`\u6267\u884C\u5668\u6B63\u5728\u505A\u300C${holder?.what ?? "\u522B\u7684\u4E8B"}\u300D\uFF08${holder ? new Date(holder.since).toLocaleTimeString("zh-CN", { hour12: false }) : ""} \u5F00\u59CB\uFF09\uFF0C\u7B49\u5B83\u505A\u5B8C\u518D\u8BD5`);
+      }
+      await sleep(3e3);
+    }
+  }
+  static tryTake(what) {
+    const file2 = lockPath();
+    if (existsSync5(file2) && !lockHolder()) {
+      try {
+        unlinkSync(file2);
+      } catch {
+      }
+    }
+    let fd;
+    try {
+      fd = openSync(file2, "wx");
+    } catch (err) {
+      if (err?.code === "EEXIST") return false;
+      throw err;
+    }
+    const now = Date.now();
+    const body = { pid: process.pid, machine: machine().id, what, since: now, beat: now };
+    writeFileSync4(fd, JSON.stringify(body));
+    closeSync(fd);
+    return true;
+  }
+  beat() {
+    try {
+      const l = JSON.parse(readFileSync8(lockPath(), "utf8"));
+      if (l.pid !== process.pid) return;
+      writeFileSync4(lockPath(), JSON.stringify({ ...l, beat: Date.now() }));
+    } catch {
+    }
+  }
+  release() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    try {
+      const l = JSON.parse(readFileSync8(lockPath(), "utf8"));
+      if (l.pid === process.pid) unlinkSync(lockPath());
+    } catch {
+    }
+  }
+  /** Runs `fn` holding the lock, and lets go however it ends. */
+  static async run(what, fn, o = {}) {
+    const lock = await _ExecutorLock.acquire(what, o);
+    try {
+      return await fn();
+    } finally {
+      lock.release();
+    }
+  }
+};
+
 // src/kolops/send.ts
 var SENDING_TYPES = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"];
 function checkOne(o, s, counts, knownSenders) {
@@ -61983,6 +62116,7 @@ async function deliver(ctx, items, s, dryRun) {
   const gap = Math.ceil(6e4 / Math.max(1, ctx.cfg.perMinute));
   const t = ctx.cfg.tables;
   const domains = /* @__PURE__ */ new Map();
+  const pausedNow = () => sendingPaused(ctx.base.lark, ctx.cfg.baseToken);
   for (const o of items) {
     const prior = ctx.journal.get(o.key);
     if (prior?.state === "recorded" || prior?.state === "sent") {
@@ -62018,12 +62152,31 @@ async function deliver(ctx, items, s, dryRun) {
       report.sent.push({ name: o.name, recipient: o.recipient, mailbox: o.mailbox.address, kind, messageId: "\uFF08\u8BD5\u8DD1\uFF0C\u6CA1\u6709\u53D1\u51FA\uFF09" });
       continue;
     }
+    if (await pausedNow()) {
+      report.skipped.push({ key: o.key, name: o.name, reason: "\u53D1\u5230\u4E00\u534A\uFF0C\u300C\u8BBE\u7F6E\u300D\u8868\u7684\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D\u88AB\u52FE\u4E0A\u4E86\uFF0C\u5269\u4E0B\u7684\u6CA1\u53D1" });
+      continue;
+    }
+    if (o.after?.review) {
+      const claim = await claimReview(ctx, o.after.review);
+      if (claim.skip) {
+        report.skipped.push({ key: o.key, name: o.name, reason: claim.skip });
+        continue;
+      }
+      if (claim.fail) {
+        report.failed.push({ key: o.key, name: o.name, reason: claim.fail });
+        await markFailed(ctx, o, claim.fail);
+        continue;
+      }
+    }
     if (o.prepare) {
       try {
         const ready = await o.prepare();
         o.subject = fillTrial(o.subject, ready.values);
         o.body = fillTrial(o.body, ready.values);
         o.after = { ...o.after, followup: { ...o.after?.followup, ...ready.followup } };
+        if (o.after.review) {
+          await ctx.base.update(t.reviews, { [o.after.review]: { \u6267\u884C\u7ED3\u679C: `${executing()}\uFF1A${o.prepareNote ?? "\u53D1\u4FE1\u524D\u7684\u51C6\u5907"}\u5DF2\u5B8C\u6210\uFF0C\u6B63\u5728\u53D1\u4FE1` } });
+        }
       } catch (err) {
         const why = `${o.prepareNote ?? "\u53D1\u4FE1\u524D\u7684\u51C6\u5907"}\u6CA1\u6709\u529E\u6210\uFF0C\u8FD9\u5C01\u4FE1\u6CA1\u53D1\uFF1A${err?.message ?? err}`;
         report.failed.push({ key: o.key, name: o.name, reason: why });
@@ -62093,6 +62246,28 @@ async function deliver(ctx, items, s, dryRun) {
       await ctx2.base.update(t.reviews, { [o.after.review]: { \u72B6\u6001: ["\u6267\u884C\u5931\u8D25"], \u6267\u884C\u7ED3\u679C: why.slice(0, 2e3), \u6267\u884C\u65F6\u95F4: stamp(Date.now(), ctx2.cfg.timezone) } });
     }
   }
+}
+var EXECUTING = "\u6267\u884C\u4E2D";
+var EXECUTING_STALE_MS = 15 * 6e4;
+function executing() {
+  return `${EXECUTING}\uFF08${machineLabel(machine())}\uFF09`;
+}
+async function claimReview(ctx, reviewId) {
+  const t = ctx.cfg.tables;
+  const [r] = await ctx.base.get(t.reviews, [reviewId], ["\u72B6\u6001", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "\u6267\u884C\u7ED3\u679C", "\u6267\u884C\u65F6\u95F4"]);
+  if (!r) return { skip: "\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E00\u6761" };
+  const state = option(r["\u72B6\u6001"]);
+  if (state === "\u5DF2\u6267\u884C") return { skip: "\u8FD9\u4E00\u6761\u5DF2\u7ECF\u6267\u884C\u8FC7" };
+  if (state === "\u5DF2\u64A4\u56DE") return { skip: "\u8FD9\u4E00\u6761\u5DF2\u7ECF\u64A4\u56DE" };
+  if (!isApproved(r)) return { skip: "\u8FD9\u4E00\u6761\u73B0\u5728\u4E0D\u662F\u6279\u51C6\u72B6\u6001" };
+  const result = text(r["\u6267\u884C\u7ED3\u679C"]);
+  if (result.startsWith(EXECUTING)) {
+    const age = Date.now() - (cellTime(r["\u6267\u884C\u65F6\u95F4"], ctx.cfg.timezone) ?? 0);
+    if (age < EXECUTING_STALE_MS) return { skip: `\u53E6\u4E00\u5904\u6B63\u5728\u6267\u884C\u8FD9\u4E00\u6761\uFF08${result}\uFF09` };
+    return { fail: `\u4E0A\u6B21\u6267\u884C\u5230\u4E00\u534A\u4E2D\u65AD\u4E86\uFF08${result}\uFF09\uFF0C\u4FE1\u6709\u6CA1\u6709\u53D1\u51FA\u3001\u7801\u6709\u6CA1\u6709\u5EFA\u597D\u90FD\u4E0D\u786E\u5B9A\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u91CD\u505A\u3002\u8BF7\u5230\u90AE\u7BB1\u300C\u5DF2\u53D1\u9001\u300D\u548C\u9879\u76EE\u540E\u53F0\u786E\u8BA4\u540E\u518D\u5904\u7406` };
+  }
+  await ctx.base.update(t.reviews, { [reviewId]: { \u72B6\u6001: ["\u5F85\u6267\u884C"], \u6267\u884C\u65F6\u95F4: stamp(Date.now(), ctx.cfg.timezone), \u6267\u884C\u7ED3\u679C: executing() } });
+  return {};
 }
 async function sendRetryingConflicts(ctx, mail) {
   for (let attempt = 1; ; attempt++) {
@@ -62568,8 +62743,8 @@ async function reminderCounts(ctx, s) {
 }
 
 // src/kolops/setup.ts
-import { existsSync as existsSync5, readdirSync, readFileSync as readFileSync8 } from "node:fs";
-import { join as join5 } from "node:path";
+import { existsSync as existsSync6, readdirSync, readFileSync as readFileSync9 } from "node:fs";
+import { join as join6 } from "node:path";
 function fieldJson(f) {
   return {
     name: f.name,
@@ -62714,13 +62889,13 @@ async function setupBase(base, o) {
     if (!o.dryRun) await base.create(TABLES.settings, [{ \u9879\u76EE\u540D\u79F0: o.project, ...SETTING_DEFAULTS }]);
   }
   if (o.importDir) {
-    if (!existsSync5(o.importDir)) throw new Error(`\u627E\u4E0D\u5230\u6A21\u677F\u6587\u4EF6\u5939 ${o.importDir}`);
+    if (!existsSync6(o.importDir)) throw new Error(`\u627E\u4E0D\u5230\u6A21\u677F\u6587\u4EF6\u5939 ${o.importDir}`);
     const existing = fresh.has(TABLES.templates) ? [] : await base.records(TABLES.templates, { fields: ["\u540D\u79F0"] });
     const names = new Set(existing.map((r) => text(r["\u540D\u79F0"])));
     const rows = readdirSync(o.importDir).filter((f) => f.endsWith(".txt")).sort().flatMap((file2) => {
       const name = file2.slice(0, -4);
       if (names.has(name)) return [];
-      const { subject, body } = parseTemplateFile(readFileSync8(join5(o.importDir, file2), "utf8"));
+      const { subject, body } = parseTemplateFile(readFileSync9(join6(o.importDir, file2), "utf8"));
       report.\u5BFC\u5165\u6A21\u677F.push(name);
       return [{
         \u540D\u79F0: name,
@@ -62996,11 +63171,11 @@ function ownerMatches(owner, profileUrl, inputUrl) {
 }
 
 // src/kolops/notify.ts
-import { readFileSync as readFileSync9 } from "node:fs";
+import { readFileSync as readFileSync10 } from "node:fs";
 var MAX_CHARS = 4e3;
 async function notifyGroup(cfg, o) {
   if (!cfg.webhook) return { \u53D1\u9001: false, \u539F\u56E0: "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\uFF0C\u8DF3\u8FC7" };
-  const body = readFileSync9(o.file, "utf8").trim();
+  const body = readFileSync10(o.file, "utf8").trim();
   if (!body) throw new Error(`${o.file} \u662F\u7A7A\u7684`);
   const head = body.startsWith("KOL") ? "" : `KOL\uFF5C${cfg.project}
 `;
@@ -64240,6 +64415,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   trial-followup                \u4F53\u9A8C\u7801\u53D1\u51FA 5 \u5929\u6CA1\u7528\u3001\u7528\u4E86\u4E00\u90E8\u5206\u540E 7 \u5929\u6CA1\u52A8\u9759\u30012 \u5929\u5185\u5230\u671F\u7684\uFF0C\u6309\u5DF2\u6279\u51C6\u7684\u6A21\u677F\u5199\u597D\u56DE\u4FE1\u653E\u8FDB\u5BA1\u6838\u961F\u5217\uFF08\u5929\u6570\u5728\u300C\u8BBE\u7F6E\u300D\u91CC\uFF09
   trial-check --code \u7801\u540D        \u770B\u8FD9\u4E2A\u7801\u540D\u80FD\u4E0D\u80FD\u7528\u6765\u5EFA\u4F53\u9A8C\u7801\uFF08\u53EA\u8BFB\uFF09
   whoami                        \u770B\u5F53\u524D\u767B\u5F55\u7684\u98DE\u4E66\u8D26\u53F7
+  executor [claim]              \u770B\u8FD9\u53F0\u7535\u8111\u662F\u4E0D\u662F\u9879\u76EE\u7684\u6267\u884C\u7535\u8111\uFF08\u53EA\u6709\u5B83\u80FD\u53D1\u4FE1\u3001\u6536\u4FE1\u3001\u5EFA\u7801\u3001\u627E\u4EBA\uFF09\uFF1Bclaim \u628A\u8FD9\u53F0\u7535\u8111\u8BBE\u6210\u6267\u884C\u7535\u8111
   check                         \u68C0\u67E5\u98DE\u4E66\u6388\u6743\u662F\u5426\u9F50\u5168\u3001\u9879\u76EE\u7684\u98DE\u4E66\u8868\u7F3A\u4E0D\u7F3A\u8868\u548C\u5B57\u6BB5\uFF0C\u4EE5\u53CA\u600E\u4E48\u8865
 
   project add \u9879\u76EE\u540D \u98DE\u4E66\u8868\u94FE\u63A5  \u767B\u8BB0\u4E00\u4E2A\u9879\u76EE\uFF08\u5B83\u7684 KOL \u603B\u8868\uFF09\uFF1B\u7B2C\u4E00\u4E2A\u767B\u8BB0\u7684\u662F\u9ED8\u8BA4\u9879\u76EE
@@ -64266,7 +64442,7 @@ var COMMANDS = {
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
-      const profiles = v["profiles-file"] ? list(readFileSync10(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
+      const profiles = v["profiles-file"] ? list(readFileSync11(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
       if (!profiles.length) throw new Error("\u6CA1\u6709\u7ED9\u8981\u9080\u7EA6\u7684\u6863\u6848\u8BB0\u5F55\uFF08--profiles \u6216 --profiles-file\uFF09");
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }
@@ -64334,6 +64510,7 @@ var COMMANDS = {
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
   // Handled in main(): it keeps running until stopped.
   console: { title: "", writes: false, run: async () => null },
+  executor: { title: "", writes: false, run: async () => null },
   // These three are handled in main(): they must work before the project's settings can be read.
   check: { title: "", writes: false, run: async () => null },
   project: { title: "", writes: false, run: async () => null },
@@ -64437,8 +64614,17 @@ async function main() {
       return new Promise(() => {
       });
     }
-    if (logged) await ctx.run.start();
-    const result = await cmd.run(ctx, values);
+    if (name === "executor") return print(await executorCommand(ctx, positionals[1]));
+    const executes = EXECUTES.includes(name) && !values["dry-run"];
+    if (executes) {
+      const why = notExecutor(cfg);
+      if (why) throw new Error(why);
+    }
+    const go = async () => {
+      if (logged) await ctx.run.start();
+      return cmd.run(ctx, values);
+    };
+    const result = executes ? await ExecutorLock.run(cmd.title || name, go, { waitMs: 10 * 6e4 }) : await go();
     if (logged) await ctx.run.finish(hasFailures(result) ? "\u90E8\u5206\u5B8C\u6210" : "\u5B8C\u6210");
     return print(result);
   } catch (err) {
@@ -64450,6 +64636,24 @@ async function main() {
     console.error(`\u51FA\u9519\uFF1A${err?.message ?? err}`);
     return 2;
   }
+}
+var EXECUTES = ["sync", "send", "invite", "remind", "find", "posts", "metrics", "codes", "trial-followup"];
+async function executorCommand(ctx, sub) {
+  const me = machine();
+  if (sub === "claim") {
+    const [row] = await ctx.base.records(ctx.cfg.tables.settings, { fields: ["\u6267\u884C\u7535\u8111"] });
+    if (!row) throw new Error("\u300C\u8BBE\u7F6E\u300D\u8868\u662F\u7A7A\u7684");
+    await ctx.base.update(ctx.cfg.tables.settings, { [row.record_id]: { \u6267\u884C\u7535\u8111: machineLabel(me) } });
+    return { \u6267\u884C\u7535\u8111: machineLabel(me), \u8BF4\u660E: "\u4EE5\u540E\u53EA\u6709\u8FD9\u53F0\u7535\u8111\u80FD\u53D1\u4FE1\u3001\u6536\u4FE1\u3001\u5EFA\u7801\u3001\u627E\u4EBA" };
+  }
+  if (sub) throw new Error("\u7528\u6CD5\uFF1Akol executor [claim]");
+  const holder = lockHolder();
+  return {
+    \u8FD9\u53F0\u7535\u8111: machineLabel(me),
+    \u8BBE\u7F6E\u91CC\u7684\u6267\u884C\u7535\u8111: ctx.cfg.executor || "\uFF08\u6CA1\u586B\uFF1A\u54EA\u53F0\u7535\u8111\u90FD\u80FD\u6267\u884C\uFF09",
+    \u80FD\u6267\u884C: !notExecutor(ctx.cfg, me),
+    \u6B63\u5728\u505A: holder ? `${holder.what}\uFF08${new Date(holder.since).toLocaleString("zh-CN", { hour12: false })} \u5F00\u59CB\uFF09` : "\u6CA1\u6709"
+  };
 }
 function print(result) {
   console.log(JSON.stringify(result, null, 2));

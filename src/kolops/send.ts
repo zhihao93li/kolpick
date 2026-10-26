@@ -1,4 +1,4 @@
-import { emailsIn, linkIds, option, text } from "./base.js";
+import { cellTime, emailsIn, linkIds, option, text } from "./base.js";
 import { mailboxFor, sendingPaused, type Mailbox } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import { blockedReason, displayName, followupEmails, loadSnapshot, profileOf, type Snapshot } from "./data.js";
@@ -10,6 +10,7 @@ import { bounceStats, bouncePaused, otherSendingRun, stamp, today, todaysSends, 
 import { closeChanges } from "./inbox.js";
 import { undeliverable } from "./mx.js";
 import { closeDeclined, isApproved } from "./reviews.js";
+import { machine, machineLabel } from "./executor.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
 
@@ -93,6 +94,8 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
   const gap = Math.ceil(60_000 / Math.max(1, ctx.cfg.perMinute));
   const t = ctx.cfg.tables;
   const domains = new Map<string, Promise<string>>();
+  // The pause switch is read again before every mail, so ticking it stops a run midway.
+  const pausedNow = () => sendingPaused(ctx.base.lark, ctx.cfg.baseToken);
 
   for (const o of items) {
     const prior = ctx.journal.get(o.key);
@@ -134,12 +137,31 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
       report.sent.push({ name: o.name, recipient: o.recipient, mailbox: o.mailbox.address, kind, messageId: "（试跑，没有发出）" });
       continue;
     }
+    if (await pausedNow()) {
+      report.skipped.push({ key: o.key, name: o.name, reason: "发到一半，「设置」表的「暂停所有发送」被勾上了，剩下的没发" });
+      continue;
+    }
+    if (o.after?.review) {
+      const claim = await claimReview(ctx, o.after.review);
+      if (claim.skip) {
+        report.skipped.push({ key: o.key, name: o.name, reason: claim.skip });
+        continue;
+      }
+      if (claim.fail) {
+        report.failed.push({ key: o.key, name: o.name, reason: claim.fail });
+        await markFailed(ctx, o, claim.fail);
+        continue;
+      }
+    }
     if (o.prepare) {
       try {
         const ready = await o.prepare();
         o.subject = fillTrial(o.subject, ready.values);
         o.body = fillTrial(o.body, ready.values);
         o.after = { ...o.after, followup: { ...o.after?.followup, ...ready.followup } };
+        if (o.after.review) {
+          await ctx.base.update(t.reviews, { [o.after.review]: { 执行结果: `${executing()}：${o.prepareNote ?? "发信前的准备"}已完成，正在发信` } });
+        }
       } catch (err: any) {
         const why = `${o.prepareNote ?? "发信前的准备"}没有办成，这封信没发：${err?.message ?? err}`;
         report.failed.push({ key: o.key, name: o.name, reason: why });
@@ -215,6 +237,38 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
       await ctx.base.update(t.reviews, { [o.after.review]: { 状态: ["执行失败"], 执行结果: why.slice(0, 2000), 执行时间: stamp(Date.now(), ctx.cfg.timezone) } });
     }
   }
+}
+
+/** How an item being carried out is marked in 审核队列.执行结果, so no other run touches it meanwhile. */
+const EXECUTING = "执行中";
+/** An item marked 执行中 this long ago belongs to a run that died: whether its mail went out is unknown. */
+const EXECUTING_STALE_MS = 15 * 60_000;
+
+function executing(): string {
+  return `${EXECUTING}（${machineLabel(machine())}）`;
+}
+
+/**
+ * Re-reads one approved 审核队列 item right before it is carried out and marks it 执行中. Returns why to leave
+ * it alone (done, withdrawn, no longer approved, being carried out elsewhere) or why it failed (a run that died
+ * midway, so nothing is repeated on a guess).
+ */
+export async function claimReview(ctx: Ctx, reviewId: string): Promise<{ skip?: string; fail?: string }> {
+  const t = ctx.cfg.tables;
+  const [r] = await ctx.base.get(t.reviews, [reviewId], ["状态", "处理", "审核结果", "执行结果", "执行时间"]);
+  if (!r) return { skip: "审核队列里已经没有这一条" };
+  const state = option(r["状态"]);
+  if (state === "已执行") return { skip: "这一条已经执行过" };
+  if (state === "已撤回") return { skip: "这一条已经撤回" };
+  if (!isApproved(r)) return { skip: "这一条现在不是批准状态" };
+  const result = text(r["执行结果"]);
+  if (result.startsWith(EXECUTING)) {
+    const age = Date.now() - (cellTime(r["执行时间"], ctx.cfg.timezone) ?? 0);
+    if (age < EXECUTING_STALE_MS) return { skip: `另一处正在执行这一条（${result}）` };
+    return { fail: `上次执行到一半中断了（${result}），信有没有发出、码有没有建好都不确定，不会自动重做。请到邮箱「已发送」和项目后台确认后再处理` };
+  }
+  await ctx.base.update(t.reviews, { [reviewId]: { 状态: ["待执行"], 执行时间: stamp(Date.now(), ctx.cfg.timezone), 执行结果: executing() } });
+  return {};
 }
 
 /**
