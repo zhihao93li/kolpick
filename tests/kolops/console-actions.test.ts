@@ -36,6 +36,11 @@ beforeEach(async () => {
   pid = lark.add(T.profiles, { 账号: "an", 账号名称: "安安", 公开邮箱: "anan@example.com", 联系许可: ["可联系"] });
   fid = lark.add(T.followups, { 账号名称: "安安", 档案: [{ id: pid }], 阶段: ["已回复"], 当前轮到谁: ["我们"], 联系渠道: ["hello@tafu.me"] });
   ctx = makeCtx(cfg, lark, { id: "ou", name: "林运营" }, "", false, async () => {});
+  // A base set up for the console: 审核队列 and 设置 have the approval and executor fields.
+  const fieldList = lark.json.bind(lark);
+  lark.json = async (args: string[]) => (args[1] === "+field-list"
+    ? { fields: ["同意来源", "同意人", "同意时间", "内容指纹", "执行电脑", "只认决策台的同意"].map((name) => ({ name, type: "text" })) }
+    : fieldList(args));
   const started = await startConsole(ctx, { port: 0, openBrowser: false });
   url = started.url;
   jobs = started.jobs;
@@ -126,4 +131,21 @@ describe("writes from the console", () => {
     const o = await (await fetch(`${url}api/overview`)).json();
     expect(o.paused).toBe(true);
   });
+});
+
+it("only looks, and says why, on a base without the console's fields", async () => {
+  process.env.KOL_DATA_DIR = mkdtempSync(join(tmpdir(), "kol-actions-"));
+  const bare = new FakeLark();
+  const cfg = seedProject(bare);
+  const started = await startConsole(makeCtx(cfg, bare, { id: "ou", name: "林运营" }, "", false, async () => {}), { port: 0, openBrowser: false });
+  try {
+    const o = await (await fetch(`${started.url}api/overview`)).json();
+    expect(o.setupNeeded).toContain("审核队列.同意来源");
+    const r = await fetch(`${started.url}api/pause`, { method: "POST", headers: { "content-type": "application/json", "x-kol-console": "1" }, body: "{}" });
+    expect(r.status).toBe(409);
+    expect((await r.json()).error).toContain("kol setup-base");
+  } finally {
+    started.server.closeAllConnections();
+    started.server.close();
+  }
 });

@@ -9,7 +9,7 @@ import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./m
 import { bounceStats, bouncePaused, otherSendingRun, stamp, today, todaysSends, type SendCounts } from "./ops.js";
 import { closeChanges } from "./inbox.js";
 import { undeliverable } from "./mx.js";
-import { APPROVAL_FIELDS, approvalProblem, closeDeclined, FINGERPRINT_FIELDS, isApproved, sendBack } from "./reviews.js";
+import { approvalProblem, closeDeclined, isApproved, sendBack } from "./reviews.js";
 import { machine, machineLabel } from "./executor.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
@@ -255,7 +255,8 @@ function executing(): string {
  */
 export async function claimReview(ctx: Ctx, reviewId: string): Promise<{ skip?: string; fail?: string }> {
   const t = ctx.cfg.tables;
-  const [r] = await ctx.base.get(t.reviews, [reviewId], ["状态", "处理", "审核结果", "执行结果", "执行时间", ...FINGERPRINT_FIELDS, ...APPROVAL_FIELDS]);
+  // Read the whole row: a base not yet given the approval fields (同意来源 …) must still work, and naming a field it lacks fails.
+  const [r] = await ctx.base.get(t.reviews, [reviewId]);
   if (!r) return { skip: "审核队列里已经没有这一条" };
   const state = option(r["状态"]);
   if (state === "已执行") return { skip: "这一条已经执行过" };

@@ -100,6 +100,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
   </div>
 </header>
 <div class="banner" id="paused-banner" style="background:var(--bad-bg);color:var(--bad);border-color:#E9B4AE" hidden>已暂停所有发送：你同意的事会先排着，点「恢复发送」后才执行。</div>
+<div class="banner" id="setup-banner" hidden></div>
 <main id="app"><div class="loading">正在从飞书读数据…</div></main>
 <div class="toast" id="toast" hidden><span id="toast-text"></span> <button class="btn sm" id="toast-undo" style="margin-left:10px;background:transparent;color:#fff;border-color:#5B6270" hidden>撤销</button></div>
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
@@ -149,6 +150,8 @@ function loadOverview() {
     $("synced").textContent = "飞书 " + timeOf(o.loadedAt) + " 已同步";
     renderStatus(o.status, o.jobs);
     renderPause(o.paused);
+    $("setup-banner").hidden = !(o.setupNeeded && o.setupNeeded.length);
+    if (o.setupNeeded && o.setupNeeded.length) $("setup-banner").textContent = "这个项目的飞书表还缺 " + o.setupNeeded.join("、") + "，决策台现在只能看。请在执行电脑上运行 kol setup-base，然后重新打开决策台。";
     o.jobs.forEach(function (j) { state.jobsSeen[j.id] = j.state; });
     if (o.jobs.some(function (j) { return j.state === "排队中" || j.state === "进行中"; })) watchJobs();
     return o;

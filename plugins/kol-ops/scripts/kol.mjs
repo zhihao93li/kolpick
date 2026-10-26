@@ -61571,7 +61571,6 @@ var FINGERPRINT_FIELDS = [
   "\u53D1\u540E\u52A8\u4F5C",
   "\u7ED3\u6848\u539F\u56E0"
 ];
-var APPROVAL_FIELDS = ["\u540C\u610F\u6765\u6E90", "\u540C\u610F\u4EBA", "\u540C\u610F\u65F6\u95F4", "\u5185\u5BB9\u6307\u7EB9"];
 function cellWords(v) {
   if (v == null) return "";
   if (typeof v === "number") return String(v);
@@ -62363,7 +62362,7 @@ function executing() {
 }
 async function claimReview(ctx, reviewId) {
   const t = ctx.cfg.tables;
-  const [r] = await ctx.base.get(t.reviews, [reviewId], ["\u72B6\u6001", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "\u6267\u884C\u7ED3\u679C", "\u6267\u884C\u65F6\u95F4", ...FINGERPRINT_FIELDS, ...APPROVAL_FIELDS]);
+  const [r] = await ctx.base.get(t.reviews, [reviewId]);
   if (!r) return { skip: "\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E00\u6761" };
   const state = option(r["\u72B6\u6001"]);
   if (state === "\u5DF2\u6267\u884C") return { skip: "\u8FD9\u4E00\u6761\u5DF2\u7ECF\u6267\u884C\u8FC7" };
@@ -63840,6 +63839,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
   </div>
 </header>
 <div class="banner" id="paused-banner" style="background:var(--bad-bg);color:var(--bad);border-color:#E9B4AE" hidden>\u5DF2\u6682\u505C\u6240\u6709\u53D1\u9001\uFF1A\u4F60\u540C\u610F\u7684\u4E8B\u4F1A\u5148\u6392\u7740\uFF0C\u70B9\u300C\u6062\u590D\u53D1\u9001\u300D\u540E\u624D\u6267\u884C\u3002</div>
+<div class="banner" id="setup-banner" hidden></div>
 <main id="app"><div class="loading">\u6B63\u5728\u4ECE\u98DE\u4E66\u8BFB\u6570\u636E\u2026</div></main>
 <div class="toast" id="toast" hidden><span id="toast-text"></span> <button class="btn sm" id="toast-undo" style="margin-left:10px;background:transparent;color:#fff;border-color:#5B6270" hidden>\u64A4\u9500</button></div>
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
@@ -63889,6 +63889,8 @@ function loadOverview() {
     $("synced").textContent = "\u98DE\u4E66 " + timeOf(o.loadedAt) + " \u5DF2\u540C\u6B65";
     renderStatus(o.status, o.jobs);
     renderPause(o.paused);
+    $("setup-banner").hidden = !(o.setupNeeded && o.setupNeeded.length);
+    if (o.setupNeeded && o.setupNeeded.length) $("setup-banner").textContent = "\u8FD9\u4E2A\u9879\u76EE\u7684\u98DE\u4E66\u8868\u8FD8\u7F3A " + o.setupNeeded.join("\u3001") + "\uFF0C\u51B3\u7B56\u53F0\u73B0\u5728\u53EA\u80FD\u770B\u3002\u8BF7\u5728\u6267\u884C\u7535\u8111\u4E0A\u8FD0\u884C kol setup-base\uFF0C\u7136\u540E\u91CD\u65B0\u6253\u5F00\u51B3\u7B56\u53F0\u3002";
     o.jobs.forEach(function (j) { state.jobsSeen[j.id] = j.state; });
     if (o.jobs.some(function (j) { return j.state === "\u6392\u961F\u4E2D" || j.state === "\u8FDB\u884C\u4E2D"; })) watchJobs();
     return o;
@@ -65012,6 +65014,11 @@ async function startConsole(ctx, o) {
   });
   const jobs = new Jobs(ctx, refreshSoon);
   await refresh();
+  const [reviewFields, settingFields] = await Promise.all([ctx.base.fieldNames(ctx.cfg.tables.reviews), ctx.base.fieldNames(ctx.cfg.tables.settings)]);
+  const setupNeeded = [
+    ...["\u540C\u610F\u6765\u6E90", "\u540C\u610F\u4EBA", "\u540C\u610F\u65F6\u95F4", "\u5185\u5BB9\u6307\u7EB9"].filter((f) => !reviewFields?.includes(f)).map((f) => `\u5BA1\u6838\u961F\u5217.${f}`),
+    ...["\u6267\u884C\u7535\u8111", "\u53EA\u8BA4\u51B3\u7B56\u53F0\u7684\u540C\u610F"].filter((f) => !settingFields?.includes(f)).map((f) => `\u8BBE\u7F6E.${f}`)
+  ];
   const timer = setInterval(refreshSoon, REFRESH_MS);
   timer.unref();
   const server = createServer((req, res) => {
@@ -65036,6 +65043,7 @@ async function startConsole(ctx, o) {
           loadedAt: data.loadedAt,
           today: day2,
           paused: await isPaused(ctx),
+          setupNeeded,
           cards,
           waitingClaude,
           status: await runStatus(ctx, data),
@@ -65067,6 +65075,9 @@ async function startConsole(ctx, o) {
     if (url2.pathname === "/api/refresh") {
       await refresh();
       return send(res, 200, { loadedAt: data.loadedAt });
+    }
+    if (setupNeeded.length) {
+      return send(res, 409, { error: `\u8FD9\u4E2A\u9879\u76EE\u7684\u98DE\u4E66\u8868\u8FD8\u7F3A ${setupNeeded.join("\u3001")}\uFF0C\u51B3\u7B56\u53F0\u73B0\u5728\u53EA\u80FD\u770B\u3002\u8BF7\u5728\u6267\u884C\u7535\u8111\u4E0A\u8FD0\u884C kol setup-base\uFF08\u5148\u52A0 --dry-run \u770B\u4F1A\u52A0\u4EC0\u4E48\uFF09\uFF0C\u7136\u540E\u91CD\u65B0\u6253\u5F00\u51B3\u7B56\u53F0` });
     }
     const b = await body(req);
     const done = (extra = {}) => {

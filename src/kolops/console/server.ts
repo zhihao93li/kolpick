@@ -24,6 +24,12 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
   const refreshSoon = () => void refresh().catch(() => {});
   const jobs = new Jobs(ctx, refreshSoon);
   await refresh();
+  // Decisions write 同意来源 and friends; a base that hasn't been given them yet can be looked at but not changed.
+  const [reviewFields, settingFields] = await Promise.all([ctx.base.fieldNames(ctx.cfg.tables.reviews), ctx.base.fieldNames(ctx.cfg.tables.settings)]);
+  const setupNeeded = [
+    ...["同意来源", "同意人", "同意时间", "内容指纹"].filter((f) => !reviewFields?.includes(f)).map((f) => `审核队列.${f}`),
+    ...["执行电脑", "只认决策台的同意"].filter((f) => !settingFields?.includes(f)).map((f) => `设置.${f}`),
+  ];
   const timer = setInterval(refreshSoon, REFRESH_MS);
   timer.unref();
 
@@ -46,7 +52,7 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
         if (mails.at !== data.loadedAt) mails = { at: data.loadedAt, map: await cardMails(ctx, data) };
         const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day, mails.map);
         return send(res, 200, {
-          project: ctx.cfg.project, me: ctx.me.name, loadedAt: data.loadedAt, today: day, paused: await isPaused(ctx),
+          project: ctx.cfg.project, me: ctx.me.name, loadedAt: data.loadedAt, today: day, paused: await isPaused(ctx), setupNeeded,
           cards, waitingClaude, status: await runStatus(ctx, data), jobs: jobs.list,
           views: Object.entries(VIEWS).map(([key, v]) => ({ key, label: v.label })), counts: viewCounts(data, ctx.cfg, day),
         });
@@ -75,6 +81,9 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
     if (url.pathname === "/api/refresh") {
       await refresh();
       return send(res, 200, { loadedAt: data.loadedAt });
+    }
+    if (setupNeeded.length) {
+      return send(res, 409, { error: `这个项目的飞书表还缺 ${setupNeeded.join("、")}，决策台现在只能看。请在执行电脑上运行 kol setup-base（先加 --dry-run 看会加什么），然后重新打开决策台` });
     }
     const b = await body(req);
     const done = (extra: Record<string, unknown> = {}) => {
