@@ -15,6 +15,8 @@ export interface Project {
   /** The separate key that may create and extend trial codes through that API. */
   trialKey?: string;
   partnerKey?: string;
+  /** A Postgres connection string when the project's tables live in a database instead of the Feishu base. */
+  database?: string;
 }
 
 interface Registry {
@@ -90,6 +92,15 @@ export function setDataApiKey(name: string, key: string, which: "dataApiKey" | "
   const r = load();
   if (!r.projects[name]) throw new Error(`没有登记叫「${name}」的项目`);
   r.projects[name][which] = key.trim();
+  save(r);
+}
+
+/** Moves the project's tables to this database, or back to its Feishu base when `url` is undefined. */
+export function setDatabase(name: string, url: string | undefined): void {
+  const r = load();
+  if (!r.projects[name]) throw new Error(`没有登记叫「${name}」的项目`);
+  if (url) r.projects[name].database = url;
+  else delete r.projects[name].database;
   save(r);
 }
 

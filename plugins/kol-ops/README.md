@@ -97,6 +97,17 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
 2. 运行 `kol executor claim`。
 3. 跟运营同事说好哪天开始，那天在「设置」表勾上「只认决策台的同意」。之后在飞书审核队列里改「发／同意」不再执行，要在决策台里点。
 
+## 把项目的数据搬到 Postgres
+
+项目可以不用飞书表，改用一个 Postgres 数据库，表和字段原样搬过去，命令和决策台的用法都不变，读起来快得多。收发信还是走飞书邮箱。详见仓库里的 `docs/postgres-store.md`。
+
+1. 打开「暂停所有发送」，关掉决策台。
+2. `kol db import --url <连接串>`：把飞书表整个复制进库，看每张表的行数对不对。
+3. `kol db use --url <连接串>`：以后这个项目读写都走数据库。连接串只存在本机。
+4. 打开决策台看一遍，再关掉暂停。退回飞书：`kol db use --feishu`。
+
+决策台开着时每天自动备份到 `~/.kol-ops/backups/`（`kol db backup` 手动备份，`kol db restore --file … --replace` 恢复）。每张表有一个分析用的视图，比如 `select 阶段, count(*) from kol."tafu/KOL 跟进" group by 1`。
+
 ## 改动
 
 脚本源码在仓库的 `src/kolops/`。改完先运行 `npm run build:plugin`，重新打包 `scripts/kol.mjs`；再运行 `npm test`，测试里会直接运行打包后的脚本，确认它能正常启动。然后把 `plugin.json` 的版本号加一。同事装的是 `stable` 分支，要等 stable 推到这个版本（见仓库根目录 README 的「发布」）才会拿到。发信规则和邮件模板不在插件里，在每个项目飞书表的「设置」「发信邮箱」「模板」表里，改那里就行。

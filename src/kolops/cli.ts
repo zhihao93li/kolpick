@@ -23,6 +23,8 @@ import { syncInbox } from "./sync.js";
 import { trialFollowup } from "./trialfollow.js";
 import { todayLists } from "./today.js";
 import { startConsole } from "./console/server.js";
+import { dbCommand } from "./store/command.js";
+import { withStores } from "./store/db.js";
 import { ExecutorLock, lockHolder, machine, machineLabel, notExecutor } from "./executor.js";
 
 const HELP = `kol <命令> [选项]
@@ -60,6 +62,11 @@ const HELP = `kol <命令> [选项]
 
   project add 项目名 飞书表链接  登记一个项目（它的 KOL 总表）；第一个登记的是默认项目
   project list | default 项目名 | remove 项目名 | set-key 项目名 密钥 | set-trial-key 项目名 写密钥 | set-partner-key 项目名 写密钥
+  db import [--url 连接串] [--replace]
+                                把项目的飞书表整个复制进 Postgres（不切换）；库里已有这个项目时要加 --replace 才会整个换掉
+  db use --url 连接串 | --feishu  把项目的读写切到这个数据库，或切回飞书表（连接串只存在这台电脑上）
+  db status | backup [--dir 文件夹] | restore --file 备份 --replace | views
+                                看项目用的是哪边、每张表多少行；备份到 ~/.kol-ops/backups（留 30 份）；从备份恢复；重建分析用的视图
   setup-base [--import-templates 文件夹] [--template-language 语言]
                                 给项目的飞书表补上「设置」「发信邮箱」「模板」表和缺的字段，没有设置就写一行默认值；
                                 可把文件夹里的 .txt 模板导入成「待审核」。只加不改，先用 --dry-run 看会做什么
@@ -143,6 +150,7 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
   check: { title: "", writes: false, run: async () => null },
   project: { title: "", writes: false, run: async () => null },
   "setup-base": { title: "", writes: false, run: async () => null },
+  db: { title: "", writes: false, run: async () => null },
 };
 
 async function projectCommand(args: string[]): Promise<unknown> {
@@ -166,7 +174,7 @@ async function projectCommand(args: string[]): Promise<unknown> {
 
 /** `kol check`: login scopes always; the project's base too when one is registered. */
 async function check(project: Project | undefined): Promise<unknown> {
-  const lark = new LarkCli(project?.baseToken ?? "");
+  const lark = withStores(new LarkCli(project?.baseToken ?? ""), project?.baseToken ?? "");
   const auth = await checkAuth(lark);
   if (!project) return { ...auth, 项目: "这台电脑还没有登记项目（kol project add <项目名> <飞书表链接>）" };
   // Reading the base needs only the Base scopes, so a login still waiting for mail scopes can be checked too.
@@ -184,6 +192,7 @@ async function main(): Promise<number> {
       "youtube-hidden": { type: "boolean" }, "no-browser": { type: "boolean" }, port: str,
       days: str, only: str, batch: str, template: str, mailbox: str, approval: str, profiles: str, "profiles-file": str,
       platform: str, job: str, budget: str, keywords: str, seeds: str, handles: str, "min-followers": str, "max-followers": str, target: str, "add-batch": { type: "boolean" },
+      url: str, replace: { type: "boolean" }, feishu: { type: "boolean" }, dir: str,
       project: str, "import-templates": str, "template-language": str, apply: str, limit: str, file: str, code: str,
     },
   });
@@ -208,7 +217,8 @@ async function main(): Promise<number> {
       return print(await check(project));
     }
     const project = resolveProject(values.project);
-    const lark = new LarkCli(project.baseToken);
+    if (name === "db") return print(await dbCommand(project, positionals[1], values));
+    const lark = withStores(new LarkCli(project.baseToken), project.baseToken);
     if (name === "setup-base") {
       return print(await setupBase(new Base(lark, project.baseToken), {
         project: project.name, dryRun: !!values["dry-run"], importDir: values["import-templates"], templateLanguage: values["template-language"],
@@ -218,7 +228,7 @@ async function main(): Promise<number> {
     ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
     if (name === "console") {
       const { url } = await startConsole(ctx, { port: values.port ? Number(values.port) : undefined, openBrowser: !values["no-browser"] });
-      print({ 地址: url, 说明: "决策台已经打开，正在从飞书读数据（第一次要一两分钟），页面会自己显示出来。只有这台电脑能访问；按 Ctrl+C 关掉。" });
+      print({ 地址: url, 说明: "决策台已经打开，正在读数据，页面会自己显示出来。只有这台电脑能访问；按 Ctrl+C 关掉。" });
       return new Promise<number>(() => {});
     }
     if (name === "executor") return print(await executorCommand(ctx, positionals[1]));

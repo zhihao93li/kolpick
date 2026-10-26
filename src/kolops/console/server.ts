@@ -4,6 +4,8 @@ import type { Ctx } from "../ctx.js";
 import { today } from "../ops.js";
 import { approve, closeFollowup, drop, todoDone, findOptions, isPaused, Jobs, logPost, mailDone, manualSent, mailLink, mailNever, problemDone, revise, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
 import { PAGE } from "./page.js";
+import { backup, hasBackupToday } from "../store/db.js";
+import { StoreLark } from "../store/pg.js";
 import { activityLog, cardMails, ConsoleData, decisionCards, newsSince, peopleView, personDetail, runStatus, VIEWS, viewCounts, type MailText, type ViewKey } from "./state.js";
 
 /** How often the console re-reads what changed in the base while it is open. */
@@ -38,6 +40,15 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
   ready.catch((err) => console.error(`出错：读飞书数据失败：${err?.message ?? err}`));
   const timer = setInterval(refreshSoon, REFRESH_MS);
   timer.unref();
+  // A project kept in Postgres is backed up once a day while the console is open.
+  const store = ctx.base.lark instanceof StoreLark ? ctx.base.lark.storeFor(ctx.cfg.baseToken) : null;
+  if (store) {
+    const daily = () => {
+      if (!hasBackupToday(store.project)) backup(store.sql, store.project).catch((err) => console.error(`出错：数据库备份失败：${err?.message ?? err}`));
+    };
+    daily();
+    setInterval(daily, 3600_000).unref();
+  }
 
   const server = createServer((req, res) => {
     handle(req, res).catch((err) => send(res, 500, { error: String(err?.message ?? err) }));

@@ -11,9 +11,11 @@
     "build:plugin": "tsx src/scripts/build-plugin.ts"
   },
   "dependencies": {
-    "apify-client": "^2.25.0"
+    "apify-client": "^2.25.0",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@types/node": "^26.6.5",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
