@@ -33,10 +33,10 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
    用同一串权限运行 `lark-cli auth check --scope "…"`，结果里 `missing` 是空的，就说明授权齐了。
 2. 在 Claude 桌面版的 Code 里运行：
    ```
-   /plugin marketplace add zhihao93li/kolpick
+   /plugin marketplace add zhihao93li/kolpick#stable
    /plugin install kol-ops@kolpick
    ```
-   以前按 `zhihao93li/kolpick#claude/project-thread-eps57k` 装过的，先用 `/plugin marketplace remove kolpick` 删掉旧的，再运行上面两条。
+   `#stable` 是验证过的发布版；不带它装的是开发中的版本。以前按 `zhihao93li/kolpick` 或 `zhihao93li/kolpick#claude/project-thread-eps57k` 装过的，先用 `/plugin marketplace remove kolpick` 删掉旧的，再运行上面两条。之后有新版本，运行 `/plugin marketplace update kolpick` 再新开一个会话就行。
 3. 新开一个会话（插件只在新会话里生效），对 Claude 说「登记项目 TAFU，飞书表是 <链接>」。链接就是在飞书里打开这个项目 KOL 总表时浏览器地址栏里带 `/base/` 的那个。这一步每台电脑每个项目做一次。
 4. 试一下：对 Claude 说「今天有什么事」。如果它说飞书授权缺少权限，就照它给的提示补，或者让它跑一下 `kol.mjs check`，看缺了哪些。
 
@@ -80,4 +80,4 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
 
 ## 改动
 
-脚本源码在仓库的 `src/kolops/`。改完先运行 `npm run build:plugin`，重新打包 `scripts/kol.mjs`；再运行 `npm test`，测试里会直接运行打包后的脚本，确认它能正常启动。然后把 `plugin.json` 的版本号加一，同事那边更新插件就能拿到。发信规则和邮件模板不在插件里，在每个项目飞书表的「设置」「发信邮箱」「模板」表里，改那里就行。
+脚本源码在仓库的 `src/kolops/`。改完先运行 `npm run build:plugin`，重新打包 `scripts/kol.mjs`；再运行 `npm test`，测试里会直接运行打包后的脚本，确认它能正常启动。然后把 `plugin.json` 的版本号加一。同事装的是 `stable` 分支，要等 stable 推到这个版本（见仓库根目录 README 的「发布」）才会拿到。发信规则和邮件模板不在插件里，在每个项目飞书表的「设置」「发信邮箱」「模板」表里，改那里就行。
