@@ -8,8 +8,9 @@ import { LarkError, type Row } from "./lark.js";
 import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./mail.js";
 import { bounceStats, bouncePaused, otherSendingRun, stamp, today, todaysSends, type SendCounts } from "./ops.js";
 import { closeChanges } from "./inbox.js";
+import { reopenChanges } from "./reopen.js";
 import { undeliverable } from "./mx.js";
-import { approvalProblem, closeDeclined, isApproved, sendBack } from "./reviews.js";
+import { approvalProblem, closeDeclined, fingerprint, isApproved, sendBack } from "./reviews.js";
 import { machine, machineLabel } from "./executor.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
@@ -38,6 +39,26 @@ export interface Outgoing {
   prepare?: () => Promise<{ values: Record<string, string>; followup: Record<string, unknown> }>;
   /** What `prepare` will do, for the dry run. */
   prepareNote?: string;
+  /** For an approved review: the fingerprint of the content this mail was built from, and when it was approved. */
+  approved?: { fingerprint: string; at: string };
+}
+
+/** What a sent mail still has to write back, kept in the journal until it is all written. */
+interface Unrecorded {
+  project: string;
+  name: string;
+  recipient: string;
+  mailbox: { address: string; channel: string };
+  subject: string;
+  body: string;
+  kind: Outgoing["kind"];
+  followupId: string;
+  after?: Outgoing["after"];
+  /** When the mail went out; a catch-up records that time, not its own. */
+  sentAt: number;
+  /** Steps already done, so a catch-up never repeats them. */
+  followupCreated?: boolean;
+  contactWritten?: boolean;
 }
 
 export interface Skipped {
@@ -81,13 +102,16 @@ export interface SendReport {
  */
 export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: boolean): Promise<SendReport> {
   const report: SendReport = { sent: [], skipped: [], failed: [], dryRun };
-  if (await sendingPaused(ctx.base.lark, ctx.cfg.baseToken)) {
-    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "「设置」表的「暂停所有发送」勾上了" })));
-    return report;
-  }
   const busy = !dryRun && items.length ? await otherSendingRun(ctx.base, ctx.cfg, ctx.run.id) : "";
   if (busy) {
     report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: busy })));
+    return report;
+  }
+  // Mails that went out last time but weren't all written back are written now, without sending them again.
+  // This sends nothing, so it happens even while sending is paused.
+  if (!dryRun) await catchUp(ctx, report);
+  if (await sendingPaused(ctx.base.lark, ctx.cfg.baseToken)) {
+    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "「设置」表的「暂停所有发送」勾上了" })));
     return report;
   }
   const [counts, bounces] = await Promise.all([todaysSends(ctx.base, ctx.cfg), bounceStats(ctx.base, ctx.cfg)]);
@@ -100,17 +124,24 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
   for (const o of items) {
     const prior = ctx.journal.get(o.key);
     if (prior?.state === "recorded" || prior?.state === "sent") {
-      report.skipped.push({ key: o.key, name: o.name, reason: `这封信已经发过（${prior.messageId ?? ""}）` });
+      if (report.sent.some((x) => x.messageId === prior.messageId)) continue;
+      const left = prior.state === "sent" ? "，但还没记完，补记也没成功，请看上面的报错" : "";
+      report.skipped.push({ key: o.key, name: o.name, reason: `这封信已经发过（${prior.messageId ?? ""}）${left}` });
       continue;
     }
-    if (prior?.state === "sending") {
-      // The last run died mid-send: the mail may or may not have gone out, so never resend on our own.
-      report.failed.push({ key: o.key, name: o.name, reason: "上次发送中断，结果不明。请到邮箱的「已发送」里确认后再处理" });
-      if (!dryRun) {
-        ctx.journal.mark(o.key, "failed");
-        await markFailed(ctx, o, "上次发送中断，结果不明，请到邮箱「已发送」确认");
+    if (prior?.state === "sending" || prior?.state === "unknown") {
+      // The mail may or may not have gone out, so it is never sent again on our own, however many runs come by.
+      // Only a fresh approval, given after someone looked in the mailbox, sends it again.
+      const reapproved = !!o.approved?.at && o.approved.at !== (prior.data as any)?.approvedAt;
+      if (!reapproved) {
+        const why = "上次发送结果不明，不会自动重发。请到邮箱「已发送」确认，再在决策台「出了问题」里点「确认已经发出」或「确认没发出，重新审核」";
+        report.failed.push({ key: o.key, name: o.name, reason: why });
+        if (!dryRun && prior.state === "sending") {
+          ctx.journal.mark(o.key, "unknown", undefined, prior.data);
+          await markFailed(ctx, o, why);
+        }
+        continue;
       }
-      continue;
     }
 
     const senders = new Set<string>();
@@ -142,7 +173,7 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
       continue;
     }
     if (o.after?.review) {
-      const claim = await claimReview(ctx, o.after.review);
+      const claim = await claimReview(ctx, o.after.review, o.approved?.fingerprint);
       if (claim.skip) {
         report.skipped.push({ key: o.key, name: o.name, reason: claim.skip });
         continue;
@@ -171,50 +202,38 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
       }
     }
 
-    ctx.journal.mark(o.key, "sending");
+    ctx.journal.mark(o.key, "sending", undefined, { approvedAt: o.approved?.at });
     let sent;
     try {
       sent = await sendRetryingConflicts(ctx, { mailbox: o.mailbox.address, to: o.recipient, subject: o.subject, body: toHtml(o.body), replyTo: o.replyTo });
     } catch (err: any) {
       const definite = err instanceof MailBlocked || (err instanceof LarkError && err.definite);
-      ctx.journal.mark(o.key, definite ? "failed" : "sending");
-      const why = definite ? String(err.message) : `发送结果不明：${err.message}。请到邮箱「已发送」确认，不会自动重发`;
+      ctx.journal.mark(o.key, definite ? "failed" : "unknown", undefined, { approvedAt: o.approved?.at });
+      const why = definite ? String(err.message) : `发送结果不明：${err.message}。不会自动重发：请到邮箱「已发送」确认，再在决策台「出了问题」里选发出了没有`;
       report.failed.push({ key: o.key, name: o.name, reason: why });
       await markFailed(ctx, o, why);
       ctx.run.op({ type: "发出邮件", result: "失败", action: `${o.kind}：${o.name}`, detail: why, followup: o.followupId, recipients: o.recipient });
       continue;
     }
-    ctx.journal.mark(o.key, "sent", sent.messageId);
-    counts.all.add(o.followupId);
-    if (!counts.byChannel.has(o.mailbox.channel)) counts.byChannel.set(o.mailbox.channel, new Set());
-    counts.byChannel.get(o.mailbox.channel)!.add(o.followupId);
-
-    const now = stamp(Date.now(), ctx.cfg.timezone);
-    if (o.after?.createFollowup) {
-      // A first invitation: the followup row exists only once the mail is out.
-      [o.followupId] = await ctx.base.create(t.followups, [o.after.createFollowup]);
+    // A reply to a KOL whose followup was closed opens it again, unless the item itself closes it.
+    const reopen = o.kind === "回复" && !o.after?.followup?.["阶段"] ? reopenChanges(s.followups.get(o.followupId), today(ctx.cfg)) : {};
+    const left: Unrecorded = {
+      project: ctx.cfg.project, name: o.name, recipient: o.recipient, mailbox: { address: o.mailbox.address, channel: o.mailbox.channel },
+      subject: o.subject, body: o.body, kind: o.kind, followupId: o.followupId, sentAt: Date.now(),
+      after: Object.keys(reopen).length ? { ...o.after, followup: { ...reopen, ...o.after?.followup } } : o.after,
+    };
+    // Written before anything else, so if writing back fails the next run fills in the rest instead of skipping it.
+    ctx.journal.mark(o.key, "sent", sent.messageId, left);
+    counted(counts, left);
+    try {
+      await writeBack(ctx, o.key, sent.messageId, left);
+    } catch (err: any) {
+      const why = `信已经发出（${sent.messageId}），写回记录时出错：${err?.message ?? err}。下次运行会补记，不会重发`;
+      report.failed.push({ key: o.key, name: o.name, reason: why });
+      ctx.run.op({ type: "发出邮件", result: "失败", action: `${o.kind}：${o.name}`, detail: why, followup: left.followupId, recipients: o.recipient });
+      continue;
     }
-    await ctx.base.create(t.contacts, [{
-      方向: ["发出"],
-      渠道: [o.mailbox.channel],
-      "Message ID": sent.messageId,
-      摘要: `[${o.kind}] ${o.subject || "回复"}`.slice(0, 200),
-      内容: o.body.slice(0, 5000),
-      日期: now,
-      KOL: [{ id: o.followupId }],
-    }]);
-    if (!o.after?.createFollowup) {
-      await ctx.base.update(t.followups, {
-        [o.followupId]: { 最近联系日期: now, 当前轮到谁: ["KOL"], ...(o.after?.followup ?? {}) },
-      });
-    }
-    if (o.after?.profile) await ctx.base.update(t.profiles, { [o.after.profile[0]]: o.after.profile[1] });
-    if (o.after?.review) {
-      await ctx.base.update(t.reviews, {
-        [o.after.review]: { 状态: ["已执行"], 执行时间: now, 执行结果: `已从 ${o.mailbox.address} 发给 ${o.recipient}（${sent.messageId}）` },
-      });
-    }
-    ctx.journal.mark(o.key, "recorded", sent.messageId);
+    o.followupId = left.followupId;
     ctx.run.counts.发出邮件++;
     ctx.run.op({ type: "发出邮件", result: "完成", action: `${o.kind}：${o.name}`, followup: o.followupId, recipients: o.recipient, body: o.body, sent: 1 });
     report.sent.push({ name: o.name, recipient: o.recipient, mailbox: o.mailbox.address, kind: o.kind, messageId: sent.messageId });
@@ -239,6 +258,90 @@ export async function deliver(ctx: Ctx, items: Outgoing[], s: Snapshot, dryRun: 
   }
 }
 
+function counted(counts: SendCounts, m: Unrecorded): void {
+  counts.all.add(m.followupId);
+  if (!counts.byChannel.has(m.mailbox.channel)) counts.byChannel.set(m.mailbox.channel, new Set());
+  counts.byChannel.get(m.mailbox.channel)!.add(m.followupId);
+}
+
+/**
+ * Writes a sent mail into the base: the followup it starts (first invitations), the 接触记录 row, the followup and
+ * profile changes, and the review marked done. Steps that would duplicate a row are noted in the journal as they
+ * finish, so a catch-up after a failure part-way only does what is left.
+ */
+async function writeBack(ctx: Ctx, key: string, messageId: string, m: Unrecorded, catchingUp = false): Promise<void> {
+  const t = ctx.cfg.tables;
+  const now = stamp(m.sentAt ?? Date.now(), ctx.cfg.timezone);
+  if (m.after?.createFollowup && !m.followupCreated) {
+    // A first invitation: the followup row exists only once the mail is out.
+    [m.followupId] = await ctx.base.create(t.followups, [m.after.createFollowup]);
+    m.followupCreated = true;
+    ctx.journal.mark(key, "sent", messageId, m);
+  }
+  if (!m.contactWritten) {
+    // A run that died right after writing the row but before noting it leaves the row there: look before writing.
+    const there = catchingUp && (await ctx.base.records(t.contacts, { filter: { logic: "and", conditions: [["Message ID", "==", messageId]] }, fields: ["Message ID"] })).length > 0;
+    if (!there) {
+      await ctx.base.create(t.contacts, [{
+        方向: ["发出"],
+        渠道: [m.mailbox.channel],
+        "Message ID": messageId,
+        摘要: `[${m.kind}] ${m.subject || "回复"}`.slice(0, 200),
+        内容: m.body.slice(0, 5000),
+        日期: now,
+        KOL: [{ id: m.followupId }],
+      }]);
+    }
+    m.contactWritten = true;
+    ctx.journal.mark(key, "sent", messageId, m);
+  }
+  if (!m.after?.createFollowup) {
+    let changes: Record<string, unknown> = { 最近联系日期: now, 当前轮到谁: ["KOL"], ...(m.after?.followup ?? {}) };
+    if (catchingUp) changes = await stillCurrent(ctx, m, changes);
+    if (Object.keys(changes).length) await ctx.base.update(t.followups, { [m.followupId]: changes });
+  }
+  if (m.after?.profile) await ctx.base.update(t.profiles, { [m.after.profile[0]]: m.after.profile[1] });
+  if (m.after?.review) {
+    await ctx.base.update(t.reviews, {
+      [m.after.review]: { 状态: ["已执行"], 执行时间: now, 执行结果: `已从 ${m.mailbox.address} 发给 ${m.recipient}（${messageId}）` },
+    });
+  }
+  ctx.journal.mark(key, "recorded", messageId);
+}
+
+/**
+ * What a late write-back may still change on the followup. The mail is history; the followup is now. Whatever
+ * happened after the mail went out (she wrote back, someone closed her or moved her on) is newer and stays:
+ * only the last-contact date moves, and only forward.
+ */
+async function stillCurrent(ctx: Ctx, m: Unrecorded, changes: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const tz = ctx.cfg.timezone;
+  const [f] = await ctx.base.get(ctx.cfg.tables.followups, [m.followupId], ["最后来信日期", "最近联系日期", "阶段", "当前轮到谁"]);
+  if (!f) return {};
+  const sentAt = m.sentAt ?? 0;
+  const later = (v: unknown) => (cellTime(v, tz) ?? 0) > sentAt;
+  // The base keeps minutes only, so a later time in the same minute can't be told apart; treat it as later.
+  const sameMinuteReply = (cellTime(f["最后来信日期"], tz) ?? 0) >= sentAt - 60_000 && option(f["当前轮到谁"]) === "我们";
+  const movedOn = later(f["最后来信日期"]) || later(f["最近联系日期"]) || sameMinuteReply;
+  if (!movedOn) return changes;
+  return later(f["最近联系日期"]) ? {} : { 最近联系日期: changes["最近联系日期"] };
+}
+
+/** Writes back this project's mails that went out in an earlier run whose write-back failed part-way. */
+async function catchUp(ctx: Ctx, report: SendReport): Promise<void> {
+  for (const e of ctx.journal.unrecorded()) {
+    const m = e.data as Unrecorded | undefined;
+    if (!m?.project || m.project !== ctx.cfg.project || !e.messageId) continue;
+    try {
+      await writeBack(ctx, e.key, e.messageId, m, true);
+      ctx.run.op({ type: "发出邮件", result: "完成", action: `补记${m.kind}：${m.name}`, detail: "上次已经发出，记录没写完，这次补上，没有重发", followup: m.followupId, recipients: m.recipient });
+      report.sent.push({ name: m.name, recipient: m.recipient, mailbox: m.mailbox.address, kind: `${m.kind}（上次已发出，这次补记，没有重发）`, messageId: e.messageId });
+    } catch (err: any) {
+      report.failed.push({ key: e.key, name: m.name, reason: `信上次已经发出（${e.messageId}），补记还是没成功：${err?.message ?? err}` });
+    }
+  }
+}
+
 /** How an item being carried out is marked in 审核队列.执行结果, so no other run touches it meanwhile. */
 const EXECUTING = "执行中";
 /** An item marked 执行中 this long ago belongs to a run that died: whether its mail went out is unknown. */
@@ -253,7 +356,7 @@ function executing(): string {
  * it alone (done, withdrawn, no longer approved, being carried out elsewhere) or why it failed (a run that died
  * midway, so nothing is repeated on a guess).
  */
-export async function claimReview(ctx: Ctx, reviewId: string): Promise<{ skip?: string; fail?: string }> {
+export async function claimReview(ctx: Ctx, reviewId: string, built?: string): Promise<{ skip?: string; fail?: string }> {
   const t = ctx.cfg.tables;
   // Read the whole row: a base not yet given the approval fields (同意来源 …) must still work, and naming a field it lacks fails.
   const [r] = await ctx.base.get(t.reviews, [reviewId]);
@@ -267,6 +370,9 @@ export async function claimReview(ctx: Ctx, reviewId: string): Promise<{ skip?: 
     if (problem.changed) await sendBack(ctx, reviewId, problem.reason);
     return { skip: problem.reason };
   }
+  // The mail was put together from the item as read at the start of the run. If it was changed and approved
+  // again since, that approval is for other content: leave it to the next run, which builds the mail afresh.
+  if (built && fingerprint(r) !== built) return { skip: "这一轮开始以后内容改过又重新同意了，这次先不发，下一轮按最新内容发" };
   const result = text(r["执行结果"]);
   if (result.startsWith(EXECUTING)) {
     const age = Date.now() - (cellTime(r["执行时间"], ctx.cfg.timezone) ?? 0);
@@ -298,10 +404,18 @@ async function sendRetryingConflicts(ctx: Ctx, mail: Parameters<Ctx["mail"]["sen
  */
 export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: string[] }): Promise<SendReport & { notEmail: number; closed: string[]; withdrawn: string[] }> {
   const t = ctx.cfg.tables;
-  const [s, reviews] = await Promise.all([
+  const [s, reviews, unanswered] = await Promise.all([
     loadSnapshot(ctx.base, ctx.cfg),
     ctx.base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] } }),
+    ctx.base.records(t.contacts, { filter: { logic: "and", conditions: [["待处理", "==", true], ["方向", "intersects", ["收到"]]] }, fields: ["KOL", "待处理", "方向", "日期"] }),
   ]);
+  const tz = ctx.cfg.timezone;
+  // Each KOL's latest unanswered mail.
+  const lastMail = new Map<string, number>();
+  for (const m of unanswered) {
+    const at = cellTime(m["日期"], tz) ?? 0;
+    for (const fid of linkIds(m["KOL"])) lastMail.set(fid, Math.max(at, lastMail.get(fid) ?? 0));
+  }
   const chosen = reviews.filter((r) => isApproved(r) && (!opts.only?.length || opts.only.includes(r.record_id)));
   const items: Outgoing[] = [];
   const skipped: Skipped[] = [];
@@ -318,6 +432,17 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
     if (problem) {
       if (problem.changed && !opts.dryRun) await sendBack(ctx, r.record_id, problem.reason);
       skipped.push({ key: r.record_id, name, reason: problem.reason });
+      continue;
+    }
+    // Approving in the console files the mail the reviewer saw as handled. Unanswered mail dated at or after the
+    // approval (or, without one, after the item was raised) is mail the approval never saw: back to the reviewer,
+    // never sent over it. Times are kept to the minute, so the same minute counts as after.
+    const approvedAt = cellTime(r["同意时间"], tz) ?? cellTime(r["提出时间"], tz);
+    const wroteSince = approvedAt != null && (lastMail.get(followupId) ?? -1) >= approvedAt;
+    if (followupId && wroteSince && ctx.journal.get(`review:${r.record_id}`)?.state !== "sent") {
+      const why = "同意之后她又来信了，先看她新说的再决定这封还发不发";
+      if (!opts.dryRun) await sendBack(ctx, r.record_id, why);
+      skipped.push({ key: r.record_id, name, reason: why });
       continue;
     }
     const close = f ? closeChanges(r, profileOf(s, f), day) : null;
@@ -358,6 +483,7 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
       key: `review:${r.record_id}`, followupId, name, recipient: emailsIn(r["收件人"])[0] ?? "",
       mailbox, subject, body, oncePerDay: false, kind: "回复",
       after: { review: r.record_id, ...(close ? { followup: close.followup, profile: close.profile } : {}) },
+      approved: { fingerprint: fingerprint(r), at: text(r["同意时间"]) },
       ...(plan?.action === "开活动码" ? { prepare: preparePartner(ctx, plan, r, followupId), prepareNote: partnerNote(plan) }
         : plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}),
     });

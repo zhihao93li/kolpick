@@ -4,7 +4,10 @@ import { join } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { beforeEach, describe, expect, it } from "vitest";
 import { Base, cellTime, onOrAfter } from "../../src/kolops/base.js";
-import { backup, createViews, ensureSchema, loadSnapshot, projectCounts, readBackup, type Snapshot } from "../../src/kolops/store/db.js";
+import { backup, createViews, ensureSchema, loadSnapshot, projectCounts, readBackup, restore, type Snapshot } from "../../src/kolops/store/db.js";
+import { cachedRecords } from "../../src/kolops/cache.js";
+import { sendingPaused } from "../../src/kolops/config.js";
+import { existsSync } from "node:fs";
 import { PgStore, StoreLark, type Sql } from "../../src/kolops/store/pg.js";
 import { RowCache } from "../../src/kolops/store/rowcache.js";
 import { FakeLark } from "./fake.js";
@@ -186,5 +189,50 @@ describe("a local copy of database tables", () => {
     snap.records.find((r) => r.id === "recC1")!.fields["摘要"] = "恢复的";
     await loadSnapshot(db, snap, "p", true);
     expect((await cachedBase(dir).records("接触记录")).map((r) => r["摘要"])).toEqual(["恢复的"]);
+  });
+});
+
+describe("found in review (2026-10-26)", () => {
+  const storeBase = (cache?: RowCache) => {
+    const store = new PgStore("p", db, cache);
+    return new Base(new StoreLark(new FakeLark(), TOKEN, (t) => (t === TOKEN ? store : null)), TOKEN);
+  };
+
+  it("restores today's backup instead of overwriting it first", async () => {
+    const { file } = await backup(db, "p");
+    await base.create("接触记录", [{ 摘要: "备份之后" }]);
+    const { before } = await restore(db, "p", file);
+    expect((await base.records("接触记录")).map((r) => r["摘要"])).toEqual(["你好"]);
+    expect(before).not.toBe(file);
+    expect(existsSync(before!)).toBe(true);
+    expect(readBackup(file).records).toHaveLength(4);
+  });
+
+  it("reads a restored value at once, not an older copy kept from before", async () => {
+    const b = storeBase(new RowCache(mkdtempSync(join(tmpdir(), "kol-rows-"))));
+    expect((await cachedRecords(b, "KOL 档案", ["联系许可"], "+08:00"))[0]["联系许可"]).toEqual(["可联系"]);
+    const snap = snapshot();
+    snap.records.find((r) => r.id === "recP1")!.fields["联系许可"] = ["永不联系"];
+    await loadSnapshot(db, snap, "p", true);
+    // A later run, with the earlier runs' copies still on disk.
+    const later = storeBase(new RowCache((b.lark as any).storeFor(TOKEN).cache.dir));
+    expect((await cachedRecords(later, "KOL 档案", ["联系许可"], "+08:00"))[0]["联系许可"]).toEqual(["永不联系"]);
+  });
+
+  it("sees a pause switched on elsewhere straight away", async () => {
+    await base.lark.json(["base", "+field-create", "--base-token", TOKEN, "--table-id", "设置", "--json", JSON.stringify({ name: "暂停所有发送", type: "checkbox" })]);
+    const sender = storeBase(new RowCache(mkdtempSync(join(tmpdir(), "kol-rows-"))));
+    expect(await sendingPaused(sender.lark, TOKEN)).toBe(false);
+    await storeBase().update("设置", { recS1: { 暂停所有发送: true } });
+    expect(await sendingPaused(sender.lark, TOKEN)).toBe(true);
+  });
+
+  it("keeps options another computer added to a field", async () => {
+    const a = storeBase(), b = storeBase();
+    await a.records("KOL 跟进");
+    await b.records("KOL 跟进");
+    await a.update("KOL 跟进", { recF1: { 阶段: ["合作中"] } });
+    await b.update("KOL 跟进", { recF1: { 阶段: ["已发布"] } });
+    expect(await storeBase().fieldOptions("KOL 跟进", "阶段")).toEqual(["已回复", "体验中", "合作中", "已发布"]);
   });
 });

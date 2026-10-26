@@ -16,6 +16,8 @@ export interface RecordQuery {
   fields?: string[];
   /** Which base to read; defaults to the one the client was made for. */
   baseToken?: string;
+  /** Ask the store itself, never a copy read moments ago: for switches that stop work, like the pause. */
+  fresh?: boolean;
 }
 
 /** One Base record as NDJSON gives it: field name -> value, plus `record_id`. */

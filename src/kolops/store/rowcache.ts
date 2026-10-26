@@ -43,10 +43,11 @@ export class RowCache {
     this.checked.clear();
   }
 
-  async rows(sql: Sql, project: string, tbl: string): Promise<RawRow[]> {
+  /** With `fresh`, the database is asked even if this table was checked a moment ago. */
+  async rows(sql: Sql, project: string, tbl: string, fresh = false): Promise<RawRow[]> {
     const file = join(this.dir, `${tbl.replace(/[^\w一-鿿-]/g, "_")}.json`);
     let cache = this.mem.get(tbl) ?? readCache(file);
-    if (cache && Date.now() - (this.checked.get(tbl) ?? 0) < FRESH_MS) return cache.rows;
+    if (cache && !fresh && Date.now() - (this.checked.get(tbl) ?? 0) < FRESH_MS) return cache.rows;
 
     const read = await sql.tx(async (q) => {
       // One snapshot for the check and the changed rows, so a write landing in between can't make them disagree.

@@ -1,6 +1,6 @@
 import { LarkCli } from "../lark.js";
 import { setDatabase, type Project } from "../projects.js";
-import { backup, connect, createViews, ensureSchema, loadSnapshot, projectCounts, readBackup, readFeishu } from "./db.js";
+import { backup, connect, createViews, ensureSchema, loadSnapshot, projectCounts, readFeishu, restore } from "./db.js";
 
 /** Which database a db command talks to: --url, else KOL_DATABASE_URL, else the one the project already uses. */
 function urlFor(project: Project, v: Record<string, any>): string {
@@ -56,12 +56,8 @@ export async function dbCommand(project: Project, sub: string | undefined, v: Re
       case "restore": {
         if (!v.file) throw new Error("用法：kol db restore --file 备份文件 --replace");
         if (!v.replace) throw new Error("恢复会用备份整个换掉库里这个项目的数据，确认的话加 --replace");
-        // Keep what is there now first, so a restore from the wrong file can itself be undone.
-        const before = await backup(sql, project.name, undefined).catch(() => null);
-        const snap = readBackup(String(v.file));
-        await loadSnapshot(sql, { ...snap, project: project.name }, project.name, true);
-        await createViews(sql, project.name);
-        return { 项目: project.name, 恢复自: v.file, 恢复前的数据另存在: before?.file ?? "（没能另存）", 各表行数: await projectCounts(sql, project.name) };
+        const { before, counts } = await restore(sql, project.name, String(v.file));
+        return { 项目: project.name, 恢复自: v.file, 恢复前的数据另存在: before ?? "（没能另存）", 各表行数: counts };
       }
       case "views":
         return { 项目: project.name, 视图: await createViews(sql, project.name) };

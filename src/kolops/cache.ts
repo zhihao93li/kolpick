@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { cellTime, dayOf, onOrAfter, type Base } from "./base.js";
 import type { Row } from "./lark.js";
 import { dataDir } from "./ops.js";
+import { StoreLark } from "./store/pg.js";
 
 /** The system modified-time field every cached table needs (type updated_at). */
 export const MODIFIED = "更新时间";
@@ -28,6 +29,9 @@ interface CacheFile {
  */
 export async function cachedRecords(base: Base, table: string, fields: string[], tz: string): Promise<Row[]> {
   const want = [...new Set([...fields, MODIFIED])].sort();
+  // A project kept in a database has its own local copy, which also notices deleted and restored rows; a second
+  // copy on top, keyed on 更新时间 days, would keep serving old values for up to a day after a restore.
+  if (base.lark instanceof StoreLark && base.lark.storeFor(base.token)) return base.records(table, { fields: want });
   const dir = join(dataDir(), "cache", base.token);
   // The copy holds KOL names and addresses, so only this user may read it.
   mkdirSync(dir, { recursive: true, mode: 0o700 });

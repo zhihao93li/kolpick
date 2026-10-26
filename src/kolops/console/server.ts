@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Ctx } from "../ctx.js";
 import { today } from "../ops.js";
-import { approve, closeFollowup, drop, todoDone, findOptions, isPaused, Jobs, logPost, mailDone, manualSent, mailLink, mailNever, problemDone, revise, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
+import { approve, closeFollowup, decideTemplate, drop, todoDone, findOptions, isPaused, Jobs, logPost, mailDone, manualSent, mailLink, mailNever, problemDone, problemRetry, problemSent, revise, sendQueued, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
 import { PAGE } from "./page.js";
 import { backup, hasBackupToday } from "../store/db.js";
 import { StoreLark } from "../store/pg.js";
@@ -109,8 +109,11 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
       return send(res, 200, { ok: true, ...extra });
     };
     switch (url.pathname) {
-      case "/api/approve": return done({ job: await approve(ctx, data, jobs, String(b.id), b.edits ?? {}) });
-      case "/api/sent-by-hand": await manualSent(ctx, data, String(b.id), b.edits ?? {}); return done();
+      case "/api/approve": return done({ job: await approve(ctx, data, jobs, String(b.id), b.edits ?? {}, b.seen ? String(b.seen) : undefined), paused: await isPaused(ctx) });
+      case "/api/sent-by-hand": await manualSent(ctx, data, String(b.id), b.edits ?? {}, b.seen ? String(b.seen) : undefined); return done();
+      case "/api/problem-sent": await problemSent(ctx, data, String(b.id)); return done();
+      case "/api/problem-retry": await problemRetry(ctx, String(b.id)); return done();
+      case "/api/template": await decideTemplate(ctx, String(b.id), Boolean(b.ok)); return done();
       case "/api/revise": await revise(ctx, String(b.id), String(b.note ?? "")); return done();
       case "/api/drop": await drop(ctx, String(b.id), String(b.note ?? "")); return done();
       case "/api/problem-done": await problemDone(ctx, String(b.id)); return done();
@@ -121,9 +124,13 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
       case "/api/post": await logPost(ctx, data, String(b.id), String(b.link ?? "")); return done();
       case "/api/followup": await updateFollowup(ctx, data, String(b.id), b.fields ?? {}); return done();
       case "/api/close": await closeFollowup(ctx, data, String(b.id), { never: Boolean(b.never), reason: b.reason }); return done();
-      case "/api/write": return done({ job: await writeMail(ctx, data, jobs, String(b.id), String(b.subject ?? ""), String(b.body ?? "")) });
+      case "/api/write": return done({ job: await writeMail(ctx, data, jobs, String(b.id), String(b.subject ?? ""), String(b.body ?? ""), b.from ? String(b.from) : undefined), paused: await isPaused(ctx) });
       case "/api/find": return done({ job: startFind(jobs, b) });
-      case "/api/pause": return done({ paused: await setPaused(ctx, Boolean(b.on)) });
+      case "/api/pause": {
+        const paused = await setPaused(ctx, Boolean(b.on));
+        // What was approved while paused waits as approved; resuming sends it.
+        return done({ paused, job: paused ? null : sendQueued(jobs) });
+      }
       default: return send(res, 404, { error: "没有这个操作" });
     }
   }

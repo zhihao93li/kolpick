@@ -69,7 +69,7 @@ export class PgStore {
 
   async records(table: string, opts: RecordQuery = {}): Promise<Row[]> {
     const name = await this.tableName(table);
-    const rows = await this.load(name);
+    const rows = await this.load(name, undefined, opts.fresh);
     const wanted = opts.filter ? rows.filter((r) => matches(r, opts.filter, this.tz)) : rows;
     return opts.fields?.length ? wanted.map((r) => pick(r, opts.fields!)) : wanted;
   }
@@ -151,12 +151,12 @@ export class PgStore {
   // --- Reading ---
 
   /** Every row of a table (or only these ids), with formulas and system fields filled in. */
-  private async load(name: string, ids?: string[]): Promise<Row[]> {
+  private async load(name: string, ids?: string[], fresh = false): Promise<Row[]> {
     const defs = await this.fieldsOf(name);
     const rows = ids
       ? await this.sql.query("select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb)) order by seq",
         [this.project, name, JSON.stringify(ids)])
-      : await this.all(name);
+      : await this.all(name, fresh);
     // Copies, so a caller changing a row it got can't change the cached one.
     const out: Row[] = rows.map((r) => ({ record_id: r.id, ...(this.cache ? structuredClone(r.fields) : r.fields) }));
     for (const d of defs) {
@@ -168,8 +168,8 @@ export class PgStore {
     return out;
   }
 
-  private async all(name: string): Promise<{ id: string; fields: Record<string, any>; created_at: unknown; updated_at: unknown }[]> {
-    if (this.cache) return this.cache.rows(this.sql, this.project, name);
+  private async all(name: string, fresh = false): Promise<{ id: string; fields: Record<string, any>; created_at: unknown; updated_at: unknown }[]> {
+    if (this.cache) return this.cache.rows(this.sql, this.project, name, fresh);
     return this.sql.query("select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 order by seq", [this.project, name]);
   }
 
@@ -253,11 +253,20 @@ export class PgStore {
     }
   }
 
-  /** Feishu adds an option the first time a row uses it; so does the store. */
+  /**
+   * Feishu adds an option the first time a row uses it; so does the store. The options are added to the
+   * definition as it is in the database now, not written back from this run's copy, which may predate options
+   * another computer added meanwhile.
+   */
   private async saveNewOptions(q: Sql, table: string, defs: FieldDef[]): Promise<void> {
     for (const d of defs.filter((x) => (x as any)._changed)) {
       delete (d as any)._changed;
-      await q.query("update kol.fields set def = $4::text::jsonb where project = $1 and tbl = $2 and name = $3", [this.project, table, d.name, JSON.stringify(d)]);
+      const [row] = await q.query("select def from kol.fields where project = $1 and tbl = $2 and name = $3 for update", [this.project, table, d.name]);
+      const current: FieldDef = row?.def ?? { ...d, options: [] };
+      const known = new Set((current.options ?? []).map((o) => o.name));
+      const options = [...(current.options ?? []), ...(d.options ?? []).filter((o) => !known.has(o.name))];
+      await q.query("update kol.fields set def = $4::text::jsonb where project = $1 and tbl = $2 and name = $3", [this.project, table, d.name, JSON.stringify({ ...current, options })]);
+      d.options = options;
     }
   }
 

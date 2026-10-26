@@ -145,9 +145,9 @@ export function backupDir(project: string): string {
 }
 
 /** Writes the project's whole database copy to ~/.kol-ops/backups/<project>/<date>.json.gz and keeps the newest 30. */
-export async function backup(sql: Sql, project: string, dir = backupDir(project)): Promise<{ file: string; rows: number }> {
+export async function backup(sql: Sql, project: string, dir = backupDir(project), name = dayOf(Date.now())): Promise<{ file: string; rows: number }> {
   const snap = await exportProject(sql, project);
-  const file = join(dir, `${dayOf(Date.now())}.json.gz`);
+  const file = join(dir, `${name}.json.gz`);
   writeFileSync(file, gzipSync(JSON.stringify(snap)), { mode: 0o600 });
   const old = readdirSync(dir).filter((f) => f.endsWith(".json.gz")).sort().reverse().slice(KEEP_BACKUPS);
   for (const f of old) unlinkSync(join(dir, f));
@@ -156,6 +156,19 @@ export async function backup(sql: Sql, project: string, dir = backupDir(project)
 
 export function hasBackupToday(project: string): boolean {
   return existsSync(join(backupDir(project), `${dayOf(Date.now())}.json.gz`));
+}
+
+/**
+ * Replaces the project's data with a backup. The file is read first, as it may be today's backup, which the
+ * backup of what is there now would otherwise overwrite; that backup gets a name of its own.
+ */
+export async function restore(sql: Sql, project: string, file: string): Promise<{ before: string | null; counts: Record<string, number> }> {
+  const snap = readBackup(file);
+  const name = `${new Date().toISOString().slice(0, 19).replace(/:/g, "")}-恢复前`;
+  const before = await backup(sql, project, undefined, name).catch(() => null);
+  await loadSnapshot(sql, { ...snap, project }, project, true);
+  await createViews(sql, project);
+  return { before: before?.file ?? null, counts: await projectCounts(sql, project) };
 }
 
 export function readBackup(file: string): Snapshot {

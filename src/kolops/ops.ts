@@ -104,8 +104,9 @@ export async function checkAuth(lark: Lark) {
 }
 
 /**
- * A local record of every send, written before the mail goes out. If a run dies between sending and
- * writing back to the base, the next run finds the "sending" entry and stops instead of sending again.
+ * A local record of every send, written before the mail goes out. States: "sending" (started), "unknown" (the
+ * mail may or may not have gone out: never sent again on our own), "sent" (out, but not yet all written back;
+ * `data` holds what is still to write), "recorded" (done), "failed" (certainly not sent, may be tried again).
  */
 export class Journal {
   private file = join(dataDir(), "sends.jsonl");
@@ -124,7 +125,12 @@ export class Journal {
     return this.entries.get(key);
   }
 
-  mark(key: string, state: "sending" | "sent" | "recorded" | "failed" | "prepared", messageId?: string, data?: unknown): void {
+  /** Mails that went out but whose write-back didn't finish. */
+  unrecorded(): { key: string; messageId?: string; data?: unknown }[] {
+    return [...this.entries.entries()].filter(([, e]) => e.state === "sent").map(([key, e]) => ({ key, ...e }));
+  }
+
+  mark(key: string, state: "sending" | "unknown" | "sent" | "recorded" | "failed" | "prepared", messageId?: string, data?: unknown): void {
     const e = { key, state, messageId, data, at: new Date().toISOString() };
     this.entries.set(key, e);
     appendFileSync(this.file, JSON.stringify(e) + "\n");

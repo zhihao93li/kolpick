@@ -21,6 +21,8 @@ beforeEach(() => {
   process.env.KOL_DATA_DIR = mkdtempSync(join(tmpdir(), "kol-console-"));
   lark = new FakeLark();
   const cfg = seedProject(lark);
+  // The seed's unapproved template would be a card of its own in every queue here; it has its own test.
+  for (const tpl of lark.table(T.templates)) if (tpl["状态"]?.[0] === "待审核") tpl["状态"] = ["草稿"];
   ctx = makeCtx(cfg, lark, { id: "ou", name: "林运营" }, "", false, async () => {});
   day = today(cfg);
 });

@@ -36,6 +36,10 @@ export interface Card {
   draft?: { label: string; subject: string; body: string; note?: string };
   /** A reply that sends mail: from which mailbox, to whom, and whether the reviewer has to send it by hand. */
   send?: { from: string; to: string; byHand: boolean };
+  /** The Message ID of the KOL's latest unanswered mail when the card was made; approving answers up to that one. */
+  seen?: string;
+  /** A failed item whose mail may have gone out: the reviewer says which it was. */
+  unknownSend?: boolean;
 }
 
 export interface Cell {
@@ -86,6 +90,8 @@ export class ConsoleData {
   pendingMail: Row[] = [];
   posts: Row[] = [];
   templates: Template[] = [];
+  /** Templates waiting for someone to approve them. */
+  pendingTemplates: Row[] = [];
   loadedAt = 0;
 
   constructor(private ctx: Ctx) {}
@@ -94,7 +100,7 @@ export class ConsoleData {
     const { base, cfg } = this.ctx;
     const t = cfg.tables;
     const since = addDays(today(cfg), -PROBLEM_DAYS);
-    const [snapshot, open, failed, pendingMail, posts, templates] = await Promise.all([
+    const [snapshot, open, failed, pendingMail, posts, templates, pendingTemplates] = await Promise.all([
       loadSnapshot(base, cfg),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] }, fields: REVIEW_FIELDS }),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["执行失败"]], onOrAfter("执行时间", since)] }, fields: REVIEW_FIELDS }),
@@ -102,8 +108,10 @@ export class ConsoleData {
         fields: ["Message ID", "渠道", "摘要", "日期", "KOL", "待处理", "方向", "内容"] }),
       base.records(t.posts, { fields: POST_FIELDS }).catch(() => [] as Row[]),
       loadTemplates(base, cfg).catch(() => [] as Template[]),
+      base.records(t.templates, { filter: { logic: "and", conditions: [["状态", "intersects", ["待审核"]]] } }).catch(() => [] as Row[]),
     ]);
     this.templates = templates;
+    this.pendingTemplates = pendingTemplates.filter((r) => option(r["状态"]) === "待审核");
     this.snapshot = snapshot;
     this.reviews = [...open, ...failed];
     this.pendingMail = pendingMail;
@@ -206,8 +214,9 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
       id: r.record_id, kind: "problem", group: "出了问题", tag: "没做成", who: w,
       headline: `${w?.name ?? text(r["审核项"])}：${text(r["审核项"]) || "这件事"}没做成`,
       meta: `${stamp(cellTime(r["执行时间"], tz) ?? Date.now(), tz)} 执行`,
-      suggest: "看一下原因，处理好以后在飞书审核队列里重新安排",
+      suggest: unknownSend(r) ? "到发信邮箱的「已发送」里找一下这封信，再告诉系统发出去了没有" : "看一下原因：要重做就重新审核，不做了就撤掉",
       steps: [], why: text(r["执行结果"]) || "没有写原因",
+      unknownSend: unknownSend(r),
     });
   }
 
@@ -215,6 +224,10 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
     if (option(f["阶段"]) !== "已约发布") continue;
     const due = day(f["约定发布日期"], tz);
     if (!due || daysBetween(due, todayStr) < OVERDUE_GRACE_DAYS) continue;
+    // Already asked: wait for the follow-up date set then, or for her answer when no date was set.
+    const nextUp = day(f["下次跟进日期"], tz);
+    if (nextUp && nextUp > todayStr) continue;
+    if (!nextUp && option(f["当前轮到谁"]) === "KOL" && day(f["最近联系日期"], tz) >= due) continue;
     const late = daysBetween(due, todayStr);
     const w = who(f.record_id);
     const code = text(f["活动码"]);
@@ -229,6 +242,16 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
     });
   }
 
+  // Each KOL's latest unanswered mail: a card approving an answer to her says which mail it answers.
+  const latestMail = new Map<string, Row>();
+  for (const m of data.pendingMail) {
+    for (const fid of linkIds(m["KOL"])) {
+      const had = latestMail.get(fid);
+      if (!had || (cellTime(m["日期"], tz) ?? 0) >= (cellTime(had["日期"], tz) ?? 0)) latestMail.set(fid, m);
+    }
+  }
+  const seenOf = (fid: string) => (latestMail.get(fid) ? text(latestMail.get(fid)!["Message ID"]) : undefined);
+
   const openByKol = new Set<string>();
   let waitingClaude = 0;
   for (const r of data.reviews.filter((r) => option(r["状态"]) !== "执行失败")) {
@@ -236,8 +259,28 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
     const fid = linkIds(r["KOL"])[0] ?? "";
     if (fid) openByKol.add(fid);
     if (state === "revise") waitingClaude++;
+    if (state === "approved" && fid && latestMail.has(fid) && !text(r["执行结果"]).startsWith("执行中")) {
+      // Approved, not yet carried out, and she has written since: it waits for the reviewer to look again.
+      cards.push({
+        ...reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid), data.pendingTemplates), seen: seenOf(fid), tag: "同意后她又来信了",
+        suggest: "你同意之后她又来信了。看看她新说的，这封还要不要照发",
+      });
+      continue;
+    }
     if (state !== "pending") continue;
-    cards.push(reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid)));
+    cards.push({ ...reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid), data.pendingTemplates), seen: seenOf(fid) });
+  }
+
+  for (const tpl of data.pendingTemplates) {
+    cards.push({
+      id: `template:${tpl.record_id}`, kind: "template", group: "模板", tag: "模板",
+      headline: `模板「${text(tpl["名称"]) || "没写名称"}」等你批准`,
+      meta: [option(tpl["用途"]), text(tpl["语言"]), text(tpl["方向"])].filter(Boolean).join(" · "),
+      suggest: "看一遍内容，没问题就同意",
+      steps: [{ text: "同意后这个模板改成「已批准」，之后发邀约、催信就会用它" }],
+      why: "模板批准以后，按它发的信不再一封封给你看，所以先过一遍。",
+      draft: { label: "模板内容", subject: text(tpl["主旨"]), body: text(tpl["正文"]) },
+    });
   }
 
   // One card per KOL: several unanswered mails from the same person are one conversation to answer.
@@ -334,7 +377,20 @@ function checkInDraft(templates: Template[], f: Row, p: Row | undefined, due: st
   }
 }
 
-function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: string, latest?: MailText): Card {
+/** The template a 模板审批 item is about: the one waiting for approval whose name its title mentions. */
+export function namedTemplate(pending: Row[], r: Row): Row | null {
+  const title = text(r["审核项"]);
+  const hits = pending.filter((tpl) => text(tpl["名称"]) && title.includes(text(tpl["名称"])));
+  return hits.length === 1 ? hits[0] : null;
+}
+
+/** A failed item whose mail may or may not have gone out. */
+function unknownSend(r: Row): boolean {
+  const why = text(r["执行结果"]);
+  return why.includes("结果不明") || why.includes("中断了");
+}
+
+function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: string, latest?: MailText, pendingTemplates: Row[] = []): Card {
   const type = option(r["类型"]);
   const fid = linkIds(r["KOL"])[0] ?? "";
   const f = s.followups.get(fid);
@@ -376,7 +432,10 @@ function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: stri
   const after = option(r["发后动作"]);
   if (after) steps.push({ text: `${after === "永不联系" ? "标成永不联系，" : ""}结束跟进（原因：${option(r["结案原因"]) || "没写"}）` });
   if (kind === "batch") steps.push({ text: "记下你同意了。真正发出要在 Claude 里说「发这批邀约」，Claude 会按这个决定分批发" });
-  if (kind === "template") steps.push({ text: "记下你同意了。还要到飞书「模板」表把这个模板的状态改成「已批准」，之后才会被用" });
+  if (kind === "template") {
+    const tpl = namedTemplate(pendingTemplates, r);
+    steps.push({ text: tpl ? `同意后，模板「${text(tpl["名称"])}」改成「已批准」，之后就会被用` : "记下你同意了。标题里没对上待审核的模板，模板本身不会改；待审核的模板会单独出现在这里" });
+  }
 
   return {
     id: r.record_id, kind, group, tag: type || "待办", who: w, meta,
@@ -644,6 +703,8 @@ export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string, all
     ].filter(([, v]) => v).map(([k, v]) => ({ k, v })),
     emails,
     doNotContact: option(p?.["联系许可"]) === "永不联系",
+    /** Where 写信给她 can send from; `usual` is the mailbox she knows us by, when the plugin can send from it. */
+    sendFrom: { channel: option(f["联系渠道"]), usual: mailboxFor(ctx.cfg, option(f["联系渠道"]))?.address ?? "", mailboxes: ctx.cfg.mailboxes.map((m) => m.address) },
   };
 }
 
@@ -701,7 +762,7 @@ export async function runStatus(ctx: Ctx, data: ConsoleData) {
     items: [
       ...failed.map((r) => ({ st: "没做成", text: `${name(r)}：${text(r["审核项"])}`, note: text(r["执行结果"]).slice(0, 120), person: linkIds(r["KOL"])[0] ?? "" })),
       ...fresh.map((r) => ({ st: "进行中", text: text(r["运行"]), note: `${stamp(cellTime(r["开始时间"], tz) ?? 0, tz).slice(11)} 开始`, person: "" })),
-      ...queued.map((r) => ({ st: "等发出", text: `${name(r)}：${text(r["审核项"])}`, note: "飞书里已批准，等下一次「发出已批准的信」", person: linkIds(r["KOL"])[0] ?? "" })),
+      ...queued.map((r) => ({ st: "等发出", text: `${name(r)}：${text(r["审核项"])}`, note: "已同意，等执行器发出（暂停中的话，恢复发送后发）", person: linkIds(r["KOL"])[0] ?? "" })),
     ],
   };
 }

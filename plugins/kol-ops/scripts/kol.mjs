@@ -43377,10 +43377,10 @@ var require_esprima = __commonJS({
                   type = 3;
                 }
                 if (type !== 3 && start + id.length !== this.index) {
-                  var restore = this.index;
+                  var restore2 = this.index;
                   this.index = start;
                   this.tolerateUnexpectedToken(messages_1.Messages.InvalidEscapedReservedWord);
-                  this.index = restore;
+                  this.index = restore2;
                 }
                 return {
                   type,
@@ -43750,12 +43750,12 @@ var require_esprima = __commonJS({
                             ++this.index;
                             cooked += this.scanUnicodeCodePointEscape();
                           } else {
-                            var restore = this.index;
+                            var restore2 = this.index;
                             var unescaped_2 = this.scanHexEscape(ch);
                             if (unescaped_2 !== null) {
                               cooked += unescaped_2;
                             } else {
-                              this.index = restore;
+                              this.index = restore2;
                               cooked += ch;
                             }
                           }
@@ -43900,15 +43900,15 @@ var require_esprima = __commonJS({
                     ch = this.source[this.index];
                     if (ch === "u") {
                       ++this.index;
-                      var restore = this.index;
+                      var restore2 = this.index;
                       var char = this.scanHexEscape("u");
                       if (char !== null) {
                         flags += char;
-                        for (str += "\\u"; restore < this.index; ++restore) {
-                          str += this.source[restore];
+                        for (str += "\\u"; restore2 < this.index; ++restore2) {
+                          str += this.source[restore2];
                         }
                       } else {
-                        this.index = restore;
+                        this.index = restore2;
                         flags += "u";
                         str += "\\u";
                       }
@@ -60083,7 +60083,7 @@ function mailboxFor(cfg, channel) {
   return cfg.mailboxes.find((m) => m.channel.toLowerCase() === c || m.address === c);
 }
 async function sendingPaused(lark, baseToken) {
-  const rows = await lark.records(TABLES.settings, { baseToken, fields: ["\u6682\u505C\u6240\u6709\u53D1\u9001"] });
+  const rows = await lark.records(TABLES.settings, { baseToken, fields: ["\u6682\u505C\u6240\u6709\u53D1\u9001"], fresh: true });
   return rows.some((r) => r["\u6682\u505C\u6240\u6709\u53D1\u9001"] === true || option(r["\u6682\u505C\u6240\u6709\u53D1\u9001"]) === "true");
 }
 
@@ -60258,6 +60258,10 @@ var Journal = class {
   }
   get(key) {
     return this.entries.get(key);
+  }
+  /** Mails that went out but whose write-back didn't finish. */
+  unrecorded() {
+    return [...this.entries.entries()].filter(([, e]) => e.state === "sent").map(([key, e]) => ({ key, ...e }));
   }
   mark(key, state, messageId, data) {
     const e = { key, state, messageId, data, at: (/* @__PURE__ */ new Date()).toISOString() };
@@ -60975,11 +60979,393 @@ async function applyClassification(ctx, o) {
 // src/kolops/cache.ts
 import { existsSync as existsSync2, mkdirSync as mkdirSync2, readFileSync as readFileSync3, renameSync, writeFileSync } from "node:fs";
 import { join as join2 } from "node:path";
+
+// src/kolops/store/pg.ts
+import { randomBytes } from "node:crypto";
+var SCHEMA_SQL = `
+create schema if not exists kol;
+create table if not exists kol.tables (
+  project text not null, name text not null, feishu_id text, position int not null default 0,
+  primary key (project, name));
+create table if not exists kol.fields (
+  project text not null, tbl text not null, name text not null, position int not null default 0,
+  type text not null, def jsonb not null,
+  primary key (project, tbl, name));
+create table if not exists kol.records (
+  project text not null, tbl text not null, id text not null, fields jsonb not null default '{}',
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  primary key (project, tbl, id));
+create index if not exists records_updated on kol.records (project, tbl, updated_at);
+-- Rows keep the order they had in Feishu (and new ones go last), as lists and ties in sorting depend on it.
+alter table kol.records add column if not exists seq bigserial;
+create or replace function kol.num(t text) returns numeric language plpgsql immutable as
+  $$ begin return t::numeric; exception when others then return null; end $$;
+create or replace function kol.ts(t text) returns timestamptz language plpgsql immutable as
+  $$ begin return t::timestamptz; exception when others then return null; end $$;
+create or replace function kol.bool(t text) returns boolean language plpgsql immutable as
+  $$ begin return t::boolean; exception when others then return null; end $$;
+`;
+var COMPUTED = /* @__PURE__ */ new Set(["formula", "lookup", "created_at", "updated_at", "created_by", "modified_by", "auto_number"]);
+var PgStore = class {
+  /** With a cache, whole tables are read through a local copy that only fetches changed rows. */
+  constructor(project, sql, cache) {
+    this.project = project;
+    this.sql = sql;
+    this.cache = cache;
+  }
+  project;
+  sql;
+  cache;
+  meta = null;
+  tz = "+08:00";
+  // --- What the plugin asks for ---
+  async records(table, opts = {}) {
+    const name = await this.tableName(table);
+    const rows = await this.load(name, void 0, opts.fresh);
+    const wanted = opts.filter ? rows.filter((r) => matches(r, opts.filter, this.tz)) : rows;
+    return opts.fields?.length ? wanted.map((r) => pick(r, opts.fields)) : wanted;
+  }
+  /** Answers the `base +…` lark-cli commands the plugin uses. */
+  async command(args) {
+    const flag = (n) => args.includes(n) ? args[args.indexOf(n) + 1] : void 0;
+    const many = (n) => args.filter((_, i) => args[i - 1] === n);
+    const table = flag("--table-id");
+    switch (args[1]) {
+      case "+record-list":
+        return matrix(await this.records(table, { filter: flag("--filter-json") ? JSON.parse(flag("--filter-json")) : void 0, fields: many("--field-id") }), many("--field-id"));
+      case "+record-get": {
+        const ids2 = new Set(many("--record-id"));
+        const name = await this.tableName(table);
+        const rows = (await this.load(name, [...ids2])).filter((r) => ids2.has(r.record_id));
+        return matrix(many("--field-id").length ? rows.map((r) => pick(r, many("--field-id"))) : rows, many("--field-id"));
+      }
+      case "+record-batch-create":
+        return { record_id_list: await this.create(table, JSON.parse(flag("--json")).create_records) };
+      case "+record-batch-update":
+        await this.update(table, JSON.parse(flag("--json")).update_records);
+        return {};
+      case "+field-list":
+        return { fields: (await this.fieldsOf(await this.tableName(table))).map((f) => ({ ...f })) };
+      case "+field-create":
+        await this.addField(await this.tableName(table), JSON.parse(flag("--json")));
+        return {};
+      case "+field-update":
+        await this.changeField(await this.tableName(table), flag("--field-id"), JSON.parse(flag("--json")));
+        return {};
+      case "+table-create":
+        await this.addTable(flag("--name"), JSON.parse(flag("--fields") ?? "[]"));
+        return {};
+      case "+table-list":
+        return { tables: [...(await this.tables()).entries()].map(([name, t]) => ({ name, id: t.feishuId || name })) };
+      default:
+        throw new Error(`\u6570\u636E\u5E93\u7248\u8FD8\u4E0D\u652F\u6301 lark-cli base ${args[1]}`);
+    }
+  }
+  async create(table, rows) {
+    const name = await this.tableName(table);
+    const defs = await this.fieldsOf(name);
+    const ids2 = [];
+    await this.sql.tx(async (q) => {
+      for (const raw2 of rows) {
+        const fields = this.normalize(name, defs, raw2);
+        const id = newId();
+        await q.query("insert into kol.records (project, tbl, id, fields) values ($1, $2, $3, $4::text::jsonb)", [this.project, name, id, JSON.stringify(dropNulls(fields))]);
+        await this.syncLinks(q, name, defs, id, {}, fields);
+        ids2.push(id);
+      }
+      await this.saveNewOptions(q, name, defs);
+    });
+    this.cache?.invalidate();
+    return ids2;
+  }
+  async update(table, changes) {
+    const name = await this.tableName(table);
+    const defs = await this.fieldsOf(name);
+    await this.sql.tx(async (q) => {
+      for (const [id, raw2] of Object.entries(changes)) {
+        const fields = this.normalize(name, defs, raw2);
+        const [old] = await q.query("select fields from kol.records where project = $1 and tbl = $2 and id = $3 for update", [this.project, name, id]);
+        if (!old) throw new Error(`${name} \u91CC\u6CA1\u6709 ${id} \u8FD9\u4E00\u6761`);
+        const cleared = Object.keys(fields).filter((k) => fields[k] == null);
+        await q.query(
+          "update kol.records set fields = (fields || $4::text::jsonb) - array(select jsonb_array_elements_text($5::text::jsonb)), updated_at = now() where project = $1 and tbl = $2 and id = $3",
+          [this.project, name, id, JSON.stringify(dropNulls(fields)), JSON.stringify(cleared)]
+        );
+        await this.syncLinks(q, name, defs, id, old.fields, fields);
+      }
+      await this.saveNewOptions(q, name, defs);
+    });
+    this.cache?.invalidate();
+  }
+  // --- Reading ---
+  /** Every row of a table (or only these ids), with formulas and system fields filled in. */
+  async load(name, ids2, fresh = false) {
+    const defs = await this.fieldsOf(name);
+    const rows = ids2 ? await this.sql.query(
+      "select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb)) order by seq",
+      [this.project, name, JSON.stringify(ids2)]
+    ) : await this.all(name, fresh);
+    const out = rows.map((r) => ({ record_id: r.id, ...this.cache ? structuredClone(r.fields) : r.fields }));
+    for (const d of defs) {
+      if (d.type === "created_at" || d.type === "updated_at") {
+        rows.forEach((r, i) => out[i][d.name] = iso(new Date(d.type === "created_at" ? r.created_at : r.updated_at).getTime(), this.tz));
+      }
+    }
+    for (const d of defs.filter((x) => x.type === "formula")) await this.formula(name, defs, d, out);
+    return out;
+  }
+  async all(name, fresh = false) {
+    if (this.cache) return this.cache.rows(this.sql, this.project, name, fresh);
+    return this.sql.query("select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 order by seq", [this.project, name]);
+  }
+  /**
+   * The lookups Feishu bases use, `[link].[field].LISTCOMBINE().UNIQUE()` and `[link].[field].MAX()`, worked out
+   * from the linked rows. Any other formula reads as empty: the plugin doesn't use them.
+   */
+  async formula(name, defs, d, rows) {
+    const m = String(d.expression ?? "").match(/^\[(.+?)\]\.\[(.+?)\]\.(LISTCOMBINE\(\)\.UNIQUE\(\)|MAX\(\))$/);
+    const link = m && defs.find((x) => x.name === m[1] && x.type === "link");
+    if (!m || !link) {
+      rows.forEach((r) => r[d.name] = null);
+      return;
+    }
+    const target = await this.tableName(link.link_table);
+    const ids2 = [...new Set(rows.flatMap((r) => linkIdsOf(r[link.name])))];
+    const wanted = new Set(ids2);
+    const linked = !ids2.length ? [] : this.cache ? (await this.all(target)).filter((x) => wanted.has(x.id)) : await this.sql.query("select id, fields from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb))", [this.project, target, JSON.stringify(ids2)]);
+    const byId = new Map(linked.map((x) => [x.id, x.fields]));
+    for (const r of rows) {
+      const values2 = linkIdsOf(r[link.name]).flatMap((id) => {
+        const v = byId.get(id)?.[m[2]];
+        return v == null || v === "" ? [] : Array.isArray(v) ? v.map((x) => typeof x === "object" && x ? x.name ?? x.text ?? x.id : x) : [v];
+      });
+      if (m[3] === "MAX()") {
+        const nums = values2.map(Number).filter((n) => !Number.isNaN(n));
+        r[d.name] = nums.length ? String(Math.max(...nums)) : null;
+      } else {
+        const unique = [...new Set(values2.map(String))];
+        r[d.name] = unique.length ? unique.join(",") : null;
+      }
+    }
+  }
+  // --- Writing ---
+  /** Values the way Feishu stores them; unknown and computed fields are refused, as the plugin treats them as bugs. */
+  normalize(table, defs, raw2) {
+    const out = {};
+    const bad = [];
+    for (const [k, v] of Object.entries(raw2 ?? {})) {
+      const d = defs.find((x) => x.name === k);
+      if (!d) bad.push(`${k}\uFF08\u6CA1\u6709\u8FD9\u4E2A\u5B57\u6BB5\uFF09`);
+      else if (COMPUTED.has(d.type)) bad.push(`${k}\uFF08\u81EA\u52A8\u7B97\u7684\u5B57\u6BB5\uFF0C\u4E0D\u80FD\u5199\uFF09`);
+      else out[k] = this.value(d, v);
+    }
+    if (bad.length) throw new Error(`${table} \u6709\u5B57\u6BB5\u6CA1\u5199\u8FDB\u53BB\uFF1A${bad.join("\uFF1B")}`);
+    return out;
+  }
+  value(d, v) {
+    if (v == null || v === "" || Array.isArray(v) && !v.length) return null;
+    switch (d.type) {
+      case "number": {
+        const n = Number(v);
+        if (Number.isNaN(n)) throw new Error(`\u300C${d.name}\u300D\u8981\u586B\u6570\u5B57\uFF0C\u6536\u5230\u7684\u662F\u300C${v}\u300D`);
+        return n;
+      }
+      case "checkbox":
+        return v === true || v === "true";
+      case "datetime": {
+        const s = typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? `${v.trim()} 00:00` : v;
+        const t = cellTime(s, this.tz);
+        if (t == null) throw new Error(`\u300C${d.name}\u300D\u4E0D\u662F\u65E5\u671F\uFF1A\u300C${v}\u300D`);
+        return iso(t, this.tz);
+      }
+      case "select": {
+        const list3 = (Array.isArray(v) ? v : [v]).map((x) => String(typeof x === "object" && x ? x.name ?? x.text : x));
+        const known = new Set((d.options ?? []).map((o) => o.name));
+        for (const o of list3) if (!known.has(o)) (d.options ??= []).push({ name: o }), d._changed = true;
+        return d.multiple === false ? list3.slice(0, 1) : list3;
+      }
+      case "link":
+        return (Array.isArray(v) ? v : [v]).map((x) => ({ id: String(typeof x === "object" && x ? x.id ?? x.record_id : x) }));
+      case "text":
+        return Array.isArray(v) ? v.map((x) => typeof x === "object" && x ? x.text ?? x.name ?? "" : String(x)).join("") : typeof v === "object" ? JSON.stringify(v) : String(v);
+      default:
+        return v;
+    }
+  }
+  /**
+   * Feishu adds an option the first time a row uses it; so does the store. The options are added to the
+   * definition as it is in the database now, not written back from this run's copy, which may predate options
+   * another computer added meanwhile.
+   */
+  async saveNewOptions(q, table, defs) {
+    for (const d of defs.filter((x) => x._changed)) {
+      delete d._changed;
+      const [row] = await q.query("select def from kol.fields where project = $1 and tbl = $2 and name = $3 for update", [this.project, table, d.name]);
+      const current = row?.def ?? { ...d, options: [] };
+      const known = new Set((current.options ?? []).map((o) => o.name));
+      const options2 = [...current.options ?? [], ...(d.options ?? []).filter((o) => !known.has(o.name))];
+      await q.query("update kol.fields set def = $4::text::jsonb where project = $1 and tbl = $2 and name = $3", [this.project, table, d.name, JSON.stringify({ ...current, options: options2 })]);
+      d.options = options2;
+    }
+  }
+  /** A two-way link written on one side shows on the other, as in Feishu. */
+  async syncLinks(q, table, defs, id, before, after) {
+    for (const d of defs) {
+      if (d.type !== "link" || !d.bidirectional || !(d.name in after)) continue;
+      const target = await this.tableName(d.link_table);
+      const back = (await this.fieldsOf(target)).find((x) => x.id === d.bidirectional_link_field_id);
+      if (!back) continue;
+      const was = new Set(linkIdsOf(before[d.name]));
+      const now = new Set(linkIdsOf(after[d.name]));
+      for (const other of /* @__PURE__ */ new Set([...was, ...now])) {
+        if (was.has(other) === now.has(other)) continue;
+        const [row] = await q.query("select fields from kol.records where project = $1 and tbl = $2 and id = $3 for update", [this.project, target, other]);
+        if (!row) continue;
+        const ids2 = linkIdsOf(row.fields[back.name]).filter((x) => x !== id);
+        if (now.has(other)) ids2.push(id);
+        await q.query(
+          "update kol.records set fields = case when $5::text::jsonb = '[]'::jsonb then fields - $4::text else jsonb_set(fields, array[$4::text], $5::text::jsonb) end, updated_at = now() where project = $1 and tbl = $2 and id = $3",
+          [this.project, target, other, back.name, JSON.stringify(ids2.map((x) => ({ id: x })))]
+        );
+      }
+    }
+  }
+  // --- Tables and fields ---
+  tables() {
+    this.meta ??= (async () => {
+      const [tables, fields] = await Promise.all([
+        this.sql.query("select name, feishu_id from kol.tables where project = $1 order by position, name", [this.project]),
+        this.sql.query("select tbl, def from kol.fields where project = $1 order by position, name", [this.project])
+      ]);
+      const map = new Map(tables.map((t) => [t.name, { feishuId: t.feishu_id ?? "", fields: [] }]));
+      for (const f of fields) map.get(f.tbl)?.fields.push(f.def);
+      if (map.has("\u8BBE\u7F6E")) {
+        const [s] = await this.sql.query("select fields->>'\u65F6\u533A' as tz from kol.records where project = $1 and tbl = '\u8BBE\u7F6E' limit 1", [this.project]);
+        if (s?.tz && /^[+-]\d{2}:\d{2}$/.test(s.tz)) this.tz = s.tz;
+      }
+      return map;
+    })().catch((err) => {
+      this.meta = null;
+      throw err;
+    });
+    return this.meta;
+  }
+  /** The table a name or a Feishu table id refers to; "not found" when there is none, as Feishu says. */
+  async tableName(table) {
+    const all = await this.tables();
+    if (all.has(table)) return table;
+    for (const [name, t] of all) if (t.feishuId && t.feishuId === table) return name;
+    throw new Error(`table ${table} not found\uFF08\u9879\u76EE\u300C${this.project}\u300D\u7684\u6570\u636E\u5E93\u91CC\u6CA1\u6709\u8FD9\u5F20\u8868\uFF09`);
+  }
+  async fieldsOf(name) {
+    return (await this.tables()).get(name).fields;
+  }
+  async addTable(name, fields) {
+    await this.sql.tx(async (q) => {
+      await q.query("insert into kol.tables (project, name, position) values ($1, $2, (select coalesce(max(position), 0) + 1 from kol.tables where project = $1))", [this.project, name]);
+      for (const f of fields) await this.insertField(q, name, f);
+    });
+    this.meta = null;
+  }
+  async addField(table, f) {
+    if ((await this.fieldsOf(table)).some((x) => x.name === f.name)) throw new Error(`${table} \u5DF2\u7ECF\u6709\u300C${f.name}\u300D\u5B57\u6BB5`);
+    await this.insertField(this.sql, table, f);
+    this.meta = null;
+  }
+  async insertField(q, table, f) {
+    const def = { ...f, id: f.id ?? `fld${randomBytes(5).toString("hex")}` };
+    await q.query(
+      "insert into kol.fields (project, tbl, name, position, type, def) values ($1, $2, $3, (select coalesce(max(position), 0) + 1 from kol.fields where project = $1 and tbl = $2), $4, $5::text::jsonb)",
+      [this.project, table, f.name, f.type, JSON.stringify(def)]
+    );
+  }
+  /** Changes a field's options or settings; the options listed replace the old ones, as in Feishu. */
+  async changeField(table, field, f) {
+    const old = (await this.fieldsOf(table)).find((x) => x.name === field || x.id === field);
+    if (!old) throw new Error(`${table} \u6CA1\u6709\u300C${field}\u300D\u5B57\u6BB5`);
+    const def = { ...old, ...f, name: old.name, id: old.id };
+    await this.sql.query("update kol.fields set def = $4::text::jsonb, type = $5 where project = $1 and tbl = $2 and name = $3", [this.project, table, old.name, JSON.stringify(def), def.type]);
+    this.meta = null;
+  }
+};
+var StoreLark = class {
+  constructor(inner, defaultToken, storeFor) {
+    this.inner = inner;
+    this.defaultToken = defaultToken;
+    this.storeFor = storeFor;
+  }
+  inner;
+  defaultToken;
+  storeFor;
+  json(args) {
+    if (args[0] === "base") {
+      const token = args.includes("--base-token") ? args[args.indexOf("--base-token") + 1] : this.defaultToken;
+      const store = this.storeFor(token);
+      if (store) return store.command(args);
+    }
+    return this.inner.json(args);
+  }
+  records(table, opts = {}) {
+    const store = this.storeFor(opts.baseToken ?? this.defaultToken);
+    return store ? store.records(table, opts) : this.inner.records(table, opts);
+  }
+};
+function newId() {
+  const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  return `rec${[...randomBytes(14)].map((b2) => abc[b2 % abc.length]).join("")}`;
+}
+function iso(ms, tz) {
+  const sign = tz.startsWith("-") ? -1 : 1;
+  const [h, m] = tz.slice(1).split(":").map(Number);
+  return `${new Date(ms + sign * (h * 60 + (m || 0)) * 6e4).toISOString().slice(0, 23)}${tz}`;
+}
+function linkIdsOf(v) {
+  return Array.isArray(v) ? v.map((x) => String(x?.id ?? x)).filter(Boolean) : [];
+}
+function dropNulls(o) {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
+}
+function pick(r, fields) {
+  const out = { record_id: r.record_id };
+  for (const f of fields) if (f in r) out[f] = r[f];
+  return out;
+}
+function matrix(rows, fields) {
+  const names = fields.length ? fields : [...new Set(rows.flatMap((r) => Object.keys(r).filter((k) => k !== "record_id")))];
+  return { fields: names, record_id_list: rows.map((r) => r.record_id), data: rows.map((r) => names.map((f) => r[f] ?? null)), has_more: false };
+}
+function matches(r, filter, tz) {
+  const conds = filter?.conditions ?? [];
+  const test = ([field, op, value]) => {
+    const v = r[field];
+    const empty = v == null || v === "" || Array.isArray(v) && !v.length;
+    if (op === "isEmpty") return empty;
+    if (op === "isNotEmpty") return !empty;
+    const date = typeof value === "string" ? value.match(/^ExactDate\((\d{4}-\d{2}-\d{2})\)$/) : null;
+    if (date) {
+      const t = cellTime(v, tz);
+      if (t == null) return false;
+      const d = dayOf(t, tz);
+      return op === ">" ? d > date[1] : op === "<" ? d < date[1] : op === ">=" ? d >= date[1] : op === "<=" ? d <= date[1] : op === "==" ? d === date[1] : op === "!=" ? d !== date[1] : false;
+    }
+    const cells = (Array.isArray(v) ? v : [v]).map((x) => typeof x === "object" && x ? x.name ?? x.text ?? x.id : x);
+    if (op === "intersects") return cells.some((x) => (Array.isArray(value) ? value : [value]).includes(x));
+    if (op === "==") return cells.some((x) => x === value || String(x) === String(value)) || value === false && empty;
+    if (op === "!=") return !cells.some((x) => x === value || String(x) === String(value));
+    const n = Number(v), w = Number(value);
+    if (Number.isNaN(n) || Number.isNaN(w)) return false;
+    return op === ">" ? n > w : op === "<" ? n < w : op === ">=" ? n >= w : op === "<=" ? n <= w : false;
+  };
+  return filter?.logic === "or" ? conds.some(test) : conds.every(test);
+}
+
+// src/kolops/cache.ts
 var MODIFIED = "\u66F4\u65B0\u65F6\u95F4";
 var FULL_EVERY_MS = 20 * 36e5;
 var OVERLAP_MS = 10 * 6e4;
 async function cachedRecords(base, table, fields, tz) {
   const want = [.../* @__PURE__ */ new Set([...fields, MODIFIED])].sort();
+  if (base.lark instanceof StoreLark && base.lark.storeFor(base.token)) return base.records(table, { fields: want });
   const dir = join2(dataDir(), "cache", base.token);
   mkdirSync2(dir, { recursive: true, mode: 448 });
   const file2 = join2(dir, `${table.replace(/[^\w一-鿿-]/g, "_")}.json`);
@@ -62055,6 +62441,13 @@ async function applyInbox(ctx, o) {
   return report;
 }
 
+// src/kolops/reopen.ts
+function reopenChanges(f, day2) {
+  if (!f || option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848") return {};
+  const reason = option(f["\u7ED3\u6848\u539F\u56E0"]);
+  return { \u9636\u6BB5: ["\u5DF2\u56DE\u590D"], \u7ED3\u6848\u539F\u56E0: null, \u4E0B\u4E00\u6B65: `${day2} \u91CD\u65B0\u8054\u7CFB\uFF08\u4E4B\u524D\u7ED3\u6848${reason ? `\uFF1A${reason}` : ""}\uFF09` };
+}
+
 // src/kolops/mx.ts
 import { promises as dns } from "node:dns";
 var resolver = (d) => dns.resolveMx(d);
@@ -62257,13 +62650,14 @@ function companyFull(ctx, counts, followupId) {
 }
 async function deliver(ctx, items, s, dryRun) {
   const report = { sent: [], skipped: [], failed: [], dryRun };
-  if (await sendingPaused(ctx.base.lark, ctx.cfg.baseToken)) {
-    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "\u300C\u8BBE\u7F6E\u300D\u8868\u7684\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D\u52FE\u4E0A\u4E86" })));
-    return report;
-  }
   const busy = !dryRun && items.length ? await otherSendingRun(ctx.base, ctx.cfg, ctx.run.id) : "";
   if (busy) {
     report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: busy })));
+    return report;
+  }
+  if (!dryRun) await catchUp(ctx, report);
+  if (await sendingPaused(ctx.base.lark, ctx.cfg.baseToken)) {
+    report.skipped.push(...items.map((o) => ({ key: o.key, name: o.name, reason: "\u300C\u8BBE\u7F6E\u300D\u8868\u7684\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D\u52FE\u4E0A\u4E86" })));
     return report;
   }
   const [counts, bounces] = await Promise.all([todaysSends(ctx.base, ctx.cfg), bounceStats(ctx.base, ctx.cfg)]);
@@ -62274,16 +62668,22 @@ async function deliver(ctx, items, s, dryRun) {
   for (const o of items) {
     const prior = ctx.journal.get(o.key);
     if (prior?.state === "recorded" || prior?.state === "sent") {
-      report.skipped.push({ key: o.key, name: o.name, reason: `\u8FD9\u5C01\u4FE1\u5DF2\u7ECF\u53D1\u8FC7\uFF08${prior.messageId ?? ""}\uFF09` });
+      if (report.sent.some((x) => x.messageId === prior.messageId)) continue;
+      const left2 = prior.state === "sent" ? "\uFF0C\u4F46\u8FD8\u6CA1\u8BB0\u5B8C\uFF0C\u8865\u8BB0\u4E5F\u6CA1\u6210\u529F\uFF0C\u8BF7\u770B\u4E0A\u9762\u7684\u62A5\u9519" : "";
+      report.skipped.push({ key: o.key, name: o.name, reason: `\u8FD9\u5C01\u4FE1\u5DF2\u7ECF\u53D1\u8FC7\uFF08${prior.messageId ?? ""}\uFF09${left2}` });
       continue;
     }
-    if (prior?.state === "sending") {
-      report.failed.push({ key: o.key, name: o.name, reason: "\u4E0A\u6B21\u53D1\u9001\u4E2D\u65AD\uFF0C\u7ED3\u679C\u4E0D\u660E\u3002\u8BF7\u5230\u90AE\u7BB1\u7684\u300C\u5DF2\u53D1\u9001\u300D\u91CC\u786E\u8BA4\u540E\u518D\u5904\u7406" });
-      if (!dryRun) {
-        ctx.journal.mark(o.key, "failed");
-        await markFailed(ctx, o, "\u4E0A\u6B21\u53D1\u9001\u4E2D\u65AD\uFF0C\u7ED3\u679C\u4E0D\u660E\uFF0C\u8BF7\u5230\u90AE\u7BB1\u300C\u5DF2\u53D1\u9001\u300D\u786E\u8BA4");
+    if (prior?.state === "sending" || prior?.state === "unknown") {
+      const reapproved = !!o.approved?.at && o.approved.at !== prior.data?.approvedAt;
+      if (!reapproved) {
+        const why = "\u4E0A\u6B21\u53D1\u9001\u7ED3\u679C\u4E0D\u660E\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u91CD\u53D1\u3002\u8BF7\u5230\u90AE\u7BB1\u300C\u5DF2\u53D1\u9001\u300D\u786E\u8BA4\uFF0C\u518D\u5728\u51B3\u7B56\u53F0\u300C\u51FA\u4E86\u95EE\u9898\u300D\u91CC\u70B9\u300C\u786E\u8BA4\u5DF2\u7ECF\u53D1\u51FA\u300D\u6216\u300C\u786E\u8BA4\u6CA1\u53D1\u51FA\uFF0C\u91CD\u65B0\u5BA1\u6838\u300D";
+        report.failed.push({ key: o.key, name: o.name, reason: why });
+        if (!dryRun && prior.state === "sending") {
+          ctx.journal.mark(o.key, "unknown", void 0, prior.data);
+          await markFailed(ctx, o, why);
+        }
+        continue;
       }
-      continue;
     }
     const senders = /* @__PURE__ */ new Set();
     if (o.replyTo) senders.add(o.recipient);
@@ -62311,7 +62711,7 @@ async function deliver(ctx, items, s, dryRun) {
       continue;
     }
     if (o.after?.review) {
-      const claim = await claimReview(ctx, o.after.review);
+      const claim = await claimReview(ctx, o.after.review, o.approved?.fingerprint);
       if (claim.skip) {
         report.skipped.push({ key: o.key, name: o.name, reason: claim.skip });
         continue;
@@ -62339,48 +62739,43 @@ async function deliver(ctx, items, s, dryRun) {
         continue;
       }
     }
-    ctx.journal.mark(o.key, "sending");
+    ctx.journal.mark(o.key, "sending", void 0, { approvedAt: o.approved?.at });
     let sent;
     try {
       sent = await sendRetryingConflicts(ctx, { mailbox: o.mailbox.address, to: o.recipient, subject: o.subject, body: toHtml(o.body), replyTo: o.replyTo });
     } catch (err) {
       const definite = err instanceof MailBlocked || err instanceof LarkError && err.definite;
-      ctx.journal.mark(o.key, definite ? "failed" : "sending");
-      const why = definite ? String(err.message) : `\u53D1\u9001\u7ED3\u679C\u4E0D\u660E\uFF1A${err.message}\u3002\u8BF7\u5230\u90AE\u7BB1\u300C\u5DF2\u53D1\u9001\u300D\u786E\u8BA4\uFF0C\u4E0D\u4F1A\u81EA\u52A8\u91CD\u53D1`;
+      ctx.journal.mark(o.key, definite ? "failed" : "unknown", void 0, { approvedAt: o.approved?.at });
+      const why = definite ? String(err.message) : `\u53D1\u9001\u7ED3\u679C\u4E0D\u660E\uFF1A${err.message}\u3002\u4E0D\u4F1A\u81EA\u52A8\u91CD\u53D1\uFF1A\u8BF7\u5230\u90AE\u7BB1\u300C\u5DF2\u53D1\u9001\u300D\u786E\u8BA4\uFF0C\u518D\u5728\u51B3\u7B56\u53F0\u300C\u51FA\u4E86\u95EE\u9898\u300D\u91CC\u9009\u53D1\u51FA\u4E86\u6CA1\u6709`;
       report.failed.push({ key: o.key, name: o.name, reason: why });
       await markFailed(ctx, o, why);
       ctx.run.op({ type: "\u53D1\u51FA\u90AE\u4EF6", result: "\u5931\u8D25", action: `${o.kind}\uFF1A${o.name}`, detail: why, followup: o.followupId, recipients: o.recipient });
       continue;
     }
-    ctx.journal.mark(o.key, "sent", sent.messageId);
-    counts.all.add(o.followupId);
-    if (!counts.byChannel.has(o.mailbox.channel)) counts.byChannel.set(o.mailbox.channel, /* @__PURE__ */ new Set());
-    counts.byChannel.get(o.mailbox.channel).add(o.followupId);
-    const now = stamp(Date.now(), ctx.cfg.timezone);
-    if (o.after?.createFollowup) {
-      [o.followupId] = await ctx.base.create(t.followups, [o.after.createFollowup]);
+    const reopen = o.kind === "\u56DE\u590D" && !o.after?.followup?.["\u9636\u6BB5"] ? reopenChanges(s.followups.get(o.followupId), today(ctx.cfg)) : {};
+    const left = {
+      project: ctx.cfg.project,
+      name: o.name,
+      recipient: o.recipient,
+      mailbox: { address: o.mailbox.address, channel: o.mailbox.channel },
+      subject: o.subject,
+      body: o.body,
+      kind: o.kind,
+      followupId: o.followupId,
+      sentAt: Date.now(),
+      after: Object.keys(reopen).length ? { ...o.after, followup: { ...reopen, ...o.after?.followup } } : o.after
+    };
+    ctx.journal.mark(o.key, "sent", sent.messageId, left);
+    counted(counts, left);
+    try {
+      await writeBack(ctx, o.key, sent.messageId, left);
+    } catch (err) {
+      const why = `\u4FE1\u5DF2\u7ECF\u53D1\u51FA\uFF08${sent.messageId}\uFF09\uFF0C\u5199\u56DE\u8BB0\u5F55\u65F6\u51FA\u9519\uFF1A${err?.message ?? err}\u3002\u4E0B\u6B21\u8FD0\u884C\u4F1A\u8865\u8BB0\uFF0C\u4E0D\u4F1A\u91CD\u53D1`;
+      report.failed.push({ key: o.key, name: o.name, reason: why });
+      ctx.run.op({ type: "\u53D1\u51FA\u90AE\u4EF6", result: "\u5931\u8D25", action: `${o.kind}\uFF1A${o.name}`, detail: why, followup: left.followupId, recipients: o.recipient });
+      continue;
     }
-    await ctx.base.create(t.contacts, [{
-      \u65B9\u5411: ["\u53D1\u51FA"],
-      \u6E20\u9053: [o.mailbox.channel],
-      "Message ID": sent.messageId,
-      \u6458\u8981: `[${o.kind}] ${o.subject || "\u56DE\u590D"}`.slice(0, 200),
-      \u5185\u5BB9: o.body.slice(0, 5e3),
-      \u65E5\u671F: now,
-      KOL: [{ id: o.followupId }]
-    }]);
-    if (!o.after?.createFollowup) {
-      await ctx.base.update(t.followups, {
-        [o.followupId]: { \u6700\u8FD1\u8054\u7CFB\u65E5\u671F: now, \u5F53\u524D\u8F6E\u5230\u8C01: ["KOL"], ...o.after?.followup ?? {} }
-      });
-    }
-    if (o.after?.profile) await ctx.base.update(t.profiles, { [o.after.profile[0]]: o.after.profile[1] });
-    if (o.after?.review) {
-      await ctx.base.update(t.reviews, {
-        [o.after.review]: { \u72B6\u6001: ["\u5DF2\u6267\u884C"], \u6267\u884C\u65F6\u95F4: now, \u6267\u884C\u7ED3\u679C: `\u5DF2\u4ECE ${o.mailbox.address} \u53D1\u7ED9 ${o.recipient}\uFF08${sent.messageId}\uFF09` }
-      });
-    }
-    ctx.journal.mark(o.key, "recorded", sent.messageId);
+    o.followupId = left.followupId;
     ctx.run.counts.\u53D1\u51FA\u90AE\u4EF6++;
     ctx.run.op({ type: "\u53D1\u51FA\u90AE\u4EF6", result: "\u5B8C\u6210", action: `${o.kind}\uFF1A${o.name}`, followup: o.followupId, recipients: o.recipient, body: o.body, sent: 1 });
     report.sent.push({ name: o.name, recipient: o.recipient, mailbox: o.mailbox.address, kind: o.kind, messageId: sent.messageId });
@@ -62401,12 +62796,78 @@ async function deliver(ctx, items, s, dryRun) {
     }
   }
 }
+function counted(counts, m) {
+  counts.all.add(m.followupId);
+  if (!counts.byChannel.has(m.mailbox.channel)) counts.byChannel.set(m.mailbox.channel, /* @__PURE__ */ new Set());
+  counts.byChannel.get(m.mailbox.channel).add(m.followupId);
+}
+async function writeBack(ctx, key, messageId, m, catchingUp = false) {
+  const t = ctx.cfg.tables;
+  const now = stamp(m.sentAt ?? Date.now(), ctx.cfg.timezone);
+  if (m.after?.createFollowup && !m.followupCreated) {
+    [m.followupId] = await ctx.base.create(t.followups, [m.after.createFollowup]);
+    m.followupCreated = true;
+    ctx.journal.mark(key, "sent", messageId, m);
+  }
+  if (!m.contactWritten) {
+    const there = catchingUp && (await ctx.base.records(t.contacts, { filter: { logic: "and", conditions: [["Message ID", "==", messageId]] }, fields: ["Message ID"] })).length > 0;
+    if (!there) {
+      await ctx.base.create(t.contacts, [{
+        \u65B9\u5411: ["\u53D1\u51FA"],
+        \u6E20\u9053: [m.mailbox.channel],
+        "Message ID": messageId,
+        \u6458\u8981: `[${m.kind}] ${m.subject || "\u56DE\u590D"}`.slice(0, 200),
+        \u5185\u5BB9: m.body.slice(0, 5e3),
+        \u65E5\u671F: now,
+        KOL: [{ id: m.followupId }]
+      }]);
+    }
+    m.contactWritten = true;
+    ctx.journal.mark(key, "sent", messageId, m);
+  }
+  if (!m.after?.createFollowup) {
+    let changes = { \u6700\u8FD1\u8054\u7CFB\u65E5\u671F: now, \u5F53\u524D\u8F6E\u5230\u8C01: ["KOL"], ...m.after?.followup ?? {} };
+    if (catchingUp) changes = await stillCurrent(ctx, m, changes);
+    if (Object.keys(changes).length) await ctx.base.update(t.followups, { [m.followupId]: changes });
+  }
+  if (m.after?.profile) await ctx.base.update(t.profiles, { [m.after.profile[0]]: m.after.profile[1] });
+  if (m.after?.review) {
+    await ctx.base.update(t.reviews, {
+      [m.after.review]: { \u72B6\u6001: ["\u5DF2\u6267\u884C"], \u6267\u884C\u65F6\u95F4: now, \u6267\u884C\u7ED3\u679C: `\u5DF2\u4ECE ${m.mailbox.address} \u53D1\u7ED9 ${m.recipient}\uFF08${messageId}\uFF09` }
+    });
+  }
+  ctx.journal.mark(key, "recorded", messageId);
+}
+async function stillCurrent(ctx, m, changes) {
+  const tz = ctx.cfg.timezone;
+  const [f] = await ctx.base.get(ctx.cfg.tables.followups, [m.followupId], ["\u6700\u540E\u6765\u4FE1\u65E5\u671F", "\u6700\u8FD1\u8054\u7CFB\u65E5\u671F", "\u9636\u6BB5", "\u5F53\u524D\u8F6E\u5230\u8C01"]);
+  if (!f) return {};
+  const sentAt = m.sentAt ?? 0;
+  const later = (v) => (cellTime(v, tz) ?? 0) > sentAt;
+  const sameMinuteReply = (cellTime(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz) ?? 0) >= sentAt - 6e4 && option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]) === "\u6211\u4EEC";
+  const movedOn = later(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"]) || later(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"]) || sameMinuteReply;
+  if (!movedOn) return changes;
+  return later(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"]) ? {} : { \u6700\u8FD1\u8054\u7CFB\u65E5\u671F: changes["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"] };
+}
+async function catchUp(ctx, report) {
+  for (const e of ctx.journal.unrecorded()) {
+    const m = e.data;
+    if (!m?.project || m.project !== ctx.cfg.project || !e.messageId) continue;
+    try {
+      await writeBack(ctx, e.key, e.messageId, m, true);
+      ctx.run.op({ type: "\u53D1\u51FA\u90AE\u4EF6", result: "\u5B8C\u6210", action: `\u8865\u8BB0${m.kind}\uFF1A${m.name}`, detail: "\u4E0A\u6B21\u5DF2\u7ECF\u53D1\u51FA\uFF0C\u8BB0\u5F55\u6CA1\u5199\u5B8C\uFF0C\u8FD9\u6B21\u8865\u4E0A\uFF0C\u6CA1\u6709\u91CD\u53D1", followup: m.followupId, recipients: m.recipient });
+      report.sent.push({ name: m.name, recipient: m.recipient, mailbox: m.mailbox.address, kind: `${m.kind}\uFF08\u4E0A\u6B21\u5DF2\u53D1\u51FA\uFF0C\u8FD9\u6B21\u8865\u8BB0\uFF0C\u6CA1\u6709\u91CD\u53D1\uFF09`, messageId: e.messageId });
+    } catch (err) {
+      report.failed.push({ key: e.key, name: m.name, reason: `\u4FE1\u4E0A\u6B21\u5DF2\u7ECF\u53D1\u51FA\uFF08${e.messageId}\uFF09\uFF0C\u8865\u8BB0\u8FD8\u662F\u6CA1\u6210\u529F\uFF1A${err?.message ?? err}` });
+    }
+  }
+}
 var EXECUTING = "\u6267\u884C\u4E2D";
 var EXECUTING_STALE_MS = 15 * 6e4;
 function executing() {
   return `${EXECUTING}\uFF08${machineLabel(machine())}\uFF09`;
 }
-async function claimReview(ctx, reviewId) {
+async function claimReview(ctx, reviewId, built) {
   const t = ctx.cfg.tables;
   const [r] = await ctx.base.get(t.reviews, [reviewId]);
   if (!r) return { skip: "\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E00\u6761" };
@@ -62419,6 +62880,7 @@ async function claimReview(ctx, reviewId) {
     if (problem.changed) await sendBack(ctx, reviewId, problem.reason);
     return { skip: problem.reason };
   }
+  if (built && fingerprint(r) !== built) return { skip: "\u8FD9\u4E00\u8F6E\u5F00\u59CB\u4EE5\u540E\u5185\u5BB9\u6539\u8FC7\u53C8\u91CD\u65B0\u540C\u610F\u4E86\uFF0C\u8FD9\u6B21\u5148\u4E0D\u53D1\uFF0C\u4E0B\u4E00\u8F6E\u6309\u6700\u65B0\u5185\u5BB9\u53D1" };
   const result = text(r["\u6267\u884C\u7ED3\u679C"]);
   if (result.startsWith(EXECUTING)) {
     const age = Date.now() - (cellTime(r["\u6267\u884C\u65F6\u95F4"], ctx.cfg.timezone) ?? 0);
@@ -62440,10 +62902,17 @@ async function sendRetryingConflicts(ctx, mail) {
 }
 async function sendApproved(ctx, opts) {
   const t = ctx.cfg.tables;
-  const [s, reviews] = await Promise.all([
+  const [s, reviews, unanswered] = await Promise.all([
     loadSnapshot(ctx.base, ctx.cfg),
-    ctx.base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"]]] } })
+    ctx.base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"]]] } }),
+    ctx.base.records(t.contacts, { filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] }, fields: ["KOL", "\u5F85\u5904\u7406", "\u65B9\u5411", "\u65E5\u671F"] })
   ]);
+  const tz = ctx.cfg.timezone;
+  const lastMail = /* @__PURE__ */ new Map();
+  for (const m of unanswered) {
+    const at = cellTime(m["\u65E5\u671F"], tz) ?? 0;
+    for (const fid of linkIds(m["KOL"])) lastMail.set(fid, Math.max(at, lastMail.get(fid) ?? 0));
+  }
   const chosen = reviews.filter((r) => isApproved(r) && (!opts.only?.length || opts.only.includes(r.record_id)));
   const items = [];
   const skipped = [];
@@ -62460,6 +62929,14 @@ async function sendApproved(ctx, opts) {
     if (problem) {
       if (problem.changed && !opts.dryRun) await sendBack(ctx, r.record_id, problem.reason);
       skipped.push({ key: r.record_id, name, reason: problem.reason });
+      continue;
+    }
+    const approvedAt = cellTime(r["\u540C\u610F\u65F6\u95F4"], tz) ?? cellTime(r["\u63D0\u51FA\u65F6\u95F4"], tz);
+    const wroteSince = approvedAt != null && (lastMail.get(followupId) ?? -1) >= approvedAt;
+    if (followupId && wroteSince && ctx.journal.get(`review:${r.record_id}`)?.state !== "sent") {
+      const why = "\u540C\u610F\u4E4B\u540E\u5979\u53C8\u6765\u4FE1\u4E86\uFF0C\u5148\u770B\u5979\u65B0\u8BF4\u7684\u518D\u51B3\u5B9A\u8FD9\u5C01\u8FD8\u53D1\u4E0D\u53D1";
+      if (!opts.dryRun) await sendBack(ctx, r.record_id, why);
+      skipped.push({ key: r.record_id, name, reason: why });
       continue;
     }
     const close = f ? closeChanges(r, profileOf(s, f), day2) : null;
@@ -62508,6 +62985,7 @@ ${body2}`) : "";
       oncePerDay: false,
       kind: "\u56DE\u590D",
       after: { review: r.record_id, ...close ? { followup: close.followup, profile: close.profile } : {} },
+      approved: { fingerprint: fingerprint(r), at: text(r["\u540C\u610F\u65F6\u95F4"]) },
       ...plan?.action === "\u5F00\u6D3B\u52A8\u7801" ? { prepare: preparePartner(ctx, plan, r, followupId), prepareNote: partnerNote(plan) } : plan ? { prepare: prepareTrial(ctx, plan, r, name, followupId), prepareNote: trialNote(plan) } : {}
     });
   }
@@ -63551,6 +64029,775 @@ async function todayLists(ctx) {
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 
+// src/kolops/console/state.ts
+var VIEWS = {
+  wait: { label: "\u7B49\u6211\u4EEC\u56DE", question: "\u5148\u56DE\u8C01\uFF1F\u7B49\u5F97\u6700\u4E45\u7684\u5728\u4E0A\u9762\u3002", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u7B49\u4E86", "\u5F85\u4F60\u51B3\u5B9A", "\u4E0B\u6B21\u8DDF\u8FDB"] },
+  noreply: { label: "\u9080\u4E86\u6CA1\u56DE", question: "\u9080\u7EA6\u4E86\u8FD8\u6CA1\u56DE\u4FE1\u7684\u4EBA\u3002", columns: ["\u54EA\u5929\u9080\u7684", "\u4E0B\u6B21\u8DDF\u8FDB", "\u9080\u7EA6\u6279\u6B21", "\u7528\u54EA\u4E2A\u90AE\u7BB1"] },
+  trial: { label: "\u5728\u8BD5\u7528", question: "\u53D1\u4E86\u4F53\u9A8C\u7801\u3001\u8FD8\u6CA1\u8C08\u5408\u4F5C\u7684\u4EBA\u3002\u8C01\u5FEB\u5230\u671F\u3001\u8C01\u9886\u4E86\u7801\u8FD8\u6CA1\u7528\uFF1F", columns: ["\u7528\u4E86\u51E0\u6B21", "\u54EA\u5929\u5230\u671F", "\u4E0A\u6B21\u8054\u7CFB", "\u63A5\u4E0B\u6765"] },
+  deal: { label: "\u8C08\u5408\u4F5C", question: "\u8BD5\u7528\u8FC7\u3001\u60F3\u5408\u4F5C\uFF0C\u4F46\u8FD8\u6CA1\u7EA6\u597D\u54EA\u5929\u53D1\u3002\u5361\u5728\u54EA\u4E00\u6B65\uFF1F", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u6D3B\u52A8\u7801", "\u4E0A\u6B21\u8054\u7CFB", "\u63A5\u4E0B\u6765"] },
+  post: { label: "\u7EA6\u597D\u8981\u53D1\u5E03", question: "\u7EA6\u597D\u4E86\u65E5\u671F\u3001\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50\u7684\u4EBA\u3002\u8C01\u5FEB\u8BE5\u53D1\u4E86\uFF1F", columns: ["\u7EA6\u597D\u54EA\u5929", "\u6D3B\u52A8\u7801", "\u63A5\u4E0B\u6765"] },
+  posted: { label: "\u5DF2\u53D1\u5E03", question: "\u53D1\u4E86\u4EC0\u4E48\u3001\u6548\u679C\u600E\u4E48\u6837\uFF1F", columns: ["\u5E16\u5B50", "\u54EA\u5929\u53D1\u7684", "\u64AD\u653E\uFF08\u6700\u65B0\uFF09", "\u6D3B\u52A8\u7801"] },
+  pool: { label: "\u8FD8\u6CA1\u8054\u7CFB\u8FC7", question: "\u6709\u80FD\u7528\u7684\u90AE\u7BB1\u3001\u8FD8\u6CA1\u8054\u7CFB\u8FC7\u7684\u4EBA\u3002\u6311\u8C01\u53BB\u9080\u7EA6\uFF1F", columns: ["\u5185\u5BB9", "\u7C89\u4E1D", "\u5E02\u573A", "\u54EA\u4E00\u6279\u627E\u5230\u7684"] },
+  all: { label: "\u5168\u90E8\u5728\u8DDF\u8FDB\u7684", question: "\u6574\u4F53\u626B\u4E00\u773C\u3002", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u5230\u54EA\u4E00\u6B65", "\u4E0B\u6B21\u8DDF\u8FDB"] }
+};
+var STAGES = ["\u9080\u7EA6", "\u56DE\u590D", "\u8BD5\u7528", "\u5408\u4F5C", "\u7EA6\u597D\u53D1\u5E03", "\u5DF2\u53D1\u5E03"];
+var STAGE_STEP = { \u5DF2\u9080\u7EA6: 0, \u5DF2\u56DE\u590D: 1, \u4F53\u9A8C\u4E2D: 2, \u5DF2\u770B\u62A5\u544A: 3, \u5408\u4F5C\u4E2D: 3, \u5DF2\u7EA6\u53D1\u5E03: 4, \u5DF2\u53D1\u5E03: 5 };
+var OVERDUE_GRACE_DAYS = 2;
+var PROBLEM_DAYS = 7;
+var REVIEW_FIELDS2 = [
+  "\u5BA1\u6838\u9879",
+  "\u7C7B\u578B",
+  "\u72B6\u6001",
+  "\u5904\u7406",
+  "\u5BA1\u6838\u7ED3\u679C",
+  "KOL",
+  "\u4F60\u7684\u610F\u89C1",
+  "\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE",
+  "\u8981\u4F60\u5B9A\u4EC0\u4E48",
+  "\u90AE\u4EF6\u8349\u7A3F",
+  "\u6536\u4EF6\u4EBA",
+  "\u53D1\u9001\u6E20\u9053",
+  "\u63D0\u51FA\u65F6\u95F4",
+  "\u6267\u884C\u65F6\u95F4",
+  "\u6267\u884C\u7ED3\u679C",
+  "\u4F53\u9A8C\u7801\u52A8\u4F5C",
+  "\u4F53\u9A8C\u7801",
+  "\u4F53\u9A8C\u6B21\u6570",
+  "\u4F53\u9A8C\u5929\u6570",
+  "\u6D3B\u52A8\u7801",
+  "\u7C89\u4E1D\u6298\u6263",
+  "\u9500\u552E\u5E02\u573A",
+  "\u53D1\u540E\u52A8\u4F5C",
+  "\u7ED3\u6848\u539F\u56E0"
+];
+var POST_FIELDS = ["KOL", "\u5185\u5BB9\u94FE\u63A5", "\u5185\u5BB9\u6807\u9898", "\u53D1\u5E03\u65E5\u671F", "\u5E73\u53F0", "\u5F62\u5F0F", "\u7B2C1\u5929\u64AD\u653E", "\u7B2C3\u5929\u64AD\u653E", "\u7B2C7\u5929\u64AD\u653E", "\u7B2C30\u5929\u64AD\u653E"];
+var ConsoleData = class {
+  constructor(ctx) {
+    this.ctx = ctx;
+  }
+  ctx;
+  snapshot;
+  reviews = [];
+  pendingMail = [];
+  posts = [];
+  templates = [];
+  /** Templates waiting for someone to approve them. */
+  pendingTemplates = [];
+  loadedAt = 0;
+  async refresh() {
+    const { base, cfg } = this.ctx;
+    const t = cfg.tables;
+    const since = addDays(today(cfg), -PROBLEM_DAYS);
+    const [snapshot, open, failed, pendingMail, posts, templates, pendingTemplates] = await Promise.all([
+      loadSnapshot(base, cfg),
+      base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"]]] }, fields: REVIEW_FIELDS2 }),
+      base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u6267\u884C\u5931\u8D25"]], onOrAfter("\u6267\u884C\u65F6\u95F4", since)] }, fields: REVIEW_FIELDS2 }),
+      base.records(t.contacts, {
+        filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
+        fields: ["Message ID", "\u6E20\u9053", "\u6458\u8981", "\u65E5\u671F", "KOL", "\u5F85\u5904\u7406", "\u65B9\u5411", "\u5185\u5BB9"]
+      }),
+      base.records(t.posts, { fields: POST_FIELDS }).catch(() => []),
+      loadTemplates(base, cfg).catch(() => []),
+      base.records(t.templates, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u5BA1\u6838"]]] } }).catch(() => [])
+    ]);
+    this.templates = templates;
+    this.pendingTemplates = pendingTemplates.filter((r) => option(r["\u72B6\u6001"]) === "\u5F85\u5BA1\u6838");
+    this.snapshot = snapshot;
+    this.reviews = [...open, ...failed];
+    this.pendingMail = pendingMail;
+    this.posts = posts;
+    this.loadedAt = Date.now();
+  }
+};
+function fans(v) {
+  const n = Number(v);
+  if (!v || Number.isNaN(n)) return "";
+  return n >= 1e4 ? `${(n / 1e4).toFixed(1).replace(/\.0$/, "")} \u4E07` : n.toLocaleString("en-US");
+}
+function ago(dayStr, todayStr) {
+  if (!dayStr) return "";
+  const n = daysBetween(dayStr, todayStr);
+  if (n <= 0) return n === 0 ? "\u4ECA\u5929" : shortDay(dayStr);
+  if (n === 1) return "\u6628\u5929";
+  return n <= 30 ? `${n} \u5929\u524D` : shortDay(dayStr);
+}
+function ahead(dayStr, todayStr) {
+  if (!dayStr) return "";
+  const n = daysBetween(todayStr, dayStr);
+  if (n === 0) return "\u4ECA\u5929";
+  if (n === 1) return "\u660E\u5929";
+  if (n > 1 && n <= 7) return `${n} \u5929\u540E\uFF08${shortDay(dayStr)}\uFF09`;
+  return shortDay(dayStr);
+}
+function shortDay(dayStr) {
+  const [, m, d] = dayStr.split("-").map(Number);
+  return m && d ? `${m} \u6708 ${d} \u65E5` : dayStr;
+}
+function handleOf2(s, f) {
+  const p = profileOf(s, f);
+  const h = text(p?.["\u8D26\u53F7"]);
+  return h ? h.startsWith("@") ? h : `@${h}` : displayName(s, f);
+}
+function subOf(p, name) {
+  const platform = text(p?.["\u4E3B\u8981\u5E73\u53F0"]).split(",")[0]?.trim();
+  return [text(p?.["\u79F0\u547C"]) || name, [platform, fans(p?.["\u7C89\u4E1D\u6570"])].filter(Boolean).join(" ")].filter(Boolean).join(" \xB7 ");
+}
+function situationOf(f, cfg, todayStr) {
+  const tz = cfg.timezone;
+  const stage = option(f["\u9636\u6BB5"]);
+  const turn = option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]);
+  const code = text(f["\u6D3B\u52A8\u7801"]);
+  switch (stage) {
+    case "\u5DF2\u9080\u7EA6":
+      return `\u9080\u7EA6\u4E86\u8FD8\u6CA1\u56DE\uFF08${shortDay(day(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], tz)) || "\u65E5\u671F\u4E0D\u8BE6"}\uFF09`;
+    case "\u5DF2\u56DE\u590D":
+      return turn === "\u6211\u4EEC" || turn === "\u7B49\u4F60\u5BA1\u6838" ? "\u56DE\u4FE1\u4E86\uFF0C\u7B49\u6211\u4EEC\u56DE" : "\u56DE\u8FC7\u4FE1\uFF0C\u5728\u7B49\u5BF9\u65B9";
+    case "\u4F53\u9A8C\u4E2D": {
+      const used = Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0;
+      const max = Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0;
+      const exp = day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz);
+      return `\u5728\u8BD5\u7528${max ? `\uFF0C\u7528\u4E86 ${used} / ${max} \u6B21` : ""}${exp ? `\uFF0C${ahead(exp, todayStr)}\u5230\u671F` : ""}`;
+    }
+    case "\u5DF2\u770B\u62A5\u544A":
+      return "\u8BD5\u7528\u8FC7\uFF0C\u770B\u4E86\u62A5\u544A";
+    case "\u5408\u4F5C\u4E2D":
+      return code ? `\u5728\u8C08\u5408\u4F5C\uFF0C\u6D3B\u52A8\u7801 ${code} \u5DF2\u5F00` : "\u5728\u8C08\u5408\u4F5C";
+    case "\u5DF2\u7EA6\u53D1\u5E03":
+      return `\u7EA6\u597D ${shortDay(day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz)) || "\uFF08\u65E5\u671F\u6CA1\u586B\uFF09"} \u53D1\u5E03`;
+    case "\u5DF2\u53D1\u5E03":
+      return "\u5DF2\u7ECF\u53D1\u5E03";
+    case "\u6682\u7F13":
+      return "\u6682\u7F13";
+    case "\u7ED3\u6848":
+      return `\u5DF2\u7ED3\u6848${option(f["\u7ED3\u6848\u539F\u56E0"]) ? `\uFF08${option(f["\u7ED3\u6848\u539F\u56E0"])}\uFF09` : ""}`;
+    default:
+      return text(f["\u4E0B\u4E00\u6B65"]) || stage;
+  }
+}
+var GROUP_ORDER = ["\u51FA\u4E86\u95EE\u9898", "\u53D1\u5E03", "\u56DE\u4FE1", "\u6765\u4FE1", "\u9080\u7EA6\u548C\u51B3\u5B9A", "\u6A21\u677F", "\u5176\u4ED6"];
+function decisionCards(data, cfg, todayStr, mails = /* @__PURE__ */ new Map()) {
+  const s = data.snapshot;
+  const tz = cfg.timezone;
+  const cards = [];
+  const who = (fid) => {
+    const f = s.followups.get(fid);
+    return f ? { id: fid, name: `${handleOf2(s, f)} ${text(profileOf(s, f)?.["\u79F0\u547C"]) || ""}`.trim() } : void 0;
+  };
+  const meta = (fid) => {
+    const f = s.followups.get(fid);
+    if (!f) return "";
+    const p = profileOf(s, f);
+    return [option(f["\u9636\u6BB5"]), subOf(p, "").replace(/^ · /, "")].filter(Boolean).join(" \xB7 ");
+  };
+  for (const r of data.reviews.filter((r2) => option(r2["\u72B6\u6001"]) === "\u6267\u884C\u5931\u8D25")) {
+    const fid = linkIds(r["KOL"])[0] ?? "";
+    const w = who(fid);
+    cards.push({
+      id: r.record_id,
+      kind: "problem",
+      group: "\u51FA\u4E86\u95EE\u9898",
+      tag: "\u6CA1\u505A\u6210",
+      who: w,
+      headline: `${w?.name ?? text(r["\u5BA1\u6838\u9879"])}\uFF1A${text(r["\u5BA1\u6838\u9879"]) || "\u8FD9\u4EF6\u4E8B"}\u6CA1\u505A\u6210`,
+      meta: `${stamp(cellTime(r["\u6267\u884C\u65F6\u95F4"], tz) ?? Date.now(), tz)} \u6267\u884C`,
+      suggest: unknownSend(r) ? "\u5230\u53D1\u4FE1\u90AE\u7BB1\u7684\u300C\u5DF2\u53D1\u9001\u300D\u91CC\u627E\u4E00\u4E0B\u8FD9\u5C01\u4FE1\uFF0C\u518D\u544A\u8BC9\u7CFB\u7EDF\u53D1\u51FA\u53BB\u4E86\u6CA1\u6709" : "\u770B\u4E00\u4E0B\u539F\u56E0\uFF1A\u8981\u91CD\u505A\u5C31\u91CD\u65B0\u5BA1\u6838\uFF0C\u4E0D\u505A\u4E86\u5C31\u64A4\u6389",
+      steps: [],
+      why: text(r["\u6267\u884C\u7ED3\u679C"]) || "\u6CA1\u6709\u5199\u539F\u56E0",
+      unknownSend: unknownSend(r)
+    });
+  }
+  for (const f of s.followups.values()) {
+    if (option(f["\u9636\u6BB5"]) !== "\u5DF2\u7EA6\u53D1\u5E03") continue;
+    const due = day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz);
+    if (!due || daysBetween(due, todayStr) < OVERDUE_GRACE_DAYS) continue;
+    const nextUp = day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz);
+    if (nextUp && nextUp > todayStr) continue;
+    if (!nextUp && option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]) === "KOL" && day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz) >= due) continue;
+    const late = daysBetween(due, todayStr);
+    const w = who(f.record_id);
+    const code = text(f["\u6D3B\u52A8\u7801"]);
+    cards.push({
+      id: `overdue:${f.record_id}`,
+      kind: "overdue",
+      group: "\u53D1\u5E03",
+      tag: "\u6CA1\u6309\u65F6\u53D1\u5E03",
+      who: w,
+      headline: `${w?.name ?? displayName(s, f)} \u7EA6\u597D ${shortDay(due)} \u53D1\u5E03\uFF0C\u8FC7\u4E86 ${late} \u5929\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50`,
+      meta: meta(f.record_id),
+      suggest: "\u5148\u53BB\u5979\u7684\u4E3B\u9875\u770B\u4E00\u773C\uFF1B\u8FD8\u6CA1\u53D1\u7684\u8BDD\uFF0C\u5199\u4FE1\u95EE\u5979\u4E00\u4E0B",
+      steps: [
+        { text: "\u5DF2\u7ECF\u53D1\u4E86\uFF1A\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u4E0B\u9762\uFF0C\u70B9\u300C\u8BB0\u4E0B\u8FD9\u6761\u53D1\u5E03\u300D\uFF0C\u4E4B\u540E\u4F1A\u81EA\u52A8\u8BB0\u64AD\u653E\u548C\u4E92\u52A8" },
+        { text: "\u8FD8\u6CA1\u53D1\uFF1A\u770B\u4E00\u4E0B\u4E0B\u9762\u8FD9\u5C01\u4FE1\uFF0C\u70B9\u300C\u53D1\u4FE1\u95EE\u5979\u300D\u5C31\u6392\u961F\u53D1\u51FA\uFF0C\u4E0B\u6B21\u8DDF\u8FDB\u6539\u5230 3 \u5929\u540E" }
+      ],
+      draft: checkInDraft(data.templates, f, profileOf(s, f), due, code),
+      why: `\u7CFB\u7EDF\u6BCF\u5929\u770B\u5979\u6700\u8FD1\u7684\u5E16\u5B50\uFF0C\u6CA1\u627E\u5230\u63D0\u5230\u300C${cfg.postWords.join("\u3001") || "\u9879\u76EE\u8BC6\u522B\u8BCD"}\u300D${code ? `\u6216\u6D3B\u52A8\u7801 ${code}` : ""}\u7684\u3002\u53EF\u80FD\u8FD8\u6CA1\u53D1\uFF0C\u4E5F\u53EF\u80FD\u53D1\u4E86\u4F46\u6CA1\u63D0\uFF0C\u7CFB\u7EDF\u8BA4\u4E0D\u51FA\u6765\u3002`
+    });
+  }
+  const latestMail = /* @__PURE__ */ new Map();
+  for (const m of data.pendingMail) {
+    for (const fid of linkIds(m["KOL"])) {
+      const had = latestMail.get(fid);
+      if (!had || (cellTime(m["\u65E5\u671F"], tz) ?? 0) >= (cellTime(had["\u65E5\u671F"], tz) ?? 0)) latestMail.set(fid, m);
+    }
+  }
+  const seenOf = (fid) => latestMail.get(fid) ? text(latestMail.get(fid)["Message ID"]) : void 0;
+  const openByKol = /* @__PURE__ */ new Set();
+  let waitingClaude = 0;
+  for (const r of data.reviews.filter((r2) => option(r2["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25")) {
+    const state = reviewState(r);
+    const fid = linkIds(r["KOL"])[0] ?? "";
+    if (fid) openByKol.add(fid);
+    if (state === "revise") waitingClaude++;
+    if (state === "approved" && fid && latestMail.has(fid) && !text(r["\u6267\u884C\u7ED3\u679C"]).startsWith("\u6267\u884C\u4E2D")) {
+      cards.push({
+        ...reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid), data.pendingTemplates),
+        seen: seenOf(fid),
+        tag: "\u540C\u610F\u540E\u5979\u53C8\u6765\u4FE1\u4E86",
+        suggest: "\u4F60\u540C\u610F\u4E4B\u540E\u5979\u53C8\u6765\u4FE1\u4E86\u3002\u770B\u770B\u5979\u65B0\u8BF4\u7684\uFF0C\u8FD9\u5C01\u8FD8\u8981\u4E0D\u8981\u7167\u53D1"
+      });
+      continue;
+    }
+    if (state !== "pending") continue;
+    cards.push({ ...reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid), data.pendingTemplates), seen: seenOf(fid) });
+  }
+  for (const tpl of data.pendingTemplates) {
+    cards.push({
+      id: `template:${tpl.record_id}`,
+      kind: "template",
+      group: "\u6A21\u677F",
+      tag: "\u6A21\u677F",
+      headline: `\u6A21\u677F\u300C${text(tpl["\u540D\u79F0"]) || "\u6CA1\u5199\u540D\u79F0"}\u300D\u7B49\u4F60\u6279\u51C6`,
+      meta: [option(tpl["\u7528\u9014"]), text(tpl["\u8BED\u8A00"]), text(tpl["\u65B9\u5411"])].filter(Boolean).join(" \xB7 "),
+      suggest: "\u770B\u4E00\u904D\u5185\u5BB9\uFF0C\u6CA1\u95EE\u9898\u5C31\u540C\u610F",
+      steps: [{ text: "\u540C\u610F\u540E\u8FD9\u4E2A\u6A21\u677F\u6539\u6210\u300C\u5DF2\u6279\u51C6\u300D\uFF0C\u4E4B\u540E\u53D1\u9080\u7EA6\u3001\u50AC\u4FE1\u5C31\u4F1A\u7528\u5B83" }],
+      why: "\u6A21\u677F\u6279\u51C6\u4EE5\u540E\uFF0C\u6309\u5B83\u53D1\u7684\u4FE1\u4E0D\u518D\u4E00\u5C01\u5C01\u7ED9\u4F60\u770B\uFF0C\u6240\u4EE5\u5148\u8FC7\u4E00\u904D\u3002",
+      draft: { label: "\u6A21\u677F\u5185\u5BB9", subject: text(tpl["\u4E3B\u65E8"]), body: text(tpl["\u6B63\u6587"]) }
+    });
+  }
+  const byKol = /* @__PURE__ */ new Map();
+  for (const m of data.pendingMail) {
+    const fid = linkIds(m["KOL"])[0] ?? "";
+    if (fid && openByKol.has(fid)) continue;
+    const key = fid || `contact:${m.record_id}`;
+    byKol.set(key, [...byKol.get(key) ?? [], m]);
+  }
+  for (const [key, ms] of byKol) {
+    const fid = key.startsWith("contact:") ? "" : key;
+    ms.sort((a, b2) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b2["\u65E5\u671F"], tz) ?? 0));
+    const first2 = cellTime(ms[0]["\u65E5\u671F"], tz);
+    const latest = ms[ms.length - 1];
+    const w = who(fid);
+    const body2 = mails.get(`msg:${text(latest["Message ID"])}`);
+    const when = cellTime(latest["\u65E5\u671F"], tz);
+    const waited = first2 ? daysBetween(day(first2, tz), todayStr) : 0;
+    const ids2 = ms.map((m) => m.record_id).join(",");
+    if (!fid) {
+      const from = text(latest["\u5185\u5BB9"]).replace(/^发件人：/, "") || "\u964C\u751F\u53D1\u4EF6\u4EBA";
+      cards.push({
+        id: `unknown:${ids2}`,
+        kind: "unknown",
+        group: "\u6765\u4FE1",
+        tag: "\u5BF9\u4E0D\u4E0A\u4EBA",
+        headline: `${from} \u6765\u4FE1\uFF0C\u5BF9\u4E0D\u4E0A\u4EFB\u4F55 KOL`,
+        meta: [when ? stamp(when, tz) : "", option(latest["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(latest["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
+        mail: { label: `${from} \u8BF4 \xB7 ${text(latest["\u6458\u8981"])}`, text: body2?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
+        suggest: "\u8BF4\u4E00\u4E0B\u8FD9\u662F\u54EA\u4F4D KOL \u7684\uFF1B\u8DDF KOL \u65E0\u5173\u5C31\u76F4\u63A5\u5F52\u6863",
+        steps: [{ text: "\u5173\u8054\u5230 KOL \u540E\uFF0C\u8FD9\u4E2A\u90AE\u7BB1\u8BB0\u8FDB\u5979\u7684\u6863\u6848\uFF0C\u4EE5\u540E\u7684\u6765\u4FE1\u4F1A\u81EA\u52A8\u5BF9\u4E0A\uFF1B\u8FD9\u5C01\u4FE1\u4F1A\u6392\u56DE\u8FD9\u91CC\u7B49\u4F60\u5904\u7406" }],
+        why: "\u53D1\u4EF6\u4EBA\u7684\u90AE\u7BB1\u4E0D\u5728\u4EFB\u4F55\u6863\u6848\u91CC\u3002\u53EF\u80FD\u662F\u5979\u6362\u4E86\u90AE\u7BB1\u3001\u7ECF\u7EAA\u4EBA\u4EE3\u56DE\uFF0C\u4E5F\u53EF\u80FD\u662F\u5E7F\u544A\u6216\u7CFB\u7EDF\u90AE\u4EF6\u3002"
+      });
+      continue;
+    }
+    const closed = option(data.snapshot.followups.get(fid)?.["\u9636\u6BB5"]) === "\u7ED3\u6848";
+    if (closed) {
+      const reason = option(data.snapshot.followups.get(fid)?.["\u7ED3\u6848\u539F\u56E0"]);
+      cards.push({
+        id: `mail:${ids2}`,
+        kind: "mail",
+        group: "\u6765\u4FE1",
+        tag: "\u4E4B\u524D\u5DF2\u7ED3\u6848",
+        who: w,
+        headline: `${w?.name ?? "\u4E00\u4F4D KOL"} \u53C8\u6765\u4FE1\u4E86\uFF08\u4E4B\u524D\u5DF2\u7ED3\u6848${reason ? `\uFF1A${reason}` : ""}\uFF09`,
+        meta: [meta(fid), option(latest["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(latest["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
+        mail: { label: `${w?.name ?? "\u5BF9\u65B9"}\u8BF4 \xB7 ${text(latest["\u6458\u8981"])}`, text: body2?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
+        suggest: "\u770B\u770B\u5979\u8BF4\u4EC0\u4E48\uFF1B\u60F3\u7EE7\u7EED\u7684\u8BDD\u8BA9 Claude \u5199\u56DE\u4FE1\uFF0C\u8DDF\u8FDB\u4F1A\u91CD\u65B0\u6253\u5F00",
+        steps: [{ text: "\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u56DE\u4FE1\u4F1A\u6392\u8FDB\u8FD9\u91CC\u7B49\u4F60\u770B" }],
+        why: "\u8FD9\u4F4D\u4E4B\u524D\u5DF2\u7ECF\u7ED3\u675F\u8DDF\u8FDB\u4E86\u3002\u5979\u4E3B\u52A8\u6765\u4FE1\uFF0C\u591A\u534A\u503C\u5F97\u518D\u770B\u4E00\u773C\u3002"
+      });
+      continue;
+    }
+    cards.push({
+      id: `mail:${ids2}`,
+      kind: "mail",
+      group: "\u6765\u4FE1",
+      tag: "\u8FD8\u6CA1\u8349\u7A3F",
+      who: w,
+      headline: `${w?.name ?? "\u4E00\u4F4D KOL"} \u6765\u4FE1${ms.length > 1 ? `\uFF08${ms.length} \u5C01\uFF09` : ""}${waited >= 2 ? `\uFF0C\u5DF2\u7ECF ${waited} \u5929\u6CA1\u4EBA\u56DE\u4E86` : ""}`,
+      meta: [meta(fid), option(latest["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(latest["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
+      mail: { label: `${w?.name ?? "\u5BF9\u65B9"}${ms.length > 1 ? "\u6700\u8FD1\u4E00\u5C01" : ""}\u8BF4 \xB7 ${text(latest["\u6458\u8981"])}`, text: body2?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
+      suggest: "\u8BA9 Claude \u5199\u4E00\u5C01\u56DE\u4FE1",
+      steps: [{ text: "\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u56DE\u4FE1\u4F1A\u6392\u8FDB\u8FD9\u91CC\u7B49\u4F60\u770B" }],
+      why: "\u8FD9\u5C01\u4FE1\u8FD8\u6CA1\u6709\u8349\u7A3F\uFF0C\u591A\u534A\u662F\u4ECA\u5929\u65E9\u4E0A\u7684\u4F8B\u884C\u8DD1\u5B8C\u4EE5\u540E\u624D\u6536\u5230\u7684\u3002"
+    });
+  }
+  const at = (c) => GROUP_ORDER.indexOf(c.group);
+  cards.sort((a, b2) => at(a) - at(b2));
+  return { cards, waitingClaude };
+}
+function defaultCheckIn(language, name, due, code) {
+  const [, m, d] = due.split("-").map(Number);
+  if (/英/.test(language)) {
+    return { subject: "Checking in on your post", body: `Hi ${name},
+
+Just checking in on the post we talked about for ${m}/${d}. If it's already up, could you send us the link? If the timing has changed, that's totally fine \u2014 just let us know when works for you.
+
+Thank you!` };
+  }
+  if (/简|簡體/.test(language) && !/繁/.test(language)) {
+    return { subject: "\u60F3\u786E\u8BA4\u4E00\u4E0B\u53D1\u5E03\u65F6\u95F4", body: `${name}\u4F60\u597D\uFF1A
+
+\u60F3\u8DDF\u4F60\u786E\u8BA4\u4E00\u4E0B\u4E4B\u524D\u7EA6\u597D ${m} \u6708 ${d} \u65E5\u7684\u53D1\u5E03\u8FDB\u5EA6\u3002\u5982\u679C\u5DF2\u7ECF\u53D1\u4E86\uFF0C\u65B9\u4FBF\u628A\u94FE\u63A5\u4F20\u7ED9\u6211\u4EEC\u5417\uFF1F\u5982\u679C\u65F6\u95F4\u8981\u8C03\u6574\u4E5F\u6CA1\u5173\u7CFB\uFF0C\u8DDF\u6211\u4EEC\u8BF4\u4E00\u58F0\u5C31\u597D\u3002
+
+\u8C22\u8C22\u4F60\uFF01` };
+  }
+  return { subject: "\u60F3\u78BA\u8A8D\u4E00\u4E0B\u767C\u5E03\u6642\u9593", body: `${name}\u60A8\u597D\uFF1A
+
+\u60F3\u8DDF\u60A8\u78BA\u8A8D\u4E00\u4E0B\u4E4B\u524D\u7D04\u597D ${m} \u6708 ${d} \u65E5\u7684\u767C\u5E03\u9032\u5EA6\u3002\u5982\u679C\u5DF2\u7D93\u767C\u4E86\uFF0C\u65B9\u4FBF\u628A\u9023\u7D50\u50B3\u7D66\u6211\u5011\u55CE\uFF1F\u5982\u679C\u6642\u9593\u8981\u8ABF\u6574\u4E5F\u6C92\u95DC\u4FC2\uFF0C\u8DDF\u6211\u5011\u8AAA\u4E00\u8072\u5C31\u597D\u3002
+
+\u8B1D\u8B1D\u60A8\uFF01` + (code ? `
+
+\uFF08\u60A8\u7684\u5C08\u5C6C\u6D3B\u52D5\u78BC\uFF1A${code}\uFF09` : "") };
+}
+function checkInDraft(templates, f, p, due, code) {
+  const language = option(p?.["\u8A9E\u8A00"]);
+  const t = pickTemplate(templates, "\u53D1\u5E03\u786E\u8BA4", language);
+  const label = "\u95EE\u5979\u7684\u4FE1\uFF08\u53EF\u4EE5\u76F4\u63A5\u6539\uFF09";
+  const name = text(p?.["\u79F0\u547C"]) || text(f["\u8D26\u53F7\u540D\u79F0"]) || text(p?.["\u8D26\u53F7\u540D\u79F0"]);
+  if (!t) {
+    return {
+      label,
+      ...defaultCheckIn(language, name, due, code),
+      note: "\u8FD9\u662F\u63D2\u4EF6\u81EA\u5E26\u7684\u5199\u6CD5\uFF0C\u53D1\u4E4B\u524D\u770B\u4E00\u773C\u3002\u5E38\u7528\u7684\u8BDD\u53EF\u4EE5\u5728\u98DE\u4E66\u300C\u6A21\u677F\u300D\u8868\u52A0\u4E00\u4E2A\u7528\u9014\u4E3A\u300C\u53D1\u5E03\u786E\u8BA4\u300D\u7684\u6A21\u677F\uFF0C\u4EE5\u540E\u5C31\u7528\u4F60\u4EEC\u81EA\u5DF1\u7684\u5199\u6CD5"
+    };
+  }
+  const values2 = { \u7A31\u547C: name, \u79F0\u547C: name, \u8D26\u53F7\u540D\u79F0: text(f["\u8D26\u53F7\u540D\u79F0"]), \u7D04\u5B9A\u65E5\u671F: shortDay(due), \u7EA6\u5B9A\u65E5\u671F: shortDay(due), \u6D3B\u52D5\u78BC: code, \u6D3B\u52A8\u7801: code };
+  try {
+    return { label, ...render(t, values2) };
+  } catch (err) {
+    if (!(err instanceof MissingValue)) throw err;
+    return { label, subject: t.subject, body: t.body, note: `\u6A21\u677F\u91CC\u6709\u5360\u4F4D\u7B26\u6CA1\u6709\u503C\uFF08${err.message}\uFF09\uFF0C\u53D1\u4E4B\u524D\u628A { } \u91CC\u7684\u5B57\u6362\u6389` };
+  }
+}
+function namedTemplate(pending, r) {
+  const title = text(r["\u5BA1\u6838\u9879"]);
+  const hits = pending.filter((tpl) => text(tpl["\u540D\u79F0"]) && title.includes(text(tpl["\u540D\u79F0"])));
+  return hits.length === 1 ? hits[0] : null;
+}
+function unknownSend(r) {
+  const why = text(r["\u6267\u884C\u7ED3\u679C"]);
+  return why.includes("\u7ED3\u679C\u4E0D\u660E") || why.includes("\u4E2D\u65AD\u4E86");
+}
+function reviewCard(r, s, cfg, w, meta, latest, pendingTemplates = []) {
+  const type = option(r["\u7C7B\u578B"]);
+  const fid = linkIds(r["KOL"])[0] ?? "";
+  const f = s.followups.get(fid);
+  const kind = SENDING_TYPES.includes(type) ? "reply" : type === "\u51B3\u5B9A" ? "batch" : type === "\u6A21\u677F\u5BA1\u6279" ? "template" : "todo";
+  const group = { reply: "\u56DE\u4FE1", batch: "\u9080\u7EA6\u548C\u51B3\u5B9A", template: "\u6A21\u677F", todo: "\u5176\u4ED6" }[kind];
+  const steps = [];
+  const action = option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"]);
+  if (action === "\u53D1\u7801") {
+    steps.push({ text: "\u5728 TAFU \u540E\u53F0\u5EFA\u4E00\u4E2A\u4F53\u9A8C\u7801", params: [
+      { label: "\u7801\u540D", value: text(r["\u4F53\u9A8C\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09", field: "\u4F53\u9A8C\u7801" },
+      { label: "\u80FD\u7528\u51E0\u6B21", value: String(Number(r["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses), field: "\u4F53\u9A8C\u6B21\u6570" },
+      { label: "\u51E0\u5929\u5185\u6709\u6548", value: String(Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days), field: "\u4F53\u9A8C\u5929\u6570" }
+    ] });
+  } else if (action === "\u5EF6\u671F") {
+    steps.push({ text: `\u628A\u4F53\u9A8C\u7801 ${text(r["\u4F53\u9A8C\u7801"]) || text(f?.["\u4F53\u9A8C\u7801"]) || ""} \u5EF6\u957F ${Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days} \u5929` });
+  } else if (action === "\u5F00\u6D3B\u52A8\u7801") {
+    steps.push({ text: "\u5728 TAFU \u540E\u53F0\u5F00\u5408\u4F5C\u6D3B\u52A8\uFF08\u7C89\u4E1D\u901A\u8FC7\u5979\u7684\u8FDE\u7ED3\u8D2D\u4E70\u6709\u6298\u6263\uFF0C\u5979\u62FF\u5206\u6DA6\uFF09", params: [
+      { label: "\u6D3B\u52A8\u7801", value: text(r["\u6D3B\u52A8\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09", field: "\u6D3B\u52A8\u7801" },
+      { label: "\u7C89\u4E1D\u51CF\u51E0 %", value: String(Number(r["\u7C89\u4E1D\u6298\u6263"]) || cfg.partner.percentOff), field: "\u7C89\u4E1D\u6298\u6263" },
+      { label: "\u5E02\u573A", value: text(r["\u9500\u552E\u5E02\u573A"]) || "\uFF08\u6309\u6863\u6848\u7684\u5E02\u573A\uFF09", field: "\u9500\u552E\u5E02\u573A" }
+    ] });
+  }
+  const channel = option(r["\u53D1\u9001\u6E20\u9053"]) || option(f?.["\u8054\u7CFB\u6E20\u9053"]);
+  const { subject, body: body2 } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
+  const recipient = emailsIn(r["\u6536\u4EF6\u4EBA"])[0] ?? "";
+  const sends = kind === "reply" && channel !== "\u4E0D\u53D1\u90AE\u4EF6" && body2.trim();
+  if (sends) {
+    const mb = mailboxFor(cfg, channel);
+    if (mb) steps.push({ text: `${action ? "\u6210\u529F\u540E\uFF0C" : ""}\u4ECE ${mb.address} \u628A\u4E0B\u9762\u8FD9\u5C01\u4FE1\u53D1\u7ED9 ${recipient || "\u5979"}` });
+    else {
+      steps.length = 0;
+      steps.push({ text: `\u590D\u5236\u4E0B\u9762\u8FD9\u5C01\u4FE1\uFF0C\u5230\u300C${channel}\u300D\u53D1\u7ED9 ${recipient || "\u5979"}\uFF08\u8FD9\u4E2A\u90AE\u7BB1\u7CFB\u7EDF\u53D1\u4E0D\u4E86\uFF09` });
+      if (action) steps.push({ text: `\u8FD9\u4E00\u6761\u8FD8\u8981${action}\uFF0C\u624B\u52A8\u53D1\u4FE1\u65F6\u7CFB\u7EDF\u6CA1\u6CD5\u4E00\u8D77\u505A\uFF1A\u70B9\u300C\u8BA9 Claude \u6539\u300D\uFF0C\u8BF7\u5B83\u6539\u6210\u4ECE\u98DE\u4E66\u90AE\u7BB1\u53D1` });
+      steps.push({ text: "\u53D1\u51FA\u53BB\u4EE5\u540E\u70B9\u300C\u6211\u53D1\u51FA\u53BB\u4E86\u300D\uFF0C\u7CFB\u7EDF\u8BB0\u4E0B\u8FD9\u5C01\u4FE1\uFF0C\u6539\u6210\u7B49\u5979\u56DE" });
+    }
+  }
+  const after = option(r["\u53D1\u540E\u52A8\u4F5C"]);
+  if (after) steps.push({ text: `${after === "\u6C38\u4E0D\u8054\u7CFB" ? "\u6807\u6210\u6C38\u4E0D\u8054\u7CFB\uFF0C" : ""}\u7ED3\u675F\u8DDF\u8FDB\uFF08\u539F\u56E0\uFF1A${option(r["\u7ED3\u6848\u539F\u56E0"]) || "\u6CA1\u5199"}\uFF09` });
+  if (kind === "batch") steps.push({ text: "\u8BB0\u4E0B\u4F60\u540C\u610F\u4E86\u3002\u771F\u6B63\u53D1\u51FA\u8981\u5728 Claude \u91CC\u8BF4\u300C\u53D1\u8FD9\u6279\u9080\u7EA6\u300D\uFF0CClaude \u4F1A\u6309\u8FD9\u4E2A\u51B3\u5B9A\u5206\u6279\u53D1" });
+  if (kind === "template") {
+    const tpl = namedTemplate(pendingTemplates, r);
+    steps.push({ text: tpl ? `\u540C\u610F\u540E\uFF0C\u6A21\u677F\u300C${text(tpl["\u540D\u79F0"])}\u300D\u6539\u6210\u300C\u5DF2\u6279\u51C6\u300D\uFF0C\u4E4B\u540E\u5C31\u4F1A\u88AB\u7528` : "\u8BB0\u4E0B\u4F60\u540C\u610F\u4E86\u3002\u6807\u9898\u91CC\u6CA1\u5BF9\u4E0A\u5F85\u5BA1\u6838\u7684\u6A21\u677F\uFF0C\u6A21\u677F\u672C\u8EAB\u4E0D\u4F1A\u6539\uFF1B\u5F85\u5BA1\u6838\u7684\u6A21\u677F\u4F1A\u5355\u72EC\u51FA\u73B0\u5728\u8FD9\u91CC" });
+  }
+  return {
+    id: r.record_id,
+    kind,
+    group,
+    tag: type || "\u5F85\u529E",
+    who: w,
+    meta,
+    headline: text(r["\u5BA1\u6838\u9879"]) || w?.name || "\u4E00\u4EF6\u5F85\u4F60\u51B3\u5B9A\u7684\u4E8B",
+    mail: latest ? { label: `${w?.name ?? "\u5BF9\u65B9"}\u8BF4`, text: latest.text, when: latest.when } : void 0,
+    suggest: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) || text(r["\u5BA1\u6838\u9879"]),
+    steps,
+    why: text(r["\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE"]),
+    send: sends ? { from: mailboxFor(cfg, channel)?.address ?? channel, to: recipient, byHand: !mailboxFor(cfg, channel) } : void 0,
+    draft: body2.trim() ? { label: sends ? `\u8981\u53D1\u7ED9 ${recipient || "\u5979"} \u7684\u4FE1` : kind === "template" ? "\u6A21\u677F\u5185\u5BB9" : "\u8349\u7A3F", subject, body: body2 } : void 0
+  };
+}
+async function readBodies(ctx, mails) {
+  const byMailbox = /* @__PURE__ */ new Map();
+  for (const m of mails) {
+    const mb = mailboxFor(ctx.cfg, m.channel);
+    if (mb && m.messageId) byMailbox.set(mb.address, [...byMailbox.get(mb.address) ?? [], m.messageId]);
+  }
+  const out = /* @__PURE__ */ new Map();
+  for (const [mailbox, ids2] of byMailbox) {
+    for (let i = 0; i < ids2.length; i += 20) {
+      const data = await ctx.base.lark.json([
+        "mail",
+        "+messages",
+        "--mailbox",
+        mailbox,
+        "--message-ids",
+        ids2.slice(i, i + 20).join(","),
+        "--html=false",
+        "--format",
+        "json",
+        "--as",
+        "user"
+      ]).catch(() => null);
+      for (const m of data?.messages ?? []) out.set(String(m.message_id), ownWords(String(m.body_plain_text ?? "")));
+    }
+  }
+  return out;
+}
+async function cardMails(ctx, data) {
+  const tz = ctx.cfg.timezone;
+  const bodies = await readBodies(ctx, data.pendingMail.map((m) => ({ messageId: text(m["Message ID"]), channel: option(m["\u6E20\u9053"]) })));
+  const out = /* @__PURE__ */ new Map();
+  const sorted = [...data.pendingMail].sort((a, b2) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b2["\u65E5\u671F"], tz) ?? 0));
+  for (const m of sorted) {
+    const id = text(m["Message ID"]);
+    const t = bodies.get(id);
+    if (!t) continue;
+    const mt = { text: t, when: stamp(cellTime(m["\u65E5\u671F"], tz) ?? Date.now(), tz) };
+    out.set(`msg:${id}`, mt);
+    for (const fid of linkIds(m["KOL"])) out.set(fid, mt);
+  }
+  return out;
+}
+function peopleView(data, cfg, view, todayStr, q = "") {
+  const s = data.snapshot;
+  const tz = cfg.timezone;
+  const decided = new Set(data.reviews.filter((r) => reviewState(r) === "pending" && option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25").flatMap((r) => linkIds(r["KOL"])));
+  const open = [...s.followups.values()].filter((f) => option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848");
+  const stage = (f) => option(f["\u9636\u6BB5"]);
+  const lastContact = (f) => {
+    const a = day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz);
+    const b2 = day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz);
+    return a > b2 ? a : b2;
+  };
+  const muted = (v) => ({ v, tone: "muted" });
+  const nextUp = (f) => ({ v: text(f["\u4E0B\u4E00\u6B65"]) || "" });
+  const followupRow = (f, cells) => ({
+    id: f.record_id,
+    hasDetail: true,
+    handle: handleOf2(s, f),
+    sub: subOf(profileOf(s, f), displayName(s, f)),
+    cells
+  });
+  let rows = [];
+  let pick2 = [];
+  if (view === "wait") {
+    pick2 = open.filter((f) => ["\u6211\u4EEC", "\u7B49\u4F60\u5BA1\u6838"].includes(option(f["\u5F53\u524D\u8F6E\u5230\u8C01"])));
+    const waited = (f) => day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz) ? daysBetween(day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz), todayStr) : 0;
+    pick2.sort((a, b2) => waited(b2) - waited(a));
+    rows = pick2.map((f) => {
+      const w = waited(f);
+      return followupRow(f, [
+        { v: situationOf(f, cfg, todayStr) },
+        { v: w <= 0 ? "\u4ECA\u5929" : `${w} \u5929`, tone: w >= 3 ? "warn" : void 0 },
+        decided.has(f.record_id) ? { v: "\u7B49\u4F60\u51B3\u5B9A", badge: true, tone: "warn", link: "decide" } : { v: "" },
+        { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) }
+      ]);
+    });
+  } else if (view === "noreply") {
+    pick2 = open.filter((f) => stage(f) === "\u5DF2\u9080\u7EA6");
+    pick2.sort((a, b2) => day(a["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz).localeCompare(day(b2["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz)));
+    rows = pick2.map((f) => followupRow(f, [
+      muted(shortDay(day(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], tz))),
+      { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) },
+      muted(option(f["\u9080\u7EA6\u6279\u6B21"])),
+      muted(option(f["\u8054\u7CFB\u6E20\u9053"]))
+    ]));
+  } else if (view === "trial") {
+    pick2 = open.filter((f) => stage(f) === "\u4F53\u9A8C\u4E2D");
+    pick2.sort((a, b2) => (day(a["\u4F53\u9A8C\u7801\u5230\u671F"], tz) || "9").localeCompare(day(b2["\u4F53\u9A8C\u7801\u5230\u671F"], tz) || "9"));
+    rows = pick2.map((f) => {
+      const used = Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0;
+      const max = Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0;
+      const exp = day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz);
+      const left = exp ? daysBetween(todayStr, exp) : 99;
+      return followupRow(f, [
+        { v: max ? `${used} / ${max}${used === 0 ? " \xB7 \u8FD8\u6CA1\u7528" : used >= max ? " \xB7 \u7528\u5B8C\u4E86" : ""}` : "\uFF08\u6CA1\u540C\u6B65\u5230\uFF09", tone: max && used === 0 ? "warn" : void 0 },
+        { v: exp ? left < 0 ? `\u5DF2\u8FC7\u671F\uFF08${shortDay(exp)}\uFF09` : ahead(exp, todayStr) : "", tone: left <= 2 ? "warn" : void 0 },
+        muted(ago(lastContact(f), todayStr)),
+        nextUp(f)
+      ]);
+    });
+  } else if (view === "deal") {
+    pick2 = open.filter((f) => ["\u5DF2\u770B\u62A5\u544A", "\u5408\u4F5C\u4E2D"].includes(stage(f)));
+    rows = pick2.map((f) => {
+      const last = lastContact(f);
+      return followupRow(f, [
+        { v: situationOf(f, cfg, todayStr) },
+        text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("\u8FD8\u6CA1\u5F00"),
+        { v: ago(last, todayStr), tone: last && daysBetween(last, todayStr) >= 5 ? "warn" : "muted" },
+        nextUp(f)
+      ]);
+    });
+  } else if (view === "post") {
+    pick2 = open.filter((f) => stage(f) === "\u5DF2\u7EA6\u53D1\u5E03");
+    pick2.sort((a, b2) => (day(a["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz) || "9").localeCompare(day(b2["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz) || "9"));
+    rows = pick2.map((f) => {
+      const due = day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz);
+      const late = due ? daysBetween(due, todayStr) : 0;
+      const when = !due ? muted("\u6CA1\u586B\u65E5\u671F") : late >= OVERDUE_GRACE_DAYS ? { v: `\u5DF2\u8FC7 ${late} \u5929\uFF08${shortDay(due)}\uFF09\uFF0C\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50`, tone: "bad", badge: true } : { v: late >= 0 ? `${shortDay(due)}\uFF08\u4ECA\u5929\u524D\u540E\uFF09` : ahead(due, todayStr), tone: late >= -3 ? "warn" : void 0 };
+      return followupRow(f, [when, text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("\u8FD8\u6CA1\u5F00"), nextUp(f)]);
+    });
+  } else if (view === "posted") {
+    const byKol = /* @__PURE__ */ new Map();
+    for (const p of data.posts) for (const id of linkIds(p["KOL"])) byKol.set(id, [...byKol.get(id) ?? [], p]);
+    pick2 = [...s.followups.values()].filter((f) => stage(f) === "\u5DF2\u53D1\u5E03" || byKol.has(f.record_id));
+    const latestPost = (f) => (byKol.get(f.record_id) ?? []).sort((a, b2) => (cellTime(b2["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0) - (cellTime(a["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0))[0];
+    pick2.sort((a, b2) => (cellTime(latestPost(b2)?.["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0) - (cellTime(latestPost(a)?.["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0));
+    rows = pick2.map((f) => {
+      const p = latestPost(f);
+      const n = byKol.get(f.record_id)?.length ?? 0;
+      const views = p ? [30, 7, 3, 1].map((d) => ({ d, v: Number(p[`\u7B2C${d}\u5929\u64AD\u653E`]) })).find((x) => x.v > 0) : void 0;
+      return followupRow(f, [
+        p ? { v: `${text(p["\u5185\u5BB9\u6807\u9898"]) || option(p["\u5F62\u5F0F"]) || "\u5E16\u5B50"}${n > 1 ? ` \xB7 \u5171 ${n} \u6761` : ""}`, link: text(p["\u5185\u5BB9\u94FE\u63A5"]) || void 0 } : muted("\u6CA1\u8BB0\u94FE\u63A5"),
+        muted(p ? shortDay(day(p["\u53D1\u5E03\u65E5\u671F"], tz)) : ""),
+        views ? { v: `${views.v.toLocaleString("en-US")}\uFF08\u7B2C ${views.d} \u5929\uFF09` } : muted("\u8FD8\u6CA1\u6570\u636E"),
+        text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("")
+      ]);
+    });
+  } else if (view === "pool") {
+    const profiles = [...s.profiles.values()].filter((p) => !linkIds(p["\u8DDF\u8FDB\u8BB0\u5F55"]).length && profileEmails(p).length && option(p["\u8054\u7CFB\u8BB8\u53EF"]) !== "\u6C38\u4E0D\u8054\u7CFB");
+    const term2 = q.trim().toLowerCase();
+    const hit = (p) => !term2 || [text(p["\u8D26\u53F7"]), text(p["\u8D26\u53F7\u540D\u79F0"]), text(p["\u79F0\u547C"]), ...profileEmails(p)].some((x) => x.toLowerCase().includes(term2));
+    const list3 = profiles.filter(hit);
+    return {
+      total: list3.length,
+      rows: list3.slice(0, 300).map((p) => ({
+        id: p.record_id,
+        hasDetail: false,
+        handle: text(p["\u8D26\u53F7"]) ? `@${text(p["\u8D26\u53F7"]).replace(/^@/, "")}` : text(p["\u8D26\u53F7\u540D\u79F0"]),
+        sub: subOf(p, text(p["\u8D26\u53F7\u540D\u79F0"])),
+        cells: [
+          { v: [option(p["\u5185\u5BB9\u7C7B\u578B"])].filter(Boolean).join(" \xB7 ") || "\uFF08\u8FD8\u6CA1\u8865\u597D\u8D44\u6599\uFF09", tone: option(p["\u5185\u5BB9\u7C7B\u578B"]) ? void 0 : "muted" },
+          { v: fans(p["\u7C89\u4E1D\u6570"]) },
+          muted(option(p["\u5E02\u573A"])),
+          muted(option(p["\u5165\u5E93\u6279\u6B21"]))
+        ]
+      }))
+    };
+  } else {
+    pick2 = open;
+    pick2.sort((a, b2) => lastContact(b2).localeCompare(lastContact(a)));
+    rows = pick2.map((f) => followupRow(f, [{ v: situationOf(f, cfg, todayStr) }, { v: stage(f), badge: true }, { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) }]));
+  }
+  const term = q.trim().toLowerCase();
+  if (term) {
+    rows = rows.filter((r) => {
+      const f = s.followups.get(r.id);
+      return [r.handle, r.sub, ...f ? profileEmails(profileOf(s, f)) : []].some((x) => x.toLowerCase().includes(term));
+    });
+  }
+  return { rows: rows.slice(0, 500), total: rows.length };
+}
+function viewCounts(data, cfg, todayStr) {
+  const out = {};
+  for (const k of Object.keys(VIEWS)) out[k] = peopleView(data, cfg, k, todayStr).total;
+  return out;
+}
+var EVENT_MARKS = /^\[(自动回复|退信)\]/;
+async function personDetail(ctx, data, fid, all = false) {
+  const { base, cfg } = ctx;
+  const t = cfg.tables;
+  const tz = cfg.timezone;
+  const todayStr = today(cfg);
+  const s = data.snapshot;
+  const f = s.followups.get(fid);
+  if (!f) return null;
+  const p = profileOf(s, f);
+  const [links] = await base.get(t.followups, [fid], ["\u63A5\u89E6\u8BB0\u5F55", "\u53D1\u5E03\u5185\u5BB9"]);
+  const contacts = (await base.get(t.contacts, linkIds(links?.["\u63A5\u89E6\u8BB0\u5F55"]), ["\u65B9\u5411", "\u6458\u8981", "\u5185\u5BB9", "\u65E5\u671F", "\u6E20\u9053", "Message ID", "\u5F85\u5904\u7406"])).sort((a, b2) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b2["\u65E5\u671F"], tz) ?? 0));
+  const posts = await base.get(t.posts, linkIds(links?.["\u53D1\u5E03\u5185\u5BB9"]), POST_FIELDS).catch(() => []);
+  const recent = all ? contacts : contacts.slice(-12);
+  const unread = recent.filter((c) => option(c["\u65B9\u5411"]) === "\u6536\u5230" && !text(c["\u5185\u5BB9"]) && text(c["Message ID"]) && !EVENT_MARKS.test(text(c["\u6458\u8981"])));
+  const bodies = await readBodies(ctx, unread.map((c) => ({ messageId: text(c["Message ID"]), channel: option(c["\u6E20\u9053"]) })));
+  const name = text(p?.["\u79F0\u547C"]) || displayName(s, f);
+  const bubbles = recent.map((c) => {
+    const dir = option(c["\u65B9\u5411"]);
+    const when = stamp(cellTime(c["\u65E5\u671F"], tz) ?? 0, tz);
+    const summary = text(c["\u6458\u8981"]);
+    const content = text(c["\u5185\u5BB9"]);
+    if (dir === "\u5B58\u6863") return { side: "event", who: "", when, text: summary || "\u5B58\u6863", ...content ? { full: content } : {} };
+    if (EVENT_MARKS.test(summary)) return { side: "event", who: "", when, text: summary };
+    const mark = summary.match(/^\[([^\]]+)\]/)?.[1];
+    if (dir === "\u53D1\u51FA") {
+      return { side: "us", who: `\u6211\u4EEC \xB7 ${option(c["\u6E20\u9053"])}${content ? "" : ` \xB7 ${summary}`}`.slice(0, 120), when, text: content || summary, summaryOnly: !content };
+    }
+    const body2 = bodies.get(text(c["Message ID"])) || content;
+    return { side: "them", who: `${name}${mark ? ` \xB7 ${mark}` : ""}`, when, text: body2 || summary, summaryOnly: !body2 };
+  });
+  const pending = data.reviews.filter((r) => linkIds(r["KOL"]).includes(fid) && reviewState(r) === "pending" && option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25");
+  const emails = profileEmails(p).map((e) => ({ address: e, blocked: s.doNotContact.has(e) }));
+  return {
+    id: fid,
+    handle: handleOf2(s, f),
+    name,
+    sub: subOf(p, displayName(s, f)),
+    stage: option(f["\u9636\u6BB5"]),
+    stageStep: STAGE_STEP[option(f["\u9636\u6BB5"])] ?? -1,
+    stages: STAGES,
+    situation: situationOf(f, cfg, todayStr),
+    lastContact: ago(day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz) > day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz) ? day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz) : day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz), todayStr),
+    turn: option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]),
+    next: text(f["\u4E0B\u4E00\u6B65"]),
+    nextDate: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr),
+    nextDateIso: day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz),
+    pending: pending.map((r) => ({ id: r.record_id, title: text(r["\u5BA1\u6838\u9879"]), ask: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) })),
+    bubbles,
+    olderCount: Math.max(0, contacts.length - recent.length),
+    showingAll: all,
+    trial: text(f["\u4F53\u9A8C\u7801"]) ? { code: text(f["\u4F53\u9A8C\u7801"]), used: Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0, max: Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0, expires: shortDay(day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz)) } : null,
+    partner: text(f["\u6D3B\u52A8\u7801"]) ? { code: text(f["\u6D3B\u52A8\u7801"]), link: text(f["\u4E13\u5C5E\u8FDE\u7ED3"]), ledger: text(f["\u8D26\u672C\u8FDE\u7ED3"]) } : null,
+    posts: posts.map((x) => ({
+      title: text(x["\u5185\u5BB9\u6807\u9898"]) || option(x["\u5F62\u5F0F"]) || "\u5E16\u5B50",
+      link: text(x["\u5185\u5BB9\u94FE\u63A5"]),
+      platform: option(x["\u5E73\u53F0"]),
+      date: shortDay(day(x["\u53D1\u5E03\u65E5\u671F"], tz)),
+      metrics: [1, 3, 7, 30].map((d) => ({ day: d, views: Number(x[`\u7B2C${d}\u5929\u64AD\u653E`]) || null }))
+    })),
+    info: [
+      ["\u600E\u4E48\u79F0\u547C", text(p?.["\u79F0\u547C"])],
+      ["\u4E3B\u9875", text(p?.["\u4E3B\u9875\u94FE\u63A5"])],
+      ["\u5E02\u573A", option(p?.["\u5E02\u573A"])],
+      ["\u5185\u5BB9\u7C7B\u578B", option(p?.["\u5185\u5BB9\u7C7B\u578B"])],
+      ["\u9080\u7EA6\u6279\u6B21", option(f["\u9080\u7EA6\u6279\u6B21"])],
+      ["\u7528\u54EA\u4E2A\u90AE\u7BB1\u8054\u7CFB", option(f["\u8054\u7CFB\u6E20\u9053"])],
+      ["\u91CD\u8981\u7A0B\u5EA6", option(f["\u7EA7\u522B"])]
+    ].filter(([, v]) => v).map(([k, v]) => ({ k, v })),
+    emails,
+    doNotContact: option(p?.["\u8054\u7CFB\u8BB8\u53EF"]) === "\u6C38\u4E0D\u8054\u7CFB",
+    /** Where 写信给她 can send from; `usual` is the mailbox she knows us by, when the plugin can send from it. */
+    sendFrom: { channel: option(f["\u8054\u7CFB\u6E20\u9053"]), usual: mailboxFor(ctx.cfg, option(f["\u8054\u7CFB\u6E20\u9053"]))?.address ?? "", mailboxes: ctx.cfg.mailboxes.map((m) => m.address) }
+  };
+}
+async function activityLog(ctx) {
+  const { base, cfg } = ctx;
+  const t = cfg.tables;
+  const tz = cfg.timezone;
+  const since = addDays(today(cfg), -3);
+  const [runs, ops] = await Promise.all([
+    base.records(t.runs, {
+      filter: { logic: "and", conditions: [onOrAfter("\u5F00\u59CB\u65F6\u95F4", since)] },
+      fields: ["\u8FD0\u884C", "\u65B9\u5F0F", "\u7ED3\u679C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u675F\u65F6\u95F4", "\u5904\u7406\u6765\u4FE1", "\u53D1\u51FA\u90AE\u4EF6", "\u65B0\u589E\u5F85\u5BA1", "\u95EE\u9898\u4E0E\u5907\u6CE8"]
+    }),
+    base.records(t.oplog, {
+      filter: { logic: "and", conditions: [onOrAfter("\u65F6\u95F4", since)] },
+      fields: ["\u65F6\u95F4", "\u7C7B\u578B", "\u7ED3\u679C", "\u64CD\u4F5C", "\u8BF4\u660E", "\u6240\u5C5E\u8FD0\u884C"]
+    })
+  ]);
+  const runById = new Map(runs.map((r) => [r.record_id, r]));
+  const time = (r, f) => cellTime(r[f], tz) ?? 0;
+  return {
+    runs: runs.sort((a, b2) => time(b2, "\u5F00\u59CB\u65F6\u95F4") - time(a, "\u5F00\u59CB\u65F6\u95F4")).slice(0, 30).map((r) => ({
+      title: text(r["\u8FD0\u884C"]),
+      how: option(r["\u65B9\u5F0F"]),
+      result: option(r["\u7ED3\u679C"]),
+      start: stamp(time(r, "\u5F00\u59CB\u65F6\u95F4"), tz),
+      end: time(r, "\u7ED3\u675F\u65F6\u95F4") ? stamp(time(r, "\u7ED3\u675F\u65F6\u95F4"), tz).slice(11) : "",
+      counts: [["\u5904\u7406\u6765\u4FE1", r["\u5904\u7406\u6765\u4FE1"]], ["\u53D1\u51FA\u90AE\u4EF6", r["\u53D1\u51FA\u90AE\u4EF6"]], ["\u65B0\u589E\u5F85\u5BA1", r["\u65B0\u589E\u5F85\u5BA1"]]].filter(([, n]) => Number(n) > 0).map(([k, n]) => `${k} ${n}`).join(" \xB7 "),
+      notes: text(r["\u95EE\u9898\u4E0E\u5907\u6CE8"])
+    })),
+    ops: ops.sort((a, b2) => time(b2, "\u65F6\u95F4") - time(a, "\u65F6\u95F4")).slice(0, 300).map((o) => {
+      const run = runById.get(linkIds(o["\u6240\u5C5E\u8FD0\u884C"])[0] ?? "");
+      return {
+        when: stamp(time(o, "\u65F6\u95F4"), tz),
+        type: option(o["\u7C7B\u578B"]),
+        result: option(o["\u7ED3\u679C"]),
+        what: text(o["\u64CD\u4F5C"]),
+        note: text(o["\u8BF4\u660E"]).split("\n").filter((l) => !l.startsWith("\u6267\u884C\u4EBA\uFF1A")).join(" "),
+        source: run ? `${option(run["\u65B9\u5F0F"]) === "\u5B9A\u65F6\u4EFB\u52A1" ? "\u6BCF\u5929\u4F8B\u884C" : "\u5728 Claude \u91CC\u8DD1\u7684"}` : "",
+        by: (text(o["\u8BF4\u660E"]).match(/执行人：(.+)/) ?? [])[1] ?? ""
+      };
+    })
+  };
+}
+async function runStatus(ctx, data) {
+  const { base, cfg } = ctx;
+  const tz = cfg.timezone;
+  const running = await base.records(cfg.tables.runs, { filter: { logic: "and", conditions: [["\u7ED3\u679C", "intersects", ["\u8FDB\u884C\u4E2D"]]] }, fields: ["\u8FD0\u884C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u679C"] });
+  const fresh = running.filter((r) => (cellTime(r["\u5F00\u59CB\u65F6\u95F4"], tz) ?? 0) > Date.now() - 2 * 36e5);
+  const s = data.snapshot;
+  const name = (r) => {
+    const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
+    return f ? displayName(s, f) : "";
+  };
+  const failed = data.reviews.filter((r) => option(r["\u72B6\u6001"]) === "\u6267\u884C\u5931\u8D25");
+  const queued = data.reviews.filter((r) => option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25" && reviewState(r) === "approved" && executesOnApproval(r));
+  return {
+    failed: failed.length,
+    running: fresh.length + queued.length,
+    items: [
+      ...failed.map((r) => ({ st: "\u6CA1\u505A\u6210", text: `${name(r)}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, note: text(r["\u6267\u884C\u7ED3\u679C"]).slice(0, 120), person: linkIds(r["KOL"])[0] ?? "" })),
+      ...fresh.map((r) => ({ st: "\u8FDB\u884C\u4E2D", text: text(r["\u8FD0\u884C"]), note: `${stamp(cellTime(r["\u5F00\u59CB\u65F6\u95F4"], tz) ?? 0, tz).slice(11)} \u5F00\u59CB`, person: "" })),
+      ...queued.map((r) => ({ st: "\u7B49\u53D1\u51FA", text: `${name(r)}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, note: "\u5DF2\u540C\u610F\uFF0C\u7B49\u6267\u884C\u5668\u53D1\u51FA\uFF08\u6682\u505C\u4E2D\u7684\u8BDD\uFF0C\u6062\u590D\u53D1\u9001\u540E\u53D1\uFF09", person: linkIds(r["KOL"])[0] ?? "" }))
+    ]
+  };
+}
+async function newsSince(ctx, data, since) {
+  const { base, cfg } = ctx;
+  const tz = cfg.timezone;
+  const sinceDay = day(since, tz);
+  const ops = await base.records(cfg.tables.oplog, { filter: { logic: "and", conditions: [onOrAfter("\u65F6\u95F4", sinceDay)] }, fields: ["\u65F6\u95F4", "\u7C7B\u578B", "\u7ED3\u679C", "\u64CD\u4F5C", "KOL"] });
+  const at = (r, f) => cellTime(r[f], tz) ?? 0;
+  const fresh = ops.filter((o) => at(o, "\u65F6\u95F4") > since).sort((a, b2) => at(b2, "\u65F6\u95F4") - at(a, "\u65F6\u95F4"));
+  const posts = data.posts.filter((p) => (cellTime(p["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0) > since);
+  const count = (re) => fresh.filter((o) => re.test(text(o["\u64CD\u4F5C"]))).length;
+  const chips = [
+    { label: "\u65B0\u53D1\u5E03", n: posts.length, tone: "ok" },
+    { label: "\u53D1\u51FA\u7684\u4FE1", n: fresh.filter((o) => option(o["\u7C7B\u578B"]) === "\u53D1\u51FA\u90AE\u4EF6" && option(o["\u7ED3\u679C"]) === "\u5B8C\u6210").length, tone: "" },
+    { label: "\u6536\u5230\u6765\u4FE1", n: count(/^收到来信/), tone: "" },
+    { label: "\u50AC\u4FE1", n: count(/^催信|催信 \d/), tone: "" },
+    { label: "\u627E\u5230\u65B0\u4EBA", n: fresh.filter((o) => /^找人入库/.test(text(o["\u64CD\u4F5C"]))).reduce((n, o) => n + (Number(text(o["\u64CD\u4F5C"]).match(/(\d+) 人/)?.[1]) || 0), 0), tone: "ok" }
+  ].filter((c) => c.n > 0);
+  const name = (r) => {
+    const f = data.snapshot.followups.get(linkIds(r["KOL"])[0] ?? "");
+    return f ? displayName(data.snapshot, f) : "";
+  };
+  const items = [
+    ...posts.map((p) => ({ when: stamp(at(p, "\u53D1\u5E03\u65E5\u671F"), tz), text: `${name(p) || "\u4E00\u4F4D KOL"} \u53D1\u4E86${option(p["\u5E73\u53F0"]) ? ` ${option(p["\u5E73\u53F0"])} ` : ""}\u300C${text(p["\u5185\u5BB9\u6807\u9898"]) || "\u65B0\u5E16\u5B50"}\u300D`, person: linkIds(p["KOL"])[0] ?? "", link: text(p["\u5185\u5BB9\u94FE\u63A5"]) })),
+    ...fresh.slice(0, 40).map((o) => ({ when: stamp(at(o, "\u65F6\u95F4"), tz), text: text(o["\u64CD\u4F5C"]) + (option(o["\u7ED3\u679C"]) && option(o["\u7ED3\u679C"]) !== "\u5B8C\u6210" ? `\uFF08${option(o["\u7ED3\u679C"])}\uFF09` : ""), person: linkIds(o["KOL"])[0] ?? "", link: "" }))
+  ].sort((a, b2) => b2.when.localeCompare(a.when)).slice(0, 40);
+  return { since: stamp(since, tz), chips, items };
+}
+
 // src/kolops/console/actions.ts
 var Jobs = class {
   constructor(ctx, onDone = () => {
@@ -63608,10 +64855,33 @@ function nameOf(data, fid) {
   const f = data.snapshot.followups.get(fid);
   return f ? displayName(data.snapshot, f) : "";
 }
-async function approve(ctx, data, jobs, id, edits) {
+async function pendingMailOf(ctx, fid) {
+  if (!fid) return [];
+  const rows = await ctx.base.records(ctx.cfg.tables.contacts, {
+    filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
+    fields: ["Message ID", "\u65E5\u671F", "KOL", "\u5F85\u5904\u7406"]
+  });
+  return rows.filter((r) => linkIds(r["KOL"]).includes(fid));
+}
+async function answerMail(ctx, fid, seen) {
+  const pending = await pendingMailOf(ctx, fid);
+  if (!pending.length) return;
+  if (seen !== true) {
+    const tz = ctx.cfg.timezone;
+    const shown = pending.find((m) => seen && text(m["Message ID"]) === seen);
+    const at = (m) => cellTime(m["\u65E5\u671F"], tz) ?? 0;
+    if (!shown || pending.some((m) => at(m) > at(shown))) throw new Error("\u5979\u53C8\u6765\u4FE1\u4E86\uFF0C\u8FD9\u5F20\u5361\u7247\u4E0A\u6CA1\u6709\u3002\u70B9\u300C\u5237\u65B0\u300D\u770B\u5B8C\u5979\u65B0\u8BF4\u7684\u518D\u51B3\u5B9A");
+  }
+  await ctx.base.update(ctx.cfg.tables.contacts, Object.fromEntries(pending.map((m) => [m.record_id, { \u5F85\u5904\u7406: false }])));
+}
+async function approve(ctx, data, jobs, id, edits, seen) {
+  const before = await review(ctx, id);
+  const fid = linkIds(before["KOL"])[0] ?? "";
+  await answerMail(ctx, fid, seen);
   const r = await approveInConsole(ctx, id, cleanEdits(edits));
+  if (option(r["\u7C7B\u578B"]) === "\u6A21\u677F\u5BA1\u6279") await approveNamedTemplate(ctx, r);
   if (!executesOnApproval(r)) return null;
-  const fid = linkIds(r["KOL"])[0] ?? "";
+  if (await isPaused(ctx)) return null;
   const who = nameOf(data, fid) || text(r["\u5BA1\u6838\u9879"]);
   return jobs.add(`${who}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, fid, RUN_TITLES.send, async (jctx) => {
     const rep = await sendApproved(jctx, { dryRun: false, only: [id] });
@@ -63622,11 +64892,12 @@ async function approve(ctx, data, jobs, id, edits) {
     return "\u5DF2\u540C\u610F\uFF08\u8FD9\u4EF6\u4E8B\u4E0D\u7528\u53D1\u4FE1\uFF09";
   });
 }
-async function manualSent(ctx, data, id, edits) {
+async function manualSent(ctx, data, id, edits, seen) {
   const t = ctx.cfg.tables;
   const [before] = await ctx.base.get(t.reviews, [id]);
   if (!before) throw new Error("\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E00\u6761");
   if (option(before["\u4F53\u9A8C\u7801\u52A8\u4F5C"])) throw new Error("\u8FD9\u4E00\u6761\u8FD8\u8981\u5EFA\u7801\uFF0C\u624B\u52A8\u53D1\u4FE1\u7684\u90AE\u7BB1\u6CA1\u6CD5\u4E00\u8D77\u505A\u3002\u70B9\u300C\u8BA9 Claude \u6539\u300D\uFF0C\u8BF7\u5B83\u6539\u6210\u4ECE\u98DE\u4E66\u90AE\u7BB1\u53D1");
+  await answerMail(ctx, linkIds(before["KOL"])[0] ?? "", seen);
   const r = await approveInConsole(ctx, id, cleanEdits(edits));
   const fid = linkIds(r["KOL"])[0] ?? "";
   const f = data.snapshot.followups.get(fid);
@@ -63638,7 +64909,7 @@ async function manualSent(ctx, data, id, edits) {
   const now = stamp(Date.now(), ctx.cfg.timezone);
   if (fid) {
     await ctx.base.create(t.contacts, [{ \u65B9\u5411: ["\u53D1\u51FA"], \u6E20\u9053: [channel], \u6458\u8981: `[\u56DE\u590D] ${subject || "\u56DE\u590D"}`.slice(0, 200), \u5185\u5BB9: body2.slice(0, 5e3), \u65E5\u671F: now, KOL: [{ id: fid }] }]);
-    await ctx.base.update(t.followups, { [fid]: { \u6700\u8FD1\u8054\u7CFB\u65E5\u671F: now, \u5F53\u524D\u8F6E\u5230\u8C01: ["KOL"], ...close?.followup ?? {} } });
+    await ctx.base.update(t.followups, { [fid]: { \u6700\u8FD1\u8054\u7CFB\u65E5\u671F: now, \u5F53\u524D\u8F6E\u5230\u8C01: ["KOL"], ...reopenChanges(f, today(ctx.cfg)), ...close?.followup ?? {} } });
     if (close?.profile) await ctx.base.update(t.profiles, { [close.profile[0]]: close.profile[1] });
   }
   await ctx.base.update(t.reviews, { [id]: { \u72B6\u6001: ["\u5DF2\u6267\u884C"], \u6267\u884C\u65F6\u95F4: now, \u6267\u884C\u7ED3\u679C: `${ctx.me.name} \u4ECE\u300C${channel}\u300D\u624B\u52A8\u53D1\u7ED9 ${recipient}` } });
@@ -63676,6 +64947,37 @@ async function todoDone(ctx, id) {
     \u6267\u884C\u7ED3\u679C: `${ctx.me.name}\u5728\u51B3\u7B56\u53F0\u6807\u4E3A\u505A\u5B8C\u4E86`
   } });
 }
+async function problemSent(ctx, data, id) {
+  const t = ctx.cfg.tables;
+  const r = await review(ctx, id);
+  if (option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25") throw new Error(`\u8FD9\u4E00\u6761\u73B0\u5728\u662F\u300C${option(r["\u72B6\u6001"])}\u300D\uFF0C\u4E0D\u662F\u6CA1\u505A\u6210\u7684`);
+  const fid = linkIds(r["KOL"])[0] ?? "";
+  const f = data.snapshot.followups.get(fid);
+  const close = f ? closeChanges(r, profileOf(data.snapshot, f), today(ctx.cfg)) : null;
+  const channel = option(r["\u53D1\u9001\u6E20\u9053"]) || option(f?.["\u8054\u7CFB\u6E20\u9053"]);
+  const { subject, body: body2 } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
+  const now = stamp(Date.now(), ctx.cfg.timezone);
+  ctx.journal.mark(`review:${id}`, "recorded");
+  if (fid) {
+    await ctx.base.create(t.contacts, [{ \u65B9\u5411: ["\u53D1\u51FA"], \u6E20\u9053: [channel], \u6458\u8981: `[\u56DE\u590D] ${subject || "\u56DE\u590D"}`.slice(0, 200), \u5185\u5BB9: body2.slice(0, 5e3), \u65E5\u671F: now, KOL: [{ id: fid }] }]);
+    await ctx.base.update(t.followups, { [fid]: { \u6700\u8FD1\u8054\u7CFB\u65E5\u671F: now, \u5F53\u524D\u8F6E\u5230\u8C01: ["KOL"], ...reopenChanges(f, today(ctx.cfg)), ...typeof close === "object" && close ? close.followup : {} } });
+    if (typeof close === "object" && close?.profile) await ctx.base.update(t.profiles, { [close.profile[0]]: close.profile[1] });
+  }
+  const code = option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"]) ? "\u3002\u4F53\u9A8C\u7801 / \u6D3B\u52A8\u7801\u6709\u6CA1\u6709\u5EFA\u597D\uFF0C\u8BF7\u5230\u9879\u76EE\u540E\u53F0\u6838\u5BF9" : "";
+  await ctx.base.update(t.reviews, { [id]: {
+    \u72B6\u6001: ["\u5DF2\u6267\u884C"],
+    \u6267\u884C\u65F6\u95F4: now,
+    \u6267\u884C\u7ED3\u679C: `${text(r["\u6267\u884C\u7ED3\u679C"])}
+${now} ${ctx.me.name} \u5728\u90AE\u7BB1\u91CC\u786E\u8BA4\u5DF2\u7ECF\u53D1\u51FA\uFF0C\u8865\u8BB0${code}`.trim().slice(0, 2e3)
+  } });
+}
+async function problemRetry(ctx, id) {
+  const r = await review(ctx, id);
+  if (option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25") throw new Error(`\u8FD9\u4E00\u6761\u73B0\u5728\u662F\u300C${option(r["\u72B6\u6001"])}\u300D\uFF0C\u4E0D\u662F\u6CA1\u505A\u6210\u7684`);
+  const prior = ctx.journal.get(`review:${id}`);
+  if (prior?.state === "sending" || prior?.state === "unknown") ctx.journal.mark(`review:${id}`, "failed");
+  await sendBack(ctx, id, `${ctx.me.name} \u5728\u90AE\u7BB1\u91CC\u786E\u8BA4\u6CA1\u6709\u53D1\u51FA\uFF0C\u91CD\u65B0\u5BA1\u6838`);
+}
 async function problemDone(ctx, id) {
   const r = await review(ctx, id);
   await ctx.base.update(ctx.cfg.tables.reviews, { [id]: {
@@ -63690,8 +64992,19 @@ async function contact(ctx, id) {
   return c;
 }
 async function mailDone(ctx, ids2) {
-  for (const id of ids2) await contact(ctx, id);
-  await ctx.base.update(ctx.cfg.tables.contacts, Object.fromEntries(ids2.map((id) => [id, { \u5F85\u5904\u7406: false }])));
+  const t = ctx.cfg.tables;
+  const rows = [];
+  for (const id of ids2) rows.push(await contact(ctx, id));
+  await ctx.base.update(t.contacts, Object.fromEntries(ids2.map((id) => [id, { \u5F85\u5904\u7406: false }])));
+  const kols = [...new Set(rows.flatMap((r) => linkIds(r["KOL"])))];
+  if (!kols.length) return;
+  const open = await ctx.base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"]]] }, fields: ["KOL", "\u72B6\u6001"] });
+  for (const fid of kols) {
+    if (open.some((r) => linkIds(r["KOL"]).includes(fid)) || (await pendingMailOf(ctx, fid)).length) continue;
+    const [f] = await ctx.base.get(t.followups, [fid], ["\u9636\u6BB5", "\u5F53\u524D\u8F6E\u5230\u8C01"]);
+    if (!f || option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]) !== "\u6211\u4EEC") continue;
+    await ctx.base.update(t.followups, { [fid]: { \u5F53\u524D\u8F6E\u5230\u8C01: [option(f["\u9636\u6BB5"]) === "\u7ED3\u6848" ? "\u65E0\u9700\u52A8\u4F5C" : "KOL"] } });
+  }
 }
 async function mailNever(ctx, data, ids2) {
   const first2 = await contact(ctx, ids2[0]);
@@ -63725,6 +65038,17 @@ async function closeFollowup(ctx, data, fid, o) {
   await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { \u9636\u6BB5: ["\u7ED3\u6848"], \u7ED3\u6848\u539F\u56E0: [reason], \u5F53\u524D\u8F6E\u5230\u8C01: ["\u65E0\u9700\u52A8\u4F5C"], \u4E0B\u4E00\u6B65: `${day2} ${action}\uFF08${reason}\uFF0C${ctx.me.name}\u5728\u51B3\u7B56\u53F0\u64CD\u4F5C\uFF09` } });
   const p = profileOf(data.snapshot, f);
   if (o.never && p) await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { \u8054\u7CFB\u8BB8\u53EF: ["\u6C38\u4E0D\u8054\u7CFB"], \u8054\u7CFB\u8BB8\u53EF\u539F\u56E0: `${day2} ${reason}` } });
+  const open = await ctx.base.records(ctx.cfg.tables.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"]]] }, fields: ["KOL", "\u72B6\u6001", "\u6267\u884C\u7ED3\u679C"] });
+  const mine = open.filter((r) => linkIds(r["KOL"]).includes(fid));
+  if (mine.length) {
+    await ctx.base.update(ctx.cfg.tables.reviews, Object.fromEntries(mine.map((r) => [r.record_id, {
+      \u5904\u7406: ["\u4E0D\u53D1"],
+      \u72B6\u6001: ["\u5DF2\u64A4\u56DE"],
+      \u540C\u610F\u6765\u6E90: "",
+      \u5185\u5BB9\u6307\u7EB9: "",
+      \u6267\u884C\u7ED3\u679C: `${stamp(Date.now(), ctx.cfg.timezone)} ${action}\u65F6\u64A4\u56DE\uFF08${ctx.me.name}\u5728\u51B3\u7B56\u53F0\u64CD\u4F5C\uFF09`
+    }])));
+  }
 }
 var FOLLOWUP_EDITS = {
   \u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F: (v) => v ? `${v} 00:00` : null,
@@ -63752,15 +65076,16 @@ async function logPost(ctx, data, fid, link) {
   await ctx.base.create(ctx.cfg.tables.posts, [{ KOL: [{ id: fid }], \u5185\u5BB9\u94FE\u63A5: url, \u5E73\u53F0: [platform], \u53D1\u5E03\u65E5\u671F: now, \u5907\u6CE8: `${ctx.me.name} \u5728\u51B3\u7B56\u53F0\u624B\u52A8\u8BB0\u4E0B` }]);
   await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { \u9636\u6BB5: ["\u5DF2\u53D1\u5E03"], \u4E0B\u4E00\u6B65: `${today(ctx.cfg)} \u8BB0\u4E0B\u53D1\u5E03\uFF1A${url}`.slice(0, 500) } });
 }
-async function writeMail(ctx, data, jobs, fid, subject, body2) {
+async function writeMail(ctx, data, jobs, fid, subject, body2, from) {
   const f = data.snapshot.followups.get(fid);
   if (!f) throw new Error("\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55");
   if (!body2.trim()) throw new Error("\u4FE1\u662F\u7A7A\u7684");
   const to = profileEmails(profileOf(data.snapshot, f))[0];
   if (!to) throw new Error("\u5979\u7684\u6863\u6848\u91CC\u6CA1\u6709\u90AE\u7BB1");
   const channel = option(f["\u8054\u7CFB\u6E20\u9053"]);
-  const mb = mailboxFor(ctx.cfg, channel) ?? ctx.cfg.mailboxes[0];
-  if (!mb) throw new Error("\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u91CC\u6CA1\u6709\u542F\u7528\u7684\u90AE\u7BB1");
+  const mb = from ? ctx.cfg.mailboxes.find((m) => m.address === from) : mailboxFor(ctx.cfg, channel);
+  if (from && !mb) throw new Error(`\u300C${from}\u300D\u4E0D\u662F\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u91CC\u542F\u7528\u7684\u90AE\u7BB1`);
+  if (!mb) throw new Error(`\u5979\u4E00\u76F4\u662F\u8DDF\u300C${channel || "\u672A\u586B"}\u300D\u8054\u7CFB\u7684\uFF0C\u8FD9\u4E2A\u90AE\u7BB1\u7CFB\u7EDF\u53D1\u4E0D\u4E86\u3002\u5230\u5979\u7684\u9875\u9762\u70B9\u300C\u5199\u4FE1\u7ED9\u5979\u300D\uFF0C\u9009\u4E00\u4E2A\u53D1\u4FE1\u90AE\u7BB1\u518D\u53D1`);
   const draft = subject.trim() ? `\u4E3B\u9898\uFF1A${subject.trim()}
 ${body2.trim()}` : body2.trim();
   const [id] = await ctx.base.create(ctx.cfg.tables.reviews, [{
@@ -63773,9 +65098,25 @@ ${body2.trim()}` : body2.trim();
     \u6536\u4EF6\u4EBA: to,
     \u90AE\u4EF6\u8349\u7A3F: draft
   }]);
-  const job = await approve(ctx, data, jobs, id, {});
-  if (!job) throw new Error("\u8FD9\u5C01\u4FE1\u6CA1\u80FD\u6392\u8FDB\u53D1\u4FE1\u961F\u5217");
-  return job;
+  return approve(ctx, data, jobs, id, {}, true);
+}
+function sendQueued(jobs) {
+  return jobs.add("\u6062\u590D\u53D1\u9001\uFF1A\u53D1\u51FA\u6392\u7740\u7684\u4FE1", "", RUN_TITLES.send, async (jctx) => {
+    const rep = await sendApproved(jctx, { dryRun: false });
+    return `\u53D1\u51FA ${rep.sent.length} \u5C01${rep.failed.length ? `\uFF0C${rep.failed.length} \u5C01\u6CA1\u53D1\u6210` : ""}${rep.skipped.length ? `\uFF0C${rep.skipped.length} \u4EF6\u5148\u6CA1\u52A8` : ""}`;
+  });
+}
+async function decideTemplate(ctx, id, ok) {
+  const t = ctx.cfg.tables;
+  const [r] = await ctx.base.get(t.templates, [id]);
+  if (!r) throw new Error("\u6A21\u677F\u8868\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E2A\u6A21\u677F");
+  if (option(r["\u72B6\u6001"]) !== "\u5F85\u5BA1\u6838") throw new Error(`\u8FD9\u4E2A\u6A21\u677F\u73B0\u5728\u662F\u300C${option(r["\u72B6\u6001"])}\u300D\uFF0C\u4E0D\u662F\u5F85\u5BA1\u6838`);
+  await ctx.base.update(t.templates, { [id]: { \u72B6\u6001: [ok ? "\u5DF2\u6279\u51C6" : "\u505C\u7528"], \u5BA1\u6838\u65F6\u95F4: stamp(Date.now(), ctx.cfg.timezone) } });
+}
+async function approveNamedTemplate(ctx, r) {
+  const pending = await ctx.base.records(ctx.cfg.tables.templates, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u5BA1\u6838"]]] } });
+  const tpl = namedTemplate(pending.filter((x) => option(x["\u72B6\u6001"]) === "\u5F85\u5BA1\u6838"), r);
+  if (tpl) await decideTemplate(ctx, tpl.record_id, true);
 }
 async function setPaused(ctx, on) {
   const [row] = await ctx.base.records(ctx.cfg.tables.settings, { fields: ["\u6682\u505C\u6240\u6709\u53D1\u9001"] });
@@ -63951,7 +65292,7 @@ main.wide{max-width:none}
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
 <script>
 "use strict";
-var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {}, posted: {} };
+var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {}, posted: {}, drafts: {} };
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
@@ -63978,9 +65319,35 @@ function later(id, text, action) {
   renderDecide();
   setTimeout(function () {
     if (undone) return;
-    action().then(function (r) { if (r && r.job) watchJobs(); }).catch(function (e) { delete state.handled[id]; toast("\u6CA1\u505A\u6210\uFF1A" + e.message); renderDecide(); });
+    action().then(function (r) {
+      delete state.drafts[id];
+      if (r && r.job) watchJobs();
+      if (r && r.paused && !r.job) toast("\u73B0\u5728\u6682\u505C\u7740\uFF1A\u5DF2\u7ECF\u8BB0\u4E0B\u4F60\u540C\u610F\u4E86\uFF0C\u6062\u590D\u53D1\u9001\u540E\u4F1A\u53D1\u51FA");
+    }).catch(function (e) { delete state.handled[id]; toast("\u6CA1\u505A\u6210\uFF1A" + e.message); renderDecide(); });
   }, 5000);
 }
+// Edits made on a card are kept per card, so moving to another card or a refresh of the list never loses them.
+function keepEdits(c) {
+  var saved = state.drafts[c.id];
+  if (saved && c.draft && saved.base !== c.draft.body && $("draft-body")) {
+    var note = document.createElement("div");
+    note.className = "muted tiny";
+    note.style.color = "var(--warn)";
+    note.textContent = "\u8FD9\u5C01\u8349\u7A3F\u5728\u522B\u5904\u88AB\u6539\u8FC7\uFF1B\u4E0B\u9762\u662F\u4F60\u6539\u7684\u7248\u672C\uFF0C\u540C\u610F\u65F6\u4F1A\u7528\u5B83\u3002";
+    $("draft-body").parentNode.insertBefore(note, $("draft-body"));
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#draft-body, #draft-subject, [data-field]"), function (el) {
+    var key = el.id || "f:" + el.getAttribute("data-field");
+    if (saved && saved[key] != null) el.value = saved[key];
+    el.addEventListener("input", function () {
+      var d = state.drafts[c.id] || (state.drafts[c.id] = { base: c.draft ? c.draft.body : "" });
+      d[key] = el.value;
+    });
+  });
+}
+window.addEventListener("beforeunload", function (e) {
+  if (Object.keys(state.drafts).length) { e.preventDefault(); e.returnValue = ""; }
+});
 function modal(html) { $("modal-body").innerHTML = html; $("modal").hidden = false; }
 function closeModal() { $("modal").hidden = true; }
 $("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
@@ -64011,7 +65378,11 @@ function renderPause(on) {
 $("pause").addEventListener("click", function () {
   var on = !state.paused;
   if (on && !confirm("\u6682\u505C\u540E\uFF0C\u6240\u6709\u53D1\u4FE1\u90FD\u4F1A\u505C\u4E0B\uFF0C\u5DF2\u540C\u610F\u7684\u4E8B\u5148\u6392\u7740\u3002\u786E\u5B9A\u6682\u505C\u5417\uFF1F")) return;
-  post("/api/pause", { on: on }).then(function (r) { renderPause(r.paused); toast(r.paused ? "\u5DF2\u6682\u505C\u6240\u6709\u53D1\u9001" : "\u5DF2\u6062\u590D\u53D1\u9001"); }).catch(function (e) { toast("\u6CA1\u505A\u6210\uFF1A" + e.message); });
+  post("/api/pause", { on: on }).then(function (r) {
+    renderPause(r.paused);
+    toast(r.paused ? "\u5DF2\u6682\u505C\u6240\u6709\u53D1\u9001" : "\u5DF2\u6062\u590D\u53D1\u9001\uFF0C\u6392\u7740\u7684\u4FE1\u73B0\u5728\u53D1\u51FA");
+    if (r.job) watchJobs();
+  }).catch(function (e) { toast("\u6CA1\u505A\u6210\uFF1A" + e.message); });
 });
 var jobTimer = null;
 function watchJobs() {
@@ -64122,8 +65493,21 @@ function actionsFor(c) {
     { label: "\u505A\u5B8C\u4E86", key: "A", primary: true, run: function () { later(c.id, "\u5DF2\u6807\u6210\u505A\u5B8C\u4E86\uFF1A" + c.headline, function () { return post("/api/todo-done", { id: c.id }); }); } },
     { label: "\u4E0D\u7528\u505A\u4E86", key: "D", run: function () { later(c.id, "\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF1A" + c.headline, function () { return post("/api/drop", { id: c.id, note: "" }); }); } },
   ];
-  if (c.kind === "problem") return [
-    { label: "\u6211\u5904\u7406\u597D\u4E86", key: "A", primary: true, run: function () { later(c.id, "\u5DF2\u6807\u6210\u5904\u7406\u597D\u4E86", function () { return post("/api/problem-done", { id: c.id }); }); } },
+  var withdraw = { label: "\u4E0D\u505A\u4E86\uFF0C\u64A4\u6389", key: "D", run: function () { later(c.id, "\u5DF2\u64A4\u6389\uFF1A" + c.headline, function () { return post("/api/problem-done", { id: c.id }); }); } };
+  var redo = { label: c.unknownSend ? "\u786E\u8BA4\u6CA1\u53D1\u51FA\uFF0C\u91CD\u65B0\u5BA1\u6838" : "\u91CD\u65B0\u5BA1\u6838", key: "R", primary: !c.unknownSend, run: function () {
+    later(c.id, "\u5DF2\u9000\u56DE\u91CD\u65B0\u5BA1\u6838\uFF1A" + c.headline, function () { return post("/api/problem-retry", { id: c.id }); });
+  } };
+  if (c.kind === "problem" && c.unknownSend) return [
+    { label: "\u786E\u8BA4\u5DF2\u7ECF\u53D1\u51FA", key: "A", primary: true, run: function () {
+      if (!confirm("\u5728\u53D1\u4FE1\u90AE\u7BB1\u7684\u300C\u5DF2\u53D1\u9001\u300D\u91CC\u627E\u5230\u8FD9\u5C01\u4FE1\u4E86\u5417\uFF1F\u786E\u8BA4\u540E\u4F1A\u8BB0\u6210\u5DF2\u53D1\u51FA\uFF0C\u4E0D\u4F1A\u518D\u53D1\u3002")) return;
+      later(c.id, "\u5DF2\u8BB0\u6210\u53D1\u51FA\uFF1A" + c.headline, function () { return post("/api/problem-sent", { id: c.id }); });
+    } },
+    redo, withdraw,
+  ];
+  if (c.kind === "problem") return [redo, withdraw];
+  if (c.kind === "template" && c.id.indexOf("template:") === 0) return [
+    { label: "\u540C\u610F\u8FD9\u4E2A\u6A21\u677F", key: "A", primary: true, run: function () { later(c.id, "\u6A21\u677F\u5DF2\u6279\u51C6\uFF1A" + c.headline, function () { return post("/api/template", { id: c.id.slice(9), ok: true }); }); } },
+    { label: "\u4E0D\u7528\u8FD9\u4E2A\u6A21\u677F", key: "D", run: function () { later(c.id, "\u6A21\u677F\u5DF2\u505C\u7528\uFF1A" + c.headline, function () { return post("/api/template", { id: c.id.slice(9), ok: false }); }); } },
   ];
   var dropIt = { label: "\u4E0D\u505A\u4E86", key: "D", run: function () {
     if (!confirm("\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF0C\u4F1A\u4ECE\u961F\u5217\u91CC\u64A4\u6389\u3002\u786E\u5B9A\u5417\uFF1F")) return;
@@ -64133,7 +65517,7 @@ function actionsFor(c) {
   if (c.send && c.send.byHand) return [
     { label: "\u6211\u53D1\u51FA\u53BB\u4E86", key: "A", primary: true, run: function () {
       var edits = cardEdits(c);
-      later(c.id, "\u5DF2\u8BB0\u4E0B\uFF1A\u4F60\u624B\u52A8\u53D1\u7ED9\u4E86 " + who(c), function () { return post("/api/sent-by-hand", { id: c.id, edits: edits }); });
+      later(c.id, "\u5DF2\u8BB0\u4E0B\uFF1A\u4F60\u624B\u52A8\u53D1\u7ED9\u4E86 " + who(c), function () { return post("/api/sent-by-hand", { id: c.id, edits: edits, seen: c.seen }); });
     } },
     { label: "\u590D\u5236\u4FE1", key: "C", run: function () { copyDraft(c); } },
     toClaude, dropIt,
@@ -64141,7 +65525,7 @@ function actionsFor(c) {
   return [
     { label: c.send ? "\u540C\u610F\uFF0C\u53D1\u51FA\u53BB" : "\u540C\u610F", key: "A", primary: true, run: function () {
       var edits = cardEdits(c);
-      later(c.id, c.send ? "\u5DF2\u540C\u610F\uFF1A" + who(c) + "\uFF0C5 \u79D2\u540E\u5F00\u59CB\u53D1" : "\u5DF2\u540C\u610F\uFF1A" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits }); });
+      later(c.id, c.send ? "\u5DF2\u540C\u610F\uFF1A" + who(c) + "\uFF0C5 \u79D2\u540E\u5F00\u59CB\u53D1" : "\u5DF2\u540C\u610F\uFF1A" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits, seen: c.seen }); });
     } },
     toClaude, dropIt,
   ];
@@ -64294,6 +65678,7 @@ function renderDecide() {
       '<section class="card dact" aria-label="\u600E\u4E48\u5904\u7406">' + actionPane + '</section>' +
     '</div></div>';
 
+  if (!changing) keepEdits(c);
   var newList = document.querySelector(".dlist");
   if (newList) newList.scrollTop = listScroll;
   var on = document.querySelector(".ditem.on");
@@ -64483,14 +65868,21 @@ function wirePerson(p) {
     };
   };
   if ($("p-write")) $("p-write").onclick = function () {
-    modal('<h2 style="margin:0;font-size:18px">\u5199\u4FE1\u7ED9 ' + esc(p.name) + '</h2><div class="muted small">\u70B9\u300C\u53D1\u51FA\u300D\u5C31\u7B97\u4F60\u540C\u610F\u4E86\uFF0C\u4F1A\u6309\u989D\u5EA6\u6392\u961F\u53D1\u51FA\uFF1B\u5728\u300C\u6267\u884C\u8BB0\u5F55\u300D\u91CC\u80FD\u770B\u5230\u7ED3\u679C\u3002</div>' +
+    var sf = p.sendFrom || { channel: "", usual: "", mailboxes: [] };
+    var fromBox = '<label class="field">\u4ECE\u54EA\u4E2A\u90AE\u7BB1\u53D1<select class="input" id="w-from">' + (sf.usual ? "" : '<option value="">\u8BF7\u9009\u62E9</option>') +
+      sf.mailboxes.map(function (m) { return '<option' + (m === sf.usual ? " selected" : "") + ">" + esc(m) + "</option>"; }).join("") + "</select>" +
+      (sf.usual ? "" : '<span class="tiny" style="color:var(--warn)">\u5979\u4E00\u76F4\u662F\u8DDF\u300C' + esc(sf.channel || "\u672A\u586B") + '\u300D\u8054\u7CFB\u7684\uFF0C\u8FD9\u4E2A\u90AE\u7BB1\u7CFB\u7EDF\u53D1\u4E0D\u4E86\u3002\u6362\u4E00\u4E2A\u90AE\u7BB1\u53D1\uFF0C\u5979\u770B\u5230\u7684\u53D1\u4EF6\u4EBA\u4F1A\u53D8\u3002</span>') + "</label>";
+    modal('<h2 style="margin:0;font-size:18px">\u5199\u4FE1\u7ED9 ' + esc(p.name) + '</h2><div class="muted small">\u70B9\u300C\u53D1\u51FA\u300D\u5C31\u7B97\u4F60\u540C\u610F\u4E86\uFF0C\u4F1A\u6309\u989D\u5EA6\u6392\u961F\u53D1\u51FA\uFF1B\u5728\u300C\u6267\u884C\u8BB0\u5F55\u300D\u91CC\u80FD\u770B\u5230\u7ED3\u679C\u3002</div>' + fromBox +
       '<label class="field">\u4E3B\u65E8\uFF08\u56DE\u590D\u5979\u4E0A\u4E00\u5C01\u4FE1\u65F6\u53EF\u4EE5\u4E0D\u586B\uFF09<input class="input" id="w-subject"></label>' +
       '<label class="field">\u6B63\u6587<textarea class="input" id="w-body" rows="10"></textarea></label>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="w-cancel">\u53D6\u6D88</button><button class="btn primary" id="w-send">\u53D1\u51FA</button></div>');
     $("w-cancel").onclick = closeModal;
     $("w-send").onclick = function () {
-      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value })
-        .then(function () { closeModal(); toast("\u5DF2\u6392\u961F\u53D1\u51FA\uFF0C\u7ED3\u679C\u770B\u53F3\u4E0A\u89D2"); watchJobs(); }).catch(function (e) { toast("\u6CA1\u53D1\u51FA\uFF1A" + e.message); });
+      var from = $("w-from").value;
+      if (!from) { toast("\u5148\u9009\u4ECE\u54EA\u4E2A\u90AE\u7BB1\u53D1"); return; }
+      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value, from: from })
+        .then(function (r) { closeModal(); toast(r.job ? "\u5DF2\u6392\u961F\u4ECE " + from + " \u53D1\u51FA\uFF0C\u7ED3\u679C\u770B\u53F3\u4E0A\u89D2" : "\u73B0\u5728\u6682\u505C\u7740\uFF1A\u5DF2\u7ECF\u8BB0\u4E0B\uFF0C\u6062\u590D\u53D1\u9001\u540E\u4ECE " + from + " \u53D1\u51FA"); if (r.job) watchJobs(); })
+        .catch(function (e) { toast("\u6CA1\u53D1\u51FA\uFF1A" + e.message); });
     };
   };
   var close = function (never) {
@@ -66693,376 +68085,6 @@ function osUsername() {
   }
 }
 
-// src/kolops/store/pg.ts
-import { randomBytes } from "node:crypto";
-var SCHEMA_SQL = `
-create schema if not exists kol;
-create table if not exists kol.tables (
-  project text not null, name text not null, feishu_id text, position int not null default 0,
-  primary key (project, name));
-create table if not exists kol.fields (
-  project text not null, tbl text not null, name text not null, position int not null default 0,
-  type text not null, def jsonb not null,
-  primary key (project, tbl, name));
-create table if not exists kol.records (
-  project text not null, tbl text not null, id text not null, fields jsonb not null default '{}',
-  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
-  primary key (project, tbl, id));
-create index if not exists records_updated on kol.records (project, tbl, updated_at);
--- Rows keep the order they had in Feishu (and new ones go last), as lists and ties in sorting depend on it.
-alter table kol.records add column if not exists seq bigserial;
-create or replace function kol.num(t text) returns numeric language plpgsql immutable as
-  $$ begin return t::numeric; exception when others then return null; end $$;
-create or replace function kol.ts(t text) returns timestamptz language plpgsql immutable as
-  $$ begin return t::timestamptz; exception when others then return null; end $$;
-create or replace function kol.bool(t text) returns boolean language plpgsql immutable as
-  $$ begin return t::boolean; exception when others then return null; end $$;
-`;
-var COMPUTED = /* @__PURE__ */ new Set(["formula", "lookup", "created_at", "updated_at", "created_by", "modified_by", "auto_number"]);
-var PgStore = class {
-  /** With a cache, whole tables are read through a local copy that only fetches changed rows. */
-  constructor(project, sql, cache) {
-    this.project = project;
-    this.sql = sql;
-    this.cache = cache;
-  }
-  project;
-  sql;
-  cache;
-  meta = null;
-  tz = "+08:00";
-  // --- What the plugin asks for ---
-  async records(table, opts = {}) {
-    const name = await this.tableName(table);
-    const rows = await this.load(name);
-    const wanted = opts.filter ? rows.filter((r) => matches(r, opts.filter, this.tz)) : rows;
-    return opts.fields?.length ? wanted.map((r) => pick(r, opts.fields)) : wanted;
-  }
-  /** Answers the `base +…` lark-cli commands the plugin uses. */
-  async command(args) {
-    const flag = (n) => args.includes(n) ? args[args.indexOf(n) + 1] : void 0;
-    const many = (n) => args.filter((_, i) => args[i - 1] === n);
-    const table = flag("--table-id");
-    switch (args[1]) {
-      case "+record-list":
-        return matrix(await this.records(table, { filter: flag("--filter-json") ? JSON.parse(flag("--filter-json")) : void 0, fields: many("--field-id") }), many("--field-id"));
-      case "+record-get": {
-        const ids2 = new Set(many("--record-id"));
-        const name = await this.tableName(table);
-        const rows = (await this.load(name, [...ids2])).filter((r) => ids2.has(r.record_id));
-        return matrix(many("--field-id").length ? rows.map((r) => pick(r, many("--field-id"))) : rows, many("--field-id"));
-      }
-      case "+record-batch-create":
-        return { record_id_list: await this.create(table, JSON.parse(flag("--json")).create_records) };
-      case "+record-batch-update":
-        await this.update(table, JSON.parse(flag("--json")).update_records);
-        return {};
-      case "+field-list":
-        return { fields: (await this.fieldsOf(await this.tableName(table))).map((f) => ({ ...f })) };
-      case "+field-create":
-        await this.addField(await this.tableName(table), JSON.parse(flag("--json")));
-        return {};
-      case "+field-update":
-        await this.changeField(await this.tableName(table), flag("--field-id"), JSON.parse(flag("--json")));
-        return {};
-      case "+table-create":
-        await this.addTable(flag("--name"), JSON.parse(flag("--fields") ?? "[]"));
-        return {};
-      case "+table-list":
-        return { tables: [...(await this.tables()).entries()].map(([name, t]) => ({ name, id: t.feishuId || name })) };
-      default:
-        throw new Error(`\u6570\u636E\u5E93\u7248\u8FD8\u4E0D\u652F\u6301 lark-cli base ${args[1]}`);
-    }
-  }
-  async create(table, rows) {
-    const name = await this.tableName(table);
-    const defs = await this.fieldsOf(name);
-    const ids2 = [];
-    await this.sql.tx(async (q) => {
-      for (const raw2 of rows) {
-        const fields = this.normalize(name, defs, raw2);
-        const id = newId();
-        await q.query("insert into kol.records (project, tbl, id, fields) values ($1, $2, $3, $4::text::jsonb)", [this.project, name, id, JSON.stringify(dropNulls(fields))]);
-        await this.syncLinks(q, name, defs, id, {}, fields);
-        ids2.push(id);
-      }
-      await this.saveNewOptions(q, name, defs);
-    });
-    this.cache?.invalidate();
-    return ids2;
-  }
-  async update(table, changes) {
-    const name = await this.tableName(table);
-    const defs = await this.fieldsOf(name);
-    await this.sql.tx(async (q) => {
-      for (const [id, raw2] of Object.entries(changes)) {
-        const fields = this.normalize(name, defs, raw2);
-        const [old] = await q.query("select fields from kol.records where project = $1 and tbl = $2 and id = $3 for update", [this.project, name, id]);
-        if (!old) throw new Error(`${name} \u91CC\u6CA1\u6709 ${id} \u8FD9\u4E00\u6761`);
-        const cleared = Object.keys(fields).filter((k) => fields[k] == null);
-        await q.query(
-          "update kol.records set fields = (fields || $4::text::jsonb) - array(select jsonb_array_elements_text($5::text::jsonb)), updated_at = now() where project = $1 and tbl = $2 and id = $3",
-          [this.project, name, id, JSON.stringify(dropNulls(fields)), JSON.stringify(cleared)]
-        );
-        await this.syncLinks(q, name, defs, id, old.fields, fields);
-      }
-      await this.saveNewOptions(q, name, defs);
-    });
-    this.cache?.invalidate();
-  }
-  // --- Reading ---
-  /** Every row of a table (or only these ids), with formulas and system fields filled in. */
-  async load(name, ids2) {
-    const defs = await this.fieldsOf(name);
-    const rows = ids2 ? await this.sql.query(
-      "select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb)) order by seq",
-      [this.project, name, JSON.stringify(ids2)]
-    ) : await this.all(name);
-    const out = rows.map((r) => ({ record_id: r.id, ...this.cache ? structuredClone(r.fields) : r.fields }));
-    for (const d of defs) {
-      if (d.type === "created_at" || d.type === "updated_at") {
-        rows.forEach((r, i) => out[i][d.name] = iso(new Date(d.type === "created_at" ? r.created_at : r.updated_at).getTime(), this.tz));
-      }
-    }
-    for (const d of defs.filter((x) => x.type === "formula")) await this.formula(name, defs, d, out);
-    return out;
-  }
-  async all(name) {
-    if (this.cache) return this.cache.rows(this.sql, this.project, name);
-    return this.sql.query("select id, fields, created_at, updated_at from kol.records where project = $1 and tbl = $2 order by seq", [this.project, name]);
-  }
-  /**
-   * The lookups Feishu bases use, `[link].[field].LISTCOMBINE().UNIQUE()` and `[link].[field].MAX()`, worked out
-   * from the linked rows. Any other formula reads as empty: the plugin doesn't use them.
-   */
-  async formula(name, defs, d, rows) {
-    const m = String(d.expression ?? "").match(/^\[(.+?)\]\.\[(.+?)\]\.(LISTCOMBINE\(\)\.UNIQUE\(\)|MAX\(\))$/);
-    const link = m && defs.find((x) => x.name === m[1] && x.type === "link");
-    if (!m || !link) {
-      rows.forEach((r) => r[d.name] = null);
-      return;
-    }
-    const target = await this.tableName(link.link_table);
-    const ids2 = [...new Set(rows.flatMap((r) => linkIdsOf(r[link.name])))];
-    const wanted = new Set(ids2);
-    const linked = !ids2.length ? [] : this.cache ? (await this.all(target)).filter((x) => wanted.has(x.id)) : await this.sql.query("select id, fields from kol.records where project = $1 and tbl = $2 and id in (select jsonb_array_elements_text($3::text::jsonb))", [this.project, target, JSON.stringify(ids2)]);
-    const byId = new Map(linked.map((x) => [x.id, x.fields]));
-    for (const r of rows) {
-      const values2 = linkIdsOf(r[link.name]).flatMap((id) => {
-        const v = byId.get(id)?.[m[2]];
-        return v == null || v === "" ? [] : Array.isArray(v) ? v.map((x) => typeof x === "object" && x ? x.name ?? x.text ?? x.id : x) : [v];
-      });
-      if (m[3] === "MAX()") {
-        const nums = values2.map(Number).filter((n) => !Number.isNaN(n));
-        r[d.name] = nums.length ? String(Math.max(...nums)) : null;
-      } else {
-        const unique = [...new Set(values2.map(String))];
-        r[d.name] = unique.length ? unique.join(",") : null;
-      }
-    }
-  }
-  // --- Writing ---
-  /** Values the way Feishu stores them; unknown and computed fields are refused, as the plugin treats them as bugs. */
-  normalize(table, defs, raw2) {
-    const out = {};
-    const bad = [];
-    for (const [k, v] of Object.entries(raw2 ?? {})) {
-      const d = defs.find((x) => x.name === k);
-      if (!d) bad.push(`${k}\uFF08\u6CA1\u6709\u8FD9\u4E2A\u5B57\u6BB5\uFF09`);
-      else if (COMPUTED.has(d.type)) bad.push(`${k}\uFF08\u81EA\u52A8\u7B97\u7684\u5B57\u6BB5\uFF0C\u4E0D\u80FD\u5199\uFF09`);
-      else out[k] = this.value(d, v);
-    }
-    if (bad.length) throw new Error(`${table} \u6709\u5B57\u6BB5\u6CA1\u5199\u8FDB\u53BB\uFF1A${bad.join("\uFF1B")}`);
-    return out;
-  }
-  value(d, v) {
-    if (v == null || v === "" || Array.isArray(v) && !v.length) return null;
-    switch (d.type) {
-      case "number": {
-        const n = Number(v);
-        if (Number.isNaN(n)) throw new Error(`\u300C${d.name}\u300D\u8981\u586B\u6570\u5B57\uFF0C\u6536\u5230\u7684\u662F\u300C${v}\u300D`);
-        return n;
-      }
-      case "checkbox":
-        return v === true || v === "true";
-      case "datetime": {
-        const s = typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? `${v.trim()} 00:00` : v;
-        const t = cellTime(s, this.tz);
-        if (t == null) throw new Error(`\u300C${d.name}\u300D\u4E0D\u662F\u65E5\u671F\uFF1A\u300C${v}\u300D`);
-        return iso(t, this.tz);
-      }
-      case "select": {
-        const list3 = (Array.isArray(v) ? v : [v]).map((x) => String(typeof x === "object" && x ? x.name ?? x.text : x));
-        const known = new Set((d.options ?? []).map((o) => o.name));
-        for (const o of list3) if (!known.has(o)) (d.options ??= []).push({ name: o }), d._changed = true;
-        return d.multiple === false ? list3.slice(0, 1) : list3;
-      }
-      case "link":
-        return (Array.isArray(v) ? v : [v]).map((x) => ({ id: String(typeof x === "object" && x ? x.id ?? x.record_id : x) }));
-      case "text":
-        return Array.isArray(v) ? v.map((x) => typeof x === "object" && x ? x.text ?? x.name ?? "" : String(x)).join("") : typeof v === "object" ? JSON.stringify(v) : String(v);
-      default:
-        return v;
-    }
-  }
-  /** Feishu adds an option the first time a row uses it; so does the store. */
-  async saveNewOptions(q, table, defs) {
-    for (const d of defs.filter((x) => x._changed)) {
-      delete d._changed;
-      await q.query("update kol.fields set def = $4::text::jsonb where project = $1 and tbl = $2 and name = $3", [this.project, table, d.name, JSON.stringify(d)]);
-    }
-  }
-  /** A two-way link written on one side shows on the other, as in Feishu. */
-  async syncLinks(q, table, defs, id, before, after) {
-    for (const d of defs) {
-      if (d.type !== "link" || !d.bidirectional || !(d.name in after)) continue;
-      const target = await this.tableName(d.link_table);
-      const back = (await this.fieldsOf(target)).find((x) => x.id === d.bidirectional_link_field_id);
-      if (!back) continue;
-      const was = new Set(linkIdsOf(before[d.name]));
-      const now = new Set(linkIdsOf(after[d.name]));
-      for (const other of /* @__PURE__ */ new Set([...was, ...now])) {
-        if (was.has(other) === now.has(other)) continue;
-        const [row] = await q.query("select fields from kol.records where project = $1 and tbl = $2 and id = $3 for update", [this.project, target, other]);
-        if (!row) continue;
-        const ids2 = linkIdsOf(row.fields[back.name]).filter((x) => x !== id);
-        if (now.has(other)) ids2.push(id);
-        await q.query(
-          "update kol.records set fields = case when $5::text::jsonb = '[]'::jsonb then fields - $4::text else jsonb_set(fields, array[$4::text], $5::text::jsonb) end, updated_at = now() where project = $1 and tbl = $2 and id = $3",
-          [this.project, target, other, back.name, JSON.stringify(ids2.map((x) => ({ id: x })))]
-        );
-      }
-    }
-  }
-  // --- Tables and fields ---
-  tables() {
-    this.meta ??= (async () => {
-      const [tables, fields] = await Promise.all([
-        this.sql.query("select name, feishu_id from kol.tables where project = $1 order by position, name", [this.project]),
-        this.sql.query("select tbl, def from kol.fields where project = $1 order by position, name", [this.project])
-      ]);
-      const map = new Map(tables.map((t) => [t.name, { feishuId: t.feishu_id ?? "", fields: [] }]));
-      for (const f of fields) map.get(f.tbl)?.fields.push(f.def);
-      if (map.has("\u8BBE\u7F6E")) {
-        const [s] = await this.sql.query("select fields->>'\u65F6\u533A' as tz from kol.records where project = $1 and tbl = '\u8BBE\u7F6E' limit 1", [this.project]);
-        if (s?.tz && /^[+-]\d{2}:\d{2}$/.test(s.tz)) this.tz = s.tz;
-      }
-      return map;
-    })().catch((err) => {
-      this.meta = null;
-      throw err;
-    });
-    return this.meta;
-  }
-  /** The table a name or a Feishu table id refers to; "not found" when there is none, as Feishu says. */
-  async tableName(table) {
-    const all = await this.tables();
-    if (all.has(table)) return table;
-    for (const [name, t] of all) if (t.feishuId && t.feishuId === table) return name;
-    throw new Error(`table ${table} not found\uFF08\u9879\u76EE\u300C${this.project}\u300D\u7684\u6570\u636E\u5E93\u91CC\u6CA1\u6709\u8FD9\u5F20\u8868\uFF09`);
-  }
-  async fieldsOf(name) {
-    return (await this.tables()).get(name).fields;
-  }
-  async addTable(name, fields) {
-    await this.sql.tx(async (q) => {
-      await q.query("insert into kol.tables (project, name, position) values ($1, $2, (select coalesce(max(position), 0) + 1 from kol.tables where project = $1))", [this.project, name]);
-      for (const f of fields) await this.insertField(q, name, f);
-    });
-    this.meta = null;
-  }
-  async addField(table, f) {
-    if ((await this.fieldsOf(table)).some((x) => x.name === f.name)) throw new Error(`${table} \u5DF2\u7ECF\u6709\u300C${f.name}\u300D\u5B57\u6BB5`);
-    await this.insertField(this.sql, table, f);
-    this.meta = null;
-  }
-  async insertField(q, table, f) {
-    const def = { ...f, id: f.id ?? `fld${randomBytes(5).toString("hex")}` };
-    await q.query(
-      "insert into kol.fields (project, tbl, name, position, type, def) values ($1, $2, $3, (select coalesce(max(position), 0) + 1 from kol.fields where project = $1 and tbl = $2), $4, $5::text::jsonb)",
-      [this.project, table, f.name, f.type, JSON.stringify(def)]
-    );
-  }
-  /** Changes a field's options or settings; the options listed replace the old ones, as in Feishu. */
-  async changeField(table, field, f) {
-    const old = (await this.fieldsOf(table)).find((x) => x.name === field || x.id === field);
-    if (!old) throw new Error(`${table} \u6CA1\u6709\u300C${field}\u300D\u5B57\u6BB5`);
-    const def = { ...old, ...f, name: old.name, id: old.id };
-    await this.sql.query("update kol.fields set def = $4::text::jsonb, type = $5 where project = $1 and tbl = $2 and name = $3", [this.project, table, old.name, JSON.stringify(def), def.type]);
-    this.meta = null;
-  }
-};
-var StoreLark = class {
-  constructor(inner, defaultToken, storeFor) {
-    this.inner = inner;
-    this.defaultToken = defaultToken;
-    this.storeFor = storeFor;
-  }
-  inner;
-  defaultToken;
-  storeFor;
-  json(args) {
-    if (args[0] === "base") {
-      const token = args.includes("--base-token") ? args[args.indexOf("--base-token") + 1] : this.defaultToken;
-      const store = this.storeFor(token);
-      if (store) return store.command(args);
-    }
-    return this.inner.json(args);
-  }
-  records(table, opts = {}) {
-    const store = this.storeFor(opts.baseToken ?? this.defaultToken);
-    return store ? store.records(table, opts) : this.inner.records(table, opts);
-  }
-};
-function newId() {
-  const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  return `rec${[...randomBytes(14)].map((b2) => abc[b2 % abc.length]).join("")}`;
-}
-function iso(ms, tz) {
-  const sign = tz.startsWith("-") ? -1 : 1;
-  const [h, m] = tz.slice(1).split(":").map(Number);
-  return `${new Date(ms + sign * (h * 60 + (m || 0)) * 6e4).toISOString().slice(0, 23)}${tz}`;
-}
-function linkIdsOf(v) {
-  return Array.isArray(v) ? v.map((x) => String(x?.id ?? x)).filter(Boolean) : [];
-}
-function dropNulls(o) {
-  return Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
-}
-function pick(r, fields) {
-  const out = { record_id: r.record_id };
-  for (const f of fields) if (f in r) out[f] = r[f];
-  return out;
-}
-function matrix(rows, fields) {
-  const names = fields.length ? fields : [...new Set(rows.flatMap((r) => Object.keys(r).filter((k) => k !== "record_id")))];
-  return { fields: names, record_id_list: rows.map((r) => r.record_id), data: rows.map((r) => names.map((f) => r[f] ?? null)), has_more: false };
-}
-function matches(r, filter, tz) {
-  const conds = filter?.conditions ?? [];
-  const test = ([field, op, value]) => {
-    const v = r[field];
-    const empty = v == null || v === "" || Array.isArray(v) && !v.length;
-    if (op === "isEmpty") return empty;
-    if (op === "isNotEmpty") return !empty;
-    const date = typeof value === "string" ? value.match(/^ExactDate\((\d{4}-\d{2}-\d{2})\)$/) : null;
-    if (date) {
-      const t = cellTime(v, tz);
-      if (t == null) return false;
-      const d = dayOf(t, tz);
-      return op === ">" ? d > date[1] : op === "<" ? d < date[1] : op === ">=" ? d >= date[1] : op === "<=" ? d <= date[1] : op === "==" ? d === date[1] : op === "!=" ? d !== date[1] : false;
-    }
-    const cells = (Array.isArray(v) ? v : [v]).map((x) => typeof x === "object" && x ? x.name ?? x.text ?? x.id : x);
-    if (op === "intersects") return cells.some((x) => (Array.isArray(value) ? value : [value]).includes(x));
-    if (op === "==") return cells.some((x) => x === value || String(x) === String(value)) || value === false && empty;
-    if (op === "!=") return !cells.some((x) => x === value || String(x) === String(value));
-    const n = Number(v), w = Number(value);
-    if (Number.isNaN(n) || Number.isNaN(w)) return false;
-    return op === ">" ? n > w : op === "<" ? n < w : op === ">=" ? n >= w : op === "<=" ? n <= w : false;
-  };
-  return filter?.logic === "or" ? conds.some(test) : conds.every(test);
-}
-
 // src/kolops/store/rowcache.ts
 import { mkdirSync as mkdirSync3, readFileSync as readFileSync11, renameSync as renameSync2, writeFileSync as writeFileSync5 } from "node:fs";
 import { join as join7 } from "node:path";
@@ -67080,10 +68102,11 @@ var RowCache = class {
   invalidate() {
     this.checked.clear();
   }
-  async rows(sql, project, tbl) {
+  /** With `fresh`, the database is asked even if this table was checked a moment ago. */
+  async rows(sql, project, tbl, fresh = false) {
     const file2 = join7(this.dir, `${tbl.replace(/[^\w一-鿿-]/g, "_")}.json`);
     let cache = this.mem.get(tbl) ?? readCache(file2);
-    if (cache && Date.now() - (this.checked.get(tbl) ?? 0) < FRESH_MS) return cache.rows;
+    if (cache && !fresh && Date.now() - (this.checked.get(tbl) ?? 0) < FRESH_MS) return cache.rows;
     const read = await sql.tx(async (q) => {
       await q.query("set transaction isolation level repeatable read");
       const [s] = await q.query(
@@ -67247,9 +68270,9 @@ function backupDir(project) {
   mkdirSync4(dir, { recursive: true, mode: 448 });
   return dir;
 }
-async function backup(sql, project, dir = backupDir(project)) {
+async function backup(sql, project, dir = backupDir(project), name = dayOf(Date.now())) {
   const snap = await exportProject(sql, project);
-  const file2 = join8(dir, `${dayOf(Date.now())}.json.gz`);
+  const file2 = join8(dir, `${name}.json.gz`);
   writeFileSync6(file2, gzipSync(JSON.stringify(snap)), { mode: 384 });
   const old = readdirSync2(dir).filter((f) => f.endsWith(".json.gz")).sort().reverse().slice(KEEP_BACKUPS);
   for (const f of old) unlinkSync2(join8(dir, f));
@@ -67257,6 +68280,14 @@ async function backup(sql, project, dir = backupDir(project)) {
 }
 function hasBackupToday(project) {
   return existsSync7(join8(backupDir(project), `${dayOf(Date.now())}.json.gz`));
+}
+async function restore(sql, project, file2) {
+  const snap = readBackup(file2);
+  const name = `${(/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace(/:/g, "")}-\u6062\u590D\u524D`;
+  const before = await backup(sql, project, void 0, name).catch(() => null);
+  await loadSnapshot2(sql, { ...snap, project }, project, true);
+  await createViews(sql, project);
+  return { before: before?.file ?? null, counts: await projectCounts(sql, project) };
 }
 function readBackup(file2) {
   const snap = JSON.parse(gunzipSync(readFileSync12(file2)).toString("utf8"));
@@ -67312,722 +68343,6 @@ async function createViews(sql, project) {
     made.push(`kol.${ident(`${project}/${t.name}`)}`);
   }
   return made;
-}
-
-// src/kolops/console/state.ts
-var VIEWS = {
-  wait: { label: "\u7B49\u6211\u4EEC\u56DE", question: "\u5148\u56DE\u8C01\uFF1F\u7B49\u5F97\u6700\u4E45\u7684\u5728\u4E0A\u9762\u3002", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u7B49\u4E86", "\u5F85\u4F60\u51B3\u5B9A", "\u4E0B\u6B21\u8DDF\u8FDB"] },
-  noreply: { label: "\u9080\u4E86\u6CA1\u56DE", question: "\u9080\u7EA6\u4E86\u8FD8\u6CA1\u56DE\u4FE1\u7684\u4EBA\u3002", columns: ["\u54EA\u5929\u9080\u7684", "\u4E0B\u6B21\u8DDF\u8FDB", "\u9080\u7EA6\u6279\u6B21", "\u7528\u54EA\u4E2A\u90AE\u7BB1"] },
-  trial: { label: "\u5728\u8BD5\u7528", question: "\u53D1\u4E86\u4F53\u9A8C\u7801\u3001\u8FD8\u6CA1\u8C08\u5408\u4F5C\u7684\u4EBA\u3002\u8C01\u5FEB\u5230\u671F\u3001\u8C01\u9886\u4E86\u7801\u8FD8\u6CA1\u7528\uFF1F", columns: ["\u7528\u4E86\u51E0\u6B21", "\u54EA\u5929\u5230\u671F", "\u4E0A\u6B21\u8054\u7CFB", "\u63A5\u4E0B\u6765"] },
-  deal: { label: "\u8C08\u5408\u4F5C", question: "\u8BD5\u7528\u8FC7\u3001\u60F3\u5408\u4F5C\uFF0C\u4F46\u8FD8\u6CA1\u7EA6\u597D\u54EA\u5929\u53D1\u3002\u5361\u5728\u54EA\u4E00\u6B65\uFF1F", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u6D3B\u52A8\u7801", "\u4E0A\u6B21\u8054\u7CFB", "\u63A5\u4E0B\u6765"] },
-  post: { label: "\u7EA6\u597D\u8981\u53D1\u5E03", question: "\u7EA6\u597D\u4E86\u65E5\u671F\u3001\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50\u7684\u4EBA\u3002\u8C01\u5FEB\u8BE5\u53D1\u4E86\uFF1F", columns: ["\u7EA6\u597D\u54EA\u5929", "\u6D3B\u52A8\u7801", "\u63A5\u4E0B\u6765"] },
-  posted: { label: "\u5DF2\u53D1\u5E03", question: "\u53D1\u4E86\u4EC0\u4E48\u3001\u6548\u679C\u600E\u4E48\u6837\uFF1F", columns: ["\u5E16\u5B50", "\u54EA\u5929\u53D1\u7684", "\u64AD\u653E\uFF08\u6700\u65B0\uFF09", "\u6D3B\u52A8\u7801"] },
-  pool: { label: "\u8FD8\u6CA1\u8054\u7CFB\u8FC7", question: "\u6709\u80FD\u7528\u7684\u90AE\u7BB1\u3001\u8FD8\u6CA1\u8054\u7CFB\u8FC7\u7684\u4EBA\u3002\u6311\u8C01\u53BB\u9080\u7EA6\uFF1F", columns: ["\u5185\u5BB9", "\u7C89\u4E1D", "\u5E02\u573A", "\u54EA\u4E00\u6279\u627E\u5230\u7684"] },
-  all: { label: "\u5168\u90E8\u5728\u8DDF\u8FDB\u7684", question: "\u6574\u4F53\u626B\u4E00\u773C\u3002", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u5230\u54EA\u4E00\u6B65", "\u4E0B\u6B21\u8DDF\u8FDB"] }
-};
-var STAGES = ["\u9080\u7EA6", "\u56DE\u590D", "\u8BD5\u7528", "\u5408\u4F5C", "\u7EA6\u597D\u53D1\u5E03", "\u5DF2\u53D1\u5E03"];
-var STAGE_STEP = { \u5DF2\u9080\u7EA6: 0, \u5DF2\u56DE\u590D: 1, \u4F53\u9A8C\u4E2D: 2, \u5DF2\u770B\u62A5\u544A: 3, \u5408\u4F5C\u4E2D: 3, \u5DF2\u7EA6\u53D1\u5E03: 4, \u5DF2\u53D1\u5E03: 5 };
-var OVERDUE_GRACE_DAYS = 2;
-var PROBLEM_DAYS = 7;
-var REVIEW_FIELDS2 = [
-  "\u5BA1\u6838\u9879",
-  "\u7C7B\u578B",
-  "\u72B6\u6001",
-  "\u5904\u7406",
-  "\u5BA1\u6838\u7ED3\u679C",
-  "KOL",
-  "\u4F60\u7684\u610F\u89C1",
-  "\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE",
-  "\u8981\u4F60\u5B9A\u4EC0\u4E48",
-  "\u90AE\u4EF6\u8349\u7A3F",
-  "\u6536\u4EF6\u4EBA",
-  "\u53D1\u9001\u6E20\u9053",
-  "\u63D0\u51FA\u65F6\u95F4",
-  "\u6267\u884C\u65F6\u95F4",
-  "\u6267\u884C\u7ED3\u679C",
-  "\u4F53\u9A8C\u7801\u52A8\u4F5C",
-  "\u4F53\u9A8C\u7801",
-  "\u4F53\u9A8C\u6B21\u6570",
-  "\u4F53\u9A8C\u5929\u6570",
-  "\u6D3B\u52A8\u7801",
-  "\u7C89\u4E1D\u6298\u6263",
-  "\u9500\u552E\u5E02\u573A",
-  "\u53D1\u540E\u52A8\u4F5C",
-  "\u7ED3\u6848\u539F\u56E0"
-];
-var POST_FIELDS = ["KOL", "\u5185\u5BB9\u94FE\u63A5", "\u5185\u5BB9\u6807\u9898", "\u53D1\u5E03\u65E5\u671F", "\u5E73\u53F0", "\u5F62\u5F0F", "\u7B2C1\u5929\u64AD\u653E", "\u7B2C3\u5929\u64AD\u653E", "\u7B2C7\u5929\u64AD\u653E", "\u7B2C30\u5929\u64AD\u653E"];
-var ConsoleData = class {
-  constructor(ctx) {
-    this.ctx = ctx;
-  }
-  ctx;
-  snapshot;
-  reviews = [];
-  pendingMail = [];
-  posts = [];
-  templates = [];
-  loadedAt = 0;
-  async refresh() {
-    const { base, cfg } = this.ctx;
-    const t = cfg.tables;
-    const since = addDays(today(cfg), -PROBLEM_DAYS);
-    const [snapshot, open, failed, pendingMail, posts, templates] = await Promise.all([
-      loadSnapshot(base, cfg),
-      base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"]]] }, fields: REVIEW_FIELDS2 }),
-      base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u6267\u884C\u5931\u8D25"]], onOrAfter("\u6267\u884C\u65F6\u95F4", since)] }, fields: REVIEW_FIELDS2 }),
-      base.records(t.contacts, {
-        filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
-        fields: ["Message ID", "\u6E20\u9053", "\u6458\u8981", "\u65E5\u671F", "KOL", "\u5F85\u5904\u7406", "\u65B9\u5411", "\u5185\u5BB9"]
-      }),
-      base.records(t.posts, { fields: POST_FIELDS }).catch(() => []),
-      loadTemplates(base, cfg).catch(() => [])
-    ]);
-    this.templates = templates;
-    this.snapshot = snapshot;
-    this.reviews = [...open, ...failed];
-    this.pendingMail = pendingMail;
-    this.posts = posts;
-    this.loadedAt = Date.now();
-  }
-};
-function fans(v) {
-  const n = Number(v);
-  if (!v || Number.isNaN(n)) return "";
-  return n >= 1e4 ? `${(n / 1e4).toFixed(1).replace(/\.0$/, "")} \u4E07` : n.toLocaleString("en-US");
-}
-function ago(dayStr, todayStr) {
-  if (!dayStr) return "";
-  const n = daysBetween(dayStr, todayStr);
-  if (n <= 0) return n === 0 ? "\u4ECA\u5929" : shortDay(dayStr);
-  if (n === 1) return "\u6628\u5929";
-  return n <= 30 ? `${n} \u5929\u524D` : shortDay(dayStr);
-}
-function ahead(dayStr, todayStr) {
-  if (!dayStr) return "";
-  const n = daysBetween(todayStr, dayStr);
-  if (n === 0) return "\u4ECA\u5929";
-  if (n === 1) return "\u660E\u5929";
-  if (n > 1 && n <= 7) return `${n} \u5929\u540E\uFF08${shortDay(dayStr)}\uFF09`;
-  return shortDay(dayStr);
-}
-function shortDay(dayStr) {
-  const [, m, d] = dayStr.split("-").map(Number);
-  return m && d ? `${m} \u6708 ${d} \u65E5` : dayStr;
-}
-function handleOf2(s, f) {
-  const p = profileOf(s, f);
-  const h = text(p?.["\u8D26\u53F7"]);
-  return h ? h.startsWith("@") ? h : `@${h}` : displayName(s, f);
-}
-function subOf(p, name) {
-  const platform = text(p?.["\u4E3B\u8981\u5E73\u53F0"]).split(",")[0]?.trim();
-  return [text(p?.["\u79F0\u547C"]) || name, [platform, fans(p?.["\u7C89\u4E1D\u6570"])].filter(Boolean).join(" ")].filter(Boolean).join(" \xB7 ");
-}
-function situationOf(f, cfg, todayStr) {
-  const tz = cfg.timezone;
-  const stage = option(f["\u9636\u6BB5"]);
-  const turn = option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]);
-  const code = text(f["\u6D3B\u52A8\u7801"]);
-  switch (stage) {
-    case "\u5DF2\u9080\u7EA6":
-      return `\u9080\u7EA6\u4E86\u8FD8\u6CA1\u56DE\uFF08${shortDay(day(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], tz)) || "\u65E5\u671F\u4E0D\u8BE6"}\uFF09`;
-    case "\u5DF2\u56DE\u590D":
-      return turn === "\u6211\u4EEC" || turn === "\u7B49\u4F60\u5BA1\u6838" ? "\u56DE\u4FE1\u4E86\uFF0C\u7B49\u6211\u4EEC\u56DE" : "\u56DE\u8FC7\u4FE1\uFF0C\u5728\u7B49\u5BF9\u65B9";
-    case "\u4F53\u9A8C\u4E2D": {
-      const used = Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0;
-      const max = Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0;
-      const exp = day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz);
-      return `\u5728\u8BD5\u7528${max ? `\uFF0C\u7528\u4E86 ${used} / ${max} \u6B21` : ""}${exp ? `\uFF0C${ahead(exp, todayStr)}\u5230\u671F` : ""}`;
-    }
-    case "\u5DF2\u770B\u62A5\u544A":
-      return "\u8BD5\u7528\u8FC7\uFF0C\u770B\u4E86\u62A5\u544A";
-    case "\u5408\u4F5C\u4E2D":
-      return code ? `\u5728\u8C08\u5408\u4F5C\uFF0C\u6D3B\u52A8\u7801 ${code} \u5DF2\u5F00` : "\u5728\u8C08\u5408\u4F5C";
-    case "\u5DF2\u7EA6\u53D1\u5E03":
-      return `\u7EA6\u597D ${shortDay(day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz)) || "\uFF08\u65E5\u671F\u6CA1\u586B\uFF09"} \u53D1\u5E03`;
-    case "\u5DF2\u53D1\u5E03":
-      return "\u5DF2\u7ECF\u53D1\u5E03";
-    case "\u6682\u7F13":
-      return "\u6682\u7F13";
-    case "\u7ED3\u6848":
-      return `\u5DF2\u7ED3\u6848${option(f["\u7ED3\u6848\u539F\u56E0"]) ? `\uFF08${option(f["\u7ED3\u6848\u539F\u56E0"])}\uFF09` : ""}`;
-    default:
-      return text(f["\u4E0B\u4E00\u6B65"]) || stage;
-  }
-}
-var GROUP_ORDER = ["\u51FA\u4E86\u95EE\u9898", "\u53D1\u5E03", "\u56DE\u4FE1", "\u6765\u4FE1", "\u9080\u7EA6\u548C\u51B3\u5B9A", "\u6A21\u677F", "\u5176\u4ED6"];
-function decisionCards(data, cfg, todayStr, mails = /* @__PURE__ */ new Map()) {
-  const s = data.snapshot;
-  const tz = cfg.timezone;
-  const cards = [];
-  const who = (fid) => {
-    const f = s.followups.get(fid);
-    return f ? { id: fid, name: `${handleOf2(s, f)} ${text(profileOf(s, f)?.["\u79F0\u547C"]) || ""}`.trim() } : void 0;
-  };
-  const meta = (fid) => {
-    const f = s.followups.get(fid);
-    if (!f) return "";
-    const p = profileOf(s, f);
-    return [option(f["\u9636\u6BB5"]), subOf(p, "").replace(/^ · /, "")].filter(Boolean).join(" \xB7 ");
-  };
-  for (const r of data.reviews.filter((r2) => option(r2["\u72B6\u6001"]) === "\u6267\u884C\u5931\u8D25")) {
-    const fid = linkIds(r["KOL"])[0] ?? "";
-    const w = who(fid);
-    cards.push({
-      id: r.record_id,
-      kind: "problem",
-      group: "\u51FA\u4E86\u95EE\u9898",
-      tag: "\u6CA1\u505A\u6210",
-      who: w,
-      headline: `${w?.name ?? text(r["\u5BA1\u6838\u9879"])}\uFF1A${text(r["\u5BA1\u6838\u9879"]) || "\u8FD9\u4EF6\u4E8B"}\u6CA1\u505A\u6210`,
-      meta: `${stamp(cellTime(r["\u6267\u884C\u65F6\u95F4"], tz) ?? Date.now(), tz)} \u6267\u884C`,
-      suggest: "\u770B\u4E00\u4E0B\u539F\u56E0\uFF0C\u5904\u7406\u597D\u4EE5\u540E\u5728\u98DE\u4E66\u5BA1\u6838\u961F\u5217\u91CC\u91CD\u65B0\u5B89\u6392",
-      steps: [],
-      why: text(r["\u6267\u884C\u7ED3\u679C"]) || "\u6CA1\u6709\u5199\u539F\u56E0"
-    });
-  }
-  for (const f of s.followups.values()) {
-    if (option(f["\u9636\u6BB5"]) !== "\u5DF2\u7EA6\u53D1\u5E03") continue;
-    const due = day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz);
-    if (!due || daysBetween(due, todayStr) < OVERDUE_GRACE_DAYS) continue;
-    const late = daysBetween(due, todayStr);
-    const w = who(f.record_id);
-    const code = text(f["\u6D3B\u52A8\u7801"]);
-    cards.push({
-      id: `overdue:${f.record_id}`,
-      kind: "overdue",
-      group: "\u53D1\u5E03",
-      tag: "\u6CA1\u6309\u65F6\u53D1\u5E03",
-      who: w,
-      headline: `${w?.name ?? displayName(s, f)} \u7EA6\u597D ${shortDay(due)} \u53D1\u5E03\uFF0C\u8FC7\u4E86 ${late} \u5929\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50`,
-      meta: meta(f.record_id),
-      suggest: "\u5148\u53BB\u5979\u7684\u4E3B\u9875\u770B\u4E00\u773C\uFF1B\u8FD8\u6CA1\u53D1\u7684\u8BDD\uFF0C\u5199\u4FE1\u95EE\u5979\u4E00\u4E0B",
-      steps: [
-        { text: "\u5DF2\u7ECF\u53D1\u4E86\uFF1A\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u4E0B\u9762\uFF0C\u70B9\u300C\u8BB0\u4E0B\u8FD9\u6761\u53D1\u5E03\u300D\uFF0C\u4E4B\u540E\u4F1A\u81EA\u52A8\u8BB0\u64AD\u653E\u548C\u4E92\u52A8" },
-        { text: "\u8FD8\u6CA1\u53D1\uFF1A\u770B\u4E00\u4E0B\u4E0B\u9762\u8FD9\u5C01\u4FE1\uFF0C\u70B9\u300C\u53D1\u4FE1\u95EE\u5979\u300D\u5C31\u6392\u961F\u53D1\u51FA\uFF0C\u4E0B\u6B21\u8DDF\u8FDB\u6539\u5230 3 \u5929\u540E" }
-      ],
-      draft: checkInDraft(data.templates, f, profileOf(s, f), due, code),
-      why: `\u7CFB\u7EDF\u6BCF\u5929\u770B\u5979\u6700\u8FD1\u7684\u5E16\u5B50\uFF0C\u6CA1\u627E\u5230\u63D0\u5230\u300C${cfg.postWords.join("\u3001") || "\u9879\u76EE\u8BC6\u522B\u8BCD"}\u300D${code ? `\u6216\u6D3B\u52A8\u7801 ${code}` : ""}\u7684\u3002\u53EF\u80FD\u8FD8\u6CA1\u53D1\uFF0C\u4E5F\u53EF\u80FD\u53D1\u4E86\u4F46\u6CA1\u63D0\uFF0C\u7CFB\u7EDF\u8BA4\u4E0D\u51FA\u6765\u3002`
-    });
-  }
-  const openByKol = /* @__PURE__ */ new Set();
-  let waitingClaude = 0;
-  for (const r of data.reviews.filter((r2) => option(r2["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25")) {
-    const state = reviewState(r);
-    const fid = linkIds(r["KOL"])[0] ?? "";
-    if (fid) openByKol.add(fid);
-    if (state === "revise") waitingClaude++;
-    if (state !== "pending") continue;
-    cards.push(reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid)));
-  }
-  const byKol = /* @__PURE__ */ new Map();
-  for (const m of data.pendingMail) {
-    const fid = linkIds(m["KOL"])[0] ?? "";
-    if (fid && openByKol.has(fid)) continue;
-    const key = fid || `contact:${m.record_id}`;
-    byKol.set(key, [...byKol.get(key) ?? [], m]);
-  }
-  for (const [key, ms] of byKol) {
-    const fid = key.startsWith("contact:") ? "" : key;
-    ms.sort((a, b2) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b2["\u65E5\u671F"], tz) ?? 0));
-    const first2 = cellTime(ms[0]["\u65E5\u671F"], tz);
-    const latest = ms[ms.length - 1];
-    const w = who(fid);
-    const body2 = mails.get(`msg:${text(latest["Message ID"])}`);
-    const when = cellTime(latest["\u65E5\u671F"], tz);
-    const waited = first2 ? daysBetween(day(first2, tz), todayStr) : 0;
-    const ids2 = ms.map((m) => m.record_id).join(",");
-    if (!fid) {
-      const from = text(latest["\u5185\u5BB9"]).replace(/^发件人：/, "") || "\u964C\u751F\u53D1\u4EF6\u4EBA";
-      cards.push({
-        id: `unknown:${ids2}`,
-        kind: "unknown",
-        group: "\u6765\u4FE1",
-        tag: "\u5BF9\u4E0D\u4E0A\u4EBA",
-        headline: `${from} \u6765\u4FE1\uFF0C\u5BF9\u4E0D\u4E0A\u4EFB\u4F55 KOL`,
-        meta: [when ? stamp(when, tz) : "", option(latest["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(latest["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
-        mail: { label: `${from} \u8BF4 \xB7 ${text(latest["\u6458\u8981"])}`, text: body2?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
-        suggest: "\u8BF4\u4E00\u4E0B\u8FD9\u662F\u54EA\u4F4D KOL \u7684\uFF1B\u8DDF KOL \u65E0\u5173\u5C31\u76F4\u63A5\u5F52\u6863",
-        steps: [{ text: "\u5173\u8054\u5230 KOL \u540E\uFF0C\u8FD9\u4E2A\u90AE\u7BB1\u8BB0\u8FDB\u5979\u7684\u6863\u6848\uFF0C\u4EE5\u540E\u7684\u6765\u4FE1\u4F1A\u81EA\u52A8\u5BF9\u4E0A\uFF1B\u8FD9\u5C01\u4FE1\u4F1A\u6392\u56DE\u8FD9\u91CC\u7B49\u4F60\u5904\u7406" }],
-        why: "\u53D1\u4EF6\u4EBA\u7684\u90AE\u7BB1\u4E0D\u5728\u4EFB\u4F55\u6863\u6848\u91CC\u3002\u53EF\u80FD\u662F\u5979\u6362\u4E86\u90AE\u7BB1\u3001\u7ECF\u7EAA\u4EBA\u4EE3\u56DE\uFF0C\u4E5F\u53EF\u80FD\u662F\u5E7F\u544A\u6216\u7CFB\u7EDF\u90AE\u4EF6\u3002"
-      });
-      continue;
-    }
-    const closed = option(data.snapshot.followups.get(fid)?.["\u9636\u6BB5"]) === "\u7ED3\u6848";
-    if (closed) {
-      const reason = option(data.snapshot.followups.get(fid)?.["\u7ED3\u6848\u539F\u56E0"]);
-      cards.push({
-        id: `mail:${ids2}`,
-        kind: "mail",
-        group: "\u6765\u4FE1",
-        tag: "\u4E4B\u524D\u5DF2\u7ED3\u6848",
-        who: w,
-        headline: `${w?.name ?? "\u4E00\u4F4D KOL"} \u53C8\u6765\u4FE1\u4E86\uFF08\u4E4B\u524D\u5DF2\u7ED3\u6848${reason ? `\uFF1A${reason}` : ""}\uFF09`,
-        meta: [meta(fid), option(latest["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(latest["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
-        mail: { label: `${w?.name ?? "\u5BF9\u65B9"}\u8BF4 \xB7 ${text(latest["\u6458\u8981"])}`, text: body2?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
-        suggest: "\u770B\u770B\u5979\u8BF4\u4EC0\u4E48\uFF1B\u60F3\u7EE7\u7EED\u7684\u8BDD\u8BA9 Claude \u5199\u56DE\u4FE1\uFF0C\u8DDF\u8FDB\u4F1A\u91CD\u65B0\u6253\u5F00",
-        steps: [{ text: "\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u56DE\u4FE1\u4F1A\u6392\u8FDB\u8FD9\u91CC\u7B49\u4F60\u770B" }],
-        why: "\u8FD9\u4F4D\u4E4B\u524D\u5DF2\u7ECF\u7ED3\u675F\u8DDF\u8FDB\u4E86\u3002\u5979\u4E3B\u52A8\u6765\u4FE1\uFF0C\u591A\u534A\u503C\u5F97\u518D\u770B\u4E00\u773C\u3002"
-      });
-      continue;
-    }
-    cards.push({
-      id: `mail:${ids2}`,
-      kind: "mail",
-      group: "\u6765\u4FE1",
-      tag: "\u8FD8\u6CA1\u8349\u7A3F",
-      who: w,
-      headline: `${w?.name ?? "\u4E00\u4F4D KOL"} \u6765\u4FE1${ms.length > 1 ? `\uFF08${ms.length} \u5C01\uFF09` : ""}${waited >= 2 ? `\uFF0C\u5DF2\u7ECF ${waited} \u5929\u6CA1\u4EBA\u56DE\u4E86` : ""}`,
-      meta: [meta(fid), option(latest["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(latest["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
-      mail: { label: `${w?.name ?? "\u5BF9\u65B9"}${ms.length > 1 ? "\u6700\u8FD1\u4E00\u5C01" : ""}\u8BF4 \xB7 ${text(latest["\u6458\u8981"])}`, text: body2?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
-      suggest: "\u8BA9 Claude \u5199\u4E00\u5C01\u56DE\u4FE1",
-      steps: [{ text: "\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u56DE\u4FE1\u4F1A\u6392\u8FDB\u8FD9\u91CC\u7B49\u4F60\u770B" }],
-      why: "\u8FD9\u5C01\u4FE1\u8FD8\u6CA1\u6709\u8349\u7A3F\uFF0C\u591A\u534A\u662F\u4ECA\u5929\u65E9\u4E0A\u7684\u4F8B\u884C\u8DD1\u5B8C\u4EE5\u540E\u624D\u6536\u5230\u7684\u3002"
-    });
-  }
-  const at = (c) => GROUP_ORDER.indexOf(c.group);
-  cards.sort((a, b2) => at(a) - at(b2));
-  return { cards, waitingClaude };
-}
-function defaultCheckIn(language, name, due, code) {
-  const [, m, d] = due.split("-").map(Number);
-  if (/英/.test(language)) {
-    return { subject: "Checking in on your post", body: `Hi ${name},
-
-Just checking in on the post we talked about for ${m}/${d}. If it's already up, could you send us the link? If the timing has changed, that's totally fine \u2014 just let us know when works for you.
-
-Thank you!` };
-  }
-  if (/简|簡體/.test(language) && !/繁/.test(language)) {
-    return { subject: "\u60F3\u786E\u8BA4\u4E00\u4E0B\u53D1\u5E03\u65F6\u95F4", body: `${name}\u4F60\u597D\uFF1A
-
-\u60F3\u8DDF\u4F60\u786E\u8BA4\u4E00\u4E0B\u4E4B\u524D\u7EA6\u597D ${m} \u6708 ${d} \u65E5\u7684\u53D1\u5E03\u8FDB\u5EA6\u3002\u5982\u679C\u5DF2\u7ECF\u53D1\u4E86\uFF0C\u65B9\u4FBF\u628A\u94FE\u63A5\u4F20\u7ED9\u6211\u4EEC\u5417\uFF1F\u5982\u679C\u65F6\u95F4\u8981\u8C03\u6574\u4E5F\u6CA1\u5173\u7CFB\uFF0C\u8DDF\u6211\u4EEC\u8BF4\u4E00\u58F0\u5C31\u597D\u3002
-
-\u8C22\u8C22\u4F60\uFF01` };
-  }
-  return { subject: "\u60F3\u78BA\u8A8D\u4E00\u4E0B\u767C\u5E03\u6642\u9593", body: `${name}\u60A8\u597D\uFF1A
-
-\u60F3\u8DDF\u60A8\u78BA\u8A8D\u4E00\u4E0B\u4E4B\u524D\u7D04\u597D ${m} \u6708 ${d} \u65E5\u7684\u767C\u5E03\u9032\u5EA6\u3002\u5982\u679C\u5DF2\u7D93\u767C\u4E86\uFF0C\u65B9\u4FBF\u628A\u9023\u7D50\u50B3\u7D66\u6211\u5011\u55CE\uFF1F\u5982\u679C\u6642\u9593\u8981\u8ABF\u6574\u4E5F\u6C92\u95DC\u4FC2\uFF0C\u8DDF\u6211\u5011\u8AAA\u4E00\u8072\u5C31\u597D\u3002
-
-\u8B1D\u8B1D\u60A8\uFF01` + (code ? `
-
-\uFF08\u60A8\u7684\u5C08\u5C6C\u6D3B\u52D5\u78BC\uFF1A${code}\uFF09` : "") };
-}
-function checkInDraft(templates, f, p, due, code) {
-  const language = option(p?.["\u8A9E\u8A00"]);
-  const t = pickTemplate(templates, "\u53D1\u5E03\u786E\u8BA4", language);
-  const label = "\u95EE\u5979\u7684\u4FE1\uFF08\u53EF\u4EE5\u76F4\u63A5\u6539\uFF09";
-  const name = text(p?.["\u79F0\u547C"]) || text(f["\u8D26\u53F7\u540D\u79F0"]) || text(p?.["\u8D26\u53F7\u540D\u79F0"]);
-  if (!t) {
-    return {
-      label,
-      ...defaultCheckIn(language, name, due, code),
-      note: "\u8FD9\u662F\u63D2\u4EF6\u81EA\u5E26\u7684\u5199\u6CD5\uFF0C\u53D1\u4E4B\u524D\u770B\u4E00\u773C\u3002\u5E38\u7528\u7684\u8BDD\u53EF\u4EE5\u5728\u98DE\u4E66\u300C\u6A21\u677F\u300D\u8868\u52A0\u4E00\u4E2A\u7528\u9014\u4E3A\u300C\u53D1\u5E03\u786E\u8BA4\u300D\u7684\u6A21\u677F\uFF0C\u4EE5\u540E\u5C31\u7528\u4F60\u4EEC\u81EA\u5DF1\u7684\u5199\u6CD5"
-    };
-  }
-  const values2 = { \u7A31\u547C: name, \u79F0\u547C: name, \u8D26\u53F7\u540D\u79F0: text(f["\u8D26\u53F7\u540D\u79F0"]), \u7D04\u5B9A\u65E5\u671F: shortDay(due), \u7EA6\u5B9A\u65E5\u671F: shortDay(due), \u6D3B\u52D5\u78BC: code, \u6D3B\u52A8\u7801: code };
-  try {
-    return { label, ...render(t, values2) };
-  } catch (err) {
-    if (!(err instanceof MissingValue)) throw err;
-    return { label, subject: t.subject, body: t.body, note: `\u6A21\u677F\u91CC\u6709\u5360\u4F4D\u7B26\u6CA1\u6709\u503C\uFF08${err.message}\uFF09\uFF0C\u53D1\u4E4B\u524D\u628A { } \u91CC\u7684\u5B57\u6362\u6389` };
-  }
-}
-function reviewCard(r, s, cfg, w, meta, latest) {
-  const type = option(r["\u7C7B\u578B"]);
-  const fid = linkIds(r["KOL"])[0] ?? "";
-  const f = s.followups.get(fid);
-  const kind = SENDING_TYPES.includes(type) ? "reply" : type === "\u51B3\u5B9A" ? "batch" : type === "\u6A21\u677F\u5BA1\u6279" ? "template" : "todo";
-  const group = { reply: "\u56DE\u4FE1", batch: "\u9080\u7EA6\u548C\u51B3\u5B9A", template: "\u6A21\u677F", todo: "\u5176\u4ED6" }[kind];
-  const steps = [];
-  const action = option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"]);
-  if (action === "\u53D1\u7801") {
-    steps.push({ text: "\u5728 TAFU \u540E\u53F0\u5EFA\u4E00\u4E2A\u4F53\u9A8C\u7801", params: [
-      { label: "\u7801\u540D", value: text(r["\u4F53\u9A8C\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09", field: "\u4F53\u9A8C\u7801" },
-      { label: "\u80FD\u7528\u51E0\u6B21", value: String(Number(r["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses), field: "\u4F53\u9A8C\u6B21\u6570" },
-      { label: "\u51E0\u5929\u5185\u6709\u6548", value: String(Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days), field: "\u4F53\u9A8C\u5929\u6570" }
-    ] });
-  } else if (action === "\u5EF6\u671F") {
-    steps.push({ text: `\u628A\u4F53\u9A8C\u7801 ${text(r["\u4F53\u9A8C\u7801"]) || text(f?.["\u4F53\u9A8C\u7801"]) || ""} \u5EF6\u957F ${Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days} \u5929` });
-  } else if (action === "\u5F00\u6D3B\u52A8\u7801") {
-    steps.push({ text: "\u5728 TAFU \u540E\u53F0\u5F00\u5408\u4F5C\u6D3B\u52A8\uFF08\u7C89\u4E1D\u901A\u8FC7\u5979\u7684\u8FDE\u7ED3\u8D2D\u4E70\u6709\u6298\u6263\uFF0C\u5979\u62FF\u5206\u6DA6\uFF09", params: [
-      { label: "\u6D3B\u52A8\u7801", value: text(r["\u6D3B\u52A8\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09", field: "\u6D3B\u52A8\u7801" },
-      { label: "\u7C89\u4E1D\u51CF\u51E0 %", value: String(Number(r["\u7C89\u4E1D\u6298\u6263"]) || cfg.partner.percentOff), field: "\u7C89\u4E1D\u6298\u6263" },
-      { label: "\u5E02\u573A", value: text(r["\u9500\u552E\u5E02\u573A"]) || "\uFF08\u6309\u6863\u6848\u7684\u5E02\u573A\uFF09", field: "\u9500\u552E\u5E02\u573A" }
-    ] });
-  }
-  const channel = option(r["\u53D1\u9001\u6E20\u9053"]) || option(f?.["\u8054\u7CFB\u6E20\u9053"]);
-  const { subject, body: body2 } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
-  const recipient = emailsIn(r["\u6536\u4EF6\u4EBA"])[0] ?? "";
-  const sends = kind === "reply" && channel !== "\u4E0D\u53D1\u90AE\u4EF6" && body2.trim();
-  if (sends) {
-    const mb = mailboxFor(cfg, channel);
-    if (mb) steps.push({ text: `${action ? "\u6210\u529F\u540E\uFF0C" : ""}\u4ECE ${mb.address} \u628A\u4E0B\u9762\u8FD9\u5C01\u4FE1\u53D1\u7ED9 ${recipient || "\u5979"}` });
-    else {
-      steps.length = 0;
-      steps.push({ text: `\u590D\u5236\u4E0B\u9762\u8FD9\u5C01\u4FE1\uFF0C\u5230\u300C${channel}\u300D\u53D1\u7ED9 ${recipient || "\u5979"}\uFF08\u8FD9\u4E2A\u90AE\u7BB1\u7CFB\u7EDF\u53D1\u4E0D\u4E86\uFF09` });
-      if (action) steps.push({ text: `\u8FD9\u4E00\u6761\u8FD8\u8981${action}\uFF0C\u624B\u52A8\u53D1\u4FE1\u65F6\u7CFB\u7EDF\u6CA1\u6CD5\u4E00\u8D77\u505A\uFF1A\u70B9\u300C\u8BA9 Claude \u6539\u300D\uFF0C\u8BF7\u5B83\u6539\u6210\u4ECE\u98DE\u4E66\u90AE\u7BB1\u53D1` });
-      steps.push({ text: "\u53D1\u51FA\u53BB\u4EE5\u540E\u70B9\u300C\u6211\u53D1\u51FA\u53BB\u4E86\u300D\uFF0C\u7CFB\u7EDF\u8BB0\u4E0B\u8FD9\u5C01\u4FE1\uFF0C\u6539\u6210\u7B49\u5979\u56DE" });
-    }
-  }
-  const after = option(r["\u53D1\u540E\u52A8\u4F5C"]);
-  if (after) steps.push({ text: `${after === "\u6C38\u4E0D\u8054\u7CFB" ? "\u6807\u6210\u6C38\u4E0D\u8054\u7CFB\uFF0C" : ""}\u7ED3\u675F\u8DDF\u8FDB\uFF08\u539F\u56E0\uFF1A${option(r["\u7ED3\u6848\u539F\u56E0"]) || "\u6CA1\u5199"}\uFF09` });
-  if (kind === "batch") steps.push({ text: "\u8BB0\u4E0B\u4F60\u540C\u610F\u4E86\u3002\u771F\u6B63\u53D1\u51FA\u8981\u5728 Claude \u91CC\u8BF4\u300C\u53D1\u8FD9\u6279\u9080\u7EA6\u300D\uFF0CClaude \u4F1A\u6309\u8FD9\u4E2A\u51B3\u5B9A\u5206\u6279\u53D1" });
-  if (kind === "template") steps.push({ text: "\u8BB0\u4E0B\u4F60\u540C\u610F\u4E86\u3002\u8FD8\u8981\u5230\u98DE\u4E66\u300C\u6A21\u677F\u300D\u8868\u628A\u8FD9\u4E2A\u6A21\u677F\u7684\u72B6\u6001\u6539\u6210\u300C\u5DF2\u6279\u51C6\u300D\uFF0C\u4E4B\u540E\u624D\u4F1A\u88AB\u7528" });
-  return {
-    id: r.record_id,
-    kind,
-    group,
-    tag: type || "\u5F85\u529E",
-    who: w,
-    meta,
-    headline: text(r["\u5BA1\u6838\u9879"]) || w?.name || "\u4E00\u4EF6\u5F85\u4F60\u51B3\u5B9A\u7684\u4E8B",
-    mail: latest ? { label: `${w?.name ?? "\u5BF9\u65B9"}\u8BF4`, text: latest.text, when: latest.when } : void 0,
-    suggest: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) || text(r["\u5BA1\u6838\u9879"]),
-    steps,
-    why: text(r["\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE"]),
-    send: sends ? { from: mailboxFor(cfg, channel)?.address ?? channel, to: recipient, byHand: !mailboxFor(cfg, channel) } : void 0,
-    draft: body2.trim() ? { label: sends ? `\u8981\u53D1\u7ED9 ${recipient || "\u5979"} \u7684\u4FE1` : kind === "template" ? "\u6A21\u677F\u5185\u5BB9" : "\u8349\u7A3F", subject, body: body2 } : void 0
-  };
-}
-async function readBodies(ctx, mails) {
-  const byMailbox = /* @__PURE__ */ new Map();
-  for (const m of mails) {
-    const mb = mailboxFor(ctx.cfg, m.channel);
-    if (mb && m.messageId) byMailbox.set(mb.address, [...byMailbox.get(mb.address) ?? [], m.messageId]);
-  }
-  const out = /* @__PURE__ */ new Map();
-  for (const [mailbox, ids2] of byMailbox) {
-    for (let i = 0; i < ids2.length; i += 20) {
-      const data = await ctx.base.lark.json([
-        "mail",
-        "+messages",
-        "--mailbox",
-        mailbox,
-        "--message-ids",
-        ids2.slice(i, i + 20).join(","),
-        "--html=false",
-        "--format",
-        "json",
-        "--as",
-        "user"
-      ]).catch(() => null);
-      for (const m of data?.messages ?? []) out.set(String(m.message_id), ownWords(String(m.body_plain_text ?? "")));
-    }
-  }
-  return out;
-}
-async function cardMails(ctx, data) {
-  const tz = ctx.cfg.timezone;
-  const bodies = await readBodies(ctx, data.pendingMail.map((m) => ({ messageId: text(m["Message ID"]), channel: option(m["\u6E20\u9053"]) })));
-  const out = /* @__PURE__ */ new Map();
-  const sorted = [...data.pendingMail].sort((a, b2) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b2["\u65E5\u671F"], tz) ?? 0));
-  for (const m of sorted) {
-    const id = text(m["Message ID"]);
-    const t = bodies.get(id);
-    if (!t) continue;
-    const mt = { text: t, when: stamp(cellTime(m["\u65E5\u671F"], tz) ?? Date.now(), tz) };
-    out.set(`msg:${id}`, mt);
-    for (const fid of linkIds(m["KOL"])) out.set(fid, mt);
-  }
-  return out;
-}
-function peopleView(data, cfg, view, todayStr, q = "") {
-  const s = data.snapshot;
-  const tz = cfg.timezone;
-  const decided = new Set(data.reviews.filter((r) => reviewState(r) === "pending" && option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25").flatMap((r) => linkIds(r["KOL"])));
-  const open = [...s.followups.values()].filter((f) => option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848");
-  const stage = (f) => option(f["\u9636\u6BB5"]);
-  const lastContact = (f) => {
-    const a = day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz);
-    const b2 = day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz);
-    return a > b2 ? a : b2;
-  };
-  const muted = (v) => ({ v, tone: "muted" });
-  const nextUp = (f) => ({ v: text(f["\u4E0B\u4E00\u6B65"]) || "" });
-  const followupRow = (f, cells) => ({
-    id: f.record_id,
-    hasDetail: true,
-    handle: handleOf2(s, f),
-    sub: subOf(profileOf(s, f), displayName(s, f)),
-    cells
-  });
-  let rows = [];
-  let pick2 = [];
-  if (view === "wait") {
-    pick2 = open.filter((f) => ["\u6211\u4EEC", "\u7B49\u4F60\u5BA1\u6838"].includes(option(f["\u5F53\u524D\u8F6E\u5230\u8C01"])));
-    const waited = (f) => day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz) ? daysBetween(day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz), todayStr) : 0;
-    pick2.sort((a, b2) => waited(b2) - waited(a));
-    rows = pick2.map((f) => {
-      const w = waited(f);
-      return followupRow(f, [
-        { v: situationOf(f, cfg, todayStr) },
-        { v: w <= 0 ? "\u4ECA\u5929" : `${w} \u5929`, tone: w >= 3 ? "warn" : void 0 },
-        decided.has(f.record_id) ? { v: "\u7B49\u4F60\u51B3\u5B9A", badge: true, tone: "warn", link: "decide" } : { v: "" },
-        { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) }
-      ]);
-    });
-  } else if (view === "noreply") {
-    pick2 = open.filter((f) => stage(f) === "\u5DF2\u9080\u7EA6");
-    pick2.sort((a, b2) => day(a["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz).localeCompare(day(b2["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz)));
-    rows = pick2.map((f) => followupRow(f, [
-      muted(shortDay(day(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], tz))),
-      { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) },
-      muted(option(f["\u9080\u7EA6\u6279\u6B21"])),
-      muted(option(f["\u8054\u7CFB\u6E20\u9053"]))
-    ]));
-  } else if (view === "trial") {
-    pick2 = open.filter((f) => stage(f) === "\u4F53\u9A8C\u4E2D");
-    pick2.sort((a, b2) => (day(a["\u4F53\u9A8C\u7801\u5230\u671F"], tz) || "9").localeCompare(day(b2["\u4F53\u9A8C\u7801\u5230\u671F"], tz) || "9"));
-    rows = pick2.map((f) => {
-      const used = Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0;
-      const max = Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0;
-      const exp = day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz);
-      const left = exp ? daysBetween(todayStr, exp) : 99;
-      return followupRow(f, [
-        { v: max ? `${used} / ${max}${used === 0 ? " \xB7 \u8FD8\u6CA1\u7528" : used >= max ? " \xB7 \u7528\u5B8C\u4E86" : ""}` : "\uFF08\u6CA1\u540C\u6B65\u5230\uFF09", tone: max && used === 0 ? "warn" : void 0 },
-        { v: exp ? left < 0 ? `\u5DF2\u8FC7\u671F\uFF08${shortDay(exp)}\uFF09` : ahead(exp, todayStr) : "", tone: left <= 2 ? "warn" : void 0 },
-        muted(ago(lastContact(f), todayStr)),
-        nextUp(f)
-      ]);
-    });
-  } else if (view === "deal") {
-    pick2 = open.filter((f) => ["\u5DF2\u770B\u62A5\u544A", "\u5408\u4F5C\u4E2D"].includes(stage(f)));
-    rows = pick2.map((f) => {
-      const last = lastContact(f);
-      return followupRow(f, [
-        { v: situationOf(f, cfg, todayStr) },
-        text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("\u8FD8\u6CA1\u5F00"),
-        { v: ago(last, todayStr), tone: last && daysBetween(last, todayStr) >= 5 ? "warn" : "muted" },
-        nextUp(f)
-      ]);
-    });
-  } else if (view === "post") {
-    pick2 = open.filter((f) => stage(f) === "\u5DF2\u7EA6\u53D1\u5E03");
-    pick2.sort((a, b2) => (day(a["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz) || "9").localeCompare(day(b2["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz) || "9"));
-    rows = pick2.map((f) => {
-      const due = day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz);
-      const late = due ? daysBetween(due, todayStr) : 0;
-      const when = !due ? muted("\u6CA1\u586B\u65E5\u671F") : late >= OVERDUE_GRACE_DAYS ? { v: `\u5DF2\u8FC7 ${late} \u5929\uFF08${shortDay(due)}\uFF09\uFF0C\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50`, tone: "bad", badge: true } : { v: late >= 0 ? `${shortDay(due)}\uFF08\u4ECA\u5929\u524D\u540E\uFF09` : ahead(due, todayStr), tone: late >= -3 ? "warn" : void 0 };
-      return followupRow(f, [when, text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("\u8FD8\u6CA1\u5F00"), nextUp(f)]);
-    });
-  } else if (view === "posted") {
-    const byKol = /* @__PURE__ */ new Map();
-    for (const p of data.posts) for (const id of linkIds(p["KOL"])) byKol.set(id, [...byKol.get(id) ?? [], p]);
-    pick2 = [...s.followups.values()].filter((f) => stage(f) === "\u5DF2\u53D1\u5E03" || byKol.has(f.record_id));
-    const latestPost = (f) => (byKol.get(f.record_id) ?? []).sort((a, b2) => (cellTime(b2["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0) - (cellTime(a["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0))[0];
-    pick2.sort((a, b2) => (cellTime(latestPost(b2)?.["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0) - (cellTime(latestPost(a)?.["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0));
-    rows = pick2.map((f) => {
-      const p = latestPost(f);
-      const n = byKol.get(f.record_id)?.length ?? 0;
-      const views = p ? [30, 7, 3, 1].map((d) => ({ d, v: Number(p[`\u7B2C${d}\u5929\u64AD\u653E`]) })).find((x) => x.v > 0) : void 0;
-      return followupRow(f, [
-        p ? { v: `${text(p["\u5185\u5BB9\u6807\u9898"]) || option(p["\u5F62\u5F0F"]) || "\u5E16\u5B50"}${n > 1 ? ` \xB7 \u5171 ${n} \u6761` : ""}`, link: text(p["\u5185\u5BB9\u94FE\u63A5"]) || void 0 } : muted("\u6CA1\u8BB0\u94FE\u63A5"),
-        muted(p ? shortDay(day(p["\u53D1\u5E03\u65E5\u671F"], tz)) : ""),
-        views ? { v: `${views.v.toLocaleString("en-US")}\uFF08\u7B2C ${views.d} \u5929\uFF09` } : muted("\u8FD8\u6CA1\u6570\u636E"),
-        text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("")
-      ]);
-    });
-  } else if (view === "pool") {
-    const profiles = [...s.profiles.values()].filter((p) => !linkIds(p["\u8DDF\u8FDB\u8BB0\u5F55"]).length && profileEmails(p).length && option(p["\u8054\u7CFB\u8BB8\u53EF"]) !== "\u6C38\u4E0D\u8054\u7CFB");
-    const term2 = q.trim().toLowerCase();
-    const hit = (p) => !term2 || [text(p["\u8D26\u53F7"]), text(p["\u8D26\u53F7\u540D\u79F0"]), text(p["\u79F0\u547C"]), ...profileEmails(p)].some((x) => x.toLowerCase().includes(term2));
-    const list3 = profiles.filter(hit);
-    return {
-      total: list3.length,
-      rows: list3.slice(0, 300).map((p) => ({
-        id: p.record_id,
-        hasDetail: false,
-        handle: text(p["\u8D26\u53F7"]) ? `@${text(p["\u8D26\u53F7"]).replace(/^@/, "")}` : text(p["\u8D26\u53F7\u540D\u79F0"]),
-        sub: subOf(p, text(p["\u8D26\u53F7\u540D\u79F0"])),
-        cells: [
-          { v: [option(p["\u5185\u5BB9\u7C7B\u578B"])].filter(Boolean).join(" \xB7 ") || "\uFF08\u8FD8\u6CA1\u8865\u597D\u8D44\u6599\uFF09", tone: option(p["\u5185\u5BB9\u7C7B\u578B"]) ? void 0 : "muted" },
-          { v: fans(p["\u7C89\u4E1D\u6570"]) },
-          muted(option(p["\u5E02\u573A"])),
-          muted(option(p["\u5165\u5E93\u6279\u6B21"]))
-        ]
-      }))
-    };
-  } else {
-    pick2 = open;
-    pick2.sort((a, b2) => lastContact(b2).localeCompare(lastContact(a)));
-    rows = pick2.map((f) => followupRow(f, [{ v: situationOf(f, cfg, todayStr) }, { v: stage(f), badge: true }, { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) }]));
-  }
-  const term = q.trim().toLowerCase();
-  if (term) {
-    rows = rows.filter((r) => {
-      const f = s.followups.get(r.id);
-      return [r.handle, r.sub, ...f ? profileEmails(profileOf(s, f)) : []].some((x) => x.toLowerCase().includes(term));
-    });
-  }
-  return { rows: rows.slice(0, 500), total: rows.length };
-}
-function viewCounts(data, cfg, todayStr) {
-  const out = {};
-  for (const k of Object.keys(VIEWS)) out[k] = peopleView(data, cfg, k, todayStr).total;
-  return out;
-}
-var EVENT_MARKS = /^\[(自动回复|退信)\]/;
-async function personDetail(ctx, data, fid, all = false) {
-  const { base, cfg } = ctx;
-  const t = cfg.tables;
-  const tz = cfg.timezone;
-  const todayStr = today(cfg);
-  const s = data.snapshot;
-  const f = s.followups.get(fid);
-  if (!f) return null;
-  const p = profileOf(s, f);
-  const [links] = await base.get(t.followups, [fid], ["\u63A5\u89E6\u8BB0\u5F55", "\u53D1\u5E03\u5185\u5BB9"]);
-  const contacts = (await base.get(t.contacts, linkIds(links?.["\u63A5\u89E6\u8BB0\u5F55"]), ["\u65B9\u5411", "\u6458\u8981", "\u5185\u5BB9", "\u65E5\u671F", "\u6E20\u9053", "Message ID", "\u5F85\u5904\u7406"])).sort((a, b2) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b2["\u65E5\u671F"], tz) ?? 0));
-  const posts = await base.get(t.posts, linkIds(links?.["\u53D1\u5E03\u5185\u5BB9"]), POST_FIELDS).catch(() => []);
-  const recent = all ? contacts : contacts.slice(-12);
-  const unread = recent.filter((c) => option(c["\u65B9\u5411"]) === "\u6536\u5230" && !text(c["\u5185\u5BB9"]) && text(c["Message ID"]) && !EVENT_MARKS.test(text(c["\u6458\u8981"])));
-  const bodies = await readBodies(ctx, unread.map((c) => ({ messageId: text(c["Message ID"]), channel: option(c["\u6E20\u9053"]) })));
-  const name = text(p?.["\u79F0\u547C"]) || displayName(s, f);
-  const bubbles = recent.map((c) => {
-    const dir = option(c["\u65B9\u5411"]);
-    const when = stamp(cellTime(c["\u65E5\u671F"], tz) ?? 0, tz);
-    const summary = text(c["\u6458\u8981"]);
-    const content = text(c["\u5185\u5BB9"]);
-    if (dir === "\u5B58\u6863") return { side: "event", who: "", when, text: summary || "\u5B58\u6863", ...content ? { full: content } : {} };
-    if (EVENT_MARKS.test(summary)) return { side: "event", who: "", when, text: summary };
-    const mark = summary.match(/^\[([^\]]+)\]/)?.[1];
-    if (dir === "\u53D1\u51FA") {
-      return { side: "us", who: `\u6211\u4EEC \xB7 ${option(c["\u6E20\u9053"])}${content ? "" : ` \xB7 ${summary}`}`.slice(0, 120), when, text: content || summary, summaryOnly: !content };
-    }
-    const body2 = bodies.get(text(c["Message ID"])) || content;
-    return { side: "them", who: `${name}${mark ? ` \xB7 ${mark}` : ""}`, when, text: body2 || summary, summaryOnly: !body2 };
-  });
-  const pending = data.reviews.filter((r) => linkIds(r["KOL"]).includes(fid) && reviewState(r) === "pending" && option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25");
-  const emails = profileEmails(p).map((e) => ({ address: e, blocked: s.doNotContact.has(e) }));
-  return {
-    id: fid,
-    handle: handleOf2(s, f),
-    name,
-    sub: subOf(p, displayName(s, f)),
-    stage: option(f["\u9636\u6BB5"]),
-    stageStep: STAGE_STEP[option(f["\u9636\u6BB5"])] ?? -1,
-    stages: STAGES,
-    situation: situationOf(f, cfg, todayStr),
-    lastContact: ago(day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz) > day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz) ? day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz) : day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz), todayStr),
-    turn: option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]),
-    next: text(f["\u4E0B\u4E00\u6B65"]),
-    nextDate: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr),
-    nextDateIso: day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz),
-    pending: pending.map((r) => ({ id: r.record_id, title: text(r["\u5BA1\u6838\u9879"]), ask: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) })),
-    bubbles,
-    olderCount: Math.max(0, contacts.length - recent.length),
-    showingAll: all,
-    trial: text(f["\u4F53\u9A8C\u7801"]) ? { code: text(f["\u4F53\u9A8C\u7801"]), used: Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0, max: Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0, expires: shortDay(day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz)) } : null,
-    partner: text(f["\u6D3B\u52A8\u7801"]) ? { code: text(f["\u6D3B\u52A8\u7801"]), link: text(f["\u4E13\u5C5E\u8FDE\u7ED3"]), ledger: text(f["\u8D26\u672C\u8FDE\u7ED3"]) } : null,
-    posts: posts.map((x) => ({
-      title: text(x["\u5185\u5BB9\u6807\u9898"]) || option(x["\u5F62\u5F0F"]) || "\u5E16\u5B50",
-      link: text(x["\u5185\u5BB9\u94FE\u63A5"]),
-      platform: option(x["\u5E73\u53F0"]),
-      date: shortDay(day(x["\u53D1\u5E03\u65E5\u671F"], tz)),
-      metrics: [1, 3, 7, 30].map((d) => ({ day: d, views: Number(x[`\u7B2C${d}\u5929\u64AD\u653E`]) || null }))
-    })),
-    info: [
-      ["\u600E\u4E48\u79F0\u547C", text(p?.["\u79F0\u547C"])],
-      ["\u4E3B\u9875", text(p?.["\u4E3B\u9875\u94FE\u63A5"])],
-      ["\u5E02\u573A", option(p?.["\u5E02\u573A"])],
-      ["\u5185\u5BB9\u7C7B\u578B", option(p?.["\u5185\u5BB9\u7C7B\u578B"])],
-      ["\u9080\u7EA6\u6279\u6B21", option(f["\u9080\u7EA6\u6279\u6B21"])],
-      ["\u7528\u54EA\u4E2A\u90AE\u7BB1\u8054\u7CFB", option(f["\u8054\u7CFB\u6E20\u9053"])],
-      ["\u91CD\u8981\u7A0B\u5EA6", option(f["\u7EA7\u522B"])]
-    ].filter(([, v]) => v).map(([k, v]) => ({ k, v })),
-    emails,
-    doNotContact: option(p?.["\u8054\u7CFB\u8BB8\u53EF"]) === "\u6C38\u4E0D\u8054\u7CFB"
-  };
-}
-async function activityLog(ctx) {
-  const { base, cfg } = ctx;
-  const t = cfg.tables;
-  const tz = cfg.timezone;
-  const since = addDays(today(cfg), -3);
-  const [runs, ops] = await Promise.all([
-    base.records(t.runs, {
-      filter: { logic: "and", conditions: [onOrAfter("\u5F00\u59CB\u65F6\u95F4", since)] },
-      fields: ["\u8FD0\u884C", "\u65B9\u5F0F", "\u7ED3\u679C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u675F\u65F6\u95F4", "\u5904\u7406\u6765\u4FE1", "\u53D1\u51FA\u90AE\u4EF6", "\u65B0\u589E\u5F85\u5BA1", "\u95EE\u9898\u4E0E\u5907\u6CE8"]
-    }),
-    base.records(t.oplog, {
-      filter: { logic: "and", conditions: [onOrAfter("\u65F6\u95F4", since)] },
-      fields: ["\u65F6\u95F4", "\u7C7B\u578B", "\u7ED3\u679C", "\u64CD\u4F5C", "\u8BF4\u660E", "\u6240\u5C5E\u8FD0\u884C"]
-    })
-  ]);
-  const runById = new Map(runs.map((r) => [r.record_id, r]));
-  const time = (r, f) => cellTime(r[f], tz) ?? 0;
-  return {
-    runs: runs.sort((a, b2) => time(b2, "\u5F00\u59CB\u65F6\u95F4") - time(a, "\u5F00\u59CB\u65F6\u95F4")).slice(0, 30).map((r) => ({
-      title: text(r["\u8FD0\u884C"]),
-      how: option(r["\u65B9\u5F0F"]),
-      result: option(r["\u7ED3\u679C"]),
-      start: stamp(time(r, "\u5F00\u59CB\u65F6\u95F4"), tz),
-      end: time(r, "\u7ED3\u675F\u65F6\u95F4") ? stamp(time(r, "\u7ED3\u675F\u65F6\u95F4"), tz).slice(11) : "",
-      counts: [["\u5904\u7406\u6765\u4FE1", r["\u5904\u7406\u6765\u4FE1"]], ["\u53D1\u51FA\u90AE\u4EF6", r["\u53D1\u51FA\u90AE\u4EF6"]], ["\u65B0\u589E\u5F85\u5BA1", r["\u65B0\u589E\u5F85\u5BA1"]]].filter(([, n]) => Number(n) > 0).map(([k, n]) => `${k} ${n}`).join(" \xB7 "),
-      notes: text(r["\u95EE\u9898\u4E0E\u5907\u6CE8"])
-    })),
-    ops: ops.sort((a, b2) => time(b2, "\u65F6\u95F4") - time(a, "\u65F6\u95F4")).slice(0, 300).map((o) => {
-      const run = runById.get(linkIds(o["\u6240\u5C5E\u8FD0\u884C"])[0] ?? "");
-      return {
-        when: stamp(time(o, "\u65F6\u95F4"), tz),
-        type: option(o["\u7C7B\u578B"]),
-        result: option(o["\u7ED3\u679C"]),
-        what: text(o["\u64CD\u4F5C"]),
-        note: text(o["\u8BF4\u660E"]).split("\n").filter((l) => !l.startsWith("\u6267\u884C\u4EBA\uFF1A")).join(" "),
-        source: run ? `${option(run["\u65B9\u5F0F"]) === "\u5B9A\u65F6\u4EFB\u52A1" ? "\u6BCF\u5929\u4F8B\u884C" : "\u5728 Claude \u91CC\u8DD1\u7684"}` : "",
-        by: (text(o["\u8BF4\u660E"]).match(/执行人：(.+)/) ?? [])[1] ?? ""
-      };
-    })
-  };
-}
-async function runStatus(ctx, data) {
-  const { base, cfg } = ctx;
-  const tz = cfg.timezone;
-  const running = await base.records(cfg.tables.runs, { filter: { logic: "and", conditions: [["\u7ED3\u679C", "intersects", ["\u8FDB\u884C\u4E2D"]]] }, fields: ["\u8FD0\u884C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u679C"] });
-  const fresh = running.filter((r) => (cellTime(r["\u5F00\u59CB\u65F6\u95F4"], tz) ?? 0) > Date.now() - 2 * 36e5);
-  const s = data.snapshot;
-  const name = (r) => {
-    const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
-    return f ? displayName(s, f) : "";
-  };
-  const failed = data.reviews.filter((r) => option(r["\u72B6\u6001"]) === "\u6267\u884C\u5931\u8D25");
-  const queued = data.reviews.filter((r) => option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25" && reviewState(r) === "approved" && executesOnApproval(r));
-  return {
-    failed: failed.length,
-    running: fresh.length + queued.length,
-    items: [
-      ...failed.map((r) => ({ st: "\u6CA1\u505A\u6210", text: `${name(r)}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, note: text(r["\u6267\u884C\u7ED3\u679C"]).slice(0, 120), person: linkIds(r["KOL"])[0] ?? "" })),
-      ...fresh.map((r) => ({ st: "\u8FDB\u884C\u4E2D", text: text(r["\u8FD0\u884C"]), note: `${stamp(cellTime(r["\u5F00\u59CB\u65F6\u95F4"], tz) ?? 0, tz).slice(11)} \u5F00\u59CB`, person: "" })),
-      ...queued.map((r) => ({ st: "\u7B49\u53D1\u51FA", text: `${name(r)}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, note: "\u98DE\u4E66\u91CC\u5DF2\u6279\u51C6\uFF0C\u7B49\u4E0B\u4E00\u6B21\u300C\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1\u300D", person: linkIds(r["KOL"])[0] ?? "" }))
-    ]
-  };
-}
-async function newsSince(ctx, data, since) {
-  const { base, cfg } = ctx;
-  const tz = cfg.timezone;
-  const sinceDay = day(since, tz);
-  const ops = await base.records(cfg.tables.oplog, { filter: { logic: "and", conditions: [onOrAfter("\u65F6\u95F4", sinceDay)] }, fields: ["\u65F6\u95F4", "\u7C7B\u578B", "\u7ED3\u679C", "\u64CD\u4F5C", "KOL"] });
-  const at = (r, f) => cellTime(r[f], tz) ?? 0;
-  const fresh = ops.filter((o) => at(o, "\u65F6\u95F4") > since).sort((a, b2) => at(b2, "\u65F6\u95F4") - at(a, "\u65F6\u95F4"));
-  const posts = data.posts.filter((p) => (cellTime(p["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0) > since);
-  const count = (re) => fresh.filter((o) => re.test(text(o["\u64CD\u4F5C"]))).length;
-  const chips = [
-    { label: "\u65B0\u53D1\u5E03", n: posts.length, tone: "ok" },
-    { label: "\u53D1\u51FA\u7684\u4FE1", n: fresh.filter((o) => option(o["\u7C7B\u578B"]) === "\u53D1\u51FA\u90AE\u4EF6" && option(o["\u7ED3\u679C"]) === "\u5B8C\u6210").length, tone: "" },
-    { label: "\u6536\u5230\u6765\u4FE1", n: count(/^收到来信/), tone: "" },
-    { label: "\u50AC\u4FE1", n: count(/^催信|催信 \d/), tone: "" },
-    { label: "\u627E\u5230\u65B0\u4EBA", n: fresh.filter((o) => /^找人入库/.test(text(o["\u64CD\u4F5C"]))).reduce((n, o) => n + (Number(text(o["\u64CD\u4F5C"]).match(/(\d+) 人/)?.[1]) || 0), 0), tone: "ok" }
-  ].filter((c) => c.n > 0);
-  const name = (r) => {
-    const f = data.snapshot.followups.get(linkIds(r["KOL"])[0] ?? "");
-    return f ? displayName(data.snapshot, f) : "";
-  };
-  const items = [
-    ...posts.map((p) => ({ when: stamp(at(p, "\u53D1\u5E03\u65E5\u671F"), tz), text: `${name(p) || "\u4E00\u4F4D KOL"} \u53D1\u4E86${option(p["\u5E73\u53F0"]) ? ` ${option(p["\u5E73\u53F0"])} ` : ""}\u300C${text(p["\u5185\u5BB9\u6807\u9898"]) || "\u65B0\u5E16\u5B50"}\u300D`, person: linkIds(p["KOL"])[0] ?? "", link: text(p["\u5185\u5BB9\u94FE\u63A5"]) })),
-    ...fresh.slice(0, 40).map((o) => ({ when: stamp(at(o, "\u65F6\u95F4"), tz), text: text(o["\u64CD\u4F5C"]) + (option(o["\u7ED3\u679C"]) && option(o["\u7ED3\u679C"]) !== "\u5B8C\u6210" ? `\uFF08${option(o["\u7ED3\u679C"])}\uFF09` : ""), person: linkIds(o["KOL"])[0] ?? "", link: "" }))
-  ].sort((a, b2) => b2.when.localeCompare(a.when)).slice(0, 40);
-  return { since: stamp(since, tz), chips, items };
 }
 
 // src/kolops/console/server.ts
@@ -68128,9 +68443,18 @@ async function startConsole(ctx, o) {
     };
     switch (url2.pathname) {
       case "/api/approve":
-        return done({ job: await approve(ctx, data, jobs, String(b2.id), b2.edits ?? {}) });
+        return done({ job: await approve(ctx, data, jobs, String(b2.id), b2.edits ?? {}, b2.seen ? String(b2.seen) : void 0), paused: await isPaused(ctx) });
       case "/api/sent-by-hand":
-        await manualSent(ctx, data, String(b2.id), b2.edits ?? {});
+        await manualSent(ctx, data, String(b2.id), b2.edits ?? {}, b2.seen ? String(b2.seen) : void 0);
+        return done();
+      case "/api/problem-sent":
+        await problemSent(ctx, data, String(b2.id));
+        return done();
+      case "/api/problem-retry":
+        await problemRetry(ctx, String(b2.id));
+        return done();
+      case "/api/template":
+        await decideTemplate(ctx, String(b2.id), Boolean(b2.ok));
         return done();
       case "/api/revise":
         await revise(ctx, String(b2.id), String(b2.note ?? ""));
@@ -68163,11 +68487,13 @@ async function startConsole(ctx, o) {
         await closeFollowup(ctx, data, String(b2.id), { never: Boolean(b2.never), reason: b2.reason });
         return done();
       case "/api/write":
-        return done({ job: await writeMail(ctx, data, jobs, String(b2.id), String(b2.subject ?? ""), String(b2.body ?? "")) });
+        return done({ job: await writeMail(ctx, data, jobs, String(b2.id), String(b2.subject ?? ""), String(b2.body ?? ""), b2.from ? String(b2.from) : void 0), paused: await isPaused(ctx) });
       case "/api/find":
         return done({ job: startFind(jobs, b2) });
-      case "/api/pause":
-        return done({ paused: await setPaused(ctx, Boolean(b2.on)) });
+      case "/api/pause": {
+        const paused = await setPaused(ctx, Boolean(b2.on));
+        return done({ paused, job: paused ? null : sendQueued(jobs) });
+      }
       default:
         return send(res, 404, { error: "\u6CA1\u6709\u8FD9\u4E2A\u64CD\u4F5C" });
     }
@@ -68268,11 +68594,8 @@ async function dbCommand(project, sub, v) {
       case "restore": {
         if (!v.file) throw new Error("\u7528\u6CD5\uFF1Akol db restore --file \u5907\u4EFD\u6587\u4EF6 --replace");
         if (!v.replace) throw new Error("\u6062\u590D\u4F1A\u7528\u5907\u4EFD\u6574\u4E2A\u6362\u6389\u5E93\u91CC\u8FD9\u4E2A\u9879\u76EE\u7684\u6570\u636E\uFF0C\u786E\u8BA4\u7684\u8BDD\u52A0 --replace");
-        const before = await backup(sql, project.name, void 0).catch(() => null);
-        const snap = readBackup(String(v.file));
-        await loadSnapshot2(sql, { ...snap, project: project.name }, project.name, true);
-        await createViews(sql, project.name);
-        return { \u9879\u76EE: project.name, \u6062\u590D\u81EA: v.file, \u6062\u590D\u524D\u7684\u6570\u636E\u53E6\u5B58\u5728: before?.file ?? "\uFF08\u6CA1\u80FD\u53E6\u5B58\uFF09", \u5404\u8868\u884C\u6570: await projectCounts(sql, project.name) };
+        const { before, counts } = await restore(sql, project.name, String(v.file));
+        return { \u9879\u76EE: project.name, \u6062\u590D\u81EA: v.file, \u6062\u590D\u524D\u7684\u6570\u636E\u53E6\u5B58\u5728: before ?? "\uFF08\u6CA1\u80FD\u53E6\u5B58\uFF09", \u5404\u8868\u884C\u6570: counts };
       }
       case "views":
         return { \u9879\u76EE: project.name, \u89C6\u56FE: await createViews(sql, project.name) };

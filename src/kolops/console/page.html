@@ -126,7 +126,7 @@ main.wide{max-width:none}
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
 <script>
 "use strict";
-var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {}, posted: {} };
+var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {}, posted: {}, drafts: {} };
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
@@ -153,9 +153,35 @@ function later(id, text, action) {
   renderDecide();
   setTimeout(function () {
     if (undone) return;
-    action().then(function (r) { if (r && r.job) watchJobs(); }).catch(function (e) { delete state.handled[id]; toast("没做成：" + e.message); renderDecide(); });
+    action().then(function (r) {
+      delete state.drafts[id];
+      if (r && r.job) watchJobs();
+      if (r && r.paused && !r.job) toast("现在暂停着：已经记下你同意了，恢复发送后会发出");
+    }).catch(function (e) { delete state.handled[id]; toast("没做成：" + e.message); renderDecide(); });
   }, 5000);
 }
+// Edits made on a card are kept per card, so moving to another card or a refresh of the list never loses them.
+function keepEdits(c) {
+  var saved = state.drafts[c.id];
+  if (saved && c.draft && saved.base !== c.draft.body && $("draft-body")) {
+    var note = document.createElement("div");
+    note.className = "muted tiny";
+    note.style.color = "var(--warn)";
+    note.textContent = "这封草稿在别处被改过；下面是你改的版本，同意时会用它。";
+    $("draft-body").parentNode.insertBefore(note, $("draft-body"));
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#draft-body, #draft-subject, [data-field]"), function (el) {
+    var key = el.id || "f:" + el.getAttribute("data-field");
+    if (saved && saved[key] != null) el.value = saved[key];
+    el.addEventListener("input", function () {
+      var d = state.drafts[c.id] || (state.drafts[c.id] = { base: c.draft ? c.draft.body : "" });
+      d[key] = el.value;
+    });
+  });
+}
+window.addEventListener("beforeunload", function (e) {
+  if (Object.keys(state.drafts).length) { e.preventDefault(); e.returnValue = ""; }
+});
 function modal(html) { $("modal-body").innerHTML = html; $("modal").hidden = false; }
 function closeModal() { $("modal").hidden = true; }
 $("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
@@ -186,7 +212,11 @@ function renderPause(on) {
 $("pause").addEventListener("click", function () {
   var on = !state.paused;
   if (on && !confirm("暂停后，所有发信都会停下，已同意的事先排着。确定暂停吗？")) return;
-  post("/api/pause", { on: on }).then(function (r) { renderPause(r.paused); toast(r.paused ? "已暂停所有发送" : "已恢复发送"); }).catch(function (e) { toast("没做成：" + e.message); });
+  post("/api/pause", { on: on }).then(function (r) {
+    renderPause(r.paused);
+    toast(r.paused ? "已暂停所有发送" : "已恢复发送，排着的信现在发出");
+    if (r.job) watchJobs();
+  }).catch(function (e) { toast("没做成：" + e.message); });
 });
 var jobTimer = null;
 function watchJobs() {
@@ -297,8 +327,21 @@ function actionsFor(c) {
     { label: "做完了", key: "A", primary: true, run: function () { later(c.id, "已标成做完了：" + c.headline, function () { return post("/api/todo-done", { id: c.id }); }); } },
     { label: "不用做了", key: "D", run: function () { later(c.id, "这件事不做了：" + c.headline, function () { return post("/api/drop", { id: c.id, note: "" }); }); } },
   ];
-  if (c.kind === "problem") return [
-    { label: "我处理好了", key: "A", primary: true, run: function () { later(c.id, "已标成处理好了", function () { return post("/api/problem-done", { id: c.id }); }); } },
+  var withdraw = { label: "不做了，撤掉", key: "D", run: function () { later(c.id, "已撤掉：" + c.headline, function () { return post("/api/problem-done", { id: c.id }); }); } };
+  var redo = { label: c.unknownSend ? "确认没发出，重新审核" : "重新审核", key: "R", primary: !c.unknownSend, run: function () {
+    later(c.id, "已退回重新审核：" + c.headline, function () { return post("/api/problem-retry", { id: c.id }); });
+  } };
+  if (c.kind === "problem" && c.unknownSend) return [
+    { label: "确认已经发出", key: "A", primary: true, run: function () {
+      if (!confirm("在发信邮箱的「已发送」里找到这封信了吗？确认后会记成已发出，不会再发。")) return;
+      later(c.id, "已记成发出：" + c.headline, function () { return post("/api/problem-sent", { id: c.id }); });
+    } },
+    redo, withdraw,
+  ];
+  if (c.kind === "problem") return [redo, withdraw];
+  if (c.kind === "template" && c.id.indexOf("template:") === 0) return [
+    { label: "同意这个模板", key: "A", primary: true, run: function () { later(c.id, "模板已批准：" + c.headline, function () { return post("/api/template", { id: c.id.slice(9), ok: true }); }); } },
+    { label: "不用这个模板", key: "D", run: function () { later(c.id, "模板已停用：" + c.headline, function () { return post("/api/template", { id: c.id.slice(9), ok: false }); }); } },
   ];
   var dropIt = { label: "不做了", key: "D", run: function () {
     if (!confirm("这件事不做了，会从队列里撤掉。确定吗？")) return;
@@ -308,7 +351,7 @@ function actionsFor(c) {
   if (c.send && c.send.byHand) return [
     { label: "我发出去了", key: "A", primary: true, run: function () {
       var edits = cardEdits(c);
-      later(c.id, "已记下：你手动发给了 " + who(c), function () { return post("/api/sent-by-hand", { id: c.id, edits: edits }); });
+      later(c.id, "已记下：你手动发给了 " + who(c), function () { return post("/api/sent-by-hand", { id: c.id, edits: edits, seen: c.seen }); });
     } },
     { label: "复制信", key: "C", run: function () { copyDraft(c); } },
     toClaude, dropIt,
@@ -316,7 +359,7 @@ function actionsFor(c) {
   return [
     { label: c.send ? "同意，发出去" : "同意", key: "A", primary: true, run: function () {
       var edits = cardEdits(c);
-      later(c.id, c.send ? "已同意：" + who(c) + "，5 秒后开始发" : "已同意：" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits }); });
+      later(c.id, c.send ? "已同意：" + who(c) + "，5 秒后开始发" : "已同意：" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits, seen: c.seen }); });
     } },
     toClaude, dropIt,
   ];
@@ -469,6 +512,7 @@ function renderDecide() {
       '<section class="card dact" aria-label="怎么处理">' + actionPane + '</section>' +
     '</div></div>';
 
+  if (!changing) keepEdits(c);
   var newList = document.querySelector(".dlist");
   if (newList) newList.scrollTop = listScroll;
   var on = document.querySelector(".ditem.on");
@@ -658,14 +702,21 @@ function wirePerson(p) {
     };
   };
   if ($("p-write")) $("p-write").onclick = function () {
-    modal('<h2 style="margin:0;font-size:18px">写信给 ' + esc(p.name) + '</h2><div class="muted small">点「发出」就算你同意了，会按额度排队发出；在「执行记录」里能看到结果。</div>' +
+    var sf = p.sendFrom || { channel: "", usual: "", mailboxes: [] };
+    var fromBox = '<label class="field">从哪个邮箱发<select class="input" id="w-from">' + (sf.usual ? "" : '<option value="">请选择</option>') +
+      sf.mailboxes.map(function (m) { return '<option' + (m === sf.usual ? " selected" : "") + ">" + esc(m) + "</option>"; }).join("") + "</select>" +
+      (sf.usual ? "" : '<span class="tiny" style="color:var(--warn)">她一直是跟「' + esc(sf.channel || "未填") + '」联系的，这个邮箱系统发不了。换一个邮箱发，她看到的发件人会变。</span>') + "</label>";
+    modal('<h2 style="margin:0;font-size:18px">写信给 ' + esc(p.name) + '</h2><div class="muted small">点「发出」就算你同意了，会按额度排队发出；在「执行记录」里能看到结果。</div>' + fromBox +
       '<label class="field">主旨（回复她上一封信时可以不填）<input class="input" id="w-subject"></label>' +
       '<label class="field">正文<textarea class="input" id="w-body" rows="10"></textarea></label>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="w-cancel">取消</button><button class="btn primary" id="w-send">发出</button></div>');
     $("w-cancel").onclick = closeModal;
     $("w-send").onclick = function () {
-      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value })
-        .then(function () { closeModal(); toast("已排队发出，结果看右上角"); watchJobs(); }).catch(function (e) { toast("没发出：" + e.message); });
+      var from = $("w-from").value;
+      if (!from) { toast("先选从哪个邮箱发"); return; }
+      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value, from: from })
+        .then(function (r) { closeModal(); toast(r.job ? "已排队从 " + from + " 发出，结果看右上角" : "现在暂停着：已经记下，恢复发送后从 " + from + " 发出"); if (r.job) watchJobs(); })
+        .catch(function (e) { toast("没发出：" + e.message); });
     };
   };
   var close = function (never) {

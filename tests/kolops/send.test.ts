@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { makeCtx, type Ctx } from "../../src/kolops/ctx.js";
 import { isApproved, sendApproved } from "../../src/kolops/send.js";
+import { approveInConsole, fingerprint } from "../../src/kolops/reviews.js";
 import { LarkError } from "../../src/kolops/lark.js";
 import { FakeLark } from "./fake.js";
 import { seedProject } from "./project.js";
@@ -215,4 +216,78 @@ it("judges domains by MX, then by address, and catches slips of common ones", as
   expect(await undeliverable("a@gmial.com", cache)).toBe("邮箱域名 gmial.com 多半是拼错了，是不是 gmail.com？");
   expect(await undeliverable("a@nowhere.invalid", cache)).toBe("邮箱域名 nowhere.invalid 不存在（拼错了或已经停用）");
   expect(await undeliverable("a@example.com", cache)).toBe("");
+});
+
+describe("found in review (2026-10-26)", () => {
+  const run = () => sendApproved(makeCtx(cfg, lark, { id: "ou_me", name: "测试运营" }, "测试", false, async () => {}), { dryRun: false });
+  const rev = (id: string) => lark.table(T.reviews).find((x) => x.record_id === id)!;
+  /** Runs `fn` once, right before the base command `cmd` on `table` is answered. */
+  const before = (cmd: string, table: string, fn: () => void) => {
+    const json = lark.json.bind(lark);
+    let done = false;
+    lark.json = async (args: string[]) => {
+      if (!done && args[1] === cmd && args.includes(table)) {
+        done = true;
+        fn();
+      }
+      return json(args);
+    };
+  };
+
+  it("does not send the draft read at the start when another version was approved meanwhile", async () => {
+    const id = review({ 邮件草稿: "主题：合作\n第一版" });
+    // Between building the mail and claiming the item, someone rewrites it and approves again.
+    before("+record-get", T.reviews, () => {
+      rev(id)["邮件草稿"] = "主题：合作\n第二版";
+      rev(id)["内容指纹"] = fingerprint(rev(id));
+    });
+    const first = await run();
+    expect(first.sent).toHaveLength(0);
+    expect(first.skipped[0].reason).toMatch(/重新同意/);
+    expect(lark.sent).toHaveLength(0);
+    expect((await run()).sent).toHaveLength(1);
+    expect(JSON.stringify(lark.sent[0].args)).toContain("第二版");
+  });
+
+  it("never resends a mail whose result is unknown, however many runs come by, until it is approved again", async () => {
+    const id = review();
+    lark.failSend = new Error("socket hang up");
+    await run();
+    lark.failSend = null;
+    for (let i = 0; i < 3; i++) {
+      rev(id)["状态"] = ["待执行"];
+      expect((await run()).failed[0].reason).toMatch(/结果不明/);
+    }
+    expect(lark.sent).toHaveLength(0);
+    // Someone checked the mailbox, found nothing, and approved it again in the console.
+    rev(id)["状态"] = ["待你审核"];
+    await approveInConsole(makeCtx(cfg, lark, { id: "ou_me", name: "测试运营" }, "测试", false, async () => {}), id);
+    expect((await run()).sent).toHaveLength(1);
+    expect(lark.sent).toHaveLength(1);
+  });
+
+  it("fills in the records of a mail that went out when writing them failed, without sending it again", async () => {
+    const id = review();
+    const json = lark.json.bind(lark);
+    let failOnce = true;
+    lark.json = async (args: string[]) => {
+      if (failOnce && args[1] === "+record-batch-create" && args.includes(T.contacts)) {
+        failOnce = false;
+        throw new Error("飞书接口超时");
+      }
+      return json(args);
+    };
+    const first = await run();
+    expect(lark.sent).toHaveLength(1);
+    expect(first.failed[0].reason).toMatch(/已经发出.*补记/);
+    expect(lark.table(T.contacts)).toHaveLength(0);
+
+    const second = await run();
+    expect(lark.sent).toHaveLength(1);
+    expect(second.sent[0].kind).toMatch(/补记/);
+    expect(lark.table(T.contacts)).toHaveLength(1);
+    expect(rev(id)["状态"]).toEqual(["已执行"]);
+    expect((await run()).sent).toHaveLength(0);
+    expect(lark.table(T.contacts)).toHaveLength(1);
+  });
 });

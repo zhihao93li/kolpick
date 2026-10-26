@@ -148,6 +148,6 @@ export function mailboxFor(cfg: Config, channel: string): Mailbox | undefined {
 
 /** Whether 暂停所有发送 is ticked right now; read fresh before sending, not from the Config. */
 export async function sendingPaused(lark: Lark, baseToken: string): Promise<boolean> {
-  const rows = await lark.records(TABLES.settings, { baseToken, fields: ["暂停所有发送"] });
+  const rows = await lark.records(TABLES.settings, { baseToken, fields: ["暂停所有发送"], fresh: true });
   return rows.some((r) => r["暂停所有发送"] === true || option(r["暂停所有发送"]) === "true");
 }
