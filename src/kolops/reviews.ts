@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { cellTime, linkIds, option, text } from "./base.js";
+import type { Config } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, loadSnapshot, profileOf } from "./data.js";
 import type { Row } from "./lark.js";
@@ -21,6 +23,65 @@ export function reviewState(r: Row): ReviewState {
 /** Approval is 处理 = 发／同意, unless 审核结果 says otherwise. */
 export function isApproved(r: Row): boolean {
   return reviewState(r) === "approved";
+}
+
+/** What 同意来源 says for an approval made in the decision console. */
+export const CONSOLE_SOURCE = "决策台";
+
+/** Everything an approval covers: change any of these afterwards and the approval no longer holds. */
+export const FINGERPRINT_FIELDS = ["邮件草稿", "收件人", "发送渠道", "体验码动作", "体验码", "体验次数", "体验天数", "活动码", "粉丝折扣",
+  "销售市场", "合作页名称", "发后动作", "结案原因"];
+export const APPROVAL_FIELDS = ["同意来源", "同意人", "同意时间", "内容指纹"];
+
+function cellWords(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "number") return String(v);
+  return Array.isArray(v) ? v.map((x) => (typeof x === "object" && x ? (x as any).name ?? (x as any).text ?? (x as any).id ?? "" : String(x))).join("|") : String(v).trim();
+}
+
+/** A short hash of what the item would do, written when it is approved and checked again before it is carried out. */
+export function fingerprint(r: Row): string {
+  return createHash("sha256").update(JSON.stringify(FINGERPRINT_FIELDS.map((f) => cellWords(r[f])))).digest("hex").slice(0, 16);
+}
+
+/**
+ * Why an approved item may not be carried out as it stands, or null when it may: it was changed after it was
+ * approved (`changed`, so it goes back for review), or it was approved somewhere that no longer counts.
+ */
+export function approvalProblem(cfg: Pick<Config, "consoleOnlyApprovals">, r: Row): { reason: string; changed?: boolean } | null {
+  const fp = text(r["内容指纹"]);
+  if (fp && fp !== fingerprint(r)) return { reason: "同意之后内容被改过，已退回重新看", changed: true };
+  if (cfg.consoleOnlyApprovals && text(r["同意来源"]) !== CONSOLE_SOURCE) {
+    return { reason: "现在只认决策台上的同意：这一条是在飞书里批的，没有执行。要做的话，在决策台里点同意" };
+  }
+  return null;
+}
+
+/** Puts an item back in front of the reviewer with the reason, clearing its approval. */
+export async function sendBack(ctx: Ctx, reviewId: string, why: string): Promise<void> {
+  await ctx.base.update(ctx.cfg.tables.reviews, { [reviewId]: {
+    处理: null, 审核结果: null, 同意来源: "", 同意人: "", 同意时间: null, 内容指纹: "", 状态: ["待你审核"],
+    执行结果: `${stamp(Date.now(), ctx.cfg.timezone)} ${why}`.slice(0, 2000),
+  } });
+}
+
+/**
+ * Approves an item from the decision console: applies the reviewer's last edits, then records who approved it,
+ * when, and the fingerprint of exactly what they saw.
+ */
+export async function approveInConsole(ctx: Ctx, reviewId: string, edits: Record<string, unknown> = {}): Promise<Row> {
+  const t = ctx.cfg.tables;
+  const [r] = await ctx.base.get(t.reviews, [reviewId]);
+  if (!r) throw new Error("审核队列里已经没有这一条");
+  const state = option(r["状态"]);
+  if (!["待你审核", "待执行"].includes(state)) throw new Error(`这一条现在是「${state}」，不能再同意`);
+  const merged = { ...r, ...edits };
+  const fields = {
+    ...edits, 处理: ["发／同意"], 审核结果: null, 状态: ["待你审核"],
+    同意来源: CONSOLE_SOURCE, 同意人: ctx.me.name || ctx.me.id, 同意时间: stamp(Date.now(), ctx.cfg.timezone), 内容指纹: fingerprint(merged),
+  };
+  await ctx.base.update(t.reviews, { [reviewId]: fields });
+  return { ...merged, ...fields };
 }
 
 const OPEN = ["待你审核", "待执行"];

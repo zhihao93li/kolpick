@@ -1,4 +1,5 @@
 import { addDays, linkIds, option, text } from "./base.js";
+import { approvalProblem } from "./reviews.js";
 import { mailboxFor } from "./config.js";
 import { contactedElsewhere } from "./crossproject.js";
 import type { Ctx } from "./ctx.js";
@@ -43,6 +44,8 @@ export async function invite(ctx: Ctx, o: InviteOpts): Promise<SendReport & { ba
   const approval = (await ctx.base.records(t.reviews)).find((r) => r.record_id === o.approval);
   if (!approval) throw new Error(`审核队列里找不到 ${o.approval}`);
   if (!decisionApproved(approval)) throw new Error("这批邀约在审核队列里还没有被批准");
+  const problem = approvalProblem(ctx.cfg, approval);
+  if (problem) throw new Error(problem.reason);
   const said = `${text(approval["审核项"])}\n${text(approval["要你定什么"])}`;
   if (!said.includes(o.batch)) throw new Error(`批准记录里没有写批次「${o.batch}」，不能用它来发这批`);
 

@@ -9,7 +9,7 @@ import { MailBlocked, replySubject, splitDraft, STATUS_NAMES, toHtml } from "./m
 import { bounceStats, bouncePaused, otherSendingRun, stamp, today, todaysSends, type SendCounts } from "./ops.js";
 import { closeChanges } from "./inbox.js";
 import { undeliverable } from "./mx.js";
-import { closeDeclined, isApproved } from "./reviews.js";
+import { APPROVAL_FIELDS, approvalProblem, closeDeclined, FINGERPRINT_FIELDS, isApproved, sendBack } from "./reviews.js";
 import { machine, machineLabel } from "./executor.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
@@ -255,12 +255,17 @@ function executing(): string {
  */
 export async function claimReview(ctx: Ctx, reviewId: string): Promise<{ skip?: string; fail?: string }> {
   const t = ctx.cfg.tables;
-  const [r] = await ctx.base.get(t.reviews, [reviewId], ["状态", "处理", "审核结果", "执行结果", "执行时间"]);
+  const [r] = await ctx.base.get(t.reviews, [reviewId], ["状态", "处理", "审核结果", "执行结果", "执行时间", ...FINGERPRINT_FIELDS, ...APPROVAL_FIELDS]);
   if (!r) return { skip: "审核队列里已经没有这一条" };
   const state = option(r["状态"]);
   if (state === "已执行") return { skip: "这一条已经执行过" };
   if (state === "已撤回") return { skip: "这一条已经撤回" };
   if (!isApproved(r)) return { skip: "这一条现在不是批准状态" };
+  const problem = approvalProblem(ctx.cfg, r);
+  if (problem) {
+    if (problem.changed) await sendBack(ctx, reviewId, problem.reason);
+    return { skip: problem.reason };
+  }
   const result = text(r["执行结果"]);
   if (result.startsWith(EXECUTING)) {
     const age = Date.now() - (cellTime(r["执行时间"], ctx.cfg.timezone) ?? 0);
@@ -308,6 +313,12 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
     const followupId = linkIds(r["KOL"])[0] ?? "";
     const f = s.followups.get(followupId);
     const name = f ? displayName(s, f) : text(r["审核项"]);
+    const problem = approvalProblem(ctx.cfg, r);
+    if (problem) {
+      if (problem.changed && !opts.dryRun) await sendBack(ctx, r.record_id, problem.reason);
+      skipped.push({ key: r.record_id, name, reason: problem.reason });
+      continue;
+    }
     const close = f ? closeChanges(r, profileOf(s, f), day) : null;
     if (typeof close === "string") {
       skipped.push({ key: r.record_id, name, reason: close });

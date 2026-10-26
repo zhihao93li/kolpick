@@ -53432,11 +53432,11 @@ var require_cjs3 = __commonJS({
       weightedAverage: () => weightedAverage
     });
     module.exports = __toCommonJS2(index_exports);
-    var import_node_crypto2 = __toESM2(__require("crypto"));
+    var import_node_crypto3 = __toESM2(__require("crypto"));
     var import_log = __toESM2(require_cjs2());
     function cryptoRandomObjectId(length = 17) {
       const chars = "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      const bytes = import_node_crypto2.default.randomBytes(length);
+      const bytes = import_node_crypto3.default.randomBytes(length);
       let str = "";
       for (let i = bytes.length - 1; i >= 0; i--) {
         str += chars[(bytes[i] | 0) % chars.length];
@@ -53445,7 +53445,7 @@ var require_cjs3 = __commonJS({
     }
     __name(cryptoRandomObjectId, "cryptoRandomObjectId");
     function deterministicUniqueId(key, length = 17) {
-      return import_node_crypto2.default.createHash("sha256").update(key).digest("base64").replace(/(\+|\/|=)/g, "x").substr(0, length);
+      return import_node_crypto3.default.createHash("sha256").update(key).digest("base64").replace(/(\+|\/|=)/g, "x").substr(0, length);
     }
     __name(deterministicUniqueId, "deterministicUniqueId");
     function getRandomInt(maxExcluded) {
@@ -55477,7 +55477,7 @@ var require_cjs3 = __commonJS({
       };
     }
     __name(separateImports, "separateImports");
-    var import_node_crypto3 = __require("crypto");
+    var import_node_crypto32 = __require("crypto");
     var CodeHashMetaKey = /* @__PURE__ */ ((CodeHashMetaKey2) => {
       CodeHashMetaKey2["VERSION"] = "v";
       CodeHashMetaKey2["USER"] = "u";
@@ -55516,7 +55516,7 @@ var require_cjs3 = __commonJS({
         const data = JSON.parse(this.fromBase64(parts[1]).toString());
         const signature = this.fromBase64(parts[2]);
         const expectedSignature = this.generateSignature(dataToSign);
-        const isSignatureValid = (0, import_node_crypto3.timingSafeEqual)(signature, expectedSignature);
+        const isSignatureValid = (0, import_node_crypto32.timingSafeEqual)(signature, expectedSignature);
         return {
           data,
           meta: {
@@ -55539,7 +55539,7 @@ var require_cjs3 = __commonJS({
         return Buffer.from(encoded, "base64url");
       }
       generateSignature(data) {
-        return (0, import_node_crypto3.createHmac)("sha256", this.secret).update(data).digest();
+        return (0, import_node_crypto32.createHmac)("sha256", this.secret).update(data).digest();
       }
     };
     __name(_CodeHashManager, "CodeHashManager");
@@ -61199,6 +61199,10 @@ function handleOf(s) {
   return normalizeHandle(m ? m[1] : s.includes("/") ? "" : s);
 }
 
+// src/kolops/reviews.ts
+import { createHash } from "node:crypto";
+import { readFileSync as readFileSync6 } from "node:fs";
+
 // src/kolops/projects.ts
 import { existsSync as existsSync4, readFileSync as readFileSync5, writeFileSync as writeFileSync3 } from "node:fs";
 import { join as join4 } from "node:path";
@@ -61268,36 +61272,6 @@ function resolveProject(name) {
   const p = r.projects[chosen];
   if (!p) throw new Error(`\u6CA1\u6709\u767B\u8BB0\u53EB\u300C${chosen}\u300D\u7684\u9879\u76EE\u3002\u5DF2\u767B\u8BB0\u7684\uFF1A${names.join("\u3001")}`);
   return { name: chosen, ...p };
-}
-
-// src/kolops/crossproject.ts
-async function contactedElsewhere(ctx) {
-  const out = /* @__PURE__ */ new Map();
-  if (ctx.cfg.crossProjectCooldownDays <= 0) return out;
-  const cutoff = Date.now() - ctx.cfg.crossProjectCooldownDays * 864e5;
-  for (const p of listProjects()) {
-    if (p.baseToken === ctx.cfg.baseToken) continue;
-    const other = new Base(ctx.base.lark, p.baseToken);
-    let profiles, followups;
-    try {
-      [profiles, followups] = await Promise.all([
-        cachedRecords(other, TABLES.profiles, PROFILE_FIELDS, ctx.cfg.timezone),
-        cachedRecords(other, TABLES.followups, FOLLOWUP_FIELDS, ctx.cfg.timezone)
-      ]);
-    } catch (err) {
-      throw new Error(`\u8BFB\u4E0D\u5230\u9879\u76EE\u300C${p.name}\u300D\u7684\u98DE\u4E66\u8868\uFF0C\u6CA1\u6CD5\u68C0\u67E5\u8DE8\u9879\u76EE\u8054\u7CFB\u8BB0\u5F55\u3002\u5982\u679C\u8FD9\u4E2A\u9879\u76EE\u5DF2\u7ECF\u4E0D\u7528\u4E86\uFF0C\u8FD0\u884C kol project remove ${p.name}\u3002\u539F\u59CB\u9519\u8BEF\uFF1A${err?.message ?? err}`);
-    }
-    const byId = new Map(profiles.map((r) => [r.record_id, r]));
-    for (const f of followups) {
-      const last = cellTime(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], ctx.cfg.timezone) ?? cellTime(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], ctx.cfg.timezone);
-      if (last != null && last < cutoff) continue;
-      const when = last == null ? "\u8054\u7CFB\u8FC7\uFF08\u6CA1\u6709\u65E5\u671F\uFF09" : `${dayOf(last, ctx.cfg.timezone)} \u8054\u7CFB\u8FC7`;
-      for (const e of profileEmails(byId.get(linkIds(f["\u6863\u6848"])[0] ?? ""))) {
-        if (!out.has(e)) out.set(e, `\u9879\u76EE\u300C${p.name}\u300D${when}\uFF0C${ctx.cfg.crossProjectCooldownDays} \u5929\u5185\u4E0D\u91CD\u590D\u8054\u7CFB`);
-      }
-    }
-  }
-  return out;
 }
 
 // src/kolops/codes.ts
@@ -61569,8 +61543,185 @@ function trialNote(plan) {
   return plan.action === "\u53D1\u7801" ? `\u53D1\u7801 ${plan.code}\uFF0C${plan.maxUses} \u6B21\uFF0C${plan.days} \u5929` : `\u4F53\u9A8C\u7801 ${plan.code} \u5EF6\u671F ${plan.days} \u5929`;
 }
 
+// src/kolops/reviews.ts
+function reviewState(r) {
+  const p = option(r["\u5904\u7406"]);
+  const res = option(r["\u5BA1\u6838\u7ED3\u679C"]);
+  if (p === "\u4E0D\u53D1" || ["\u5148\u4E0D\u53D1", "\u4E0D\u540C\u610F"].includes(res)) return "declined";
+  if (p === "\u6539" || res === "\u9000\u56DE\u4FEE\u6539") return "revise";
+  if (p === "\u53D1\uFF0F\u540C\u610F") return "approved";
+  return "pending";
+}
+function isApproved(r) {
+  return reviewState(r) === "approved";
+}
+var CONSOLE_SOURCE = "\u51B3\u7B56\u53F0";
+var FINGERPRINT_FIELDS = [
+  "\u90AE\u4EF6\u8349\u7A3F",
+  "\u6536\u4EF6\u4EBA",
+  "\u53D1\u9001\u6E20\u9053",
+  "\u4F53\u9A8C\u7801\u52A8\u4F5C",
+  "\u4F53\u9A8C\u7801",
+  "\u4F53\u9A8C\u6B21\u6570",
+  "\u4F53\u9A8C\u5929\u6570",
+  "\u6D3B\u52A8\u7801",
+  "\u7C89\u4E1D\u6298\u6263",
+  "\u9500\u552E\u5E02\u573A",
+  "\u5408\u4F5C\u9875\u540D\u79F0",
+  "\u53D1\u540E\u52A8\u4F5C",
+  "\u7ED3\u6848\u539F\u56E0"
+];
+var APPROVAL_FIELDS = ["\u540C\u610F\u6765\u6E90", "\u540C\u610F\u4EBA", "\u540C\u610F\u65F6\u95F4", "\u5185\u5BB9\u6307\u7EB9"];
+function cellWords(v) {
+  if (v == null) return "";
+  if (typeof v === "number") return String(v);
+  return Array.isArray(v) ? v.map((x) => typeof x === "object" && x ? x.name ?? x.text ?? x.id ?? "" : String(x)).join("|") : String(v).trim();
+}
+function fingerprint(r) {
+  return createHash("sha256").update(JSON.stringify(FINGERPRINT_FIELDS.map((f) => cellWords(r[f])))).digest("hex").slice(0, 16);
+}
+function approvalProblem(cfg, r) {
+  const fp = text(r["\u5185\u5BB9\u6307\u7EB9"]);
+  if (fp && fp !== fingerprint(r)) return { reason: "\u540C\u610F\u4E4B\u540E\u5185\u5BB9\u88AB\u6539\u8FC7\uFF0C\u5DF2\u9000\u56DE\u91CD\u65B0\u770B", changed: true };
+  if (cfg.consoleOnlyApprovals && text(r["\u540C\u610F\u6765\u6E90"]) !== CONSOLE_SOURCE) {
+    return { reason: "\u73B0\u5728\u53EA\u8BA4\u51B3\u7B56\u53F0\u4E0A\u7684\u540C\u610F\uFF1A\u8FD9\u4E00\u6761\u662F\u5728\u98DE\u4E66\u91CC\u6279\u7684\uFF0C\u6CA1\u6709\u6267\u884C\u3002\u8981\u505A\u7684\u8BDD\uFF0C\u5728\u51B3\u7B56\u53F0\u91CC\u70B9\u540C\u610F" };
+  }
+  return null;
+}
+async function sendBack(ctx, reviewId, why) {
+  await ctx.base.update(ctx.cfg.tables.reviews, { [reviewId]: {
+    \u5904\u7406: null,
+    \u5BA1\u6838\u7ED3\u679C: null,
+    \u540C\u610F\u6765\u6E90: "",
+    \u540C\u610F\u4EBA: "",
+    \u540C\u610F\u65F6\u95F4: null,
+    \u5185\u5BB9\u6307\u7EB9: "",
+    \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"],
+    \u6267\u884C\u7ED3\u679C: `${stamp(Date.now(), ctx.cfg.timezone)} ${why}`.slice(0, 2e3)
+  } });
+}
+var OPEN = ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"];
+var REVIEW_FIELDS = ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u72B6\u6001", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "KOL", "\u4F60\u7684\u610F\u89C1", "\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE", "\u90AE\u4EF6\u8349\u7A3F", "\u53D1\u9001\u6E20\u9053", "\u4F53\u9A8C\u7801\u52A8\u4F5C", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u6B21\u6570", "\u4F53\u9A8C\u5929\u6570", "\u6D3B\u52A8\u7801", "\u7C89\u4E1D\u6298\u6263", "\u9500\u552E\u5E02\u573A", "\u5408\u4F5C\u9875\u540D\u79F0"];
+async function openReviews(ctx) {
+  return ctx.base.records(ctx.cfg.tables.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", OPEN]] }, fields: REVIEW_FIELDS });
+}
+async function closeDeclined(ctx, o) {
+  const t = ctx.cfg.tables;
+  const all = o.reviews ?? await openReviews(ctx);
+  const declined = all.filter((r) => reviewState(r) === "declined");
+  if (!declined.length) return [];
+  const s = await loadSnapshot(ctx.base, ctx.cfg);
+  const stillOpen = new Set(all.filter((r) => reviewState(r) !== "declined").flatMap((r) => linkIds(r["KOL"])));
+  const now = stamp(Date.now(), ctx.cfg.timezone);
+  const day2 = today(ctx.cfg);
+  const names = [];
+  const reviewChanges = {};
+  const followupChanges = {};
+  for (const r of declined) {
+    const fid = linkIds(r["KOL"])[0] ?? "";
+    const f = s.followups.get(fid);
+    const why = text(r["\u4F60\u7684\u610F\u89C1"]);
+    names.push(f ? displayName(s, f) : text(r["\u5BA1\u6838\u9879"]));
+    reviewChanges[r.record_id] = { \u72B6\u6001: ["\u5DF2\u64A4\u56DE"], \u6267\u884C\u65F6\u95F4: now, \u6267\u884C\u7ED3\u679C: `\u5BA1\u6838\u9009\u4E86\u4E0D\u53D1\uFF0C\u6CA1\u6709\u53D1\u51FA${why ? `\uFF08${why}\uFF09` : ""}`.slice(0, 2e3) };
+    if (!f || option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]) !== "\u7B49\u4F60\u5BA1\u6838" || stillOpen.has(fid)) continue;
+    const lastIn = cellTime(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], ctx.cfg.timezone) ?? 0;
+    const lastOut = cellTime(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], ctx.cfg.timezone) ?? 0;
+    followupChanges[fid] = {
+      \u5F53\u524D\u8F6E\u5230\u8C01: [lastIn > lastOut ? "\u65E0\u9700\u52A8\u4F5C" : "KOL"],
+      \u4E0B\u4E00\u6B65: `${day2} \u5BA1\u6838\u4E0D\u53D1\uFF1A${text(r["\u5BA1\u6838\u9879"])}${why ? `\uFF08${why}\uFF09` : ""}`.slice(0, 500)
+    };
+  }
+  if (o.dryRun) return names;
+  await ctx.base.update(t.reviews, reviewChanges);
+  if (Object.keys(followupChanges).length) await ctx.base.update(t.followups, followupChanges);
+  ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u5BA1\u6838\u4E0D\u53D1\u7684\u64A4\u56DE ${names.length} \u6761` });
+  return names;
+}
+async function toRevise(ctx) {
+  const s = await loadSnapshot(ctx.base, ctx.cfg);
+  const items = (await openReviews(ctx)).filter((r) => reviewState(r) === "revise");
+  return {
+    \u8981\u6539: items.map((r) => {
+      const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
+      return {
+        review: r.record_id,
+        kol: f ? displayName(s, f) : "",
+        \u5BA1\u6838\u9879: text(r["\u5BA1\u6838\u9879"]),
+        \u610F\u89C1: text(r["\u4F60\u7684\u610F\u89C1"]) || "\uFF08\u6CA1\u5199\u610F\u89C1\uFF0C\u95EE\u540C\u4E8B\u8981\u6539\u54EA\u91CC\uFF09",
+        \u8349\u7A3F: text(r["\u90AE\u4EF6\u8349\u7A3F"]),
+        \u4F53\u9A8C\u7801\u52A8\u4F5C: option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"]) || void 0
+      };
+    }),
+    \u8BF4\u660E: '\u6309\u610F\u89C1\u91CD\u5199\u540E\u5199\u6210 [{"review": "rec\u2026", "draft": "\u65B0\u8349\u7A3F", "note": "\u6539\u4E86\u4EC0\u4E48"}]\uFF0C\u7528 revise --apply \u63D0\u4EA4\uFF0C\u4F1A\u91CD\u65B0\u9001\u5BA1'
+  };
+}
+async function applyRevisions(ctx, o) {
+  const list2 = JSON.parse(readFileSync6(o.file, "utf8"));
+  const s = await loadSnapshot(ctx.base, ctx.cfg);
+  const open = new Map((await openReviews(ctx)).map((r) => [r.record_id, r]));
+  const errors = [];
+  const changes = {};
+  for (const x of list2) {
+    const r = open.get(x.review);
+    if (!r || reviewState(r) !== "revise") {
+      errors.push(`${x.review}\uFF1A\u4E0D\u662F\u5F85\u4FEE\u6539\u7684\u5BA1\u6838\u9879`);
+      continue;
+    }
+    const draft = (x.draft ?? "").trim();
+    if (!draft) {
+      errors.push(`${x.review}\uFF1A\u65B0\u8349\u7A3F\u662F\u7A7A\u7684`);
+      continue;
+    }
+    const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
+    const plan = trialPlan(ctx.cfg, r, f, profileOf(s, f));
+    const problem = typeof plan === "string" ? plan : plan ? missingPlaceholder(plan, draft) : "";
+    if (problem) {
+      errors.push(`${x.review}\uFF1A${problem}`);
+      continue;
+    }
+    const history = [text(r["\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE"]), `${today(ctx.cfg)} \u6309\u610F\u89C1\u6539\uFF1A${text(r["\u4F60\u7684\u610F\u89C1"]) || "\uFF08\u6CA1\u5199\uFF09"}${x.note ? ` \u2192 ${x.note}` : ""}`].filter(Boolean).join("\n");
+    changes[x.review] = { \u90AE\u4EF6\u8349\u7A3F: draft, \u5904\u7406: null, \u5BA1\u6838\u7ED3\u679C: null, \u4F60\u7684\u610F\u89C1: "", \u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE: history.slice(0, 5e3), \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"] };
+  }
+  if (errors.length) return { \u5199\u5165: 0, \u95EE\u9898: errors, \u8BF4\u660E: "\u6709\u95EE\u9898\u7684\u6539\u597D\u4E4B\u524D\uFF0C\u4E00\u6761\u90FD\u6CA1\u5199" };
+  if (!o.dryRun && list2.length) {
+    await ctx.base.update(ctx.cfg.tables.reviews, changes);
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u6309\u5BA1\u6838\u610F\u89C1\u91CD\u5199 ${list2.length} \u6761` });
+  }
+  return { \u5199\u5165: o.dryRun ? 0 : list2.length, \u8BD5\u8DD1: o.dryRun || void 0 };
+}
+
+// src/kolops/crossproject.ts
+async function contactedElsewhere(ctx) {
+  const out = /* @__PURE__ */ new Map();
+  if (ctx.cfg.crossProjectCooldownDays <= 0) return out;
+  const cutoff = Date.now() - ctx.cfg.crossProjectCooldownDays * 864e5;
+  for (const p of listProjects()) {
+    if (p.baseToken === ctx.cfg.baseToken) continue;
+    const other = new Base(ctx.base.lark, p.baseToken);
+    let profiles, followups;
+    try {
+      [profiles, followups] = await Promise.all([
+        cachedRecords(other, TABLES.profiles, PROFILE_FIELDS, ctx.cfg.timezone),
+        cachedRecords(other, TABLES.followups, FOLLOWUP_FIELDS, ctx.cfg.timezone)
+      ]);
+    } catch (err) {
+      throw new Error(`\u8BFB\u4E0D\u5230\u9879\u76EE\u300C${p.name}\u300D\u7684\u98DE\u4E66\u8868\uFF0C\u6CA1\u6CD5\u68C0\u67E5\u8DE8\u9879\u76EE\u8054\u7CFB\u8BB0\u5F55\u3002\u5982\u679C\u8FD9\u4E2A\u9879\u76EE\u5DF2\u7ECF\u4E0D\u7528\u4E86\uFF0C\u8FD0\u884C kol project remove ${p.name}\u3002\u539F\u59CB\u9519\u8BEF\uFF1A${err?.message ?? err}`);
+    }
+    const byId = new Map(profiles.map((r) => [r.record_id, r]));
+    for (const f of followups) {
+      const last = cellTime(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], ctx.cfg.timezone) ?? cellTime(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], ctx.cfg.timezone);
+      if (last != null && last < cutoff) continue;
+      const when = last == null ? "\u8054\u7CFB\u8FC7\uFF08\u6CA1\u6709\u65E5\u671F\uFF09" : `${dayOf(last, ctx.cfg.timezone)} \u8054\u7CFB\u8FC7`;
+      for (const e of profileEmails(byId.get(linkIds(f["\u6863\u6848"])[0] ?? ""))) {
+        if (!out.has(e)) out.set(e, `\u9879\u76EE\u300C${p.name}\u300D${when}\uFF0C${ctx.cfg.crossProjectCooldownDays} \u5929\u5185\u4E0D\u91CD\u590D\u8054\u7CFB`);
+      }
+    }
+  }
+  return out;
+}
+
 // src/kolops/inbox.ts
-import { readFileSync as readFileSync6 } from "node:fs";
+import { readFileSync as readFileSync7 } from "node:fs";
 var INBOX_CATEGORIES = ["\u60F3\u4F53\u9A8C", "\u8981\u56DE\u590D", "\u62D2\u7EDD", "\u4E0D\u7528\u56DE"];
 var QUOTE_MARKERS = [
   /(<[^>\s]+>\s*)?於\s*\d{4}\s*年.{0,40}?(寫道|写道)\s*[:：]/,
@@ -61687,7 +61838,7 @@ function closeChanges(review, profile, day2) {
 async function applyInbox(ctx, o) {
   const cfg = ctx.cfg;
   const t = cfg.tables;
-  const decisions = JSON.parse(readFileSync6(o.file, "utf8"));
+  const decisions = JSON.parse(readFileSync7(o.file, "utf8"));
   const s = await loadSnapshot(ctx.base, cfg);
   const pending = new Map((await ctx.base.records(t.contacts, {
     filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
@@ -61850,109 +62001,6 @@ async function senderDomain(domain) {
   if (!dmarc) problems.push("\u6CA1\u6709 DMARC \u8BB0\u5F55\uFF1A\u8BF7\u52A0 _dmarc \u7684 TXT\uFF0C\u4F8B\u5982 v=DMARC1; p=none; rua=mailto:<\u6536\u62A5\u544A\u7684\u90AE\u7BB1>");
   if (!mx.some((r) => /feishu|larksuite/i.test(r.exchange))) problems.push("MX \u4E0D\u662F\u98DE\u4E66\u7684\uFF1AKOL \u7684\u56DE\u4FE1\u4E0D\u4F1A\u8FDB\u8FD9\u4E2A\u98DE\u4E66\u90AE\u7BB1");
   return { \u57DF\u540D: domain, SPF: spf || null, DMARC: dmarc || null, \u95EE\u9898: problems, DKIM: "\u5728\u98DE\u4E66\u7BA1\u7406\u540E\u53F0\u300C\u90AE\u7BB1 \u2192 \u57DF\u540D\u7BA1\u7406\u300D\u91CC\u786E\u8BA4 DKIM \u5DF2\u751F\u6548" };
-}
-
-// src/kolops/reviews.ts
-import { readFileSync as readFileSync7 } from "node:fs";
-function reviewState(r) {
-  const p = option(r["\u5904\u7406"]);
-  const res = option(r["\u5BA1\u6838\u7ED3\u679C"]);
-  if (p === "\u4E0D\u53D1" || ["\u5148\u4E0D\u53D1", "\u4E0D\u540C\u610F"].includes(res)) return "declined";
-  if (p === "\u6539" || res === "\u9000\u56DE\u4FEE\u6539") return "revise";
-  if (p === "\u53D1\uFF0F\u540C\u610F") return "approved";
-  return "pending";
-}
-function isApproved(r) {
-  return reviewState(r) === "approved";
-}
-var OPEN = ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"];
-var REVIEW_FIELDS = ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u72B6\u6001", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "KOL", "\u4F60\u7684\u610F\u89C1", "\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE", "\u90AE\u4EF6\u8349\u7A3F", "\u53D1\u9001\u6E20\u9053", "\u4F53\u9A8C\u7801\u52A8\u4F5C", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u6B21\u6570", "\u4F53\u9A8C\u5929\u6570", "\u6D3B\u52A8\u7801", "\u7C89\u4E1D\u6298\u6263", "\u9500\u552E\u5E02\u573A", "\u5408\u4F5C\u9875\u540D\u79F0"];
-async function openReviews(ctx) {
-  return ctx.base.records(ctx.cfg.tables.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", OPEN]] }, fields: REVIEW_FIELDS });
-}
-async function closeDeclined(ctx, o) {
-  const t = ctx.cfg.tables;
-  const all = o.reviews ?? await openReviews(ctx);
-  const declined = all.filter((r) => reviewState(r) === "declined");
-  if (!declined.length) return [];
-  const s = await loadSnapshot(ctx.base, ctx.cfg);
-  const stillOpen = new Set(all.filter((r) => reviewState(r) !== "declined").flatMap((r) => linkIds(r["KOL"])));
-  const now = stamp(Date.now(), ctx.cfg.timezone);
-  const day2 = today(ctx.cfg);
-  const names = [];
-  const reviewChanges = {};
-  const followupChanges = {};
-  for (const r of declined) {
-    const fid = linkIds(r["KOL"])[0] ?? "";
-    const f = s.followups.get(fid);
-    const why = text(r["\u4F60\u7684\u610F\u89C1"]);
-    names.push(f ? displayName(s, f) : text(r["\u5BA1\u6838\u9879"]));
-    reviewChanges[r.record_id] = { \u72B6\u6001: ["\u5DF2\u64A4\u56DE"], \u6267\u884C\u65F6\u95F4: now, \u6267\u884C\u7ED3\u679C: `\u5BA1\u6838\u9009\u4E86\u4E0D\u53D1\uFF0C\u6CA1\u6709\u53D1\u51FA${why ? `\uFF08${why}\uFF09` : ""}`.slice(0, 2e3) };
-    if (!f || option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]) !== "\u7B49\u4F60\u5BA1\u6838" || stillOpen.has(fid)) continue;
-    const lastIn = cellTime(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], ctx.cfg.timezone) ?? 0;
-    const lastOut = cellTime(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], ctx.cfg.timezone) ?? 0;
-    followupChanges[fid] = {
-      \u5F53\u524D\u8F6E\u5230\u8C01: [lastIn > lastOut ? "\u65E0\u9700\u52A8\u4F5C" : "KOL"],
-      \u4E0B\u4E00\u6B65: `${day2} \u5BA1\u6838\u4E0D\u53D1\uFF1A${text(r["\u5BA1\u6838\u9879"])}${why ? `\uFF08${why}\uFF09` : ""}`.slice(0, 500)
-    };
-  }
-  if (o.dryRun) return names;
-  await ctx.base.update(t.reviews, reviewChanges);
-  if (Object.keys(followupChanges).length) await ctx.base.update(t.followups, followupChanges);
-  ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u5BA1\u6838\u4E0D\u53D1\u7684\u64A4\u56DE ${names.length} \u6761` });
-  return names;
-}
-async function toRevise(ctx) {
-  const s = await loadSnapshot(ctx.base, ctx.cfg);
-  const items = (await openReviews(ctx)).filter((r) => reviewState(r) === "revise");
-  return {
-    \u8981\u6539: items.map((r) => {
-      const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
-      return {
-        review: r.record_id,
-        kol: f ? displayName(s, f) : "",
-        \u5BA1\u6838\u9879: text(r["\u5BA1\u6838\u9879"]),
-        \u610F\u89C1: text(r["\u4F60\u7684\u610F\u89C1"]) || "\uFF08\u6CA1\u5199\u610F\u89C1\uFF0C\u95EE\u540C\u4E8B\u8981\u6539\u54EA\u91CC\uFF09",
-        \u8349\u7A3F: text(r["\u90AE\u4EF6\u8349\u7A3F"]),
-        \u4F53\u9A8C\u7801\u52A8\u4F5C: option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"]) || void 0
-      };
-    }),
-    \u8BF4\u660E: '\u6309\u610F\u89C1\u91CD\u5199\u540E\u5199\u6210 [{"review": "rec\u2026", "draft": "\u65B0\u8349\u7A3F", "note": "\u6539\u4E86\u4EC0\u4E48"}]\uFF0C\u7528 revise --apply \u63D0\u4EA4\uFF0C\u4F1A\u91CD\u65B0\u9001\u5BA1'
-  };
-}
-async function applyRevisions(ctx, o) {
-  const list2 = JSON.parse(readFileSync7(o.file, "utf8"));
-  const s = await loadSnapshot(ctx.base, ctx.cfg);
-  const open = new Map((await openReviews(ctx)).map((r) => [r.record_id, r]));
-  const errors = [];
-  const changes = {};
-  for (const x of list2) {
-    const r = open.get(x.review);
-    if (!r || reviewState(r) !== "revise") {
-      errors.push(`${x.review}\uFF1A\u4E0D\u662F\u5F85\u4FEE\u6539\u7684\u5BA1\u6838\u9879`);
-      continue;
-    }
-    const draft = (x.draft ?? "").trim();
-    if (!draft) {
-      errors.push(`${x.review}\uFF1A\u65B0\u8349\u7A3F\u662F\u7A7A\u7684`);
-      continue;
-    }
-    const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
-    const plan = trialPlan(ctx.cfg, r, f, profileOf(s, f));
-    const problem = typeof plan === "string" ? plan : plan ? missingPlaceholder(plan, draft) : "";
-    if (problem) {
-      errors.push(`${x.review}\uFF1A${problem}`);
-      continue;
-    }
-    const history = [text(r["\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE"]), `${today(ctx.cfg)} \u6309\u610F\u89C1\u6539\uFF1A${text(r["\u4F60\u7684\u610F\u89C1"]) || "\uFF08\u6CA1\u5199\uFF09"}${x.note ? ` \u2192 ${x.note}` : ""}`].filter(Boolean).join("\n");
-    changes[x.review] = { \u90AE\u4EF6\u8349\u7A3F: draft, \u5904\u7406: null, \u5BA1\u6838\u7ED3\u679C: null, \u4F60\u7684\u610F\u89C1: "", \u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE: history.slice(0, 5e3), \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"] };
-  }
-  if (errors.length) return { \u5199\u5165: 0, \u95EE\u9898: errors, \u8BF4\u660E: "\u6709\u95EE\u9898\u7684\u6539\u597D\u4E4B\u524D\uFF0C\u4E00\u6761\u90FD\u6CA1\u5199" };
-  if (!o.dryRun && list2.length) {
-    await ctx.base.update(ctx.cfg.tables.reviews, changes);
-    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u6309\u5BA1\u6838\u610F\u89C1\u91CD\u5199 ${list2.length} \u6761` });
-  }
-  return { \u5199\u5165: o.dryRun ? 0 : list2.length, \u8BD5\u8DD1: o.dryRun || void 0 };
 }
 
 // src/kolops/executor.ts
@@ -62254,12 +62302,17 @@ function executing() {
 }
 async function claimReview(ctx, reviewId) {
   const t = ctx.cfg.tables;
-  const [r] = await ctx.base.get(t.reviews, [reviewId], ["\u72B6\u6001", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "\u6267\u884C\u7ED3\u679C", "\u6267\u884C\u65F6\u95F4"]);
+  const [r] = await ctx.base.get(t.reviews, [reviewId], ["\u72B6\u6001", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "\u6267\u884C\u7ED3\u679C", "\u6267\u884C\u65F6\u95F4", ...FINGERPRINT_FIELDS, ...APPROVAL_FIELDS]);
   if (!r) return { skip: "\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E00\u6761" };
   const state = option(r["\u72B6\u6001"]);
   if (state === "\u5DF2\u6267\u884C") return { skip: "\u8FD9\u4E00\u6761\u5DF2\u7ECF\u6267\u884C\u8FC7" };
   if (state === "\u5DF2\u64A4\u56DE") return { skip: "\u8FD9\u4E00\u6761\u5DF2\u7ECF\u64A4\u56DE" };
   if (!isApproved(r)) return { skip: "\u8FD9\u4E00\u6761\u73B0\u5728\u4E0D\u662F\u6279\u51C6\u72B6\u6001" };
+  const problem = approvalProblem(ctx.cfg, r);
+  if (problem) {
+    if (problem.changed) await sendBack(ctx, reviewId, problem.reason);
+    return { skip: problem.reason };
+  }
   const result = text(r["\u6267\u884C\u7ED3\u679C"]);
   if (result.startsWith(EXECUTING)) {
     const age = Date.now() - (cellTime(r["\u6267\u884C\u65F6\u95F4"], ctx.cfg.timezone) ?? 0);
@@ -62297,6 +62350,12 @@ async function sendApproved(ctx, opts) {
     const followupId = linkIds(r["KOL"])[0] ?? "";
     const f = s.followups.get(followupId);
     const name = f ? displayName(s, f) : text(r["\u5BA1\u6838\u9879"]);
+    const problem = approvalProblem(ctx.cfg, r);
+    if (problem) {
+      if (problem.changed && !opts.dryRun) await sendBack(ctx, r.record_id, problem.reason);
+      skipped.push({ key: r.record_id, name, reason: problem.reason });
+      continue;
+    }
     const close = f ? closeChanges(r, profileOf(s, f), day2) : null;
     if (typeof close === "string") {
       skipped.push({ key: r.record_id, name, reason: close });
@@ -62406,6 +62465,8 @@ async function invite(ctx, o) {
   const approval = (await ctx.base.records(t.reviews)).find((r) => r.record_id === o.approval);
   if (!approval) throw new Error(`\u5BA1\u6838\u961F\u5217\u91CC\u627E\u4E0D\u5230 ${o.approval}`);
   if (!decisionApproved(approval)) throw new Error("\u8FD9\u6279\u9080\u7EA6\u5728\u5BA1\u6838\u961F\u5217\u91CC\u8FD8\u6CA1\u6709\u88AB\u6279\u51C6");
+  const problem = approvalProblem(ctx.cfg, approval);
+  if (problem) throw new Error(problem.reason);
   const said = `${text(approval["\u5BA1\u6838\u9879"])}
 ${text(approval["\u8981\u4F60\u5B9A\u4EC0\u4E48"])}`;
   if (!said.includes(o.batch)) throw new Error(`\u6279\u51C6\u8BB0\u5F55\u91CC\u6CA1\u6709\u5199\u6279\u6B21\u300C${o.batch}\u300D\uFF0C\u4E0D\u80FD\u7528\u5B83\u6765\u53D1\u8FD9\u6279`);
