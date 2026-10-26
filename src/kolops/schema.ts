@@ -28,7 +28,7 @@ export interface FieldDef {
   multiple?: boolean;
 }
 
-export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "发体验码", "体验码延期", "体验未用", "体验到期", "发活动码", "其他"] as const;
+export const TEMPLATE_PURPOSES = ["邀约", "催信 1", "催信 2", "体验跟进", "发体验码", "体验码延期", "体验未用", "体验到期", "发活动码", "发布确认", "其他"] as const;
 /** What an approved 审核队列 item asks the plugin to do with a trial code before it sends the reply. */
 /** 体验码动作: create or extend a trial code, or open a partner campaign (活动码), right before the approved reply goes out. */
 export const TRIAL_ACTIONS = ["发码", "延期", "开活动码"] as const;

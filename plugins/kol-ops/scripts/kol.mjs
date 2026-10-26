@@ -59834,7 +59834,7 @@ var TABLES = {
   mailboxes: "\u53D1\u4FE1\u90AE\u7BB1",
   templates: "\u6A21\u677F"
 };
-var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u4F53\u9A8C\u672A\u7528", "\u4F53\u9A8C\u5230\u671F", "\u53D1\u6D3B\u52A8\u7801", "\u5176\u4ED6"];
+var TEMPLATE_PURPOSES = ["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u4F53\u9A8C\u8DDF\u8FDB", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u4F53\u9A8C\u672A\u7528", "\u4F53\u9A8C\u5230\u671F", "\u53D1\u6D3B\u52A8\u7801", "\u53D1\u5E03\u786E\u8BA4", "\u5176\u4ED6"];
 var TRIAL_ACTIONS = ["\u53D1\u7801", "\u5EF6\u671F", "\u5F00\u6D3B\u52A8\u7801"];
 var CLOSE_ACTIONS = ["\u7ED3\u6848", "\u6C38\u4E0D\u8054\u7CFB"];
 var CLOSE_REASONS = ["\u65E0\u56DE\u5E94", "\u9898\u6750\u4E0D\u7B26", "\u53EA\u63A5\u56FA\u5B9A\u8D39", "\u5B97\u6559\u4FE1\u4EF0", "\u9690\u79C1", "\u6863\u671F", "\u62D2\u7EDD", "\u56DE\u590D\u540E\u5931\u8054", "\u9000\u4FE1\u6216\u90AE\u7BB1\u65E0\u6548", "\u4F5C\u5E9F", "\u5176\u4ED6"];
@@ -64049,7 +64049,19 @@ function actionsFor(c) {
     { label: "\u8DDF KOL \u65E0\u5173", key: "D", run: function () { later(c.id, "\u5DF2\u5F52\u6863\uFF1A" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(8) }); }); } },
   ];
   if (c.kind === "overdue") return [
-    { label: "\u8BB0\u4E0B\u8FD9\u6761\u53D1\u5E03", key: "A", primary: true, run: function () {
+    { label: "\u53D1\u4FE1\u95EE\u5979", key: "A", primary: true, run: function () {
+      var subject = ($("draft-subject") || {}).value || "", body = ($("draft-body") || {}).value || "";
+      if (!body.trim()) { toast("\u5148\u628A\u4FE1\u5199\u597D"); return; }
+      if (body.indexOf("{") >= 0) { toast("\u4FE1\u91CC\u8FD8\u6709 { } \u5360\u4F4D\u7B26\uFF0C\u6362\u6210\u5B9E\u9645\u7684\u5B57\u518D\u53D1"); return; }
+      var next = new Date(Date.now() + 3 * 86400000);
+      var nextDay = next.getFullYear() + "-" + String(next.getMonth() + 1).padStart(2, "0") + "-" + String(next.getDate()).padStart(2, "0");
+      later(c.id, "\u5DF2\u6392\u961F\u53D1\u4FE1\u7ED9 " + who(c), function () {
+        return post("/api/write", { id: c.who.id, subject: subject, body: body }).then(function (r) {
+          return post("/api/followup", { id: c.who.id, fields: { \u4E0B\u4E00\u6B65: "\u95EE\u4E86\u53D1\u5E03\u65F6\u95F4\uFF0C\u7B49\u5979\u56DE", \u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F: nextDay, \u5F53\u524D\u8F6E\u5230\u8C01: "KOL" } }).then(function () { return r; });
+        });
+      });
+    } },
+    { label: "\u8BB0\u4E0B\u8FD9\u6761\u53D1\u5E03", key: "P", run: function () {
       var link = ($("post-link") || {}).value || "";
       if (!/^https?:\\/\\//.test(link.trim())) { toast("\u5148\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u4E0A\u9762\u7684\u6846\u91CC"); return; }
       later(c.id, "\u5DF2\u8BB0\u4E0B\u53D1\u5E03\uFF1A" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
@@ -64158,8 +64170,10 @@ function renderDecide() {
         (c.why ? '<details><summary>\u4E3A\u4EC0\u4E48\u8FD9\u4E48\u5EFA\u8BAE</summary><div class="muted" style="margin-top:6px;white-space:pre-wrap">' + esc(c.why) + '</div></details>' : "") + '</div>' +
       linkBox +
       (c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u5B57\uFF0C\u6539\u5B8C\u70B9\u540C\u610F</span>' : "") + '</div>' +
-        (c.draft.subject ? '<div class="muted small">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") +
-        (c.kind === "reply" ? '<textarea class="input draft" id="draft-body" rows="9" style="resize:vertical">' + esc(c.draft.body) + '</textarea>' : '<div class="draft">' + esc(c.draft.body) + '</div>') + '</div>' : "") +
+        (c.kind === "overdue" ? '<label class="field">\u4E3B\u65E8\uFF08\u5979\u56DE\u8FC7\u6211\u4EEC\u7684\u4FE1\u5C31\u53EF\u4EE5\u4E0D\u586B\uFF0C\u4F1A\u63A5\u5728\u90A3\u5C01\u4FE1\u540E\u9762\uFF09<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
+          : c.draft.subject ? '<div class="muted small">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") +
+        (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="9" style="resize:vertical" placeholder="\u5199\u7ED9\u5979\u7684\u4FE1">' + esc(c.draft.body) + '</textarea>' : '<div class="draft">' + esc(c.draft.body) + '</div>') +
+        (c.draft.note ? '<div class="muted tiny">' + esc(c.draft.note) + '</div>' : "") + '</div>' : "") +
       mailHint + change +
     '</div><div class="actions">' + buttons +
       '<span class="muted small" style="margin-left:auto">' + (next ? "\u4E0B\u4E00\u4EF6\uFF1A" + esc(next.headline) : "\u8FD9\u662F\u6700\u540E\u4E00\u4EF6") + '</span>' +
@@ -64476,12 +64490,13 @@ var ConsoleData = class {
   reviews = [];
   pendingMail = [];
   posts = [];
+  templates = [];
   loadedAt = 0;
   async refresh() {
     const { base, cfg } = this.ctx;
     const t = cfg.tables;
     const since = addDays(today(cfg), -PROBLEM_DAYS);
-    const [snapshot, open, failed, pendingMail, posts] = await Promise.all([
+    const [snapshot, open, failed, pendingMail, posts, templates] = await Promise.all([
       loadSnapshot(base, cfg),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"]]] }, fields: REVIEW_FIELDS2 }),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u6267\u884C\u5931\u8D25"]], onOrAfter("\u6267\u884C\u65F6\u95F4", since)] }, fields: REVIEW_FIELDS2 }),
@@ -64489,8 +64504,10 @@ var ConsoleData = class {
         filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
         fields: ["Message ID", "\u6E20\u9053", "\u6458\u8981", "\u65E5\u671F", "KOL", "\u5F85\u5904\u7406", "\u65B9\u5411", "\u5185\u5BB9"]
       }),
-      base.records(t.posts, { fields: POST_FIELDS }).catch(() => [])
+      base.records(t.posts, { fields: POST_FIELDS }).catch(() => []),
+      loadTemplates(base, cfg).catch(() => [])
     ]);
+    this.templates = templates;
     this.snapshot = snapshot;
     this.reviews = [...open, ...failed];
     this.pendingMail = pendingMail;
@@ -64610,7 +64627,11 @@ function decisionCards(data, cfg, todayStr, mails = /* @__PURE__ */ new Map()) {
       headline: `${w?.name ?? displayName(s, f)} \u7EA6\u597D ${shortDay(due)} \u53D1\u5E03\uFF0C\u8FC7\u4E86 ${late} \u5929\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50`,
       meta: meta(f.record_id),
       suggest: "\u5148\u53BB\u5979\u7684\u4E3B\u9875\u770B\u4E00\u773C\uFF1B\u8FD8\u6CA1\u53D1\u7684\u8BDD\uFF0C\u5199\u4FE1\u95EE\u5979\u4E00\u4E0B",
-      steps: [{ text: "\u5DF2\u7ECF\u53D1\u4E86\u7684\u8BDD\uFF0C\u628A\u5E16\u5B50\u94FE\u63A5\u8BB0\u8FDB\u300C\u53D1\u5E03\u5185\u5BB9\u300D\uFF0C\u4E4B\u540E\u4F1A\u81EA\u52A8\u8BB0\u64AD\u653E\u548C\u4E92\u52A8" }, { text: "\u8FD8\u6CA1\u53D1\u7684\u8BDD\uFF0C\u5728 Claude \u91CC\u8BF4\u300C\u7ED9\u5979\u5199\u4E00\u5C01\u786E\u8BA4\u53D1\u5E03\u65F6\u95F4\u7684\u4FE1\u300D" }],
+      steps: [
+        { text: "\u5DF2\u7ECF\u53D1\u4E86\uFF1A\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u4E0B\u9762\uFF0C\u70B9\u300C\u8BB0\u4E0B\u8FD9\u6761\u53D1\u5E03\u300D\uFF0C\u4E4B\u540E\u4F1A\u81EA\u52A8\u8BB0\u64AD\u653E\u548C\u4E92\u52A8" },
+        { text: "\u8FD8\u6CA1\u53D1\uFF1A\u770B\u4E00\u4E0B\u4E0B\u9762\u8FD9\u5C01\u4FE1\uFF0C\u70B9\u300C\u53D1\u4FE1\u95EE\u5979\u300D\u5C31\u6392\u961F\u53D1\u51FA\uFF0C\u4E0B\u6B21\u8DDF\u8FDB\u6539\u5230 3 \u5929\u540E" }
+      ],
+      draft: checkInDraft(data.templates, f, profileOf(s, f), due, code),
       why: `\u7CFB\u7EDF\u6BCF\u5929\u770B\u5979\u6700\u8FD1\u7684\u5E16\u5B50\uFF0C\u6CA1\u627E\u5230\u63D0\u5230\u300C${cfg.postWords.join("\u3001") || "\u9879\u76EE\u8BC6\u522B\u8BCD"}\u300D${code ? `\u6216\u6D3B\u52A8\u7801 ${code}` : ""}\u7684\u3002\u53EF\u80FD\u8FD8\u6CA1\u53D1\uFF0C\u4E5F\u53EF\u80FD\u53D1\u4E86\u4F46\u6CA1\u63D0\uFF0C\u7CFB\u7EDF\u8BA4\u4E0D\u51FA\u6765\u3002`
     });
   }
@@ -64692,6 +64713,19 @@ function decisionCards(data, cfg, todayStr, mails = /* @__PURE__ */ new Map()) {
   const at = (c) => GROUP_ORDER.indexOf(c.group);
   cards.sort((a, b) => at(a) - at(b));
   return { cards, waitingClaude };
+}
+function checkInDraft(templates, f, p, due, code) {
+  const t = pickTemplate(templates, "\u53D1\u5E03\u786E\u8BA4");
+  const label = "\u95EE\u5979\u7684\u4FE1\uFF08\u53EF\u4EE5\u76F4\u63A5\u6539\uFF09";
+  if (!t) return { label, subject: "", body: "", note: "\u8FD8\u6CA1\u6709\u6279\u51C6\u7684\u300C\u53D1\u5E03\u786E\u8BA4\u300D\u6A21\u677F\uFF0C\u81EA\u5DF1\u5199\u51E0\u53E5\u5C31\u884C\uFF1B\u5E38\u7528\u7684\u8BDD\u53EF\u4EE5\u5728\u98DE\u4E66\u300C\u6A21\u677F\u300D\u8868\u52A0\u4E00\u4E2A\uFF0C\u7528\u9014\u9009\u300C\u53D1\u5E03\u786E\u8BA4\u300D" };
+  const name = text(p?.["\u79F0\u547C"]) || text(f["\u8D26\u53F7\u540D\u79F0"]) || text(p?.["\u8D26\u53F7\u540D\u79F0"]);
+  const values = { \u7A31\u547C: name, \u79F0\u547C: name, \u8D26\u53F7\u540D\u79F0: text(f["\u8D26\u53F7\u540D\u79F0"]), \u7D04\u5B9A\u65E5\u671F: shortDay(due), \u7EA6\u5B9A\u65E5\u671F: shortDay(due), \u6D3B\u52D5\u78BC: code, \u6D3B\u52A8\u7801: code };
+  try {
+    return { label, ...render(t, values) };
+  } catch (err) {
+    if (!(err instanceof MissingValue)) throw err;
+    return { label, subject: t.subject, body: t.body, note: `\u6A21\u677F\u91CC\u6709\u5360\u4F4D\u7B26\u6CA1\u6709\u503C\uFF08${err.message}\uFF09\uFF0C\u53D1\u4E4B\u524D\u628A { } \u91CC\u7684\u5B57\u6362\u6389` };
+  }
 }
 function reviewCard(r, s, cfg, w, meta, latest) {
   const type = option(r["\u7C7B\u578B"]);

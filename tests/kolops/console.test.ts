@@ -99,6 +99,14 @@ describe("decision queue", () => {
     const { cards } = decisionCards(await loaded(), ctx.cfg, day);
     expect(cards.map((x) => x.headline)).toEqual([expect.stringContaining("过了 3 天还没找到帖子")]);
     expect(cards[0].why).toContain("moonnotes");
+    expect(cards[0].draft).toMatchObject({ body: "", note: expect.stringContaining("发布确认") });
+  });
+
+  it("fills the check-in mail for a late post from the approved 发布确认 template", async () => {
+    kol("moon.notes", { 阶段: ["已约发布"], 约定发布日期: at(addDays(day, -3)), 活动码: "moonnotes" }, { 称呼: "月月" });
+    lark.add(T.templates, { 名称: "发布确认", 用途: ["发布确认"], 状态: ["已批准"], 主旨: "發布時間確認", 正文: "{稱呼}妳好：約好 {約定日期} 發布，想確認一下進度。活動碼 {活動碼}" });
+    const { cards } = decisionCards(await loaded(), ctx.cfg, day);
+    expect(cards[0].draft).toMatchObject({ subject: "發布時間確認", body: expect.stringMatching(/^月月妳好：約好 \d+ 月 \d+ 日 發布.*活動碼 moonnotes$/) });
   });
 
   it("counts items sent back for rewriting without queueing them", async () => {

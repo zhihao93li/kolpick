@@ -8,6 +8,7 @@ import { addressOf, splitDraft } from "../mail.js";
 import { stamp, today } from "../ops.js";
 import { executesOnApproval, reviewState } from "../reviews.js";
 import { SENDING_TYPES } from "../send.js";
+import { loadTemplates, MissingValue, pickTemplate, render, type Template } from "../templates.js";
 
 /**
  * What the decision console shows, built from the project's base. Everything here only reads: the console's
@@ -32,7 +33,7 @@ export interface Card {
   suggest: string;
   steps: Step[];
   why: string;
-  draft?: { label: string; subject: string; body: string };
+  draft?: { label: string; subject: string; body: string; note?: string };
 }
 
 export interface Cell {
@@ -82,6 +83,7 @@ export class ConsoleData {
   reviews: Row[] = [];
   pendingMail: Row[] = [];
   posts: Row[] = [];
+  templates: Template[] = [];
   loadedAt = 0;
 
   constructor(private ctx: Ctx) {}
@@ -90,14 +92,16 @@ export class ConsoleData {
     const { base, cfg } = this.ctx;
     const t = cfg.tables;
     const since = addDays(today(cfg), -PROBLEM_DAYS);
-    const [snapshot, open, failed, pendingMail, posts] = await Promise.all([
+    const [snapshot, open, failed, pendingMail, posts, templates] = await Promise.all([
       loadSnapshot(base, cfg),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] }, fields: REVIEW_FIELDS }),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["执行失败"]], onOrAfter("执行时间", since)] }, fields: REVIEW_FIELDS }),
       base.records(t.contacts, { filter: { logic: "and", conditions: [["待处理", "==", true], ["方向", "intersects", ["收到"]]] },
         fields: ["Message ID", "渠道", "摘要", "日期", "KOL", "待处理", "方向", "内容"] }),
       base.records(t.posts, { fields: POST_FIELDS }).catch(() => [] as Row[]),
+      loadTemplates(base, cfg).catch(() => [] as Template[]),
     ]);
+    this.templates = templates;
     this.snapshot = snapshot;
     this.reviews = [...open, ...failed];
     this.pendingMail = pendingMail;
@@ -216,7 +220,9 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
       id: `overdue:${f.record_id}`, kind: "overdue", group: "发布", tag: "没按时发布", who: w,
       headline: `${w?.name ?? displayName(s, f)} 约好 ${shortDay(due)} 发布，过了 ${late} 天还没找到帖子`, meta: meta(f.record_id),
       suggest: "先去她的主页看一眼；还没发的话，写信问她一下",
-      steps: [{ text: "已经发了的话，把帖子链接记进「发布内容」，之后会自动记播放和互动" }, { text: "还没发的话，在 Claude 里说「给她写一封确认发布时间的信」" }],
+      steps: [{ text: "已经发了：把帖子链接贴在下面，点「记下这条发布」，之后会自动记播放和互动" },
+        { text: "还没发：看一下下面这封信，点「发信问她」就排队发出，下次跟进改到 3 天后" }],
+      draft: checkInDraft(data.templates, f, profileOf(s, f), due, code),
       why: `系统每天看她最近的帖子，没找到提到「${cfg.postWords.join("、") || "项目识别词"}」${code ? `或活动码 ${code}` : ""}的。可能还没发，也可能发了但没提，系统认不出来。`,
     });
   }
@@ -290,6 +296,21 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
   const at = (c: Card) => GROUP_ORDER.indexOf(c.group);
   cards.sort((a, b) => at(a) - at(b));
   return { cards, waitingClaude };
+}
+
+/** The mail asking a late KOL about her post: the approved 发布确认 template filled in, or an empty one to write. */
+function checkInDraft(templates: Template[], f: Row, p: Row | undefined, due: string, code: string): NonNullable<Card["draft"]> {
+  const t = pickTemplate(templates, "发布确认");
+  const label = "问她的信（可以直接改）";
+  if (!t) return { label, subject: "", body: "", note: "还没有批准的「发布确认」模板，自己写几句就行；常用的话可以在飞书「模板」表加一个，用途选「发布确认」" };
+  const name = text(p?.["称呼"]) || text(f["账号名称"]) || text(p?.["账号名称"]);
+  const values: Record<string, string> = { 稱呼: name, 称呼: name, 账号名称: text(f["账号名称"]), 約定日期: shortDay(due), 约定日期: shortDay(due), 活動碼: code, 活动码: code };
+  try {
+    return { label, ...render(t, values) };
+  } catch (err) {
+    if (!(err instanceof MissingValue)) throw err;
+    return { label, subject: t.subject, body: t.body, note: `模板里有占位符没有值（${err.message}），发之前把 { } 里的字换掉` };
+  }
 }
 
 function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: string, latest?: MailText): Card {

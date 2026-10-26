@@ -253,7 +253,19 @@ function actionsFor(c) {
     { label: "跟 KOL 无关", key: "D", run: function () { later(c.id, "已归档：" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(8) }); }); } },
   ];
   if (c.kind === "overdue") return [
-    { label: "记下这条发布", key: "A", primary: true, run: function () {
+    { label: "发信问她", key: "A", primary: true, run: function () {
+      var subject = ($("draft-subject") || {}).value || "", body = ($("draft-body") || {}).value || "";
+      if (!body.trim()) { toast("先把信写好"); return; }
+      if (body.indexOf("{") >= 0) { toast("信里还有 { } 占位符，换成实际的字再发"); return; }
+      var next = new Date(Date.now() + 3 * 86400000);
+      var nextDay = next.getFullYear() + "-" + String(next.getMonth() + 1).padStart(2, "0") + "-" + String(next.getDate()).padStart(2, "0");
+      later(c.id, "已排队发信给 " + who(c), function () {
+        return post("/api/write", { id: c.who.id, subject: subject, body: body }).then(function (r) {
+          return post("/api/followup", { id: c.who.id, fields: { 下一步: "问了发布时间，等她回", 下次跟进日期: nextDay, 当前轮到谁: "KOL" } }).then(function () { return r; });
+        });
+      });
+    } },
+    { label: "记下这条发布", key: "P", run: function () {
       var link = ($("post-link") || {}).value || "";
       if (!/^https?:\/\//.test(link.trim())) { toast("先把帖子链接贴在上面的框里"); return; }
       later(c.id, "已记下发布：" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
@@ -362,8 +374,10 @@ function renderDecide() {
         (c.why ? '<details><summary>为什么这么建议</summary><div class="muted" style="margin-top:6px;white-space:pre-wrap">' + esc(c.why) + '</div></details>' : "") + '</div>' +
       linkBox +
       (c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">小改动直接改字，改完点同意</span>' : "") + '</div>' +
-        (c.draft.subject ? '<div class="muted small">主旨：' + esc(c.draft.subject) + '</div>' : "") +
-        (c.kind === "reply" ? '<textarea class="input draft" id="draft-body" rows="9" style="resize:vertical">' + esc(c.draft.body) + '</textarea>' : '<div class="draft">' + esc(c.draft.body) + '</div>') + '</div>' : "") +
+        (c.kind === "overdue" ? '<label class="field">主旨（她回过我们的信就可以不填，会接在那封信后面）<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
+          : c.draft.subject ? '<div class="muted small">主旨：' + esc(c.draft.subject) + '</div>' : "") +
+        (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="9" style="resize:vertical" placeholder="写给她的信">' + esc(c.draft.body) + '</textarea>' : '<div class="draft">' + esc(c.draft.body) + '</div>') +
+        (c.draft.note ? '<div class="muted tiny">' + esc(c.draft.note) + '</div>' : "") + '</div>' : "") +
       mailHint + change +
     '</div><div class="actions">' + buttons +
       '<span class="muted small" style="margin-left:auto">' + (next ? "下一件：" + esc(next.headline) : "这是最后一件") + '</span>' +
