@@ -76,18 +76,24 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 .field .input{font-size:14px}
 .modal{position:fixed;inset:0;background:rgba(20,20,30,.35);display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:40;overflow:auto}
 .modal>div{background:#fff;border-radius:12px;padding:20px 22px;width:100%;max-width:620px;display:flex;flex-direction:column;gap:12px}
-.dgrid{display:grid;grid-template-columns:280px minmax(0,1fr) 420px;gap:14px;align-items:start}
+main.wide{max-width:none}
+.dgrid{display:grid;grid-template-columns:minmax(300px,22%) minmax(0,1fr) minmax(380px,26%);gap:16px;align-items:start}
 .dlist{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto;padding:6px 0}
 .dgroup{font-size:12px;font-weight:600;color:var(--muted);padding:10px 14px 4px;display:flex;justify-content:space-between}
 .ditem{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;text-align:left;padding:9px 14px;border:0;border-left:3px solid transparent;background:transparent;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
 .ditem:hover{background:var(--bg)}
 .ditem.on{background:#EEF2FD;border-left-color:var(--blue)}
+.dmeta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .dtitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
 .dinfo{padding:20px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
 .dact{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.seg{display:flex;gap:0;border:1px solid #CDD2DA;border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:#fff;font:inherit;font-size:13px;padding:9px 8px;cursor:pointer;color:var(--ink2);display:flex;gap:6px;align-items:center;justify-content:center}
+.seg button+button{border-left:1px solid #CDD2DA}
+.seg button.on{background:#EEF2FD;color:var(--blue2);font-weight:600}
 .dbuttons{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--line2)}
 .dbuttons .btn.primary{flex:1 1 100%}
-@media (max-width:1180px){.dgrid{grid-template-columns:240px minmax(0,1fr)}.dact{grid-column:2;position:static;max-height:none}}
+@media (max-width:1180px){.dgrid{grid-template-columns:minmax(240px,30%) minmax(0,1fr)}.dact{grid-column:2;position:static;max-height:none}}
 @media (max-width:760px){.dgrid{grid-template-columns:minmax(0,1fr)}.dact{grid-column:1}.dlist{position:static;max-height:240px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
 @media (max-width:640px){.top,main{padding-left:16px;padding-right:16px}.actions{padding:12px 16px}}
@@ -119,7 +125,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
 <script>
 "use strict";
-var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {} };
+var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {}, posted: {} };
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
@@ -265,6 +271,13 @@ function actionsFor(c) {
     { label: "关联到 KOL", key: "L", primary: true, run: function () { linkMail(c); } },
     { label: "跟 KOL 无关", key: "D", run: function () { later(c.id, "已归档：" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(8) }); }); } },
   ];
+  if (c.kind === "overdue" && state.posted[c.id]) return [
+    { label: "记下这条发布", key: "A", primary: true, run: function () {
+      var link = ($("post-link") || {}).value || "";
+      if (!/^https?:\/\//.test(link.trim())) { toast("先把帖子链接贴在上面的框里"); return; }
+      later(c.id, "已记下发布：" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
+    } },
+  ];
   if (c.kind === "overdue") return [
     { label: "发信问她", key: "A", primary: true, run: function () {
       var subject = ($("draft-subject") || {}).value || "", body = ($("draft-body") || {}).value || "";
@@ -277,11 +290,6 @@ function actionsFor(c) {
           return post("/api/followup", { id: c.who.id, fields: { 下一步: "问了发布时间，等她回", 下次跟进日期: nextDay, 当前轮到谁: "KOL" } }).then(function () { return r; });
         });
       });
-    } },
-    { label: "记下这条发布", key: "P", run: function () {
-      var link = ($("post-link") || {}).value || "";
-      if (!/^https?:\/\//.test(link.trim())) { toast("先把帖子链接贴在上面的框里"); return; }
-      later(c.id, "已记下发布：" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
     } },
   ];
   if (c.kind === "todo") return [
@@ -368,7 +376,7 @@ function renderDecide() {
   var listScroll = oldList ? oldList.scrollTop : 0;
   var top = '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><b style="font-size:16px">' + (cards.length ? "有 " + cards.length + " 件要你决定" : "没有要你决定的事") + '</b>' +
     '<span class="muted small">J / K 上一件 · 下一件</span></div>' +
-    (o.waitingClaude ? '<div class="muted small">另有 ' + o.waitingClaude + ' 件在等 Claude 按你的意见重写（在 Claude 里说「改退回的草稿」），写好会排进来。</div>' : "") + newsBlock();
+    (o.waitingClaude ? '<div class="muted small">另有 ' + o.waitingClaude + ' 件在等 Claude 按你的意见重写（在 Claude 里说「改退回的草稿」），写好会排进来。</div>' : "") + '<div id="news">' + newsBlock() + '</div>';
   if (!c) {
     $("app").innerHTML = '<div class="narrow">' + top + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">现在没有要你决定的事</div><div class="muted">同意的事在后台执行，结果看右上角。新来信和 Claude 准备好的草稿会自动排进来。</div></section></div>';
     return;
@@ -382,7 +390,7 @@ function renderDecide() {
       list += '<div class="dgroup">' + esc(x.group) + ' <span>' + n + '</span></div>';
       lastGroup = x.group;
     }
-    list += '<button class="ditem' + (i === state.idx ? " on" : "") + '" data-i="' + i + '"><span class="badge ' + (TAG[x.kind] || "") + '">' + esc(x.tag) + '</span><span class="dtitle">' + esc(x.headline) + '</span></button>';
+    list += '<button class="ditem' + (i === state.idx ? " on" : "") + '" data-i="' + i + '"><span class="badge ' + (TAG[x.kind] || "") + '">' + esc(x.tag) + '</span><span class="dtitle">' + esc(x.headline) + '</span>' + (x.meta ? '<span class="dmeta">' + esc(x.meta) + '</span>' : "") + '</button>';
   });
 
   // --- 中：信息 ---
@@ -406,8 +414,12 @@ function renderDecide() {
   var buttons = acts.map(function (a, i) {
     return '<button class="btn big' + (a.primary ? " primary" : "") + '" data-act="' + i + '"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + '>' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
   }).join("") + '<button class="btn big" id="skip">跳过 <span class="kbd">S</span></button>';
-  var linkBox = c.kind === "overdue" ? '<label class="field">其实已经发了？把帖子链接贴在这里<input class="input" id="post-link" placeholder="https://"></label>' : "";
-  var draft = c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">小改动直接改字</span>' : "") + '</div>' +
+  var posted = c.kind === "overdue" && state.posted[c.id];
+  var choice = c.kind === "overdue" ? '<div class="field" style="color:var(--ink);font-weight:500">她发了吗？<div class="seg" role="radiogroup">' +
+      '<button role="radio" aria-checked="' + !posted + '" class="' + (posted ? "" : "on") + '" data-path="notyet">还没发：写信问她 <span class="kbd">1</span></button>' +
+      '<button role="radio" aria-checked="' + !!posted + '" class="' + (posted ? "on" : "") + '" data-path="posted">已经发了：记下链接 <span class="kbd">2</span></button></div></div>' : "";
+  var linkBox = posted ? '<label class="field">帖子链接<input class="input" id="post-link" placeholder="https://"><span class="tiny">记下后她会移到「已发布」，之后自动记播放和互动</span></label>' : "";
+  var draft = c.draft && !posted ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">小改动直接改字</span>' : "") + '</div>' +
       (c.kind === "overdue" ? '<label class="field">主旨（她回过我们的信就可以不填）<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
         : c.draft.subject ? '<div class="muted small">主旨：' + esc(c.draft.subject) + '</div>' : "") +
       (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="10" style="resize:vertical;font-size:14px" placeholder="写给她的信">' + esc(c.draft.body) + '</textarea>' : '<div class="draft" style="font-size:14px">' + esc(c.draft.body) + '</div>') +
@@ -418,7 +430,8 @@ function renderDecide() {
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="to-claude">交给 Claude 重写</button><button class="btn" id="drop" style="border-color:transparent;color:var(--muted)">这件事不用做了</button><button class="btn" id="cancel-change" style="border-color:transparent;color:var(--muted)">取消</button></div>' +
     '<div class="muted tiny">交给 Claude 后，在 Claude 里说「改退回的草稿」；改好的会排回这里。小改动直接改信，再点同意就行。</div></div>' : "";
   var next = cards[state.idx + 1];
-  var actionPane = (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "点「同意」后会：" : "可以这样处理：") + '</div>' + steps + '</div>' : "") +
+  if (c.kind === "overdue") steps = "";
+  var actionPane = choice + (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "点「同意」后会：" : "可以这样处理：") + '</div>' + steps + '</div>' : "") +
     linkBox + draft + mailHint + change +
     '<div class="dbuttons">' + buttons + '</div>' +
     '<div class="muted tiny">' + (next ? "下一件：" + esc(next.headline) : "这是最后一件") + '</div>';
@@ -453,6 +466,9 @@ function renderDecide() {
       later(c.id, "这件事不做了：" + who(c), function () { return post("/api/drop", { id: c.id, note: note }); });
     });
   }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (b) {
+    b.addEventListener("click", function () { state.posted[c.id] = b.getAttribute("data-path") === "posted"; renderDecide(); if ($("post-link")) $("post-link").focus(); });
+  });
   if (c.who) loadConvo(c.who.id);
 }
 function move(d) {
@@ -469,6 +485,8 @@ document.addEventListener("keydown", function (e) {
   if (e.target.closest && e.target.closest("input,textarea,select")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   var k = e.key.toLowerCase();
+  var cur = visibleCards()[state.idx];
+  if (cur && cur.kind === "overdue" && (k === "1" || k === "2")) { state.posted[cur.id] = k === "2"; renderDecide(); return; }
   if (k === "j" || k === "s") return move(1);
   if (k === "k") return move(-1);
   var c = visibleCards()[state.idx];
@@ -666,6 +684,8 @@ function route() {
   var parts = h.split("?")[0].split("/").filter(Boolean);
   var tab = parts[0] === "people" || parts[0] === "person" ? "people" : parts[0] === "log" ? "log" : "decide";
   Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (a) { a.classList.toggle("on", a.getAttribute("data-tab") === tab); });
+  // The decision page uses the whole width: list, case and action side by side.
+  $("app").classList.toggle("wide", tab === "decide");
   if (!state.overview) return;
   if (parts[0] === "people") renderPeople(parts[1] || "wait", "");
   else if (parts[0] === "person" && parts[1]) renderPerson(decodeURIComponent(parts[1]));
@@ -678,11 +698,16 @@ function loadNews() {
   var since = 0;
   try { since = Number(localStorage.getItem(SEEN_KEY)) || 0; } catch (e) {}
   if (!since) since = Date.now() - 24 * 3600 * 1000;
-  return api("/api/news?since=" + since).then(function (n) { state.news = n; }).catch(function () {});
+  return api("/api/news?since=" + since).then(function (n) {
+    state.news = n;
+    // Filled in place, so a draft being edited isn't redrawn.
+    var box = $("news");
+    if (box) box.innerHTML = newsBlock();
+  }).catch(function () {});
 }
 function markSeen() { try { localStorage.setItem(SEEN_KEY, String(Date.now())); } catch (e) {} }
 window.addEventListener("pagehide", markSeen);
-loadOverview().then(function () { return loadNews(); }).then(route).catch(fail);
+loadOverview().then(function () { route(); loadNews(); }).catch(fail);
 setInterval(function () { loadOverview().then(function () { if (!location.hash || location.hash === "#/") renderDecide(); }).catch(function () {}); }, 5 * 60 * 1000);
 </script>
 </body>

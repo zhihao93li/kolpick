@@ -63873,18 +63873,24 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 .field .input{font-size:14px}
 .modal{position:fixed;inset:0;background:rgba(20,20,30,.35);display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:40;overflow:auto}
 .modal>div{background:#fff;border-radius:12px;padding:20px 22px;width:100%;max-width:620px;display:flex;flex-direction:column;gap:12px}
-.dgrid{display:grid;grid-template-columns:280px minmax(0,1fr) 420px;gap:14px;align-items:start}
+main.wide{max-width:none}
+.dgrid{display:grid;grid-template-columns:minmax(300px,22%) minmax(0,1fr) minmax(380px,26%);gap:16px;align-items:start}
 .dlist{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto;padding:6px 0}
 .dgroup{font-size:12px;font-weight:600;color:var(--muted);padding:10px 14px 4px;display:flex;justify-content:space-between}
 .ditem{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;text-align:left;padding:9px 14px;border:0;border-left:3px solid transparent;background:transparent;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
 .ditem:hover{background:var(--bg)}
 .ditem.on{background:#EEF2FD;border-left-color:var(--blue)}
+.dmeta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .dtitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
 .dinfo{padding:20px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
 .dact{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.seg{display:flex;gap:0;border:1px solid #CDD2DA;border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:#fff;font:inherit;font-size:13px;padding:9px 8px;cursor:pointer;color:var(--ink2);display:flex;gap:6px;align-items:center;justify-content:center}
+.seg button+button{border-left:1px solid #CDD2DA}
+.seg button.on{background:#EEF2FD;color:var(--blue2);font-weight:600}
 .dbuttons{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--line2)}
 .dbuttons .btn.primary{flex:1 1 100%}
-@media (max-width:1180px){.dgrid{grid-template-columns:240px minmax(0,1fr)}.dact{grid-column:2;position:static;max-height:none}}
+@media (max-width:1180px){.dgrid{grid-template-columns:minmax(240px,30%) minmax(0,1fr)}.dact{grid-column:2;position:static;max-height:none}}
 @media (max-width:760px){.dgrid{grid-template-columns:minmax(0,1fr)}.dact{grid-column:1}.dlist{position:static;max-height:240px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
 @media (max-width:640px){.top,main{padding-left:16px;padding-right:16px}.actions{padding:12px 16px}}
@@ -63916,7 +63922,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
 <script>
 "use strict";
-var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {} };
+var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {}, posted: {} };
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
@@ -64062,6 +64068,13 @@ function actionsFor(c) {
     { label: "\u5173\u8054\u5230 KOL", key: "L", primary: true, run: function () { linkMail(c); } },
     { label: "\u8DDF KOL \u65E0\u5173", key: "D", run: function () { later(c.id, "\u5DF2\u5F52\u6863\uFF1A" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(8) }); }); } },
   ];
+  if (c.kind === "overdue" && state.posted[c.id]) return [
+    { label: "\u8BB0\u4E0B\u8FD9\u6761\u53D1\u5E03", key: "A", primary: true, run: function () {
+      var link = ($("post-link") || {}).value || "";
+      if (!/^https?:\\/\\//.test(link.trim())) { toast("\u5148\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u4E0A\u9762\u7684\u6846\u91CC"); return; }
+      later(c.id, "\u5DF2\u8BB0\u4E0B\u53D1\u5E03\uFF1A" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
+    } },
+  ];
   if (c.kind === "overdue") return [
     { label: "\u53D1\u4FE1\u95EE\u5979", key: "A", primary: true, run: function () {
       var subject = ($("draft-subject") || {}).value || "", body = ($("draft-body") || {}).value || "";
@@ -64074,11 +64087,6 @@ function actionsFor(c) {
           return post("/api/followup", { id: c.who.id, fields: { \u4E0B\u4E00\u6B65: "\u95EE\u4E86\u53D1\u5E03\u65F6\u95F4\uFF0C\u7B49\u5979\u56DE", \u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F: nextDay, \u5F53\u524D\u8F6E\u5230\u8C01: "KOL" } }).then(function () { return r; });
         });
       });
-    } },
-    { label: "\u8BB0\u4E0B\u8FD9\u6761\u53D1\u5E03", key: "P", run: function () {
-      var link = ($("post-link") || {}).value || "";
-      if (!/^https?:\\/\\//.test(link.trim())) { toast("\u5148\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u4E0A\u9762\u7684\u6846\u91CC"); return; }
-      later(c.id, "\u5DF2\u8BB0\u4E0B\u53D1\u5E03\uFF1A" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
     } },
   ];
   if (c.kind === "todo") return [
@@ -64165,7 +64173,7 @@ function renderDecide() {
   var listScroll = oldList ? oldList.scrollTop : 0;
   var top = '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><b style="font-size:16px">' + (cards.length ? "\u6709 " + cards.length + " \u4EF6\u8981\u4F60\u51B3\u5B9A" : "\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B") + '</b>' +
     '<span class="muted small">J / K \u4E0A\u4E00\u4EF6 \xB7 \u4E0B\u4E00\u4EF6</span></div>' +
-    (o.waitingClaude ? '<div class="muted small">\u53E6\u6709 ' + o.waitingClaude + ' \u4EF6\u5728\u7B49 Claude \u6309\u4F60\u7684\u610F\u89C1\u91CD\u5199\uFF08\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF09\uFF0C\u5199\u597D\u4F1A\u6392\u8FDB\u6765\u3002</div>' : "") + newsBlock();
+    (o.waitingClaude ? '<div class="muted small">\u53E6\u6709 ' + o.waitingClaude + ' \u4EF6\u5728\u7B49 Claude \u6309\u4F60\u7684\u610F\u89C1\u91CD\u5199\uFF08\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF09\uFF0C\u5199\u597D\u4F1A\u6392\u8FDB\u6765\u3002</div>' : "") + '<div id="news">' + newsBlock() + '</div>';
   if (!c) {
     $("app").innerHTML = '<div class="narrow">' + top + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">\u73B0\u5728\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B</div><div class="muted">\u540C\u610F\u7684\u4E8B\u5728\u540E\u53F0\u6267\u884C\uFF0C\u7ED3\u679C\u770B\u53F3\u4E0A\u89D2\u3002\u65B0\u6765\u4FE1\u548C Claude \u51C6\u5907\u597D\u7684\u8349\u7A3F\u4F1A\u81EA\u52A8\u6392\u8FDB\u6765\u3002</div></section></div>';
     return;
@@ -64179,7 +64187,7 @@ function renderDecide() {
       list += '<div class="dgroup">' + esc(x.group) + ' <span>' + n + '</span></div>';
       lastGroup = x.group;
     }
-    list += '<button class="ditem' + (i === state.idx ? " on" : "") + '" data-i="' + i + '"><span class="badge ' + (TAG[x.kind] || "") + '">' + esc(x.tag) + '</span><span class="dtitle">' + esc(x.headline) + '</span></button>';
+    list += '<button class="ditem' + (i === state.idx ? " on" : "") + '" data-i="' + i + '"><span class="badge ' + (TAG[x.kind] || "") + '">' + esc(x.tag) + '</span><span class="dtitle">' + esc(x.headline) + '</span>' + (x.meta ? '<span class="dmeta">' + esc(x.meta) + '</span>' : "") + '</button>';
   });
 
   // --- \u4E2D\uFF1A\u4FE1\u606F ---
@@ -64203,8 +64211,12 @@ function renderDecide() {
   var buttons = acts.map(function (a, i) {
     return '<button class="btn big' + (a.primary ? " primary" : "") + '" data-act="' + i + '"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + '>' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
   }).join("") + '<button class="btn big" id="skip">\u8DF3\u8FC7 <span class="kbd">S</span></button>';
-  var linkBox = c.kind === "overdue" ? '<label class="field">\u5176\u5B9E\u5DF2\u7ECF\u53D1\u4E86\uFF1F\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u8FD9\u91CC<input class="input" id="post-link" placeholder="https://"></label>' : "";
-  var draft = c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u5B57</span>' : "") + '</div>' +
+  var posted = c.kind === "overdue" && state.posted[c.id];
+  var choice = c.kind === "overdue" ? '<div class="field" style="color:var(--ink);font-weight:500">\u5979\u53D1\u4E86\u5417\uFF1F<div class="seg" role="radiogroup">' +
+      '<button role="radio" aria-checked="' + !posted + '" class="' + (posted ? "" : "on") + '" data-path="notyet">\u8FD8\u6CA1\u53D1\uFF1A\u5199\u4FE1\u95EE\u5979 <span class="kbd">1</span></button>' +
+      '<button role="radio" aria-checked="' + !!posted + '" class="' + (posted ? "on" : "") + '" data-path="posted">\u5DF2\u7ECF\u53D1\u4E86\uFF1A\u8BB0\u4E0B\u94FE\u63A5 <span class="kbd">2</span></button></div></div>' : "";
+  var linkBox = posted ? '<label class="field">\u5E16\u5B50\u94FE\u63A5<input class="input" id="post-link" placeholder="https://"><span class="tiny">\u8BB0\u4E0B\u540E\u5979\u4F1A\u79FB\u5230\u300C\u5DF2\u53D1\u5E03\u300D\uFF0C\u4E4B\u540E\u81EA\u52A8\u8BB0\u64AD\u653E\u548C\u4E92\u52A8</span></label>' : "";
+  var draft = c.draft && !posted ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u5B57</span>' : "") + '</div>' +
       (c.kind === "overdue" ? '<label class="field">\u4E3B\u65E8\uFF08\u5979\u56DE\u8FC7\u6211\u4EEC\u7684\u4FE1\u5C31\u53EF\u4EE5\u4E0D\u586B\uFF09<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
         : c.draft.subject ? '<div class="muted small">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") +
       (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="10" style="resize:vertical;font-size:14px" placeholder="\u5199\u7ED9\u5979\u7684\u4FE1">' + esc(c.draft.body) + '</textarea>' : '<div class="draft" style="font-size:14px">' + esc(c.draft.body) + '</div>') +
@@ -64215,7 +64227,8 @@ function renderDecide() {
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="to-claude">\u4EA4\u7ED9 Claude \u91CD\u5199</button><button class="btn" id="drop" style="border-color:transparent;color:var(--muted)">\u8FD9\u4EF6\u4E8B\u4E0D\u7528\u505A\u4E86</button><button class="btn" id="cancel-change" style="border-color:transparent;color:var(--muted)">\u53D6\u6D88</button></div>' +
     '<div class="muted tiny">\u4EA4\u7ED9 Claude \u540E\uFF0C\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF1B\u6539\u597D\u7684\u4F1A\u6392\u56DE\u8FD9\u91CC\u3002\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u4FE1\uFF0C\u518D\u70B9\u540C\u610F\u5C31\u884C\u3002</div></div>' : "";
   var next = cards[state.idx + 1];
-  var actionPane = (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A") + '</div>' + steps + '</div>' : "") +
+  if (c.kind === "overdue") steps = "";
+  var actionPane = choice + (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A") + '</div>' + steps + '</div>' : "") +
     linkBox + draft + mailHint + change +
     '<div class="dbuttons">' + buttons + '</div>' +
     '<div class="muted tiny">' + (next ? "\u4E0B\u4E00\u4EF6\uFF1A" + esc(next.headline) : "\u8FD9\u662F\u6700\u540E\u4E00\u4EF6") + '</div>';
@@ -64250,6 +64263,9 @@ function renderDecide() {
       later(c.id, "\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF1A" + who(c), function () { return post("/api/drop", { id: c.id, note: note }); });
     });
   }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (b) {
+    b.addEventListener("click", function () { state.posted[c.id] = b.getAttribute("data-path") === "posted"; renderDecide(); if ($("post-link")) $("post-link").focus(); });
+  });
   if (c.who) loadConvo(c.who.id);
 }
 function move(d) {
@@ -64266,6 +64282,8 @@ document.addEventListener("keydown", function (e) {
   if (e.target.closest && e.target.closest("input,textarea,select")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   var k = e.key.toLowerCase();
+  var cur = visibleCards()[state.idx];
+  if (cur && cur.kind === "overdue" && (k === "1" || k === "2")) { state.posted[cur.id] = k === "2"; renderDecide(); return; }
   if (k === "j" || k === "s") return move(1);
   if (k === "k") return move(-1);
   var c = visibleCards()[state.idx];
@@ -64463,6 +64481,8 @@ function route() {
   var parts = h.split("?")[0].split("/").filter(Boolean);
   var tab = parts[0] === "people" || parts[0] === "person" ? "people" : parts[0] === "log" ? "log" : "decide";
   Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (a) { a.classList.toggle("on", a.getAttribute("data-tab") === tab); });
+  // The decision page uses the whole width: list, case and action side by side.
+  $("app").classList.toggle("wide", tab === "decide");
   if (!state.overview) return;
   if (parts[0] === "people") renderPeople(parts[1] || "wait", "");
   else if (parts[0] === "person" && parts[1]) renderPerson(decodeURIComponent(parts[1]));
@@ -64475,11 +64495,16 @@ function loadNews() {
   var since = 0;
   try { since = Number(localStorage.getItem(SEEN_KEY)) || 0; } catch (e) {}
   if (!since) since = Date.now() - 24 * 3600 * 1000;
-  return api("/api/news?since=" + since).then(function (n) { state.news = n; }).catch(function () {});
+  return api("/api/news?since=" + since).then(function (n) {
+    state.news = n;
+    // Filled in place, so a draft being edited isn't redrawn.
+    var box = $("news");
+    if (box) box.innerHTML = newsBlock();
+  }).catch(function () {});
 }
 function markSeen() { try { localStorage.setItem(SEEN_KEY, String(Date.now())); } catch (e) {} }
 window.addEventListener("pagehide", markSeen);
-loadOverview().then(function () { return loadNews(); }).then(route).catch(fail);
+loadOverview().then(function () { route(); loadNews(); }).catch(fail);
 setInterval(function () { loadOverview().then(function () { if (!location.hash || location.hash === "#/") renderDecide(); }).catch(function () {}); }, 5 * 60 * 1000);
 </script>
 </body>
