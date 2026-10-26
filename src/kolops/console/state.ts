@@ -34,6 +34,8 @@ export interface Card {
   steps: Step[];
   why: string;
   draft?: { label: string; subject: string; body: string; note?: string };
+  /** A reply that sends mail: from which mailbox, to whom, and whether the reviewer has to send it by hand. */
+  send?: { from: string; to: string; byHand: boolean };
 }
 
 export interface Cell {
@@ -363,7 +365,13 @@ function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: stri
   const sends = kind === "reply" && channel !== "不发邮件" && body.trim();
   if (sends) {
     const mb = mailboxFor(cfg, channel);
-    steps.push({ text: mb ? `${action ? "成功后，" : ""}从 ${mb.address} 把下面这封信发给 ${recipient || "她"}` : `这封信要从「${channel}」发，系统发不了，要手动发` });
+    if (mb) steps.push({ text: `${action ? "成功后，" : ""}从 ${mb.address} 把下面这封信发给 ${recipient || "她"}` });
+    else {
+      steps.length = 0;
+      steps.push({ text: `复制下面这封信，到「${channel}」发给 ${recipient || "她"}（这个邮箱系统发不了）` });
+      if (action) steps.push({ text: `这一条还要${action}，手动发信时系统没法一起做：点「让 Claude 改」，请它改成从飞书邮箱发` });
+      steps.push({ text: "发出去以后点「我发出去了」，系统记下这封信，改成等她回" });
+    }
   }
   const after = option(r["发后动作"]);
   if (after) steps.push({ text: `${after === "永不联系" ? "标成永不联系，" : ""}结束跟进（原因：${option(r["结案原因"]) || "没写"}）` });
@@ -376,6 +384,7 @@ function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: stri
     mail: latest ? { label: `${w?.name ?? "对方"}说`, text: latest.text, when: latest.when } : undefined,
     suggest: text(r["要你定什么"]) || text(r["审核项"]),
     steps, why: text(r["我的判断和建议"]),
+    send: sends ? { from: mailboxFor(cfg, channel)?.address ?? channel, to: recipient, byHand: !mailboxFor(cfg, channel) } : undefined,
     draft: body.trim() ? { label: sends ? `要发给 ${recipient || "她"} 的信` : kind === "template" ? "模板内容" : "草稿", subject, body } : undefined,
   };
 }

@@ -1,10 +1,12 @@
-import { cellTime, linkIds, option, text } from "../base.js";
+import { cellTime, emailsIn, linkIds, option, text } from "../base.js";
 import { loadConfig, mailboxFor, sendingPaused } from "../config.js";
 import { makeCtx, type Ctx } from "../ctx.js";
 import { displayName, profileEmails, profileOf } from "../data.js";
 import { notExecutor, ExecutorLock } from "../executor.js";
 import { find } from "../find.js";
+import { closeChanges } from "../inbox.js";
 import type { Row } from "../lark.js";
+import { splitDraft } from "../mail.js";
 import { RUN_TITLES, stamp, today } from "../ops.js";
 import { approveInConsole, closeDeclined, executesOnApproval } from "../reviews.js";
 import { CLOSE_REASONS } from "../schema.js";
@@ -99,6 +101,32 @@ export async function approve(ctx: Ctx, data: ConsoleData, jobs: Jobs, id: strin
     if (rep.skipped.length) throw new Error(rep.skipped[0].reason);
     return "已同意（这件事不用发信）";
   });
+}
+
+/**
+ * A reply that has to go out from a mailbox the plugin can't send from (a Gmail, say): the reviewer sent it by hand,
+ * so it is recorded the way a sent mail is — 接触记录, the followup waiting on the KOL, the item done.
+ */
+export async function manualSent(ctx: Ctx, data: ConsoleData, id: string, edits: Record<string, unknown>): Promise<void> {
+  const t = ctx.cfg.tables;
+  const [before] = await ctx.base.get(t.reviews, [id]);
+  if (!before) throw new Error("审核队列里已经没有这一条");
+  if (option(before["体验码动作"])) throw new Error("这一条还要建码，手动发信的邮箱没法一起做。点「让 Claude 改」，请它改成从飞书邮箱发");
+  const r = await approveInConsole(ctx, id, cleanEdits(edits));
+  const fid = linkIds(r["KOL"])[0] ?? "";
+  const f = data.snapshot.followups.get(fid);
+  const close = f ? closeChanges(r, profileOf(data.snapshot, f), today(ctx.cfg)) : null;
+  if (typeof close === "string") throw new Error(close);
+  const channel = option(r["发送渠道"]) || option(f?.["联系渠道"]);
+  const { subject, body } = splitDraft(text(r["邮件草稿"]));
+  const recipient = emailsIn(r["收件人"])[0] ?? "她";
+  const now = stamp(Date.now(), ctx.cfg.timezone);
+  if (fid) {
+    await ctx.base.create(t.contacts, [{ 方向: ["发出"], 渠道: [channel], 摘要: `[回复] ${subject || "回复"}`.slice(0, 200), 内容: body.slice(0, 5000), 日期: now, KOL: [{ id: fid }] }]);
+    await ctx.base.update(t.followups, { [fid]: { 最近联系日期: now, 当前轮到谁: ["KOL"], ...(close?.followup ?? {}) } });
+    if (close?.profile) await ctx.base.update(t.profiles, { [close.profile[0]]: close.profile[1] });
+  }
+  await ctx.base.update(t.reviews, { [id]: { 状态: ["已执行"], 执行时间: now, 执行结果: `${ctx.me.name} 从「${channel}」手动发给 ${recipient}` } });
 }
 
 const EDITABLE = new Set(["邮件草稿", "体验码", "体验次数", "体验天数", "活动码", "粉丝折扣", "销售市场", "合作页名称"]);

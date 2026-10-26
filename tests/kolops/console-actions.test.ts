@@ -163,3 +163,28 @@ it("only looks, and says why, on a base without the console's fields", async () 
     started.server.close();
   }
 });
+
+it("records a reply sent by hand from a mailbox the plugin can't send from", async () => {
+  process.env.KOL_DATA_DIR = mkdtempSync(join(tmpdir(), "kol-actions-"));
+  const l = new FakeLark();
+  const cfg = seedProject(l);
+  const p = l.add(T.profiles, { 账号: "bb", 账号名称: "BB" });
+  const f = l.add(T.followups, { 账号名称: "BB", 档案: [{ id: p }], 阶段: ["已回复"], 当前轮到谁: ["我们"] });
+  const rid = l.add(T.reviews, { 状态: ["待你审核"], 类型: ["回复邮件"], 发送渠道: ["tafuofficial Gmail"], 收件人: "bb@example.com", 邮件草稿: "主题：合作\nBB您好", KOL: [{ id: f }] });
+  const list = l.json.bind(l);
+  l.json = async (args: string[]) => (args[1] === "+field-list" ? { fields: ["同意来源", "同意人", "同意时间", "内容指纹", "执行电脑", "只认决策台的同意"].map((name) => ({ name, type: "text" })) } : list(args));
+  const started = await startConsole(makeCtx(cfg, l, { id: "ou", name: "林运营" }, "", false, async () => {}), { port: 0, openBrowser: false });
+  try {
+    const o = await (await fetch(`${started.url}api/overview`)).json();
+    expect(o.cards.find((c: any) => c.id === rid).send).toMatchObject({ byHand: true, to: "bb@example.com" });
+    const r = await fetch(`${started.url}api/sent-by-hand`, { method: "POST", headers: { "content-type": "application/json", "x-kol-console": "1" }, body: JSON.stringify({ id: rid, edits: { 邮件草稿: "主题：合作\nBB您好，改过" } }) });
+    expect(r.status).toBe(200);
+    expect(l.table(T.reviews).find((x) => x.record_id === rid)).toMatchObject({ 状态: ["已执行"], 同意来源: "决策台", 执行结果: expect.stringContaining("手动发给 bb@example.com") });
+    expect(l.table(T.contacts).at(-1)).toMatchObject({ 方向: ["发出"], 渠道: ["tafuofficial Gmail"], 内容: "BB您好，改过" });
+    expect(l.table(T.followups).find((x) => x.record_id === f)!["当前轮到谁"]).toEqual(["KOL"]);
+    expect(l.sent).toHaveLength(0);
+  } finally {
+    started.server.closeAllConnections();
+    started.server.close();
+  }
+});

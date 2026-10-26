@@ -92,7 +92,8 @@ main.wide{max-width:none}
 .seg button+button{border-left:1px solid #CDD2DA}
 .seg button.on{background:#EEF2FD;color:var(--blue2);font-weight:600}
 .dbuttons{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--line2)}
-.dbuttons .btn.primary{flex:1 1 100%}
+.dbuttons{flex-direction:column}
+.drow{display:flex;flex-wrap:wrap;gap:8px}
 @media (max-width:1180px){.dgrid{grid-template-columns:minmax(240px,30%) minmax(0,1fr)}.dact{grid-column:2;position:static;max-height:none}}
 @media (max-width:760px){.dgrid{grid-template-columns:minmax(0,1fr)}.dact{grid-column:1}.dlist{position:static;max-height:240px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
@@ -299,14 +300,32 @@ function actionsFor(c) {
   if (c.kind === "problem") return [
     { label: "我处理好了", key: "A", primary: true, run: function () { later(c.id, "已标成处理好了", function () { return post("/api/problem-done", { id: c.id }); }); } },
   ];
-  return [
-    { label: "同意", key: "A", primary: true, run: function () {
+  var dropIt = { label: "不做了", key: "D", run: function () {
+    if (!confirm("这件事不做了，会从队列里撤掉。确定吗？")) return;
+    later(c.id, "这件事不做了：" + who(c), function () { return post("/api/drop", { id: c.id, note: "" }); });
+  } };
+  var toClaude = { label: "让 Claude 改", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } };
+  if (c.send && c.send.byHand) return [
+    { label: "我发出去了", key: "A", primary: true, run: function () {
       var edits = cardEdits(c);
-      var runs = c.kind === "reply";
-      later(c.id, runs ? "已同意：" + who(c) + "，5 秒后开始执行" : "已同意：" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits }); });
+      later(c.id, "已记下：你手动发给了 " + who(c), function () { return post("/api/sent-by-hand", { id: c.id, edits: edits }); });
     } },
-    { label: "要改", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } },
+    { label: "复制信", key: "C", run: function () { copyDraft(c); } },
+    toClaude, dropIt,
   ];
+  return [
+    { label: c.send ? "同意，发出去" : "同意", key: "A", primary: true, run: function () {
+      var edits = cardEdits(c);
+      later(c.id, c.send ? "已同意：" + who(c) + "，5 秒后开始发" : "已同意：" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits }); });
+    } },
+    toClaude, dropIt,
+  ];
+}
+
+function copyDraft(c) {
+  var body = ($("draft-body") || {}).value || c.draft.body;
+  var all = "收件人：" + (c.send.to || "") + "\n" + (c.draft.subject ? "主旨：" + c.draft.subject + "\n" : "") + "\n" + body;
+  navigator.clipboard.writeText(all).then(function () { toast("已复制收件人、主旨和正文"); }, function () { toast("复制不了，请在信里全选后手动复制"); });
 }
 
 function linkMail(c) {
@@ -411,30 +430,37 @@ function renderDecide() {
     return '<div class="step"><span class="num">' + (i + 1) + '</span><div style="flex:1;min-width:0"><div>' + esc(s.text) + '</div>' + (params ? "<div>" + params + "</div>" : "") + '</div></div>';
   }).join("");
   var acts = actionsFor(c);
-  var buttons = acts.map(function (a, i) {
-    return '<button class="btn big' + (a.primary ? " primary" : "") + '" data-act="' + i + '"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + '>' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
-  }).join("") + '<button class="btn big" id="skip">跳过 <span class="kbd">S</span></button>';
+  var moreActs = acts.slice(1);
+  var buttons = '<button class="btn big primary" data-act="0">' + esc(acts[0].label) + ' <span class="kbd">' + acts[0].key + '</span></button>' +
+    '<div class="drow">' + moreActs.map(function (a, i) {
+      return '<button class="btn"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + ' data-act="' + (i + 1) + '">' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
+    }).join("") + '<button class="btn" id="skip" title="先放着，看下一件">跳过 <span class="kbd">S</span></button></div>';
   var posted = c.kind === "overdue" && state.posted[c.id];
   var choice = c.kind === "overdue" ? '<div class="field" style="color:var(--ink);font-weight:500">她发了吗？<div class="seg" role="radiogroup">' +
       '<button role="radio" aria-checked="' + !posted + '" class="' + (posted ? "" : "on") + '" data-path="notyet">还没发：写信问她 <span class="kbd">1</span></button>' +
       '<button role="radio" aria-checked="' + !!posted + '" class="' + (posted ? "on" : "") + '" data-path="posted">已经发了：记下链接 <span class="kbd">2</span></button></div></div>' : "";
   var linkBox = posted ? '<label class="field">帖子链接<input class="input" id="post-link" placeholder="https://"><span class="tiny">记下后她会移到「已发布」，之后自动记播放和互动</span></label>' : "";
-  var draft = c.draft && !posted ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">小改动直接改字</span>' : "") + '</div>' +
+  var draft = c.draft && !posted ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">可以直接改字</span>' : "") + '</div>' +
       (c.kind === "overdue" ? '<label class="field">主旨（她回过我们的信就可以不填）<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
         : c.draft.subject ? '<div class="muted small">主旨：' + esc(c.draft.subject) + '</div>' : "") +
       (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="10" style="resize:vertical;font-size:14px" placeholder="写给她的信">' + esc(c.draft.body) + '</textarea>' : '<div class="draft" style="font-size:14px">' + esc(c.draft.body) + '</div>') +
       (c.draft.note ? '<div class="muted tiny">' + esc(c.draft.note) + '</div>' : "") + '</div>' : "";
   var mailHint = c.kind === "mail" ? '<div class="muted small">要回信的话：在 Claude 里说「处理来信」，写好的草稿会排进这里。</div>' : "";
-  var change = state.changing ? '<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px">' +
-    '<label class="field" style="font-weight:500;color:var(--ink)">哪里要改？<textarea class="input" id="change-note" rows="3" placeholder="写给 Claude，比如：语气轻一点，不要提分润比例；或者：不要结案，改成下个月再问"></textarea></label>' +
-    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="to-claude">交给 Claude 重写</button><button class="btn" id="drop" style="border-color:transparent;color:var(--muted)">这件事不用做了</button><button class="btn" id="cancel-change" style="border-color:transparent;color:var(--muted)">取消</button></div>' +
-    '<div class="muted tiny">交给 Claude 后，在 Claude 里说「改退回的草稿」；改好的会排回这里。小改动直接改信，再点同意就行。</div></div>' : "";
+  var changing = state.changing && ["reply", "batch", "template"].indexOf(c.kind) >= 0;
   var next = cards[state.idx + 1];
   if (c.kind === "overdue") steps = "";
-  var actionPane = choice + (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "点「同意」后会：" : "可以这样处理：") + '</div>' + steps + '</div>' : "") +
-    linkBox + draft + mailHint + change +
-    '<div class="dbuttons">' + buttons + '</div>' +
-    '<div class="muted tiny">' + (next ? "下一件：" + esc(next.headline) : "这是最后一件") + '</div>';
+  var after = c.send && c.send.byHand ? "这封要你自己发：" : c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "点「" + acts[0].label + "」后会：" : "可以这样处理：";
+  var actionPane = changing
+    ? '<div style="display:flex;flex-direction:column;gap:12px"><b style="font-size:16px">让 Claude 改</b>' +
+      '<label class="field" style="color:var(--ink)">哪里要改？<textarea class="input" id="change-note" rows="4" placeholder="比如：语气轻一点，不要提分润比例；或者：不要结案，改成下个月再问"></textarea></label>' +
+      '<button class="btn big primary" id="to-claude">交给 Claude 重写</button><button class="btn" id="cancel-change">返回</button>' +
+      '<div class="muted tiny">交给 Claude 后，这件先离开队列。在 Claude 里说「改退回的草稿」，改好的会排回这里，你再看一遍。</div>' +
+      (c.draft ? '<div><div class="lbl">现在的草稿</div><div class="draft" style="font-size:13px;max-height:320px;overflow:auto">' + esc(c.draft.body) + '</div></div>' : "") + '</div>'
+    : choice + (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + esc(after) + '</div>' + steps + '</div>' : "") +
+      linkBox + draft + mailHint +
+      '<div class="dbuttons">' + buttons + '</div>' +
+      (c.kind === "reply" ? '<div class="muted tiny">小改动直接在信里改，再点「' + esc(acts[0].label) + '」；要大改就「让 Claude 改」。</div>' : "") +
+      '<div class="muted tiny">' + (next ? "下一件：" + esc(next.headline) : "这是最后一件") + '</div>';
 
   $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' + top +
     '<div class="dgrid">' +
@@ -451,19 +477,14 @@ function renderDecide() {
     b.addEventListener("click", function () { state.idx = Number(b.getAttribute("data-i")); state.changing = false; renderDecide(); });
   });
   Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) { b.addEventListener("click", function () { acts[Number(b.getAttribute("data-act"))].run(); }); });
-  $("skip").addEventListener("click", function () { move(1); });
-  if (state.changing) {
+  if ($("skip")) $("skip").addEventListener("click", function () { move(1); });
+  if (changing) {
     $("cancel-change").addEventListener("click", function () { state.changing = false; renderDecide(); });
     $("to-claude").addEventListener("click", function () {
       var note = $("change-note").value.trim();
       if (!note) { toast("写一句哪里要改，Claude 才知道怎么改"); return; }
       state.changing = false;
       later(c.id, "已交给 Claude 重写：" + who(c), function () { return post("/api/revise", { id: c.id, note: note }); });
-    });
-    $("drop").addEventListener("click", function () {
-      var note = $("change-note").value.trim();
-      state.changing = false;
-      later(c.id, "这件事不做了：" + who(c), function () { return post("/api/drop", { id: c.id, note: note }); });
     });
   }
   Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (b) {
@@ -482,6 +503,8 @@ function move(d) {
 document.addEventListener("keydown", function (e) {
   if (location.hash && location.hash !== "#/" && location.hash !== "#") return;
   if (!$("modal").hidden) return;
+  // While writing what Claude should change, only Esc (back) works.
+  if (state.changing) { if (e.key === "Escape") { state.changing = false; renderDecide(); } return; }
   if (e.target.closest && e.target.closest("input,textarea,select")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   var k = e.key.toLowerCase();

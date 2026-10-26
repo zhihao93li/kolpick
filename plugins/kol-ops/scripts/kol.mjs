@@ -63615,6 +63615,27 @@ async function approve(ctx, data, jobs, id, edits) {
     return "\u5DF2\u540C\u610F\uFF08\u8FD9\u4EF6\u4E8B\u4E0D\u7528\u53D1\u4FE1\uFF09";
   });
 }
+async function manualSent(ctx, data, id, edits) {
+  const t = ctx.cfg.tables;
+  const [before] = await ctx.base.get(t.reviews, [id]);
+  if (!before) throw new Error("\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E00\u6761");
+  if (option(before["\u4F53\u9A8C\u7801\u52A8\u4F5C"])) throw new Error("\u8FD9\u4E00\u6761\u8FD8\u8981\u5EFA\u7801\uFF0C\u624B\u52A8\u53D1\u4FE1\u7684\u90AE\u7BB1\u6CA1\u6CD5\u4E00\u8D77\u505A\u3002\u70B9\u300C\u8BA9 Claude \u6539\u300D\uFF0C\u8BF7\u5B83\u6539\u6210\u4ECE\u98DE\u4E66\u90AE\u7BB1\u53D1");
+  const r = await approveInConsole(ctx, id, cleanEdits(edits));
+  const fid = linkIds(r["KOL"])[0] ?? "";
+  const f = data.snapshot.followups.get(fid);
+  const close = f ? closeChanges(r, profileOf(data.snapshot, f), today(ctx.cfg)) : null;
+  if (typeof close === "string") throw new Error(close);
+  const channel = option(r["\u53D1\u9001\u6E20\u9053"]) || option(f?.["\u8054\u7CFB\u6E20\u9053"]);
+  const { subject, body: body2 } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
+  const recipient = emailsIn(r["\u6536\u4EF6\u4EBA"])[0] ?? "\u5979";
+  const now = stamp(Date.now(), ctx.cfg.timezone);
+  if (fid) {
+    await ctx.base.create(t.contacts, [{ \u65B9\u5411: ["\u53D1\u51FA"], \u6E20\u9053: [channel], \u6458\u8981: `[\u56DE\u590D] ${subject || "\u56DE\u590D"}`.slice(0, 200), \u5185\u5BB9: body2.slice(0, 5e3), \u65E5\u671F: now, KOL: [{ id: fid }] }]);
+    await ctx.base.update(t.followups, { [fid]: { \u6700\u8FD1\u8054\u7CFB\u65E5\u671F: now, \u5F53\u524D\u8F6E\u5230\u8C01: ["KOL"], ...close?.followup ?? {} } });
+    if (close?.profile) await ctx.base.update(t.profiles, { [close.profile[0]]: close.profile[1] });
+  }
+  await ctx.base.update(t.reviews, { [id]: { \u72B6\u6001: ["\u5DF2\u6267\u884C"], \u6267\u884C\u65F6\u95F4: now, \u6267\u884C\u7ED3\u679C: `${ctx.me.name} \u4ECE\u300C${channel}\u300D\u624B\u52A8\u53D1\u7ED9 ${recipient}` } });
+}
 var EDITABLE = /* @__PURE__ */ new Set(["\u90AE\u4EF6\u8349\u7A3F", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u6B21\u6570", "\u4F53\u9A8C\u5929\u6570", "\u6D3B\u52A8\u7801", "\u7C89\u4E1D\u6298\u6263", "\u9500\u552E\u5E02\u573A", "\u5408\u4F5C\u9875\u540D\u79F0"]);
 var NUMBERS = /* @__PURE__ */ new Set(["\u4F53\u9A8C\u6B21\u6570", "\u4F53\u9A8C\u5929\u6570", "\u7C89\u4E1D\u6298\u6263"]);
 function cleanEdits(edits) {
@@ -63889,7 +63910,8 @@ main.wide{max-width:none}
 .seg button+button{border-left:1px solid #CDD2DA}
 .seg button.on{background:#EEF2FD;color:var(--blue2);font-weight:600}
 .dbuttons{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--line2)}
-.dbuttons .btn.primary{flex:1 1 100%}
+.dbuttons{flex-direction:column}
+.drow{display:flex;flex-wrap:wrap;gap:8px}
 @media (max-width:1180px){.dgrid{grid-template-columns:minmax(240px,30%) minmax(0,1fr)}.dact{grid-column:2;position:static;max-height:none}}
 @media (max-width:760px){.dgrid{grid-template-columns:minmax(0,1fr)}.dact{grid-column:1}.dlist{position:static;max-height:240px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
@@ -64096,14 +64118,32 @@ function actionsFor(c) {
   if (c.kind === "problem") return [
     { label: "\u6211\u5904\u7406\u597D\u4E86", key: "A", primary: true, run: function () { later(c.id, "\u5DF2\u6807\u6210\u5904\u7406\u597D\u4E86", function () { return post("/api/problem-done", { id: c.id }); }); } },
   ];
-  return [
-    { label: "\u540C\u610F", key: "A", primary: true, run: function () {
+  var dropIt = { label: "\u4E0D\u505A\u4E86", key: "D", run: function () {
+    if (!confirm("\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF0C\u4F1A\u4ECE\u961F\u5217\u91CC\u64A4\u6389\u3002\u786E\u5B9A\u5417\uFF1F")) return;
+    later(c.id, "\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF1A" + who(c), function () { return post("/api/drop", { id: c.id, note: "" }); });
+  } };
+  var toClaude = { label: "\u8BA9 Claude \u6539", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } };
+  if (c.send && c.send.byHand) return [
+    { label: "\u6211\u53D1\u51FA\u53BB\u4E86", key: "A", primary: true, run: function () {
       var edits = cardEdits(c);
-      var runs = c.kind === "reply";
-      later(c.id, runs ? "\u5DF2\u540C\u610F\uFF1A" + who(c) + "\uFF0C5 \u79D2\u540E\u5F00\u59CB\u6267\u884C" : "\u5DF2\u540C\u610F\uFF1A" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits }); });
+      later(c.id, "\u5DF2\u8BB0\u4E0B\uFF1A\u4F60\u624B\u52A8\u53D1\u7ED9\u4E86 " + who(c), function () { return post("/api/sent-by-hand", { id: c.id, edits: edits }); });
     } },
-    { label: "\u8981\u6539", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } },
+    { label: "\u590D\u5236\u4FE1", key: "C", run: function () { copyDraft(c); } },
+    toClaude, dropIt,
   ];
+  return [
+    { label: c.send ? "\u540C\u610F\uFF0C\u53D1\u51FA\u53BB" : "\u540C\u610F", key: "A", primary: true, run: function () {
+      var edits = cardEdits(c);
+      later(c.id, c.send ? "\u5DF2\u540C\u610F\uFF1A" + who(c) + "\uFF0C5 \u79D2\u540E\u5F00\u59CB\u53D1" : "\u5DF2\u540C\u610F\uFF1A" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits }); });
+    } },
+    toClaude, dropIt,
+  ];
+}
+
+function copyDraft(c) {
+  var body = ($("draft-body") || {}).value || c.draft.body;
+  var all = "\u6536\u4EF6\u4EBA\uFF1A" + (c.send.to || "") + "\\n" + (c.draft.subject ? "\u4E3B\u65E8\uFF1A" + c.draft.subject + "\\n" : "") + "\\n" + body;
+  navigator.clipboard.writeText(all).then(function () { toast("\u5DF2\u590D\u5236\u6536\u4EF6\u4EBA\u3001\u4E3B\u65E8\u548C\u6B63\u6587"); }, function () { toast("\u590D\u5236\u4E0D\u4E86\uFF0C\u8BF7\u5728\u4FE1\u91CC\u5168\u9009\u540E\u624B\u52A8\u590D\u5236"); });
 }
 
 function linkMail(c) {
@@ -64208,30 +64248,37 @@ function renderDecide() {
     return '<div class="step"><span class="num">' + (i + 1) + '</span><div style="flex:1;min-width:0"><div>' + esc(s.text) + '</div>' + (params ? "<div>" + params + "</div>" : "") + '</div></div>';
   }).join("");
   var acts = actionsFor(c);
-  var buttons = acts.map(function (a, i) {
-    return '<button class="btn big' + (a.primary ? " primary" : "") + '" data-act="' + i + '"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + '>' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
-  }).join("") + '<button class="btn big" id="skip">\u8DF3\u8FC7 <span class="kbd">S</span></button>';
+  var moreActs = acts.slice(1);
+  var buttons = '<button class="btn big primary" data-act="0">' + esc(acts[0].label) + ' <span class="kbd">' + acts[0].key + '</span></button>' +
+    '<div class="drow">' + moreActs.map(function (a, i) {
+      return '<button class="btn"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + ' data-act="' + (i + 1) + '">' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
+    }).join("") + '<button class="btn" id="skip" title="\u5148\u653E\u7740\uFF0C\u770B\u4E0B\u4E00\u4EF6">\u8DF3\u8FC7 <span class="kbd">S</span></button></div>';
   var posted = c.kind === "overdue" && state.posted[c.id];
   var choice = c.kind === "overdue" ? '<div class="field" style="color:var(--ink);font-weight:500">\u5979\u53D1\u4E86\u5417\uFF1F<div class="seg" role="radiogroup">' +
       '<button role="radio" aria-checked="' + !posted + '" class="' + (posted ? "" : "on") + '" data-path="notyet">\u8FD8\u6CA1\u53D1\uFF1A\u5199\u4FE1\u95EE\u5979 <span class="kbd">1</span></button>' +
       '<button role="radio" aria-checked="' + !!posted + '" class="' + (posted ? "on" : "") + '" data-path="posted">\u5DF2\u7ECF\u53D1\u4E86\uFF1A\u8BB0\u4E0B\u94FE\u63A5 <span class="kbd">2</span></button></div></div>' : "";
   var linkBox = posted ? '<label class="field">\u5E16\u5B50\u94FE\u63A5<input class="input" id="post-link" placeholder="https://"><span class="tiny">\u8BB0\u4E0B\u540E\u5979\u4F1A\u79FB\u5230\u300C\u5DF2\u53D1\u5E03\u300D\uFF0C\u4E4B\u540E\u81EA\u52A8\u8BB0\u64AD\u653E\u548C\u4E92\u52A8</span></label>' : "";
-  var draft = c.draft && !posted ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u5B57</span>' : "") + '</div>' +
+  var draft = c.draft && !posted ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u53EF\u4EE5\u76F4\u63A5\u6539\u5B57</span>' : "") + '</div>' +
       (c.kind === "overdue" ? '<label class="field">\u4E3B\u65E8\uFF08\u5979\u56DE\u8FC7\u6211\u4EEC\u7684\u4FE1\u5C31\u53EF\u4EE5\u4E0D\u586B\uFF09<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
         : c.draft.subject ? '<div class="muted small">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") +
       (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="10" style="resize:vertical;font-size:14px" placeholder="\u5199\u7ED9\u5979\u7684\u4FE1">' + esc(c.draft.body) + '</textarea>' : '<div class="draft" style="font-size:14px">' + esc(c.draft.body) + '</div>') +
       (c.draft.note ? '<div class="muted tiny">' + esc(c.draft.note) + '</div>' : "") + '</div>' : "";
   var mailHint = c.kind === "mail" ? '<div class="muted small">\u8981\u56DE\u4FE1\u7684\u8BDD\uFF1A\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u8349\u7A3F\u4F1A\u6392\u8FDB\u8FD9\u91CC\u3002</div>' : "";
-  var change = state.changing ? '<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px">' +
-    '<label class="field" style="font-weight:500;color:var(--ink)">\u54EA\u91CC\u8981\u6539\uFF1F<textarea class="input" id="change-note" rows="3" placeholder="\u5199\u7ED9 Claude\uFF0C\u6BD4\u5982\uFF1A\u8BED\u6C14\u8F7B\u4E00\u70B9\uFF0C\u4E0D\u8981\u63D0\u5206\u6DA6\u6BD4\u4F8B\uFF1B\u6216\u8005\uFF1A\u4E0D\u8981\u7ED3\u6848\uFF0C\u6539\u6210\u4E0B\u4E2A\u6708\u518D\u95EE"></textarea></label>' +
-    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="to-claude">\u4EA4\u7ED9 Claude \u91CD\u5199</button><button class="btn" id="drop" style="border-color:transparent;color:var(--muted)">\u8FD9\u4EF6\u4E8B\u4E0D\u7528\u505A\u4E86</button><button class="btn" id="cancel-change" style="border-color:transparent;color:var(--muted)">\u53D6\u6D88</button></div>' +
-    '<div class="muted tiny">\u4EA4\u7ED9 Claude \u540E\uFF0C\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF1B\u6539\u597D\u7684\u4F1A\u6392\u56DE\u8FD9\u91CC\u3002\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u4FE1\uFF0C\u518D\u70B9\u540C\u610F\u5C31\u884C\u3002</div></div>' : "";
+  var changing = state.changing && ["reply", "batch", "template"].indexOf(c.kind) >= 0;
   var next = cards[state.idx + 1];
   if (c.kind === "overdue") steps = "";
-  var actionPane = choice + (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A") + '</div>' + steps + '</div>' : "") +
-    linkBox + draft + mailHint + change +
-    '<div class="dbuttons">' + buttons + '</div>' +
-    '<div class="muted tiny">' + (next ? "\u4E0B\u4E00\u4EF6\uFF1A" + esc(next.headline) : "\u8FD9\u662F\u6700\u540E\u4E00\u4EF6") + '</div>';
+  var after = c.send && c.send.byHand ? "\u8FD9\u5C01\u8981\u4F60\u81EA\u5DF1\u53D1\uFF1A" : c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "\u70B9\u300C" + acts[0].label + "\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A";
+  var actionPane = changing
+    ? '<div style="display:flex;flex-direction:column;gap:12px"><b style="font-size:16px">\u8BA9 Claude \u6539</b>' +
+      '<label class="field" style="color:var(--ink)">\u54EA\u91CC\u8981\u6539\uFF1F<textarea class="input" id="change-note" rows="4" placeholder="\u6BD4\u5982\uFF1A\u8BED\u6C14\u8F7B\u4E00\u70B9\uFF0C\u4E0D\u8981\u63D0\u5206\u6DA6\u6BD4\u4F8B\uFF1B\u6216\u8005\uFF1A\u4E0D\u8981\u7ED3\u6848\uFF0C\u6539\u6210\u4E0B\u4E2A\u6708\u518D\u95EE"></textarea></label>' +
+      '<button class="btn big primary" id="to-claude">\u4EA4\u7ED9 Claude \u91CD\u5199</button><button class="btn" id="cancel-change">\u8FD4\u56DE</button>' +
+      '<div class="muted tiny">\u4EA4\u7ED9 Claude \u540E\uFF0C\u8FD9\u4EF6\u5148\u79BB\u5F00\u961F\u5217\u3002\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF0C\u6539\u597D\u7684\u4F1A\u6392\u56DE\u8FD9\u91CC\uFF0C\u4F60\u518D\u770B\u4E00\u904D\u3002</div>' +
+      (c.draft ? '<div><div class="lbl">\u73B0\u5728\u7684\u8349\u7A3F</div><div class="draft" style="font-size:13px;max-height:320px;overflow:auto">' + esc(c.draft.body) + '</div></div>' : "") + '</div>'
+    : choice + (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + esc(after) + '</div>' + steps + '</div>' : "") +
+      linkBox + draft + mailHint +
+      '<div class="dbuttons">' + buttons + '</div>' +
+      (c.kind === "reply" ? '<div class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u5728\u4FE1\u91CC\u6539\uFF0C\u518D\u70B9\u300C' + esc(acts[0].label) + '\u300D\uFF1B\u8981\u5927\u6539\u5C31\u300C\u8BA9 Claude \u6539\u300D\u3002</div>' : "") +
+      '<div class="muted tiny">' + (next ? "\u4E0B\u4E00\u4EF6\uFF1A" + esc(next.headline) : "\u8FD9\u662F\u6700\u540E\u4E00\u4EF6") + '</div>';
 
   $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' + top +
     '<div class="dgrid">' +
@@ -64248,19 +64295,14 @@ function renderDecide() {
     b.addEventListener("click", function () { state.idx = Number(b.getAttribute("data-i")); state.changing = false; renderDecide(); });
   });
   Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) { b.addEventListener("click", function () { acts[Number(b.getAttribute("data-act"))].run(); }); });
-  $("skip").addEventListener("click", function () { move(1); });
-  if (state.changing) {
+  if ($("skip")) $("skip").addEventListener("click", function () { move(1); });
+  if (changing) {
     $("cancel-change").addEventListener("click", function () { state.changing = false; renderDecide(); });
     $("to-claude").addEventListener("click", function () {
       var note = $("change-note").value.trim();
       if (!note) { toast("\u5199\u4E00\u53E5\u54EA\u91CC\u8981\u6539\uFF0CClaude \u624D\u77E5\u9053\u600E\u4E48\u6539"); return; }
       state.changing = false;
       later(c.id, "\u5DF2\u4EA4\u7ED9 Claude \u91CD\u5199\uFF1A" + who(c), function () { return post("/api/revise", { id: c.id, note: note }); });
-    });
-    $("drop").addEventListener("click", function () {
-      var note = $("change-note").value.trim();
-      state.changing = false;
-      later(c.id, "\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF1A" + who(c), function () { return post("/api/drop", { id: c.id, note: note }); });
     });
   }
   Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (b) {
@@ -64279,6 +64321,8 @@ function move(d) {
 document.addEventListener("keydown", function (e) {
   if (location.hash && location.hash !== "#/" && location.hash !== "#") return;
   if (!$("modal").hidden) return;
+  // While writing what Claude should change, only Esc (back) works.
+  if (state.changing) { if (e.key === "Escape") { state.changing = false; renderDecide(); } return; }
   if (e.target.closest && e.target.closest("input,textarea,select")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   var k = e.key.toLowerCase();
@@ -64862,7 +64906,13 @@ function reviewCard(r, s, cfg, w, meta, latest) {
   const sends = kind === "reply" && channel !== "\u4E0D\u53D1\u90AE\u4EF6" && body2.trim();
   if (sends) {
     const mb = mailboxFor(cfg, channel);
-    steps.push({ text: mb ? `${action ? "\u6210\u529F\u540E\uFF0C" : ""}\u4ECE ${mb.address} \u628A\u4E0B\u9762\u8FD9\u5C01\u4FE1\u53D1\u7ED9 ${recipient || "\u5979"}` : `\u8FD9\u5C01\u4FE1\u8981\u4ECE\u300C${channel}\u300D\u53D1\uFF0C\u7CFB\u7EDF\u53D1\u4E0D\u4E86\uFF0C\u8981\u624B\u52A8\u53D1` });
+    if (mb) steps.push({ text: `${action ? "\u6210\u529F\u540E\uFF0C" : ""}\u4ECE ${mb.address} \u628A\u4E0B\u9762\u8FD9\u5C01\u4FE1\u53D1\u7ED9 ${recipient || "\u5979"}` });
+    else {
+      steps.length = 0;
+      steps.push({ text: `\u590D\u5236\u4E0B\u9762\u8FD9\u5C01\u4FE1\uFF0C\u5230\u300C${channel}\u300D\u53D1\u7ED9 ${recipient || "\u5979"}\uFF08\u8FD9\u4E2A\u90AE\u7BB1\u7CFB\u7EDF\u53D1\u4E0D\u4E86\uFF09` });
+      if (action) steps.push({ text: `\u8FD9\u4E00\u6761\u8FD8\u8981${action}\uFF0C\u624B\u52A8\u53D1\u4FE1\u65F6\u7CFB\u7EDF\u6CA1\u6CD5\u4E00\u8D77\u505A\uFF1A\u70B9\u300C\u8BA9 Claude \u6539\u300D\uFF0C\u8BF7\u5B83\u6539\u6210\u4ECE\u98DE\u4E66\u90AE\u7BB1\u53D1` });
+      steps.push({ text: "\u53D1\u51FA\u53BB\u4EE5\u540E\u70B9\u300C\u6211\u53D1\u51FA\u53BB\u4E86\u300D\uFF0C\u7CFB\u7EDF\u8BB0\u4E0B\u8FD9\u5C01\u4FE1\uFF0C\u6539\u6210\u7B49\u5979\u56DE" });
+    }
   }
   const after = option(r["\u53D1\u540E\u52A8\u4F5C"]);
   if (after) steps.push({ text: `${after === "\u6C38\u4E0D\u8054\u7CFB" ? "\u6807\u6210\u6C38\u4E0D\u8054\u7CFB\uFF0C" : ""}\u7ED3\u675F\u8DDF\u8FDB\uFF08\u539F\u56E0\uFF1A${option(r["\u7ED3\u6848\u539F\u56E0"]) || "\u6CA1\u5199"}\uFF09` });
@@ -64880,6 +64930,7 @@ function reviewCard(r, s, cfg, w, meta, latest) {
     suggest: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) || text(r["\u5BA1\u6838\u9879"]),
     steps,
     why: text(r["\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE"]),
+    send: sends ? { from: mailboxFor(cfg, channel)?.address ?? channel, to: recipient, byHand: !mailboxFor(cfg, channel) } : void 0,
     draft: body2.trim() ? { label: sends ? `\u8981\u53D1\u7ED9 ${recipient || "\u5979"} \u7684\u4FE1` : kind === "template" ? "\u6A21\u677F\u5185\u5BB9" : "\u8349\u7A3F", subject, body: body2 } : void 0
   };
 }
@@ -65314,6 +65365,9 @@ async function startConsole(ctx, o) {
     switch (url2.pathname) {
       case "/api/approve":
         return done({ job: await approve(ctx, data, jobs, String(b.id), b.edits ?? {}) });
+      case "/api/sent-by-hand":
+        await manualSent(ctx, data, String(b.id), b.edits ?? {});
+        return done();
       case "/api/revise":
         await revise(ctx, String(b.id), String(b.note ?? ""));
         return done();
