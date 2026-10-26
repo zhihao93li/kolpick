@@ -2,7 +2,7 @@
 
 | 文档属性 | 内容 |
 | --- | --- |
-| 编号／版本 | KOLPICK-DBDS-001 / 1.10，定稿 |
+| 编号／版本 | KOLPICK-DBDS-001 / 1.11，定稿 |
 | 日期 | 2026-10-27定稿，Asia/Shanghai |
 | 状态 | 已定稿，作为实施依据；尚未建表、迁移或改代码 |
 | 范围 | 一位运营，找人、联系、判断、执行、跟进和看发布效果 |
@@ -790,7 +790,7 @@ jobs.parameters只存这些键，拒绝未声明的键：
 
 已批准事项的身份、正文、地址、参数、哈希和批准证据不可修改；只允许按上述规则改变生命周期及记录反馈。后续补充实现的审计记录须与决定同事务提交。旧人工发送确认继续保留，只有明确确认才将消息写为manual_confirmed。
 
-结束跟进时，同事务关闭关系、追加阶段事件并撤销全部未开始事项／步骤；已经运行或unknown的动作仍保留核对任务，不显示为已经安全撤销。重开规则见§8.6 F；重开不自动解除contact_permission=blocked。
+结束跟进时，同事务关闭关系、追加阶段事件并撤销全部未开始事项／步骤；已经运行或unknown的动作仍保留核对任务，不显示为已经安全撤销。重开规则见行为规格R-05；重开不自动解除contact_permission=blocked。
 
 ### 8.2.1 所有发送路径共用的事务检查
 
@@ -814,7 +814,7 @@ review_items的部分唯一索引只能限制审核表内部，不能挡住auto_
 | 原先未归属的人类来信经核对关联 | +1 | 同新来信 |
 | 人工纠正人类来信归属 | 旧、新关系各+1；同关系补字段不加 | 两侧已有批准均须重审，避免漏回或误回 |
 
-退信同步记录目标地址及能确认的原信。认出退信地址时按§8.6 B处理：用这个地址、stage=invited且从没有人类来信的未结案关系同事务结案，close_reason=invalid_contact、waiting_on=none，并追加阶段事件；已回复及以后的关系不结案，退信消息保持pending，提示运营换邮箱。认不出地址的退信只进待处理列表，不动任何KOL。退信率暂停和发送前邮箱检查照旧。Q-12提议的“未处理退信阻止对该地址发送”未确认，不启用。
+退信同步记录目标地址及能确认的原信。认出退信地址时按行为规格R-04处理：用这个地址、stage=invited且从没有人类来信的未结案关系同事务结案，close_reason=invalid_contact、waiting_on=none，并追加阶段事件；已回复及以后的关系不结案，退信消息保持pending，提示运营换邮箱。认不出地址的退信只进待处理列表，不动任何KOL。退信率暂停和发送前邮箱检查照旧。Q-12提议的“未处理退信阻止对该地址发送”未确认，不启用。
 
 为避免新增“退信是否处理”布尔值，使用入站退信消息的handling_status和处理审计；只有核对结论明确才handled。共享地址的未处理退信跨项目查询，处理权限仍按原消息所属项目。无法识别目标地址的退信进入待处理列表，不能随意阻止某个KOL。
 
@@ -832,19 +832,19 @@ waiting_on只存真实沟通责任：确认外发后通常为creator；人类来
 
 切换后execution_steps是唯一可调度的执行事实。本机`sends.jsonl`改为调用前后的追加证据：外部已成功但结果未回库时，用它和供应商记录补写步骤，不再由它驱动重试。切换前旧journal中的条目必须全部对账完毕，之后只读保留。数据库中的running不能代替本机锁，也不增加未确认的多机接管能力。
 
-### 8.6 跟进的自动规则（2026-10-27 定）
+### 8.6 跟进的自动规则落在哪
 
-这些规则同时适用于现行代码（见design.md第十二节）和新数据库，验收见§11.2。
+规则本身只写在[产品行为规格](behavior.md)，这里只说明在本模型里怎么落地。
 
-| | 规则 | 在本模型中的落点 |
-| --- | --- | --- |
-| A 待认领来信 | 项目里有待认领的人类来信时，当天暂停自动催信和自动结案。待认领＝direction=inbound、kind=human、association_status为unassigned或ambiguous、handling_status=pending；自动回复、系统发件人、本项目渠道自己的邮箱不算。运营把无关来信标为ignored即清掉。这条不挡退信结案 | §7.2.1的例行判断前先查这一条 |
-| B 退信 | 只有stage=invited、从没有人类来信的关系在退信时自动结案；其余只把退信留作pending，提示换邮箱，不结案、不停码同步。决策台写信可以选这位KOL的任一active联系方式，不固定发第一个 | §8.3；review_items.recipient_email冻结所选地址 |
-| C 共用邮箱 | 来信发件地址只对应一位未结案关系时自动关联；对应多位时association_status=ambiguous，进待认领。同一收件地址同一业务日最多自动发一封（batch_invitation或auto_followup），人工批准的回信不受限 | §8.2.1入队时按normalized地址检查 |
-| D 码的收口 | send_mode=none的建码、延期、开活动码照样执行。建码步骤一成功就同事务写collaboration_assets，后面的信失败或放弃都不影响这条记录。人工确认“已发出”时可以补填码名，写入资源。码作废只在TAFU停用，同步到active=false时在跟进上标出，不在本库改状态 | §8.2；collaboration_assets.remote_state.active |
-| E 约定发布逾期 | 逾期确认信按messages.purpose=publication_confirmation的已确认外发计数；问过2次仍未发布，卡片改给结案、暂缓、再等三个选项。决策台可以改stage和agreed_publish_date，写stage_events和audit_events。waiting_on=creator且next_followup_at为空的，以last_outbound_at加7天作为进入“要你决定”的时间 | project_creators；§8.1 |
-| F 重开 | 普通结案的关系收到人类来信、或在决策台把来信认领给它时，自动重开（workflow_status=active，清closed_at和close_reason，追加阶段事件）。contact_permission=blocked的不重开，卡片只给“不用回”。我们主动写信给已结案关系也重开，stage不变，next_followup_at设为发出后close_after_days天；到期仍无来信，再按no_response结案 | §8.2结束跟进一段 |
-| G 体验码 | 体验码到期后生成一次“体验码已过期”事项（dedupe_key=trial:{project_creator_id}:{normalized_code}:expired），选延期、换新码或结束。collaboration_assets.last_synced_at早于当天业务日时，不生成“未用”“停滞”这类依赖用量的提醒；卡片显示用量的同步时间 | collaboration_assets；§10.2.1去重键 |
+| 规则（behavior.md） | 落点 |
+| --- | --- |
+| G-2 待认领来信 | 待认领＝messages里direction=inbound、kind=human、association_status为unassigned或ambiguous、handling_status=pending；E-13「不相关」写handling_status=ignored。§7.2.1例行判断前先查 |
+| R-04 退信 | §8.3；「从没来过信」按该关系有无kind=human的入站消息判断；E-29选邮箱写入review_items.recipient_email |
+| E-10／E-11 共用邮箱归属，G-7 同址每日一封 | 发件地址按creator_contacts.normalized_email对应到未结案的project_creators，只有一位才linked；G-7在§8.2.1入队时按收件地址和业务日检查 |
+| E-25 码的收口，E-43 停用 | send_mode=none照样建execution_steps；建码步骤成功即同事务写collaboration_assets；停用看remote_state.active |
+| R-10／C-07 约定发布逾期，R-11 等对方太久，E-33 | 确认信按messages.purpose=publication_confirmation的已确认外发计数；E-33写project_creators并追加stage_events和audit_events |
+| R-05 重开 | workflow_status改回active、清closed_at和close_reason、追加stage_events；E-29重开时next_followup_at=发出时间+close_after_days |
+| R-06 到 R-09 体验码 | 用量新鲜度看collaboration_assets.last_synced_at是否在当天业务日；R-09去重键trial:{project_creator_id}:{normalized_code}:expired |
 
 <a id="s9"></a>
 ## 9. 约束、索引和查询
@@ -1023,7 +1023,7 @@ batches由旧「入库批次」「邀约批次」选项值生成，parameters为
 | 范围 | 验收证据 |
 | --- | --- |
 | 数据 | 核对报告数量守恒；多账号与共享邮箱不丢档；默认联系属于本主体；项目禁联不误影响其他项目；外部followupId不变；结案原因、阶段、码按§10.2映射 |
-| 日常流程 | 找人、补资料、候选筛选、邀约、收信、回信、催信、结案和重开、建码、延期、开活动码、记帖子、抓数据都在新版完成一遍；Claude单条读写只经插件命令；§8.6的A–G逐条走一遍 |
+| 日常流程 | 找人、补资料、候选筛选、邀约、收信、回信、催信、结案和重开、建码、延期、开活动码、记帖子、抓数据都在新版完成一遍；Claude单条读写只经插件命令；行为规格第7节的场景逐条走一遍 |
 | 审核与执行 | 批准后新来信阻塞；五秒撤回竞争；建码成功发信失败恢复；延期unknown不重放；失败事项仍占位；最终邮件只有一个权威内容；补记失败不重发；批量邀约／自动催信／人工审核并发入队只能保留一份有效外发义务；改规则、改模板、新来信使旧自动任务失效；自动结案不覆盖人工计划；系统取消的自动任务在条件恢复后重新排、运营撤销的不再排；模板换版后自动催信发新版本正文；撤回批量邀约决定只取消未开始的子任务 |
 | 邮件与模板 | 重复拉取不加版本；自动回复不加版本；归属纠正使相关批准失效；模板编辑和批准按Q-11结果；单邮箱一个窗口超过400封、读到一半中断时，进度不前移、补扫不漏信 |
 | 历史提醒 | 迁移前后逐KOL催信数、下一动作与到期日一致；已催两次者不再发第一次；已拒绝／撤回体验提醒不自动重提；码名、显示名或延期变化按语义键核对 |
@@ -1061,3 +1061,4 @@ batches由旧「入库批次」「邀约批次」选项值生成，parameters为
 | 1.9 | Astra第三轮：回退时补扫到的退信也照旧规则结案；自动催信改为每批执行前收一次信，去掉15分钟间隔 |
 | 1.9定稿 | 2026-10-27用户确认定稿，内容同1.9 |
 | 1.10 | 2026-10-27补跟进的自动规则A–G（§8.6）：待认领来信暂停自动催结、退信只结案未回过信的、共用邮箱的归属与每日一封、码的收口、约定发布逾期的出口、重开规则、体验码过期与用量陈旧 |
+| 1.11 | 跟进规则移到docs/behavior.md，§8.6只保留在本模型里的落点 |
