@@ -520,9 +520,16 @@ export interface Bubble {
   who: string;
   when: string;
   text: string;
+  /** Only a summary was kept (old or hand-written records); the mail itself is in the mailbox. */
+  summaryOnly?: boolean;
+  /** An archive's full text, shown when opened. */
+  full?: string;
 }
 
-export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string) {
+/** Summaries the plugin writes for things that aren't a conversation: an auto-reply, a bounce. */
+const EVENT_MARKS = /^\[(自动回复|退信)\]/;
+
+export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string, all = false) {
   const { base, cfg } = ctx;
   const t = cfg.tables;
   const tz = cfg.timezone;
@@ -537,17 +544,23 @@ export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string) {
   const posts = await base.get(t.posts, linkIds(links?.["发布内容"]), POST_FIELDS).catch(() => [] as Row[]);
 
   // Inbound mails are filed without their text; read the latest few from the mailbox.
-  const recent = contacts.slice(-12);
-  const unread = recent.filter((c) => option(c["方向"]) === "收到" && !text(c["内容"]) && text(c["Message ID"]) && !text(c["摘要"]).startsWith("["));
+  const recent = all ? contacts : contacts.slice(-12);
+  const unread = recent.filter((c) => option(c["方向"]) === "收到" && !text(c["内容"]) && text(c["Message ID"]) && !EVENT_MARKS.test(text(c["摘要"])));
   const bodies = await readBodies(ctx, unread.map((c) => ({ messageId: text(c["Message ID"]), channel: option(c["渠道"]) })));
   const name = text(p?.["称呼"]) || displayName(s, f);
   const bubbles: Bubble[] = recent.map((c) => {
     const dir = option(c["方向"]);
     const when = stamp(cellTime(c["日期"], tz) ?? 0, tz);
     const summary = text(c["摘要"]);
-    if (dir === "发出") return { side: "us", who: `我们 · ${option(c["渠道"])}`, when, text: text(c["内容"]) || summary };
-    if (dir === "收到" && !summary.startsWith("[")) return { side: "them", who: name, when, text: bodies.get(text(c["Message ID"])) || text(c["内容"]) || summary };
-    return { side: "event", who: "", when, text: summary };
+    const content = text(c["内容"]);
+    if (dir === "存档") return { side: "event", who: "", when, text: summary || "存档", ...(content ? { full: content } : {}) };
+    if (EVENT_MARKS.test(summary)) return { side: "event", who: "", when, text: summary };
+    const mark = summary.match(/^\[([^\]]+)\]/)?.[1];
+    if (dir === "发出") {
+      return { side: "us", who: `我们 · ${option(c["渠道"])}${content ? "" : ` · ${summary}`}`.slice(0, 120), when, text: content || summary, summaryOnly: !content };
+    }
+    const body = bodies.get(text(c["Message ID"])) || content;
+    return { side: "them", who: `${name}${mark ? ` · ${mark}` : ""}`, when, text: body || summary, summaryOnly: !body };
   });
 
   const pending = data.reviews.filter((r) => linkIds(r["KOL"]).includes(fid) && reviewState(r) === "pending" && option(r["状态"]) !== "执行失败");
@@ -569,6 +582,7 @@ export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string) {
     pending: pending.map((r) => ({ id: r.record_id, title: text(r["审核项"]), ask: text(r["要你定什么"]) })),
     bubbles,
     olderCount: Math.max(0, contacts.length - recent.length),
+    showingAll: all,
     trial: text(f["体验码"]) ? { code: text(f["体验码"]), used: Number(f["体验码已用"]) || 0, max: Number(f["体验码上限"]) || 0, expires: shortDay(day(f["体验码到期"], tz)) } : null,
     partner: text(f["活动码"]) ? { code: text(f["活动码"]), link: text(f["专属连结"]), ledger: text(f["账本连结"]) } : null,
     posts: posts.map((x) => ({

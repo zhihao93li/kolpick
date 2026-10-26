@@ -64243,9 +64243,9 @@ function openFind() {
 }
 
 // --- \u4E00\u4F4D KOL ---
-function renderPerson(id) {
+function renderPerson(id, all) {
   $("app").innerHTML = '<div class="loading">\u8BFB\u53D6\u5979\u7684\u6765\u5F80\u8BB0\u5F55\u2026</div>';
-  api("/api/person?id=" + encodeURIComponent(id)).then(function (p) {
+  api("/api/person?id=" + encodeURIComponent(id) + (all ? "&all=1" : "")).then(function (p) {
     var stepper = p.stageStep >= 0 ? '<ol class="stepper" aria-label="\u5408\u4F5C\u8FDB\u5EA6">' + p.stages.map(function (s, i) {
       var color = i < p.stageStep ? "#1F8A55" : i === p.stageStep ? "var(--blue)" : "var(--line)";
       return '<li><div class="seg" style="background:' + color + '"></div><span style="' + (i === p.stageStep ? "font-weight:600" : i > p.stageStep ? "color:var(--muted)" : "") + '">' + esc(s) + (i === p.stageStep ? "\uFF08\u73B0\u5728\uFF09" : "") + "</span></li>";
@@ -64255,7 +64255,12 @@ function renderPerson(id) {
         '<div style="flex:1 1 240px"><div style="font-weight:600">\u6709 1 \u4EF6\u4E8B\u7B49\u4F60\u51B3\u5B9A\uFF1A' + esc(r.title) + '</div><div class="muted small">' + esc(r.ask) + '</div></div><a class="btn primary" href="#/">\u53BB\u770B</a></div>';
     }).join("");
     var bubbles = p.bubbles.map(function (b) {
-      return '<div class="' + b.side + '">' + (b.side === "event" ? esc(b.when.slice(0, 10) + " \xB7 " + b.text) : '<div class="who">' + esc(b.who + " \xB7 " + b.when) + "</div>" + esc(b.text)) + "</div>";
+      if (b.side === "event") {
+        return b.full ? '<details class="event" style="max-width:90%;text-align:left"><summary>' + esc(b.when.slice(0, 10) + " \xB7 " + b.text) + '\uFF08\u70B9\u5F00\u770B\u5168\u6587\uFF09</summary><div style="white-space:pre-wrap;font-size:13px;color:var(--ink);margin-top:6px">' + esc(b.full) + "</div></details>"
+          : '<div class="event">' + esc(b.when.slice(0, 10) + " \xB7 " + b.text) + "</div>";
+      }
+      return '<div class="' + b.side + '"><div class="who">' + esc(b.who + " \xB7 " + b.when) + "</div>" + esc(b.text) +
+        (b.summaryOnly ? '<div class="who" style="margin-top:4px">\u53EA\u6709\u6458\u8981\uFF0C\u539F\u6587\u5728\u90AE\u7BB1\u91CC</div>' : "") + "</div>";
     }).join("");
     var trial = p.trial ? '<div style="display:flex;justify-content:space-between"><b>\u4F53\u9A8C\u7801 ' + esc(p.trial.code) + '</b><span class="muted small">' + esc(p.trial.expires) + ' \u5230\u671F</span></div>' +
       (p.trial.max ? '<div class="bar" role="img" aria-label="\u7528\u4E86 ' + p.trial.used + ' \u6B21\uFF0C\u5171 ' + p.trial.max + ' \u6B21"><div style="width:' + Math.min(100, Math.round(p.trial.used / p.trial.max * 100)) + '%;background:var(--blue)"></div></div><div class="muted small">\u7528\u4E86 ' + p.trial.used + ' \u6B21\uFF0C\u5171 ' + p.trial.max + ' \u6B21</div>' : "") : '<div class="muted small">\u8FD8\u6CA1\u6709\u4F53\u9A8C\u7801</div>';
@@ -64281,7 +64286,7 @@ function renderPerson(id) {
           '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:14px"><button class="btn primary" id="p-write"' + (p.doNotContact ? " disabled" : "") + '>\u5199\u4FE1\u7ED9\u5979</button>' +
           (p.stage !== "\u7ED3\u6848" ? '<button class="btn" id="p-close" style="border-color:transparent;color:var(--muted)">\u4E0D\u518D\u8DDF\u8FDB</button>' : "") +
           (p.doNotContact ? "" : '<button class="btn" id="p-never" style="border-color:transparent;color:var(--bad)">\u4E0D\u8981\u518D\u8054\u7CFB\u5979</button>') + '</div></section>' +
-        '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>\u6765\u5F80\u8BB0\u5F55</b><span class="muted small">\u5DE6\u8FB9\u662F\u5979\uFF0C\u53F3\u8FB9\u662F\u6211\u4EEC' + (p.olderCount ? " \xB7 \u66F4\u65E9\u8FD8\u6709 " + p.olderCount + " \u6761" : "") + "</span></div>" +
+        '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>\u6765\u5F80\u8BB0\u5F55</b><span class="muted small">\u5DE6\u8FB9\u662F\u5979\uFF0C\u53F3\u8FB9\u662F\u6211\u4EEC' + (p.olderCount ? ' \xB7 \u66F4\u65E9\u8FD8\u6709 ' + p.olderCount + ' \u6761\uFF0C<a href="#" id="p-all">\u5168\u90E8\u663E\u793A</a>' : "") + "</span></div>" +
           (bubbles || '<div class="muted">\u8FD8\u6CA1\u6709\u6765\u5F80</div>') + "</section></div>" +
         '<aside style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px">' +
           '<section class="card" style="padding:16px 18px;display:flex;flex-direction:column;gap:8px">' + trial + partner + "</section>" +
@@ -64293,6 +64298,7 @@ function renderPerson(id) {
 
 function wirePerson(p) {
   var reload = function () { renderPerson(p.id); };
+  if ($("p-all")) $("p-all").onclick = function (e) { e.preventDefault(); renderPerson(p.id, true); };
   $("p-edit").onclick = function () {
     modal('<h2 style="margin:0;font-size:18px">\u63A5\u4E0B\u6765</h2>' +
       '<label class="field">\u4E0B\u4E00\u6B65\u8981\u505A\u4EC0\u4E48<input class="input" id="e-next" value="' + esc(p.next) + '"></label>' +
@@ -64876,7 +64882,8 @@ function viewCounts(data, cfg, todayStr) {
   for (const k of Object.keys(VIEWS)) out[k] = peopleView(data, cfg, k, todayStr).total;
   return out;
 }
-async function personDetail(ctx, data, fid) {
+var EVENT_MARKS = /^\[(自动回复|退信)\]/;
+async function personDetail(ctx, data, fid, all = false) {
   const { base, cfg } = ctx;
   const t = cfg.tables;
   const tz = cfg.timezone;
@@ -64888,17 +64895,23 @@ async function personDetail(ctx, data, fid) {
   const [links] = await base.get(t.followups, [fid], ["\u63A5\u89E6\u8BB0\u5F55", "\u53D1\u5E03\u5185\u5BB9"]);
   const contacts = (await base.get(t.contacts, linkIds(links?.["\u63A5\u89E6\u8BB0\u5F55"]), ["\u65B9\u5411", "\u6458\u8981", "\u5185\u5BB9", "\u65E5\u671F", "\u6E20\u9053", "Message ID", "\u5F85\u5904\u7406"])).sort((a, b) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b["\u65E5\u671F"], tz) ?? 0));
   const posts = await base.get(t.posts, linkIds(links?.["\u53D1\u5E03\u5185\u5BB9"]), POST_FIELDS).catch(() => []);
-  const recent = contacts.slice(-12);
-  const unread = recent.filter((c) => option(c["\u65B9\u5411"]) === "\u6536\u5230" && !text(c["\u5185\u5BB9"]) && text(c["Message ID"]) && !text(c["\u6458\u8981"]).startsWith("["));
+  const recent = all ? contacts : contacts.slice(-12);
+  const unread = recent.filter((c) => option(c["\u65B9\u5411"]) === "\u6536\u5230" && !text(c["\u5185\u5BB9"]) && text(c["Message ID"]) && !EVENT_MARKS.test(text(c["\u6458\u8981"])));
   const bodies = await readBodies(ctx, unread.map((c) => ({ messageId: text(c["Message ID"]), channel: option(c["\u6E20\u9053"]) })));
   const name = text(p?.["\u79F0\u547C"]) || displayName(s, f);
   const bubbles = recent.map((c) => {
     const dir = option(c["\u65B9\u5411"]);
     const when = stamp(cellTime(c["\u65E5\u671F"], tz) ?? 0, tz);
     const summary = text(c["\u6458\u8981"]);
-    if (dir === "\u53D1\u51FA") return { side: "us", who: `\u6211\u4EEC \xB7 ${option(c["\u6E20\u9053"])}`, when, text: text(c["\u5185\u5BB9"]) || summary };
-    if (dir === "\u6536\u5230" && !summary.startsWith("[")) return { side: "them", who: name, when, text: bodies.get(text(c["Message ID"])) || text(c["\u5185\u5BB9"]) || summary };
-    return { side: "event", who: "", when, text: summary };
+    const content = text(c["\u5185\u5BB9"]);
+    if (dir === "\u5B58\u6863") return { side: "event", who: "", when, text: summary || "\u5B58\u6863", ...content ? { full: content } : {} };
+    if (EVENT_MARKS.test(summary)) return { side: "event", who: "", when, text: summary };
+    const mark = summary.match(/^\[([^\]]+)\]/)?.[1];
+    if (dir === "\u53D1\u51FA") {
+      return { side: "us", who: `\u6211\u4EEC \xB7 ${option(c["\u6E20\u9053"])}${content ? "" : ` \xB7 ${summary}`}`.slice(0, 120), when, text: content || summary, summaryOnly: !content };
+    }
+    const body2 = bodies.get(text(c["Message ID"])) || content;
+    return { side: "them", who: `${name}${mark ? ` \xB7 ${mark}` : ""}`, when, text: body2 || summary, summaryOnly: !body2 };
   });
   const pending = data.reviews.filter((r) => linkIds(r["KOL"]).includes(fid) && reviewState(r) === "pending" && option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25");
   const emails = profileEmails(p).map((e) => ({ address: e, blocked: s.doNotContact.has(e) }));
@@ -64919,6 +64932,7 @@ async function personDetail(ctx, data, fid) {
     pending: pending.map((r) => ({ id: r.record_id, title: text(r["\u5BA1\u6838\u9879"]), ask: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) })),
     bubbles,
     olderCount: Math.max(0, contacts.length - recent.length),
+    showingAll: all,
     trial: text(f["\u4F53\u9A8C\u7801"]) ? { code: text(f["\u4F53\u9A8C\u7801"]), used: Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0, max: Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0, expires: shortDay(day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz)) } : null,
     partner: text(f["\u6D3B\u52A8\u7801"]) ? { code: text(f["\u6D3B\u52A8\u7801"]), link: text(f["\u4E13\u5C5E\u8FDE\u7ED3"]), ledger: text(f["\u8D26\u672C\u8FDE\u7ED3"]) } : null,
     posts: posts.map((x) => ({
@@ -65089,7 +65103,7 @@ async function startConsole(ctx, o) {
         return send(res, 200, { view, ...VIEWS[view], rows, total });
       }
       if (url2.pathname === "/api/person") {
-        const detail = await personDetail(ctx, data, url2.searchParams.get("id") ?? "");
+        const detail = await personDetail(ctx, data, url2.searchParams.get("id") ?? "", url2.searchParams.get("all") === "1");
         return detail ? send(res, 200, detail) : send(res, 404, { error: "\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55" });
       }
       if (url2.pathname === "/api/log") return send(res, 200, await activityLog(ctx));

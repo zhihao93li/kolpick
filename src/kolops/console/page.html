@@ -482,9 +482,9 @@ function openFind() {
 }
 
 // --- 一位 KOL ---
-function renderPerson(id) {
+function renderPerson(id, all) {
   $("app").innerHTML = '<div class="loading">读取她的来往记录…</div>';
-  api("/api/person?id=" + encodeURIComponent(id)).then(function (p) {
+  api("/api/person?id=" + encodeURIComponent(id) + (all ? "&all=1" : "")).then(function (p) {
     var stepper = p.stageStep >= 0 ? '<ol class="stepper" aria-label="合作进度">' + p.stages.map(function (s, i) {
       var color = i < p.stageStep ? "#1F8A55" : i === p.stageStep ? "var(--blue)" : "var(--line)";
       return '<li><div class="seg" style="background:' + color + '"></div><span style="' + (i === p.stageStep ? "font-weight:600" : i > p.stageStep ? "color:var(--muted)" : "") + '">' + esc(s) + (i === p.stageStep ? "（现在）" : "") + "</span></li>";
@@ -494,7 +494,12 @@ function renderPerson(id) {
         '<div style="flex:1 1 240px"><div style="font-weight:600">有 1 件事等你决定：' + esc(r.title) + '</div><div class="muted small">' + esc(r.ask) + '</div></div><a class="btn primary" href="#/">去看</a></div>';
     }).join("");
     var bubbles = p.bubbles.map(function (b) {
-      return '<div class="' + b.side + '">' + (b.side === "event" ? esc(b.when.slice(0, 10) + " · " + b.text) : '<div class="who">' + esc(b.who + " · " + b.when) + "</div>" + esc(b.text)) + "</div>";
+      if (b.side === "event") {
+        return b.full ? '<details class="event" style="max-width:90%;text-align:left"><summary>' + esc(b.when.slice(0, 10) + " · " + b.text) + '（点开看全文）</summary><div style="white-space:pre-wrap;font-size:13px;color:var(--ink);margin-top:6px">' + esc(b.full) + "</div></details>"
+          : '<div class="event">' + esc(b.when.slice(0, 10) + " · " + b.text) + "</div>";
+      }
+      return '<div class="' + b.side + '"><div class="who">' + esc(b.who + " · " + b.when) + "</div>" + esc(b.text) +
+        (b.summaryOnly ? '<div class="who" style="margin-top:4px">只有摘要，原文在邮箱里</div>' : "") + "</div>";
     }).join("");
     var trial = p.trial ? '<div style="display:flex;justify-content:space-between"><b>体验码 ' + esc(p.trial.code) + '</b><span class="muted small">' + esc(p.trial.expires) + ' 到期</span></div>' +
       (p.trial.max ? '<div class="bar" role="img" aria-label="用了 ' + p.trial.used + ' 次，共 ' + p.trial.max + ' 次"><div style="width:' + Math.min(100, Math.round(p.trial.used / p.trial.max * 100)) + '%;background:var(--blue)"></div></div><div class="muted small">用了 ' + p.trial.used + ' 次，共 ' + p.trial.max + ' 次</div>' : "") : '<div class="muted small">还没有体验码</div>';
@@ -520,7 +525,7 @@ function renderPerson(id) {
           '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:14px"><button class="btn primary" id="p-write"' + (p.doNotContact ? " disabled" : "") + '>写信给她</button>' +
           (p.stage !== "结案" ? '<button class="btn" id="p-close" style="border-color:transparent;color:var(--muted)">不再跟进</button>' : "") +
           (p.doNotContact ? "" : '<button class="btn" id="p-never" style="border-color:transparent;color:var(--bad)">不要再联系她</button>') + '</div></section>' +
-        '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>来往记录</b><span class="muted small">左边是她，右边是我们' + (p.olderCount ? " · 更早还有 " + p.olderCount + " 条" : "") + "</span></div>" +
+        '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>来往记录</b><span class="muted small">左边是她，右边是我们' + (p.olderCount ? ' · 更早还有 ' + p.olderCount + ' 条，<a href="#" id="p-all">全部显示</a>' : "") + "</span></div>" +
           (bubbles || '<div class="muted">还没有来往</div>') + "</section></div>" +
         '<aside style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px">' +
           '<section class="card" style="padding:16px 18px;display:flex;flex-direction:column;gap:8px">' + trial + partner + "</section>" +
@@ -532,6 +537,7 @@ function renderPerson(id) {
 
 function wirePerson(p) {
   var reload = function () { renderPerson(p.id); };
+  if ($("p-all")) $("p-all").onclick = function (e) { e.preventDefault(); renderPerson(p.id, true); };
   $("p-edit").onclick = function () {
     modal('<h2 style="margin:0;font-size:18px">接下来</h2>' +
       '<label class="field">下一步要做什么<input class="input" id="e-next" value="' + esc(p.next) + '"></label>' +

@@ -65,7 +65,7 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
         return send(res, 200, { view, ...VIEWS[view], rows, total });
       }
       if (url.pathname === "/api/person") {
-        const detail = await personDetail(ctx, data, url.searchParams.get("id") ?? "");
+        const detail = await personDetail(ctx, data, url.searchParams.get("id") ?? "", url.searchParams.get("all") === "1");
         return detail ? send(res, 200, detail) : send(res, 404, { error: "找不到这位 KOL 的跟进记录" });
       }
       if (url.pathname === "/api/log") return send(res, 200, await activityLog(ctx));

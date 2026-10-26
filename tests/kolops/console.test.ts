@@ -158,6 +158,17 @@ describe("one KOL", () => {
 
     const p = await personDetail(ctx, await loaded(), f);
     expect(p?.bubbles.map((b) => [b.side, b.text])).toEqual([["us", "這是妳的體驗碼"], ["them", "第三段看不懂"], ["event", "[自动回复] 休假中"]]);
+    // Hand-filed records keep their text in 内容 under a 「[分类] …」 summary; archives open to their full text.
+    const c4 = lark.add(T.contacts, { 方向: ["收到"], 渠道: ["tafuofficial Gmail"], 摘要: "[问问题] 安安：报告怎么看", 内容: "請問報告怎麼看？", 日期: at(day, "11:00") });
+    const c5 = lark.add(T.contacts, { 方向: ["存档"], 摘要: "10/5 前邮件往来存档", 内容: "全部往來……", 日期: at(day, "12:00") });
+    const c6 = lark.add(T.contacts, { 方向: ["发出"], 渠道: ["tafuofficial Gmail"], 摘要: "体验跟进 A", 日期: at(day, "13:00") });
+    lark.table(T.followups).find((r) => r.record_id === f)!["接触记录"] = [{ id: c1 }, { id: c2 }, { id: c3 }, { id: c4 }, { id: c5 }, { id: c6 }];
+    const q = await personDetail(ctx, await loaded(), f);
+    expect(q?.bubbles.slice(3)).toEqual([
+      expect.objectContaining({ side: "them", who: "安安 · 问问题", text: "請問報告怎麼看？", summaryOnly: false }),
+      expect.objectContaining({ side: "event", text: "10/5 前邮件往来存档", full: "全部往來……" }),
+      expect.objectContaining({ side: "us", text: "体验跟进 A", summaryOnly: true }),
+    ]);
     expect(p).toMatchObject({ name: "安安", stageStep: 2, trial: { code: "YOGAAN", used: 1, max: 3 } });
     expect(p?.situation).toContain("用了 1 / 3 次");
   });
