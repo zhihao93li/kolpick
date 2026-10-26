@@ -194,7 +194,7 @@ function __awaiter(thisArg, _arguments, P, generator) {
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 }
-function __generator(thisArg, body) {
+function __generator(thisArg, body2) {
   var _ = { label: 0, sent: function() {
     if (t[0] & 1) throw t[1];
     return t[1];
@@ -252,7 +252,7 @@ function __generator(thisArg, body) {
           _.trys.pop();
           continue;
       }
-      op = body.call(thisArg, _);
+      op = body2.call(thisArg, _);
     } catch (e) {
       op = [6, e];
       y = 0;
@@ -1497,17 +1497,17 @@ var require_string = __commonJS({
       
           @param list - List of possible values.
           */
-      oneOf(list2) {
+      oneOf(list3) {
         return this.addValidator({
           message: (value, label) => {
-            let printedList = JSON.stringify(list2);
-            if (list2.length > 10) {
-              const overflow = list2.length - 10;
-              printedList = JSON.stringify(list2.slice(0, 10)).replace(/]$/, `,\u2026+${overflow} more]`);
+            let printedList = JSON.stringify(list3);
+            if (list3.length > 10) {
+              const overflow = list3.length - 10;
+              printedList = JSON.stringify(list3.slice(0, 10)).replace(/]$/, `,\u2026+${overflow} more]`);
             }
             return `Expected ${label} to be one of \`${printedList}\`, got \`${value}\``;
           },
-          validator: (value) => list2.includes(value)
+          validator: (value) => list3.includes(value)
         });
       }
       /**
@@ -1694,17 +1694,17 @@ var require_number = __commonJS({
       
           @param list - List of possible values.
           */
-      oneOf(list2) {
+      oneOf(list3) {
         return this.addValidator({
           message: (value, label) => {
-            let printedList = JSON.stringify(list2);
-            if (list2.length > 10) {
-              const overflow = list2.length - 10;
-              printedList = JSON.stringify(list2.slice(0, 10)).replace(/]$/, `,\u2026+${overflow} more]`);
+            let printedList = JSON.stringify(list3);
+            if (list3.length > 10) {
+              const overflow = list3.length - 10;
+              printedList = JSON.stringify(list3.slice(0, 10)).replace(/]$/, `,\u2026+${overflow} more]`);
             }
             return `Expected ${label} to be one of \`${printedList}\`, got ${value}`;
           },
-          validator: (value) => list2.includes(value)
+          validator: (value) => list3.includes(value)
         });
       }
       /**
@@ -14918,9 +14918,9 @@ var require_iterate = __commonJS({
     var async = require_async();
     var abort = require_abort();
     module.exports = iterate;
-    function iterate(list2, iterator, state, callback) {
+    function iterate(list3, iterator, state, callback) {
       var key = state["keyedList"] ? state["keyedList"][state.index] : state.index;
-      state.jobs[key] = runJob(iterator, key, list2[key], function(error, output) {
+      state.jobs[key] = runJob(iterator, key, list3[key], function(error, output) {
         if (!(key in state.jobs)) {
           return;
         }
@@ -14949,17 +14949,17 @@ var require_iterate = __commonJS({
 var require_state = __commonJS({
   "node_modules/asynckit/lib/state.js"(exports, module) {
     module.exports = state;
-    function state(list2, sortMethod) {
-      var isNamedList = !Array.isArray(list2), initState = {
+    function state(list3, sortMethod) {
+      var isNamedList = !Array.isArray(list3), initState = {
         index: 0,
-        keyedList: isNamedList || sortMethod ? Object.keys(list2) : null,
+        keyedList: isNamedList || sortMethod ? Object.keys(list3) : null,
         jobs: {},
         results: isNamedList ? {} : [],
-        size: isNamedList ? Object.keys(list2).length : list2.length
+        size: isNamedList ? Object.keys(list3).length : list3.length
       };
       if (sortMethod) {
         initState.keyedList.sort(isNamedList ? sortMethod : function(a, b) {
-          return sortMethod(list2[a], list2[b]);
+          return sortMethod(list3[a], list3[b]);
         });
       }
       return initState;
@@ -14991,10 +14991,10 @@ var require_parallel = __commonJS({
     var initState = require_state();
     var terminator = require_terminator();
     module.exports = parallel;
-    function parallel(list2, iterator, callback) {
-      var state = initState(list2);
-      while (state.index < (state["keyedList"] || list2).length) {
-        iterate(list2, iterator, state, function(error, result) {
+    function parallel(list3, iterator, callback) {
+      var state = initState(list3);
+      while (state.index < (state["keyedList"] || list3).length) {
+        iterate(list3, iterator, state, function(error, result) {
           if (error) {
             callback(error, result);
             return;
@@ -15020,16 +15020,16 @@ var require_serialOrdered = __commonJS({
     module.exports = serialOrdered;
     module.exports.ascending = ascending;
     module.exports.descending = descending;
-    function serialOrdered(list2, iterator, sortMethod, callback) {
-      var state = initState(list2, sortMethod);
-      iterate(list2, iterator, state, function iteratorHandler(error, result) {
+    function serialOrdered(list3, iterator, sortMethod, callback) {
+      var state = initState(list3, sortMethod);
+      iterate(list3, iterator, state, function iteratorHandler(error, result) {
         if (error) {
           callback(error, result);
           return;
         }
         state.index++;
-        if (state.index < (state["keyedList"] || list2).length) {
-          iterate(list2, iterator, state, iteratorHandler);
+        if (state.index < (state["keyedList"] || list3).length) {
+          iterate(list3, iterator, state, iteratorHandler);
           return;
         }
         callback(null, state.results);
@@ -15050,8 +15050,8 @@ var require_serial = __commonJS({
   "node_modules/asynckit/serial.js"(exports, module) {
     var serialOrdered = require_serialOrdered();
     module.exports = serial;
-    function serial(list2, iterator, callback) {
-      return serialOrdered(list2, iterator, null, callback);
+    function serial(list3, iterator, callback) {
+      return serialOrdered(list3, iterator, null, callback);
     }
   }
 });
@@ -19774,14 +19774,14 @@ var require_axios = __commonJS({
         const type = match[1];
         const params = match[2];
         const encoding = match[3] ? "base64" : "utf8";
-        const body = match[4];
+        const body2 = match[4];
         let mime = "";
         if (type) {
           mime = params ? type + params : type;
         } else if (params) {
           mime = "text/plain" + params;
         }
-        const buffer = encoding === "base64" ? Buffer.from(body, "base64") : Buffer.from(decodeURIComponent(body), encoding);
+        const buffer = encoding === "base64" ? Buffer.from(body2, "base64") : Buffer.from(decodeURIComponent(body2), encoding);
         if (asBlob) {
           if (!_Blob) {
             throw new AxiosError("Blob is not supported", AxiosError.ERR_NOT_SUPPORT);
@@ -20567,26 +20567,26 @@ var require_axios = __commonJS({
       const remainder = significant % 4;
       return groups * 3 + (remainder === 2 ? 1 : remainder === 3 ? 2 : 0);
     };
-    var estimateBase64BufferAllocation = (body) => {
-      const len = body.length;
+    var estimateBase64BufferAllocation = (body2) => {
+      const len = body2.length;
       let padding = 0;
-      if (len > 0 && body.charCodeAt(len - 1) === 61) {
+      if (len > 0 && body2.charCodeAt(len - 1) === 61) {
         padding++;
-        if (len > 1 && body.charCodeAt(len - 2) === 61) {
+        if (len > 1 && body2.charCodeAt(len - 2) === 61) {
           padding++;
         }
       }
       return Math.floor((len - padding) * 3 / 4);
     };
-    var estimatePercentDecodedBase64Bytes = (body) => {
-      const len = body.length;
+    var estimatePercentDecodedBase64Bytes = (body2) => {
+      const len = body2.length;
       let significant = 0;
       let padding = 0;
       let invalid = false;
       for (let i = 0; i < len; i++) {
-        let code = body.charCodeAt(i);
-        if (code === 37 && isPercentEncodedByte(body, i, len)) {
-          code = hexValue(body.charCodeAt(i + 1)) * 16 + hexValue(body.charCodeAt(i + 2));
+        let code = body2.charCodeAt(i);
+        if (code === 37 && isPercentEncodedByte(body2, i, len)) {
+          code = hexValue(body2.charCodeAt(i + 1)) * 16 + hexValue(body2.charCodeAt(i + 2));
           i += 2;
         }
         if (isBase64Whitespace(code)) {
@@ -20603,7 +20603,7 @@ var require_axios = __commonJS({
         significant++;
       }
       if (invalid || padding > 2 || padding > 0 && (significant + padding) % 4 !== 0 || significant % 4 === 1) {
-        return estimateBase64BufferAllocation(body);
+        return estimateBase64BufferAllocation(body2);
       }
       return base64Bytes(significant);
     };
@@ -20613,15 +20613,15 @@ var require_axios = __commonJS({
       const comma = url2.indexOf(",");
       if (comma < 0) return 0;
       const meta = url2.slice(5, comma);
-      const body = url2.slice(comma + 1);
+      const body2 = url2.slice(comma + 1);
       const isBase64 = /;base64/i.test(meta);
       if (isBase64) {
-        return estimateBase64(body);
+        return estimateBase64(body2);
       }
       let bytes = 0;
-      for (let i = 0, len = body.length; i < len; i++) {
-        const c = body.charCodeAt(i);
-        if (c === 37 && isPercentEncodedByte(body, i, len)) {
+      for (let i = 0, len = body2.length; i < len; i++) {
+        const c = body2.charCodeAt(i);
+        if (c === 37 && isPercentEncodedByte(body2, i, len)) {
           bytes += 1;
           i += 2;
         } else if (c < 128) {
@@ -20629,7 +20629,7 @@ var require_axios = __commonJS({
         } else if (c < 2048) {
           bytes += 2;
         } else if (c >= 55296 && c <= 56319 && i + 1 < len) {
-          const next = body.charCodeAt(i + 1);
+          const next = body2.charCodeAt(i + 1);
           if (next >= 56320 && next <= 57343) {
             bytes += 4;
             i++;
@@ -22155,33 +22155,33 @@ var require_axios = __commonJS({
           });
         });
       })();
-      const getBodyLength = async (body) => {
-        if (body == null) {
+      const getBodyLength = async (body2) => {
+        if (body2 == null) {
           return 0;
         }
-        if (utils$1.isBlob(body)) {
-          return body.size;
+        if (utils$1.isBlob(body2)) {
+          return body2.size;
         }
-        if (utils$1.isSpecCompliantForm(body)) {
+        if (utils$1.isSpecCompliantForm(body2)) {
           const _request = new Request(platform.origin, {
             method: "POST",
-            body
+            body: body2
           });
           return (await _request.arrayBuffer()).byteLength;
         }
-        if (utils$1.isArrayBufferView(body) || utils$1.isArrayBuffer(body)) {
-          return body.byteLength;
+        if (utils$1.isArrayBufferView(body2) || utils$1.isArrayBuffer(body2)) {
+          return body2.byteLength;
         }
-        if (utils$1.isURLSearchParams(body)) {
-          body = body + "";
+        if (utils$1.isURLSearchParams(body2)) {
+          body2 = body2 + "";
         }
-        if (utils$1.isString(body)) {
-          return (await encodeText(body)).byteLength;
+        if (utils$1.isString(body2)) {
+          return (await encodeText(body2)).byteLength;
         }
       };
-      const resolveBodyLength = async (headers, body) => {
+      const resolveBodyLength = async (headers, body2) => {
         const length = utils$1.toFiniteNumber(headers.getContentLength());
-        return length == null ? getBodyLength(body) : length;
+        return length == null ? getBodyLength(body2) : length;
       };
       return async (config) => {
         let {
@@ -23501,7 +23501,7 @@ var require_body_parser = __commonJS({
     var utils_1 = require_utils();
     var CONTENT_TYPE_JSON = "application/json";
     var STRINGIFIABLE_CONTENT_TYPE_RXS = [new RegExp(`^${CONTENT_TYPE_JSON}`, "i"), /^application\/.*xml$/i, /^text\//i];
-    function maybeParseBody(body, contentTypeHeader) {
+    function maybeParseBody(body2, contentTypeHeader) {
       let contentType;
       let charset;
       try {
@@ -23509,11 +23509,11 @@ var require_body_parser = __commonJS({
         contentType = result.type;
         charset = result.parameters.charset;
       } catch {
-        return body;
+        return body2;
       }
       if (!areDataStringifiable(contentType, charset))
-        return body;
-      const dataString = isomorphicBufferToString(body, charset);
+        return body2;
+      const dataString = isomorphicBufferToString(body2, charset);
       return contentType === CONTENT_TYPE_JSON ? JSON.parse(dataString) : dataString;
     }
     function isomorphicBufferToString(buffer, encoding) {
@@ -33107,9 +33107,9 @@ var require_ftp = __commonJS({
           }
         }
         if (!lastModified) {
-          const list2 = await client.list((0, path_1.dirname)(filepath));
+          const list3 = await client.list((0, path_1.dirname)(filepath));
           const name = (0, path_1.basename)(filepath);
-          const entry = list2.find((e) => e.name === name);
+          const entry = list3.find((e) => e.name === name);
           if (entry) {
             lastModified = entry.modifiedAt;
           }
@@ -39312,11 +39312,11 @@ var require_esprima = __commonJS({
             })();
             exports2.ArrayPattern = ArrayPattern;
             var ArrowFunctionExpression = /* @__PURE__ */ (function() {
-              function ArrowFunctionExpression2(params, body, expression) {
+              function ArrowFunctionExpression2(params, body2, expression) {
                 this.type = syntax_1.Syntax.ArrowFunctionExpression;
                 this.id = null;
                 this.params = params;
-                this.body = body;
+                this.body = body2;
                 this.generator = false;
                 this.expression = expression;
                 this.async = false;
@@ -39344,11 +39344,11 @@ var require_esprima = __commonJS({
             })();
             exports2.AssignmentPattern = AssignmentPattern;
             var AsyncArrowFunctionExpression = /* @__PURE__ */ (function() {
-              function AsyncArrowFunctionExpression2(params, body, expression) {
+              function AsyncArrowFunctionExpression2(params, body2, expression) {
                 this.type = syntax_1.Syntax.ArrowFunctionExpression;
                 this.id = null;
                 this.params = params;
-                this.body = body;
+                this.body = body2;
                 this.generator = false;
                 this.expression = expression;
                 this.async = true;
@@ -39357,11 +39357,11 @@ var require_esprima = __commonJS({
             })();
             exports2.AsyncArrowFunctionExpression = AsyncArrowFunctionExpression;
             var AsyncFunctionDeclaration = /* @__PURE__ */ (function() {
-              function AsyncFunctionDeclaration2(id, params, body) {
+              function AsyncFunctionDeclaration2(id, params, body2) {
                 this.type = syntax_1.Syntax.FunctionDeclaration;
                 this.id = id;
                 this.params = params;
-                this.body = body;
+                this.body = body2;
                 this.generator = false;
                 this.expression = false;
                 this.async = true;
@@ -39370,11 +39370,11 @@ var require_esprima = __commonJS({
             })();
             exports2.AsyncFunctionDeclaration = AsyncFunctionDeclaration;
             var AsyncFunctionExpression = /* @__PURE__ */ (function() {
-              function AsyncFunctionExpression2(id, params, body) {
+              function AsyncFunctionExpression2(id, params, body2) {
                 this.type = syntax_1.Syntax.FunctionExpression;
                 this.id = id;
                 this.params = params;
-                this.body = body;
+                this.body = body2;
                 this.generator = false;
                 this.expression = false;
                 this.async = true;
@@ -39402,9 +39402,9 @@ var require_esprima = __commonJS({
             })();
             exports2.BinaryExpression = BinaryExpression;
             var BlockStatement = /* @__PURE__ */ (function() {
-              function BlockStatement2(body) {
+              function BlockStatement2(body2) {
                 this.type = syntax_1.Syntax.BlockStatement;
-                this.body = body;
+                this.body = body2;
               }
               return BlockStatement2;
             })();
@@ -39427,38 +39427,38 @@ var require_esprima = __commonJS({
             })();
             exports2.CallExpression = CallExpression;
             var CatchClause = /* @__PURE__ */ (function() {
-              function CatchClause2(param, body) {
+              function CatchClause2(param, body2) {
                 this.type = syntax_1.Syntax.CatchClause;
                 this.param = param;
-                this.body = body;
+                this.body = body2;
               }
               return CatchClause2;
             })();
             exports2.CatchClause = CatchClause;
             var ClassBody = /* @__PURE__ */ (function() {
-              function ClassBody2(body) {
+              function ClassBody2(body2) {
                 this.type = syntax_1.Syntax.ClassBody;
-                this.body = body;
+                this.body = body2;
               }
               return ClassBody2;
             })();
             exports2.ClassBody = ClassBody;
             var ClassDeclaration = /* @__PURE__ */ (function() {
-              function ClassDeclaration2(id, superClass, body) {
+              function ClassDeclaration2(id, superClass, body2) {
                 this.type = syntax_1.Syntax.ClassDeclaration;
                 this.id = id;
                 this.superClass = superClass;
-                this.body = body;
+                this.body = body2;
               }
               return ClassDeclaration2;
             })();
             exports2.ClassDeclaration = ClassDeclaration;
             var ClassExpression = /* @__PURE__ */ (function() {
-              function ClassExpression2(id, superClass, body) {
+              function ClassExpression2(id, superClass, body2) {
                 this.type = syntax_1.Syntax.ClassExpression;
                 this.id = id;
                 this.superClass = superClass;
-                this.body = body;
+                this.body = body2;
               }
               return ClassExpression2;
             })();
@@ -39508,9 +39508,9 @@ var require_esprima = __commonJS({
             })();
             exports2.Directive = Directive;
             var DoWhileStatement = /* @__PURE__ */ (function() {
-              function DoWhileStatement2(body, test) {
+              function DoWhileStatement2(body2, test) {
                 this.type = syntax_1.Syntax.DoWhileStatement;
-                this.body = body;
+                this.body = body2;
                 this.test = test;
               }
               return DoWhileStatement2;
@@ -39567,43 +39567,43 @@ var require_esprima = __commonJS({
             })();
             exports2.ExpressionStatement = ExpressionStatement;
             var ForInStatement = /* @__PURE__ */ (function() {
-              function ForInStatement2(left, right, body) {
+              function ForInStatement2(left, right, body2) {
                 this.type = syntax_1.Syntax.ForInStatement;
                 this.left = left;
                 this.right = right;
-                this.body = body;
+                this.body = body2;
                 this.each = false;
               }
               return ForInStatement2;
             })();
             exports2.ForInStatement = ForInStatement;
             var ForOfStatement = /* @__PURE__ */ (function() {
-              function ForOfStatement2(left, right, body) {
+              function ForOfStatement2(left, right, body2) {
                 this.type = syntax_1.Syntax.ForOfStatement;
                 this.left = left;
                 this.right = right;
-                this.body = body;
+                this.body = body2;
               }
               return ForOfStatement2;
             })();
             exports2.ForOfStatement = ForOfStatement;
             var ForStatement = /* @__PURE__ */ (function() {
-              function ForStatement2(init, test, update, body) {
+              function ForStatement2(init, test, update, body2) {
                 this.type = syntax_1.Syntax.ForStatement;
                 this.init = init;
                 this.test = test;
                 this.update = update;
-                this.body = body;
+                this.body = body2;
               }
               return ForStatement2;
             })();
             exports2.ForStatement = ForStatement;
             var FunctionDeclaration = /* @__PURE__ */ (function() {
-              function FunctionDeclaration2(id, params, body, generator) {
+              function FunctionDeclaration2(id, params, body2, generator) {
                 this.type = syntax_1.Syntax.FunctionDeclaration;
                 this.id = id;
                 this.params = params;
-                this.body = body;
+                this.body = body2;
                 this.generator = generator;
                 this.expression = false;
                 this.async = false;
@@ -39612,11 +39612,11 @@ var require_esprima = __commonJS({
             })();
             exports2.FunctionDeclaration = FunctionDeclaration;
             var FunctionExpression = /* @__PURE__ */ (function() {
-              function FunctionExpression2(id, params, body, generator) {
+              function FunctionExpression2(id, params, body2, generator) {
                 this.type = syntax_1.Syntax.FunctionExpression;
                 this.id = id;
                 this.params = params;
-                this.body = body;
+                this.body = body2;
                 this.generator = generator;
                 this.expression = false;
                 this.async = false;
@@ -39677,10 +39677,10 @@ var require_esprima = __commonJS({
             })();
             exports2.ImportSpecifier = ImportSpecifier;
             var LabeledStatement = /* @__PURE__ */ (function() {
-              function LabeledStatement2(label, body) {
+              function LabeledStatement2(label, body2) {
                 this.type = syntax_1.Syntax.LabeledStatement;
                 this.label = label;
-                this.body = body;
+                this.body = body2;
               }
               return LabeledStatement2;
             })();
@@ -39716,9 +39716,9 @@ var require_esprima = __commonJS({
             })();
             exports2.MethodDefinition = MethodDefinition;
             var Module = /* @__PURE__ */ (function() {
-              function Module2(body) {
+              function Module2(body2) {
                 this.type = syntax_1.Syntax.Program;
-                this.body = body;
+                this.body = body2;
                 this.sourceType = "module";
               }
               return Module2;
@@ -39789,9 +39789,9 @@ var require_esprima = __commonJS({
             })();
             exports2.ReturnStatement = ReturnStatement;
             var Script = /* @__PURE__ */ (function() {
-              function Script2(body) {
+              function Script2(body2) {
                 this.type = syntax_1.Syntax.Program;
-                this.body = body;
+                this.body = body2;
                 this.sourceType = "script";
               }
               return Script2;
@@ -39939,19 +39939,19 @@ var require_esprima = __commonJS({
             })();
             exports2.VariableDeclarator = VariableDeclarator;
             var WhileStatement = /* @__PURE__ */ (function() {
-              function WhileStatement2(test, body) {
+              function WhileStatement2(test, body2) {
                 this.type = syntax_1.Syntax.WhileStatement;
                 this.test = test;
-                this.body = body;
+                this.body = body2;
               }
               return WhileStatement2;
             })();
             exports2.WhileStatement = WhileStatement;
             var WithStatement = /* @__PURE__ */ (function() {
-              function WithStatement2(object, body) {
+              function WithStatement2(object, body2) {
                 this.type = syntax_1.Syntax.WithStatement;
                 this.object = object;
-                this.body = body;
+                this.body = body2;
               }
               return WithStatement2;
             })();
@@ -40509,7 +40509,7 @@ var require_esprima = __commonJS({
                 var previousStrict = this.context.strict;
                 var previousAllowStrictDirective = this.context.allowStrictDirective;
                 this.context.allowStrictDirective = params.simple;
-                var body = this.isolateCoverGrammar(this.parseFunctionSourceElements);
+                var body2 = this.isolateCoverGrammar(this.parseFunctionSourceElements);
                 if (this.context.strict && params.firstRestricted) {
                   this.tolerateUnexpectedToken(params.firstRestricted, params.message);
                 }
@@ -40518,7 +40518,7 @@ var require_esprima = __commonJS({
                 }
                 this.context.strict = previousStrict;
                 this.context.allowStrictDirective = previousAllowStrictDirective;
-                return body;
+                return body2;
               };
               Parser2.prototype.parsePropertyMethodFunction = function() {
                 var isGenerator = false;
@@ -41274,38 +41274,38 @@ var require_esprima = __commonJS({
                     this.context.isAssignmentTarget = false;
                     this.context.isBindingElement = false;
                     var isAsync = expr.async;
-                    var list2 = this.reinterpretAsCoverFormalsList(expr);
-                    if (list2) {
+                    var list3 = this.reinterpretAsCoverFormalsList(expr);
+                    if (list3) {
                       if (this.hasLineTerminator) {
                         this.tolerateUnexpectedToken(this.lookahead);
                       }
                       this.context.firstCoverInitializedNameError = null;
                       var previousStrict = this.context.strict;
                       var previousAllowStrictDirective = this.context.allowStrictDirective;
-                      this.context.allowStrictDirective = list2.simple;
+                      this.context.allowStrictDirective = list3.simple;
                       var previousAllowYield = this.context.allowYield;
                       var previousAwait = this.context.await;
                       this.context.allowYield = true;
                       this.context.await = isAsync;
                       var node = this.startNode(startToken);
                       this.expect("=>");
-                      var body = void 0;
+                      var body2 = void 0;
                       if (this.match("{")) {
                         var previousAllowIn = this.context.allowIn;
                         this.context.allowIn = true;
-                        body = this.parseFunctionSourceElements();
+                        body2 = this.parseFunctionSourceElements();
                         this.context.allowIn = previousAllowIn;
                       } else {
-                        body = this.isolateCoverGrammar(this.parseAssignmentExpression);
+                        body2 = this.isolateCoverGrammar(this.parseAssignmentExpression);
                       }
-                      var expression = body.type !== syntax_1.Syntax.BlockStatement;
-                      if (this.context.strict && list2.firstRestricted) {
-                        this.throwUnexpectedToken(list2.firstRestricted, list2.message);
+                      var expression = body2.type !== syntax_1.Syntax.BlockStatement;
+                      if (this.context.strict && list3.firstRestricted) {
+                        this.throwUnexpectedToken(list3.firstRestricted, list3.message);
                       }
-                      if (this.context.strict && list2.stricted) {
-                        this.tolerateUnexpectedToken(list2.stricted, list2.message);
+                      if (this.context.strict && list3.stricted) {
+                        this.tolerateUnexpectedToken(list3.stricted, list3.message);
                       }
-                      expr = isAsync ? this.finalize(node, new Node.AsyncArrowFunctionExpression(list2.params, body, expression)) : this.finalize(node, new Node.ArrowFunctionExpression(list2.params, body, expression));
+                      expr = isAsync ? this.finalize(node, new Node.AsyncArrowFunctionExpression(list3.params, body2, expression)) : this.finalize(node, new Node.ArrowFunctionExpression(list3.params, body2, expression));
                       this.context.strict = previousStrict;
                       this.context.allowStrictDirective = previousAllowStrictDirective;
                       this.context.allowYield = previousAllowYield;
@@ -41436,12 +41436,12 @@ var require_esprima = __commonJS({
                 return this.finalize(node, new Node.VariableDeclarator(id, init));
               };
               Parser2.prototype.parseBindingList = function(kind, options2) {
-                var list2 = [this.parseLexicalBinding(kind, options2)];
+                var list3 = [this.parseLexicalBinding(kind, options2)];
                 while (this.match(",")) {
                   this.nextToken();
-                  list2.push(this.parseLexicalBinding(kind, options2));
+                  list3.push(this.parseLexicalBinding(kind, options2));
                 }
-                return list2;
+                return list3;
               };
               Parser2.prototype.isLexicalDeclaration = function() {
                 var state = this.scanner.saveState();
@@ -41603,13 +41603,13 @@ var require_esprima = __commonJS({
               };
               Parser2.prototype.parseVariableDeclarationList = function(options2) {
                 var opt = { inFor: options2.inFor };
-                var list2 = [];
-                list2.push(this.parseVariableDeclaration(opt));
+                var list3 = [];
+                list3.push(this.parseVariableDeclaration(opt));
                 while (this.match(",")) {
                   this.nextToken();
-                  list2.push(this.parseVariableDeclaration(opt));
+                  list3.push(this.parseVariableDeclaration(opt));
                 }
-                return list2;
+                return list3;
               };
               Parser2.prototype.parseVariableStatement = function() {
                 var node = this.createNode();
@@ -41660,7 +41660,7 @@ var require_esprima = __commonJS({
                 this.expectKeyword("do");
                 var previousInIteration = this.context.inIteration;
                 this.context.inIteration = true;
-                var body = this.parseStatement();
+                var body2 = this.parseStatement();
                 this.context.inIteration = previousInIteration;
                 this.expectKeyword("while");
                 this.expect("(");
@@ -41673,25 +41673,25 @@ var require_esprima = __commonJS({
                     this.nextToken();
                   }
                 }
-                return this.finalize(node, new Node.DoWhileStatement(body, test));
+                return this.finalize(node, new Node.DoWhileStatement(body2, test));
               };
               Parser2.prototype.parseWhileStatement = function() {
                 var node = this.createNode();
-                var body;
+                var body2;
                 this.expectKeyword("while");
                 this.expect("(");
                 var test = this.parseExpression();
                 if (!this.match(")") && this.config.tolerant) {
                   this.tolerateUnexpectedToken(this.nextToken());
-                  body = this.finalize(this.createNode(), new Node.EmptyStatement());
+                  body2 = this.finalize(this.createNode(), new Node.EmptyStatement());
                 } else {
                   this.expect(")");
                   var previousInIteration = this.context.inIteration;
                   this.context.inIteration = true;
-                  body = this.parseStatement();
+                  body2 = this.parseStatement();
                   this.context.inIteration = previousInIteration;
                 }
-                return this.finalize(node, new Node.WhileStatement(test, body));
+                return this.finalize(node, new Node.WhileStatement(test, body2));
               };
               Parser2.prototype.parseForStatement = function() {
                 var init = null;
@@ -41812,18 +41812,18 @@ var require_esprima = __commonJS({
                     update = this.parseExpression();
                   }
                 }
-                var body;
+                var body2;
                 if (!this.match(")") && this.config.tolerant) {
                   this.tolerateUnexpectedToken(this.nextToken());
-                  body = this.finalize(this.createNode(), new Node.EmptyStatement());
+                  body2 = this.finalize(this.createNode(), new Node.EmptyStatement());
                 } else {
                   this.expect(")");
                   var previousInIteration = this.context.inIteration;
                   this.context.inIteration = true;
-                  body = this.isolateCoverGrammar(this.parseStatement);
+                  body2 = this.isolateCoverGrammar(this.parseStatement);
                   this.context.inIteration = previousInIteration;
                 }
-                return typeof left === "undefined" ? this.finalize(node, new Node.ForStatement(init, test, update, body)) : forIn ? this.finalize(node, new Node.ForInStatement(left, right, body)) : this.finalize(node, new Node.ForOfStatement(left, right, body));
+                return typeof left === "undefined" ? this.finalize(node, new Node.ForStatement(init, test, update, body2)) : forIn ? this.finalize(node, new Node.ForInStatement(left, right, body2)) : this.finalize(node, new Node.ForOfStatement(left, right, body2));
               };
               Parser2.prototype.parseContinueStatement = function() {
                 var node = this.createNode();
@@ -41877,18 +41877,18 @@ var require_esprima = __commonJS({
                   this.tolerateError(messages_1.Messages.StrictModeWith);
                 }
                 var node = this.createNode();
-                var body;
+                var body2;
                 this.expectKeyword("with");
                 this.expect("(");
                 var object = this.parseExpression();
                 if (!this.match(")") && this.config.tolerant) {
                   this.tolerateUnexpectedToken(this.nextToken());
-                  body = this.finalize(this.createNode(), new Node.EmptyStatement());
+                  body2 = this.finalize(this.createNode(), new Node.EmptyStatement());
                 } else {
                   this.expect(")");
-                  body = this.parseStatement();
+                  body2 = this.parseStatement();
                 }
-                return this.finalize(node, new Node.WithStatement(object, body));
+                return this.finalize(node, new Node.WithStatement(object, body2));
               };
               Parser2.prototype.parseSwitchCase = function() {
                 var node = this.createNode();
@@ -41950,10 +41950,10 @@ var require_esprima = __commonJS({
                     this.throwError(messages_1.Messages.Redeclaration, "Label", id.name);
                   }
                   this.context.labelSet[key] = true;
-                  var body = void 0;
+                  var body2 = void 0;
                   if (this.matchKeyword("class")) {
                     this.tolerateUnexpectedToken(this.lookahead);
-                    body = this.parseClassDeclaration();
+                    body2 = this.parseClassDeclaration();
                   } else if (this.matchKeyword("function")) {
                     var token = this.lookahead;
                     var declaration = this.parseFunctionDeclaration();
@@ -41962,12 +41962,12 @@ var require_esprima = __commonJS({
                     } else if (declaration.generator) {
                       this.tolerateUnexpectedToken(token, messages_1.Messages.GeneratorInLegacyContext);
                     }
-                    body = declaration;
+                    body2 = declaration;
                   } else {
-                    body = this.parseStatement();
+                    body2 = this.parseStatement();
                   }
                   delete this.context.labelSet[key];
-                  statement = new Node.LabeledStatement(id, body);
+                  statement = new Node.LabeledStatement(id, body2);
                 } else {
                   this.consumeSemicolon();
                   statement = new Node.ExpressionStatement(expr);
@@ -42007,8 +42007,8 @@ var require_esprima = __commonJS({
                   }
                 }
                 this.expect(")");
-                var body = this.parseBlock();
-                return this.finalize(node, new Node.CatchClause(param, body));
+                var body2 = this.parseBlock();
+                return this.finalize(node, new Node.CatchClause(param, body2));
               };
               Parser2.prototype.parseFinallyClause = function() {
                 this.expectKeyword("finally");
@@ -42114,7 +42114,7 @@ var require_esprima = __commonJS({
               Parser2.prototype.parseFunctionSourceElements = function() {
                 var node = this.createNode();
                 this.expect("{");
-                var body = this.parseDirectivePrologues();
+                var body2 = this.parseDirectivePrologues();
                 var previousLabelSet = this.context.labelSet;
                 var previousInIteration = this.context.inIteration;
                 var previousInSwitch = this.context.inSwitch;
@@ -42127,14 +42127,14 @@ var require_esprima = __commonJS({
                   if (this.match("}")) {
                     break;
                   }
-                  body.push(this.parseStatementListItem());
+                  body2.push(this.parseStatementListItem());
                 }
                 this.expect("}");
                 this.context.labelSet = previousLabelSet;
                 this.context.inIteration = previousInIteration;
                 this.context.inSwitch = previousInSwitch;
                 this.context.inFunctionBody = previousInFunctionBody;
-                return this.finalize(node, new Node.BlockStatement(body));
+                return this.finalize(node, new Node.BlockStatement(body2));
               };
               Parser2.prototype.validateParam = function(options2, param, name) {
                 var key = "$" + name;
@@ -42272,7 +42272,7 @@ var require_esprima = __commonJS({
                 var previousStrict = this.context.strict;
                 var previousAllowStrictDirective = this.context.allowStrictDirective;
                 this.context.allowStrictDirective = formalParameters.simple;
-                var body = this.parseFunctionSourceElements();
+                var body2 = this.parseFunctionSourceElements();
                 if (this.context.strict && firstRestricted) {
                   this.throwUnexpectedToken(firstRestricted, message);
                 }
@@ -42283,7 +42283,7 @@ var require_esprima = __commonJS({
                 this.context.allowStrictDirective = previousAllowStrictDirective;
                 this.context.await = previousAllowAwait;
                 this.context.allowYield = previousAllowYield;
-                return isAsync ? this.finalize(node, new Node.AsyncFunctionDeclaration(id, params, body)) : this.finalize(node, new Node.FunctionDeclaration(id, params, body, isGenerator));
+                return isAsync ? this.finalize(node, new Node.AsyncFunctionDeclaration(id, params, body2)) : this.finalize(node, new Node.FunctionDeclaration(id, params, body2, isGenerator));
               };
               Parser2.prototype.parseFunctionExpression = function() {
                 var node = this.createNode();
@@ -42330,7 +42330,7 @@ var require_esprima = __commonJS({
                 var previousStrict = this.context.strict;
                 var previousAllowStrictDirective = this.context.allowStrictDirective;
                 this.context.allowStrictDirective = formalParameters.simple;
-                var body = this.parseFunctionSourceElements();
+                var body2 = this.parseFunctionSourceElements();
                 if (this.context.strict && firstRestricted) {
                   this.throwUnexpectedToken(firstRestricted, message);
                 }
@@ -42341,7 +42341,7 @@ var require_esprima = __commonJS({
                 this.context.allowStrictDirective = previousAllowStrictDirective;
                 this.context.await = previousAllowAwait;
                 this.context.allowYield = previousAllowYield;
-                return isAsync ? this.finalize(node, new Node.AsyncFunctionExpression(id, params, body)) : this.finalize(node, new Node.FunctionExpression(id, params, body, isGenerator));
+                return isAsync ? this.finalize(node, new Node.AsyncFunctionExpression(id, params, body2)) : this.finalize(node, new Node.FunctionExpression(id, params, body2, isGenerator));
               };
               Parser2.prototype.parseDirective = function() {
                 var token = this.lookahead;
@@ -42353,14 +42353,14 @@ var require_esprima = __commonJS({
               };
               Parser2.prototype.parseDirectivePrologues = function() {
                 var firstRestricted = null;
-                var body = [];
+                var body2 = [];
                 while (true) {
                   var token = this.lookahead;
                   if (token.type !== 8) {
                     break;
                   }
                   var statement = this.parseDirective();
-                  body.push(statement);
+                  body2.push(statement);
                   var directive = statement.directive;
                   if (typeof directive !== "string") {
                     break;
@@ -42379,7 +42379,7 @@ var require_esprima = __commonJS({
                     }
                   }
                 }
-                return body;
+                return body2;
               };
               Parser2.prototype.qualifiedPropertyName = function(token) {
                 switch (token.type) {
@@ -42559,18 +42559,18 @@ var require_esprima = __commonJS({
                 return this.finalize(node, new Node.MethodDefinition(key, computed, value, kind, isStatic));
               };
               Parser2.prototype.parseClassElementList = function() {
-                var body = [];
+                var body2 = [];
                 var hasConstructor = { value: false };
                 this.expect("{");
                 while (!this.match("}")) {
                   if (this.match(";")) {
                     this.nextToken();
                   } else {
-                    body.push(this.parseClassElement(hasConstructor));
+                    body2.push(this.parseClassElement(hasConstructor));
                   }
                 }
                 this.expect("}");
-                return body;
+                return body2;
               };
               Parser2.prototype.parseClassBody = function() {
                 var node = this.createNode();
@@ -42612,19 +42612,19 @@ var require_esprima = __commonJS({
                 this.context.isModule = true;
                 this.scanner.isModule = true;
                 var node = this.createNode();
-                var body = this.parseDirectivePrologues();
+                var body2 = this.parseDirectivePrologues();
                 while (this.lookahead.type !== 2) {
-                  body.push(this.parseStatementListItem());
+                  body2.push(this.parseStatementListItem());
                 }
-                return this.finalize(node, new Node.Module(body));
+                return this.finalize(node, new Node.Module(body2));
               };
               Parser2.prototype.parseScript = function() {
                 var node = this.createNode();
-                var body = this.parseDirectivePrologues();
+                var body2 = this.parseDirectivePrologues();
                 while (this.lookahead.type !== 2) {
-                  body.push(this.parseStatementListItem());
+                  body2.push(this.parseStatementListItem());
                 }
-                return this.finalize(node, new Node.Script(body));
+                return this.finalize(node, new Node.Script(body2));
               };
               Parser2.prototype.parseModuleSpecifier = function() {
                 var node = this.createNode();
@@ -45120,28 +45120,28 @@ var require_types = __commonJS({
         };
         builders[wrapperName] = builder;
       }
-      function populateSupertypeList(typeName, list2) {
-        list2.length = 0;
-        list2.push(typeName);
+      function populateSupertypeList(typeName, list3) {
+        list3.length = 0;
+        list3.push(typeName);
         var lastSeen = /* @__PURE__ */ Object.create(null);
-        for (var pos = 0; pos < list2.length; ++pos) {
-          typeName = list2[pos];
+        for (var pos = 0; pos < list3.length; ++pos) {
+          typeName = list3[pos];
           var d = defCache[typeName];
           if (d.finalized !== true) {
             throw new Error("");
           }
           if (hasOwn.call(lastSeen, typeName)) {
-            delete list2[lastSeen[typeName]];
+            delete list3[lastSeen[typeName]];
           }
           lastSeen[typeName] = pos;
-          list2.push.apply(list2, d.baseNames);
+          list3.push.apply(list3, d.baseNames);
         }
-        for (var to = 0, from = to, len = list2.length; from < len; ++from) {
-          if (hasOwn.call(list2, from)) {
-            list2[to++] = list2[from];
+        for (var to = 0, from = to, len = list3.length; from < len; ++from) {
+          if (hasOwn.call(list3, from)) {
+            list3[to++] = list3[from];
           }
         }
-        list2.length = to;
+        list3.length = to;
       }
       function extend(into, from) {
         Object.keys(from).forEach(function(name) {
@@ -59642,9 +59642,9 @@ var LarkCli = class {
 };
 function matrixRows(page) {
   const fields = page?.fields ?? [];
-  const ids = page?.record_id_list ?? [];
+  const ids2 = page?.record_id_list ?? [];
   return (page?.data ?? []).map((cells, i) => {
-    const row = { record_id: ids[i] };
+    const row = { record_id: ids2[i] };
     fields.forEach((f, j) => row[f] = cells[j] ?? null);
     return row;
   });
@@ -59675,11 +59675,11 @@ var Base = class {
     return this.lark.records(table, { ...opts, baseToken: this.token });
   }
   /** The records with these ids, 100 per call. Ids that no longer exist are simply missing from the result. */
-  async get(table, ids, fields = []) {
+  async get(table, ids2, fields = []) {
     const rows = [];
-    for (let i = 0; i < ids.length; i += 100) {
+    for (let i = 0; i < ids2.length; i += 100) {
       const args = ["base", "+record-get", "--base-token", this.token, "--table-id", table, "--format", "json", "--as", "user"];
-      for (const id of ids.slice(i, i + 100)) args.push("--record-id", id);
+      for (const id of ids2.slice(i, i + 100)) args.push("--record-id", id);
       for (const f of fields) args.push("--field-id", f);
       rows.push(...matrixRows(await this.lark.json(args)));
     }
@@ -59721,7 +59721,7 @@ var Base = class {
     return found;
   }
   async create(table, rows) {
-    const ids = [];
+    const ids2 = [];
     for (let i = 0; i < rows.length; i += 200) {
       const data = await this.lark.json([
         "base",
@@ -59736,9 +59736,9 @@ var Base = class {
         "user"
       ]);
       noIgnored(table, data);
-      ids.push(...recordIds(data));
+      ids2.push(...recordIds(data));
     }
-    return ids;
+    return ids2;
   }
   async update(table, changes) {
     const entries = Object.entries(changes);
@@ -59764,8 +59764,8 @@ function noIgnored(table, data) {
   if (ignored.length) throw new Error(`${table} \u6709\u5B57\u6BB5\u6CA1\u5199\u8FDB\u53BB\uFF1A${ignored.map((f) => `${f.name}\uFF08${f.reason}\uFF09`).join("\uFF1B")}`);
 }
 function recordIds(data) {
-  const list2 = data?.record_id_list ?? data?.record_ids ?? data?.records?.map((r) => r.record_id) ?? [];
-  return list2.map(String);
+  const list3 = data?.record_id_list ?? data?.record_ids ?? data?.records?.map((r) => r.record_id) ?? [];
+  return list3.map(String);
 }
 function text(v) {
   if (v == null) return "";
@@ -60114,8 +60114,8 @@ var Mail = class {
   }
   /** The newest message this address sent to the mailbox, to reply in the same thread. */
   async latestFrom(mailbox, address) {
-    const list2 = await this.list(mailbox, { from: [address] }, 5);
-    return list2.sort((a, b) => (cellTime(b.date) ?? 0) - (cellTime(a.date) ?? 0))[0];
+    const list3 = await this.list(mailbox, { from: [address] }, 5);
+    return list3.sort((a, b) => (cellTime(b.date) ?? 0) - (cellTime(a.date) ?? 0))[0];
   }
   async send(o) {
     const args = o.replyTo ? ["mail", "+reply", "--message-id", o.replyTo] : ["mail", "+send", "--to", o.to, "--subject", o.subject];
@@ -60156,11 +60156,11 @@ function addressOf(from) {
   const m = from.match(/<([^>]+)>/);
   return (m ? m[1] : from).trim().toLowerCase();
 }
-function toHtml(body) {
-  if (/<(p|div|br|ul|ol|table)\b/i.test(body)) return body;
+function toHtml(body2) {
+  if (/<(p|div|br|ul|ol|table)\b/i.test(body2)) return body2;
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const links = (s) => s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
-  return body.trim().split(/\n{2,}/).map((para) => `<p>${links(esc(para)).replace(/\n/g, "<br>")}</p>`).join("\n");
+  return body2.trim().split(/\n{2,}/).map((para) => `<p>${links(esc(para)).replace(/\n/g, "<br>")}</p>`).join("\n");
 }
 function replySubject(subject) {
   const prefix = /^\s*(re|aw|sv|回复|回覆|答复)\s*[:：]\s*/i;
@@ -60854,17 +60854,17 @@ var DEFAULT_PARAMS = {
 };
 async function discover(api, p, skip = /* @__PURE__ */ new Set()) {
   const given = p.handles.filter(Boolean).map((h) => new Creator(p.platform, h, { discoveredBy: "input" }));
-  const drop = (cs) => dedupe(cs).filter((c) => !skip.has(normalizeHandle(c.handle)));
+  const drop2 = (cs) => dedupe(cs).filter((c) => !skip.has(normalizeHandle(c.handle)));
   const kept = (cs) => cs.filter((c) => keep(c, p)[0]);
   let creators = [];
   let stoppedEarly = "";
   try {
     if (p.platform === "instagram") {
-      creators = drop([...given, ...await igDiscover(api, p.seeds, p.keywords, p.perSeed, p.perKeyword)]);
+      creators = drop2([...given, ...await igDiscover(api, p.seeds, p.keywords, p.perSeed, p.perKeyword)]);
       await igLookup(api, creators);
       if (p.linkPages) await linkPagesLookup(api, kept(creators));
     } else if (p.platform === "youtube") {
-      creators = drop([...given, ...await ytDiscover(
+      creators = drop2([...given, ...await ytDiscover(
         api,
         p.keywords,
         p.perKeyword,
@@ -60877,7 +60877,7 @@ async function discover(api, p, skip = /* @__PURE__ */ new Set()) {
       if (p.linkPages) await linkPagesLookup(api, kept(creators));
       if (p.youtubeHidden) await ytHiddenLookup(api, kept(creators));
     } else {
-      creators = drop([...given, ...await ttDiscover(api, p.keywords, p.perKeyword)]);
+      creators = drop2([...given, ...await ttDiscover(api, p.keywords, p.perKeyword)]);
       await ttLookup(api, creators);
       if (p.linkPages) await linkPagesLookup(api, kept(creators));
     }
@@ -61068,9 +61068,9 @@ function buildSnapshot(profiles, followups) {
   }
   for (const f of followups) {
     for (const e of followupEmails(s, f)) {
-      const list2 = s.followupsByEmail.get(e) ?? [];
-      list2.push(f.record_id);
-      s.followupsByEmail.set(e, list2);
+      const list3 = s.followupsByEmail.get(e) ?? [];
+      list3.push(f.record_id);
+      s.followupsByEmail.set(e, list3);
     }
   }
   return s;
@@ -61182,10 +61182,10 @@ async function find(ctx, o) {
       \u5907\u6CE8: withBio(`kol find ${o.job}\uFF1A${c.discoveredBy}${c.emailSource ? `\uFF0C\u90AE\u7BB1\u6765\u81EA ${c.emailSource}` : ""}`, c.bio)
     });
   }
-  const ids = rows.length ? await ctx.base.create(t.profiles, rows) : [];
+  const ids2 = rows.length ? await ctx.base.create(t.profiles, rows) : [];
   ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u627E\u4EBA\u5165\u5E93 ${rows.length} \u4EBA\uFF08${o.platform}\uFF09`, detail: `\u6279\u6B21 ${o.batch}\uFF0C\u82B1\u8D39\u7EA6 $${runner.spent.toFixed(2)}` });
   return {
-    \u65B0\u5165\u5E93: ids.length,
+    \u65B0\u5165\u5E93: ids2.length,
     \u5176\u4E2D\u6709\u90AE\u7BB1: rows.filter((r) => r["\u516C\u5F00\u90AE\u7BB1"]).length,
     \u8DF3\u8FC7_\u5DF2\u5728\u5E93\u91CC\u6216\u90AE\u7BB1\u91CD\u590D: dupEmail,
     \u8DF3\u8FC7_\u4E0D\u7B26\u5408\u6761\u4EF6: filtered,
@@ -61298,11 +61298,11 @@ var TrialCodeRefused = class extends Error {
   }
   code;
 };
-async function writeTrial(url, key, path, body, fetchImpl) {
+async function writeTrial(url, key, path, body2, fetchImpl) {
   const res = await fetchImpl(`${url.replace(/\/+$/, "")}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body2)
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) throw new TrialCodeRefused("UNAUTHORIZED", "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u62D2\u7EDD\u4E86\u4F53\u9A8C\u7801\u5199\u5BC6\u94A5\uFF08401\uFF09\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u786E\u8BA4\u540E\u7528 kol project set-trial-key \u91CD\u65B0\u4FDD\u5B58");
@@ -61310,11 +61310,11 @@ async function writeTrial(url, key, path, body, fetchImpl) {
   if (!res.ok) throw new TrialCodeRefused(String(data.error ?? res.status), String(data.message ?? `\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u51FA\u9519\uFF08${res.status}\uFF09`));
   return data;
 }
-function createTrialCodeRemote(url, key, body, fetchImpl = fetch) {
-  return writeTrial(url, key, "/trial-codes", body, fetchImpl);
+function createTrialCodeRemote(url, key, body2, fetchImpl = fetch) {
+  return writeTrial(url, key, "/trial-codes", body2, fetchImpl);
 }
-function extendTrialCodeRemote(url, key, code, body, fetchImpl = fetch) {
-  return writeTrial(url, key, `/trial-codes/${encodeURIComponent(code)}/extend`, body, fetchImpl);
+function extendTrialCodeRemote(url, key, code, body2, fetchImpl = fetch) {
+  return writeTrial(url, key, `/trial-codes/${encodeURIComponent(code)}/extend`, body2, fetchImpl);
 }
 async function checkTrialName(ctx, code, fetchImpl = fetch) {
   const key = listProjects().find((p) => p.name === ctx.cfg.project)?.dataApiKey;
@@ -61388,22 +61388,22 @@ function marketFor(cfg, profileMarket) {
   const pairs = cfg.partner.markets;
   return pairs.find(([from]) => from === profileMarket)?.[1] ?? pairs.find(([from]) => from === "\u5176\u4ED6")?.[1] ?? "";
 }
-function partnerPlan(cfg, review, followup, profile, suggested, name) {
+function partnerPlan(cfg, review2, followup, profile, suggested, name) {
   const existing = text(followup?.["\u6D3B\u52A8\u7801"]);
   if (existing) return `\u8FD9\u4F4D KOL \u5DF2\u7ECF\u6709\u6D3B\u52A8\u7801\u300C${existing}\u300D\uFF0C\u4E00\u4F4D KOL \u53EA\u5F00\u4E00\u4E2A`;
-  const code = text(review["\u6D3B\u52A8\u7801"]) || suggested;
+  const code = text(review2["\u6D3B\u52A8\u7801"]) || suggested;
   if (!CODE_RULE.test(code)) return code ? `\u6D3B\u52A8\u7801\u300C${code}\u300D\u53EA\u80FD\u7528\u5B57\u6BCD\u3001\u6570\u5B57\u3001_ \u548C -\uFF0C2 \u5230 64 \u4E2A\u5B57` : "\u6CA1\u5199\u6D3B\u52A8\u7801\uFF0C\u4E5F\u6CA1\u6CD5\u4ECE\u8D26\u53F7\u63A8\u51FA\u4E00\u4E2A";
-  const market = text(review["\u9500\u552E\u5E02\u573A"]) || marketFor(cfg, option(profile?.["\u5E02\u573A"]));
+  const market = text(review2["\u9500\u552E\u5E02\u573A"]) || marketFor(cfg, option(profile?.["\u5E02\u573A"]));
   if (!market) return `\u6863\u6848\u7684\u5E02\u573A\u300C${option(profile?.["\u5E02\u573A"]) || "\u7A7A"}\u300D\u5728\u300C\u8BBE\u7F6E\u300D\u7684\u6D3B\u52A8\u7801\u5E02\u573A\u91CC\u6CA1\u6709\u5BF9\u5E94\uFF0C\u8BF7\u5728\u5BA1\u6838\u9879\u586B\u9500\u552E\u5E02\u573A`;
-  const percentOff = Number(review["\u7C89\u4E1D\u6298\u6263"]) || cfg.partner.percentOff;
+  const percentOff = Number(review2["\u7C89\u4E1D\u6298\u6263"]) || cfg.partner.percentOff;
   if (!Number.isInteger(percentOff) || percentOff < 1 || percentOff > 90) return `\u7C89\u4E1D\u6298\u6263 ${percentOff}% \u4E0D\u5BF9\uFF0C\u8981 1\u201390 \u7684\u6574\u6570`;
   return {
     action: "\u5F00\u6D3B\u52A8\u7801",
     code,
     market,
     percentOff,
-    partnerName: text(review["\u5408\u4F5C\u9875\u540D\u79F0"]) || name,
-    contact: emailsIn(review["\u6536\u4EF6\u4EBA"])[0] ?? ""
+    partnerName: text(review2["\u5408\u4F5C\u9875\u540D\u79F0"]) || name,
+    contact: emailsIn(review2["\u6536\u4EF6\u4EBA"])[0] ?? ""
   };
 }
 function discountWords(percentOff) {
@@ -61422,11 +61422,11 @@ function partnerValues(code, refLink, ledgerLink, percentOff) {
     "{\u7C89\u4E1D\u6298\u6263}": discountWords(percentOff)
   };
 }
-async function createPartnerCodeRemote(url, key, body, fetchImpl = fetch) {
+async function createPartnerCodeRemote(url, key, body2, fetchImpl = fetch) {
   const res = await fetchImpl(`${url.replace(/\/+$/, "")}/partner-codes`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body2)
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401) throw new TrialCodeRefused("UNAUTHORIZED", "\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u62D2\u7EDD\u4E86\u6D3B\u52A8\u7801\u5199\u5BC6\u94A5\uFF08401\uFF09\u3002\u8BF7\u5411\u9879\u76EE\u8D1F\u8D23\u4EBA\u786E\u8BA4\u540E\u7528 kol project set-partner-key \u91CD\u65B0\u4FDD\u5B58");
@@ -61434,16 +61434,16 @@ async function createPartnerCodeRemote(url, key, body, fetchImpl = fetch) {
   if (!res.ok) throw new TrialCodeRefused(String(data.error ?? res.status), String(data.message ?? `\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u51FA\u9519\uFF08${res.status}\uFF09`));
   return data;
 }
-function preparePartner(ctx, plan, review, followupId) {
+function preparePartner(ctx, plan, review2, followupId) {
   return async () => {
-    const key = `partner:${review.record_id}`;
+    const key = `partner:${review2.record_id}`;
     let done = ctx.journal.get(key)?.data;
     if (!done) {
       const project = listProjects().find((p) => p.name === ctx.cfg.project);
       if (!ctx.cfg.dataApi) throw new TrialCodeRefused("NO_API", "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\uFF0C\u6CA1\u6CD5\u5F00\u6D3B\u52A8\u7801");
       if (!project?.partnerKey) throw new TrialCodeRefused("NO_KEY", `\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u9879\u76EE\u300C${ctx.cfg.project}\u300D\u7684\u6D3B\u52A8\u7801\u5199\u5BC6\u94A5\uFF0C\u8BF7\u8FD0\u884C kol project set-partner-key`);
-      const { action, ...body } = plan;
-      const r = await createPartnerCodeRemote(ctx.cfg.dataApi, project.partnerKey, { ...body, followupId, operator: ctx.me.name || ctx.me.id });
+      const { action, ...body2 } = plan;
+      const r = await createPartnerCodeRemote(ctx.cfg.dataApi, project.partnerKey, { ...body2, followupId, operator: ctx.me.name || ctx.me.id });
       if (!r.code?.refLink) throw new TrialCodeRefused("NO_LINK", "\u6D3B\u52A8\u7801\u5F00\u597D\u4E86\uFF0C\u4F46\u63A5\u53E3\u6CA1\u7ED9\u4E13\u5C5E\u8FDE\u7ED3\uFF0C\u8FD9\u5C01\u4FE1\u5148\u4E0D\u53D1\uFF1B\u8BF7\u5230\u9879\u76EE\u540E\u53F0\u770B\u8FD9\u4E2A\u6D3B\u52A8");
       done = { code: r.code.code, refLink: r.code.refLink, ledgerLink: r.code.ledgerLink ?? "", percentOff: r.code.percentOff ?? plan.percentOff };
       ctx.journal.mark(key, "prepared", void 0, done);
@@ -61472,18 +61472,18 @@ function suggestTrialCode(profile) {
   const name = raw.replace(/^@+/, "").replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^[_-]+/, "").slice(0, 64);
   return CODE_RULE2.test(name) ? name : "";
 }
-function trialPlan(cfg, review, followup, profile) {
-  const action = option(review["\u4F53\u9A8C\u7801\u52A8\u4F5C"]);
+function trialPlan(cfg, review2, followup, profile) {
+  const action = option(review2["\u4F53\u9A8C\u7801\u52A8\u4F5C"]);
   if (!action) return null;
   if (!TRIAL_ACTIONS.includes(action)) return `\u4F53\u9A8C\u7801\u52A8\u4F5C\u300C${action}\u300D\u770B\u4E0D\u61C2\uFF0C\u53EA\u80FD\u662F ${TRIAL_ACTIONS.join("\u3001")}`;
   if (action === "\u5F00\u6D3B\u52A8\u7801") {
     const name = text(followup?.["\u8D26\u53F7\u540D\u79F0"]) || text(profile?.["\u8D26\u53F7\u540D\u79F0"]) || text(profile?.["\u8D26\u53F7"]);
-    return partnerPlan(cfg, review, followup, profile, suggestTrialCode(profile), name);
+    return partnerPlan(cfg, review2, followup, profile, suggestTrialCode(profile), name);
   }
-  const code = text(review["\u4F53\u9A8C\u7801"]) || (action === "\u5EF6\u671F" ? text(followup?.["\u4F53\u9A8C\u7801"]) : suggestTrialCode(profile));
+  const code = text(review2["\u4F53\u9A8C\u7801"]) || (action === "\u5EF6\u671F" ? text(followup?.["\u4F53\u9A8C\u7801"]) : suggestTrialCode(profile));
   if (!CODE_RULE2.test(code)) return code ? `\u4F53\u9A8C\u7801\u300C${code}\u300D\u53EA\u80FD\u7528\u5B57\u6BCD\u3001\u6570\u5B57\u3001_ \u548C -\uFF0C2 \u5230 64 \u4E2A\u5B57` : "\u6CA1\u5199\u4F53\u9A8C\u7801\uFF0C\u4E5F\u6CA1\u6CD5\u4ECE\u8D26\u53F7\u63A8\u51FA\u4E00\u4E2A";
-  const maxUses = Number(review["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses;
-  const days = Number(review["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days;
+  const maxUses = Number(review2["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses;
+  const days = Number(review2["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days;
   if (maxUses < 1 || maxUses > MAX_USES) return `\u4F53\u9A8C\u6B21\u6570 ${maxUses} \u8D85\u51FA 1\u2013${MAX_USES}`;
   if (days < 1 || days > MAX_DAYS) return `\u4F53\u9A8C\u5929\u6570 ${days} \u8D85\u51FA 1\u2013${MAX_DAYS}`;
   return { action, code, maxUses, days };
@@ -61512,9 +61512,9 @@ function missingPlaceholder(plan, draft) {
 function fillTrial(s, values) {
   return Object.entries(values).reduce((acc, [k, v]) => acc.split(k).join(v), s);
 }
-function prepareTrial(ctx, plan, review, kolName, followupId) {
+function prepareTrial(ctx, plan, review2, kolName, followupId) {
   return async () => {
-    const key = `trial:${review.record_id}`;
+    const key = `trial:${review2.record_id}`;
     let done = ctx.journal.get(key)?.data;
     if (!done) {
       const project = listProjects().find((p) => p.name === ctx.cfg.project);
@@ -61600,6 +61600,26 @@ async function sendBack(ctx, reviewId, why) {
     \u6267\u884C\u7ED3\u679C: `${stamp(Date.now(), ctx.cfg.timezone)} ${why}`.slice(0, 2e3)
   } });
 }
+async function approveInConsole(ctx, reviewId, edits = {}) {
+  const t = ctx.cfg.tables;
+  const [r] = await ctx.base.get(t.reviews, [reviewId]);
+  if (!r) throw new Error("\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E00\u6761");
+  const state = option(r["\u72B6\u6001"]);
+  if (!["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"].includes(state)) throw new Error(`\u8FD9\u4E00\u6761\u73B0\u5728\u662F\u300C${state}\u300D\uFF0C\u4E0D\u80FD\u518D\u540C\u610F`);
+  const merged = { ...r, ...edits };
+  const fields = {
+    ...edits,
+    \u5904\u7406: ["\u53D1\uFF0F\u540C\u610F"],
+    \u5BA1\u6838\u7ED3\u679C: null,
+    \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"],
+    \u540C\u610F\u6765\u6E90: CONSOLE_SOURCE,
+    \u540C\u610F\u4EBA: ctx.me.name || ctx.me.id,
+    \u540C\u610F\u65F6\u95F4: stamp(Date.now(), ctx.cfg.timezone),
+    \u5185\u5BB9\u6307\u7EB9: fingerprint(merged)
+  };
+  await ctx.base.update(t.reviews, { [reviewId]: fields });
+  return { ...merged, ...fields };
+}
 var OPEN = ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"];
 var REVIEW_FIELDS = ["\u5BA1\u6838\u9879", "\u7C7B\u578B", "\u72B6\u6001", "\u5904\u7406", "\u5BA1\u6838\u7ED3\u679C", "KOL", "\u4F60\u7684\u610F\u89C1", "\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE", "\u90AE\u4EF6\u8349\u7A3F", "\u53D1\u9001\u6E20\u9053", "\u4F53\u9A8C\u7801\u52A8\u4F5C", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u6B21\u6570", "\u4F53\u9A8C\u5929\u6570", "\u6D3B\u52A8\u7801", "\u7C89\u4E1D\u6298\u6263", "\u9500\u552E\u5E02\u573A", "\u5408\u4F5C\u9875\u540D\u79F0"];
 async function openReviews(ctx) {
@@ -61656,12 +61676,12 @@ async function toRevise(ctx) {
   };
 }
 async function applyRevisions(ctx, o) {
-  const list2 = JSON.parse(readFileSync6(o.file, "utf8"));
+  const list3 = JSON.parse(readFileSync6(o.file, "utf8"));
   const s = await loadSnapshot(ctx.base, ctx.cfg);
   const open = new Map((await openReviews(ctx)).map((r) => [r.record_id, r]));
   const errors = [];
   const changes = {};
-  for (const x of list2) {
+  for (const x of list3) {
     const r = open.get(x.review);
     if (!r || reviewState(r) !== "revise") {
       errors.push(`${x.review}\uFF1A\u4E0D\u662F\u5F85\u4FEE\u6539\u7684\u5BA1\u6838\u9879`);
@@ -61683,11 +61703,11 @@ async function applyRevisions(ctx, o) {
     changes[x.review] = { \u90AE\u4EF6\u8349\u7A3F: draft, \u5904\u7406: null, \u5BA1\u6838\u7ED3\u679C: null, \u4F60\u7684\u610F\u89C1: "", \u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE: history.slice(0, 5e3), \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"] };
   }
   if (errors.length) return { \u5199\u5165: 0, \u95EE\u9898: errors, \u8BF4\u660E: "\u6709\u95EE\u9898\u7684\u6539\u597D\u4E4B\u524D\uFF0C\u4E00\u6761\u90FD\u6CA1\u5199" };
-  if (!o.dryRun && list2.length) {
+  if (!o.dryRun && list3.length) {
     await ctx.base.update(ctx.cfg.tables.reviews, changes);
-    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u6309\u5BA1\u6838\u610F\u89C1\u91CD\u5199 ${list2.length} \u6761` });
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u6309\u5BA1\u6838\u610F\u89C1\u91CD\u5199 ${list3.length} \u6761` });
   }
-  return { \u5199\u5165: o.dryRun ? 0 : list2.length, \u8BD5\u8DD1: o.dryRun || void 0 };
+  return { \u5199\u5165: o.dryRun ? 0 : list3.length, \u8BD5\u8DD1: o.dryRun || void 0 };
 }
 
 // src/kolops/crossproject.ts
@@ -61731,16 +61751,16 @@ var QUOTE_MARKERS = [
   /-{2,}\s*(原始邮件|原始郵件|Original Message)/i,
   /\n\s*>/
 ];
-function ownWords(body) {
-  let cut = body.length;
+function ownWords(body2) {
+  let cut = body2.length;
   for (const re of QUOTE_MARKERS) {
-    const m = re.exec(body);
+    const m = re.exec(body2);
     if (!m || m.index >= cut) continue;
-    const line = body.lastIndexOf("\n", m.index);
-    const lead = line >= 0 ? body.slice(line, m.index) : "";
+    const line = body2.lastIndexOf("\n", m.index);
+    const lead = line >= 0 ? body2.slice(line, m.index) : "";
     cut = line >= 0 && lead.length <= 40 && !/[。！？!?，,]/.test(lead) ? line : m.index;
   }
-  return body.slice(0, cut).replace(/\s+/g, " ").trim().slice(0, 1500);
+  return body2.slice(0, cut).replace(/\s+/g, " ").trim().slice(0, 1500);
 }
 async function listInbox(ctx, o) {
   const cfg = ctx.cfg;
@@ -61772,8 +61792,8 @@ async function listInbox(ctx, o) {
     const mb = mailboxFor(cfg, option(r["\u6E20\u9053"]));
     if (mb && text(r["Message ID"])) byMailbox.set(mb.address, [...byMailbox.get(mb.address) ?? [], text(r["Message ID"])]);
   }
-  for (const [mailbox, ids] of byMailbox) {
-    const data = await ctx.base.lark.json(["mail", "+messages", "--mailbox", mailbox, "--message-ids", ids.join(","), "--html=false", "--format", "json", "--as", "user"]);
+  for (const [mailbox, ids2] of byMailbox) {
+    const data = await ctx.base.lark.json(["mail", "+messages", "--mailbox", mailbox, "--message-ids", ids2.join(","), "--html=false", "--format", "json", "--as", "user"]);
     for (const m of data?.messages ?? []) {
       bodies.set(String(m.message_id), { from: addressOf(String(m.head_from?.mail_address ?? "")), text: ownWords(String(m.body_plain_text ?? "")) });
     }
@@ -61824,11 +61844,11 @@ async function listInbox(ctx, o) {
     })
   };
 }
-function closeChanges(review, profile, day2) {
-  const action = option(review["\u53D1\u540E\u52A8\u4F5C"]);
+function closeChanges(review2, profile, day2) {
+  const action = option(review2["\u53D1\u540E\u52A8\u4F5C"]);
   if (!action) return null;
   if (!CLOSE_ACTIONS.includes(action)) return `\u53D1\u540E\u52A8\u4F5C\u300C${action}\u300D\u770B\u4E0D\u61C2\uFF0C\u53EA\u80FD\u662F ${CLOSE_ACTIONS.join(" \u6216 ")}`;
-  const reason = option(review["\u7ED3\u6848\u539F\u56E0"]);
+  const reason = option(review2["\u7ED3\u6848\u539F\u56E0"]);
   if (!reason) return "\u9009\u4E86\u53D1\u540E\u52A8\u4F5C\u4F46\u6CA1\u9009\u7ED3\u6848\u539F\u56E0";
   const followup = { \u9636\u6BB5: ["\u7ED3\u6848"], \u7ED3\u6848\u539F\u56E0: [reason], \u5F53\u524D\u8F6E\u5230\u8C01: ["\u65E0\u9700\u52A8\u4F5C"], \u4E0B\u4E00\u6B65: `${day2} ${action}\uFF08${reason}\uFF09` };
   if (action !== "\u6C38\u4E0D\u8054\u7CFB") return { followup };
@@ -61888,7 +61908,7 @@ async function applyInbox(ctx, o) {
       errors.push(`${where}\uFF08${name}\uFF09\uFF1A\u62D2\u7EDD\u8981\u9009\u53D1\u540E\u52A8\u4F5C\uFF08${CLOSE_ACTIONS.join(" / ")}\uFF09\u548C\u7ED3\u6848\u539F\u56E0\uFF08${CLOSE_REASONS.join(" / ")}\uFF09`);
       continue;
     }
-    const review = {
+    const review2 = {
       \u7C7B\u578B: [replying ? "\u56DE\u590D\u90AE\u4EF6" : "\u51B3\u5B9A"],
       \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"],
       KOL: [{ id: fid }],
@@ -61900,21 +61920,21 @@ async function applyInbox(ctx, o) {
       ...d.after ? { \u53D1\u540E\u52A8\u4F5C: [d.after], \u7ED3\u6848\u539F\u56E0: [d.reason] } : {}
     };
     if (d.trial) {
-      review["\u4F53\u9A8C\u7801\u52A8\u4F5C"] = [d.trial.action];
-      if (d.trial.code) review[d.trial.action === "\u5F00\u6D3B\u52A8\u7801" ? "\u6D3B\u52A8\u7801" : "\u4F53\u9A8C\u7801"] = d.trial.code;
-      if (d.trial.percentOff) review["\u7C89\u4E1D\u6298\u6263"] = d.trial.percentOff;
-      if (d.trial.market) review["\u9500\u552E\u5E02\u573A"] = d.trial.market;
-      if (d.trial.pageName) review["\u5408\u4F5C\u9875\u540D\u79F0"] = d.trial.pageName;
-      if (d.trial.uses) review["\u4F53\u9A8C\u6B21\u6570"] = d.trial.uses;
-      if (d.trial.days) review["\u4F53\u9A8C\u5929\u6570"] = d.trial.days;
-      const plan = trialPlan(cfg, review, f, profileOf(s, f));
+      review2["\u4F53\u9A8C\u7801\u52A8\u4F5C"] = [d.trial.action];
+      if (d.trial.code) review2[d.trial.action === "\u5F00\u6D3B\u52A8\u7801" ? "\u6D3B\u52A8\u7801" : "\u4F53\u9A8C\u7801"] = d.trial.code;
+      if (d.trial.percentOff) review2["\u7C89\u4E1D\u6298\u6263"] = d.trial.percentOff;
+      if (d.trial.market) review2["\u9500\u552E\u5E02\u573A"] = d.trial.market;
+      if (d.trial.pageName) review2["\u5408\u4F5C\u9875\u540D\u79F0"] = d.trial.pageName;
+      if (d.trial.uses) review2["\u4F53\u9A8C\u6B21\u6570"] = d.trial.uses;
+      if (d.trial.days) review2["\u4F53\u9A8C\u5929\u6570"] = d.trial.days;
+      const plan = trialPlan(cfg, review2, f, profileOf(s, f));
       const problem = typeof plan === "string" ? plan : plan ? missingPlaceholder(plan, draft) : "";
       if (problem) {
         errors.push(`${where}\uFF08${name}\uFF09\uFF1A${problem}`);
         continue;
       }
     }
-    reviews.push({ ...review, _contact: d.contact, _from: c });
+    reviews.push({ ...review2, _contact: d.contact, _from: c });
     handOver[fid] = { \u5F53\u524D\u8F6E\u5230\u8C01: ["\u7B49\u4F60\u5BA1\u6838"] };
   }
   if (errors.length) return { \u5199\u5165: 0, \u95EE\u9898: errors, \u8BF4\u660E: "\u6709\u95EE\u9898\u7684\u51B3\u5B9A\u6539\u597D\u4E4B\u524D\uFF0C\u4E00\u6761\u90FD\u6CA1\u5199" };
@@ -62095,8 +62115,8 @@ var ExecutorLock = class _ExecutorLock {
       throw err;
     }
     const now = Date.now();
-    const body = { pid: process.pid, machine: machine().id, what, since: now, beat: now };
-    writeFileSync4(fd, JSON.stringify(body));
+    const body2 = { pid: process.pid, machine: machine().id, what, since: now, beat: now };
+    writeFileSync4(fd, JSON.stringify(body2));
     closeSync(fd);
     return true;
   }
@@ -62379,14 +62399,14 @@ async function sendApproved(ctx, opts) {
       skipped.push({ key: r.record_id, name, reason: `\u53D1\u9001\u6E20\u9053\u300C${channel || "\u672A\u586B"}\u300D\u4E0D\u662F\u63D2\u4EF6\u80FD\u53D1\u7684\u98DE\u4E66\u90AE\u7BB1` });
       continue;
     }
-    const { subject, body } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
+    const { subject, body: body2 } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
     const plan = trialPlan(ctx.cfg, r, f, profileOf(s, f));
     if (typeof plan === "string") {
       skipped.push({ key: r.record_id, name, reason: plan });
       continue;
     }
     const gap = plan ? missingPlaceholder(plan, `${subject}
-${body}`) : "";
+${body2}`) : "";
     if (gap) {
       skipped.push({ key: r.record_id, name, reason: gap });
       continue;
@@ -62398,7 +62418,7 @@ ${body}`) : "";
       recipient: emailsIn(r["\u6536\u4EF6\u4EBA"])[0] ?? "",
       mailbox,
       subject,
-      body,
+      body: body2,
       oncePerDay: false,
       kind: "\u56DE\u590D",
       after: { review: r.record_id, ...close ? { followup: close.followup, profile: close.profile } : {} },
@@ -62663,8 +62683,8 @@ async function lastSync(ctx) {
   if (!starts.length) return now - DEFAULT_DAYS * 864e5;
   return Math.max(Math.max(...starts) - 864e5, now - MAX_DAYS2 * 864e5);
 }
-function pickFollowup(s, ids) {
-  return ids.find((id) => !["\u7ED3\u6848"].includes(option(s.followups.get(id)?.["\u9636\u6BB5"]))) ?? ids[0];
+function pickFollowup(s, ids2) {
+  return ids2.find((id) => !["\u7ED3\u6848"].includes(option(s.followups.get(id)?.["\u9636\u6BB5"]))) ?? ids2[0];
 }
 async function handleBounce(ctx, s, mb, m, when, report, changes, contacts) {
   const data = await ctx.base.lark.json([
@@ -62678,8 +62698,8 @@ async function handleBounce(ctx, s, mb, m, when, report, changes, contacts) {
     "--as",
     "user"
   ]).catch(() => null);
-  const body = JSON.stringify(data ?? "");
-  const failed = [...new Set(emailsIn(body))].filter((addr) => addr !== mb.address && !BOUNCE_SENDER.test(addr) && s.followupsByEmail.has(addr));
+  const body2 = JSON.stringify(data ?? "");
+  const failed = [...new Set(emailsIn(body2))].filter((addr) => addr !== mb.address && !BOUNCE_SENDER.test(addr) && s.followupsByEmail.has(addr));
   contacts.push({
     \u65B9\u5411: ["\u6536\u5230"],
     \u6E20\u9053: [mb.channel],
@@ -62956,13 +62976,13 @@ async function setupBase(base, o) {
     const rows = readdirSync(o.importDir).filter((f) => f.endsWith(".txt")).sort().flatMap((file2) => {
       const name = file2.slice(0, -4);
       if (names.has(name)) return [];
-      const { subject, body } = parseTemplateFile(readFileSync9(join6(o.importDir, file2), "utf8"));
+      const { subject, body: body2 } = parseTemplateFile(readFileSync9(join6(o.importDir, file2), "utf8"));
       report.\u5BFC\u5165\u6A21\u677F.push(name);
       return [{
         \u540D\u79F0: name,
         \u7528\u9014: [purposeOf(name)],
         \u4E3B\u65E8: subject,
-        \u6B63\u6587: body,
+        \u6B63\u6587: body2,
         \u72B6\u6001: ["\u5F85\u5BA1\u6838"],
         ...o.templateLanguage ? { \u8BED\u8A00: o.templateLanguage } : {}
       }];
@@ -63068,7 +63088,7 @@ async function postMetrics(ctx, o) {
   const { due, missed, unsupported } = duePosts(rows, Date.now(), ctx.cfg.timezone);
   const byPlatform = /* @__PURE__ */ new Map();
   for (const d of due) byPlatform.set(d.platform, [...byPlatform.get(d.platform) ?? [], d]);
-  const cost = [...byPlatform].reduce((sum, [p, list2]) => sum + estimate(ACTOR_FOR[p], new Set(list2.map((d) => d.url)).size), 0);
+  const cost = [...byPlatform].reduce((sum, [p, list3]) => sum + estimate(ACTOR_FOR[p], new Set(list3.map((d) => d.url)).size), 0);
   const report = {
     \u8981\u6293: due.map((d) => `${d.url}\uFF08\u7B2C ${d.day} \u5929\uFF09`),
     \u4F30\u8BA1\u82B1\u8D39\u7F8E\u5143: Number(cost.toFixed(2)),
@@ -63082,11 +63102,11 @@ async function postMetrics(ctx, o) {
   if (cost > o.budget) throw new Error(`\u4F30\u8BA1\u8981 $${cost.toFixed(2)}\uFF0C\u8D85\u8FC7\u9884\u7B97 $${o.budget}\u3002\u52A0\u5927 --budget \u518D\u8DD1`);
   const runner = o.runner ?? new ApifyRunner(apifyToken(), o.budget, new MemoryLedger());
   const changes = {};
-  for (const [platform, list2] of byPlatform) {
-    const urls = [...new Set(list2.map((d) => d.url))];
+  for (const [platform, list3] of byPlatform) {
+    const urls = [...new Set(list3.map((d) => d.url))];
     const items = await runner.run(ACTOR_FOR[platform], inputFor(ACTOR_FOR[platform], urls), urls.length);
     const found = new Map(items.map((it) => [postKey(urlOf(it)), statsOf(it)]));
-    for (const d of list2) {
+    for (const d of list3) {
       const s = found.get(postKey(d.url));
       if (!s || s.plays == null && s.engagement == null) {
         report.\u6CA1\u6293\u5230.push(`${d.url}\uFF08\u7B2C ${d.day} \u5929\uFF09`);
@@ -63169,7 +63189,7 @@ async function findPosts(ctx, o) {
   const since = dayOf(now - (o.days ?? cfg.postLookbackDays) * 864e5, cfg.timezone);
   const byPlatform = /* @__PURE__ */ new Map();
   for (const w of watched) byPlatform.set(w.platform, [...byPlatform.get(w.platform) ?? [], w]);
-  const cost = [...byPlatform].reduce((sum, [p, list2]) => sum + estimate(ACTOR_FOR2[p], list2.length * PER_PROFILE), 0);
+  const cost = [...byPlatform].reduce((sum, [p, list3]) => sum + estimate(ACTOR_FOR2[p], list3.length * PER_PROFILE), 0);
   const report = {
     \u770B\u4E86: watched.length,
     \u4ECE: since,
@@ -63185,15 +63205,15 @@ async function findPosts(ctx, o) {
   const rows = [];
   const moved = {};
   const today2 = dayOf(now, cfg.timezone);
-  for (const [platform, list2] of byPlatform) {
-    const items = await runner.run(ACTOR_FOR2[platform], profileInput(ACTOR_FOR2[platform], list2.map((w) => w.profileUrl), since), list2.length * PER_PROFILE);
+  for (const [platform, list3] of byPlatform) {
+    const items = await runner.run(ACTOR_FOR2[platform], profileInput(ACTOR_FOR2[platform], list3.map((w) => w.profileUrl), since), list3.length * PER_PROFILE);
     const seen = /* @__PURE__ */ new Set();
     for (const it of items) {
       const post = postOf(it);
       if (!post.url) continue;
       const key = postKey(post.url);
       const input = String(it.inputUrl ?? it.inputChannelUrl ?? it.fromYTUrl ?? "");
-      const w = list2.find((x) => ownerMatches(post.owner, x.profileUrl, input)) ?? (list2.length === 1 ? list2[0] : void 0);
+      const w = list3.find((x) => ownerMatches(post.owner, x.profileUrl, input)) ?? (list3.length === 1 ? list3[0] : void 0);
       if (!w) continue;
       seen.add(w.followupId);
       if (known.has(key) || post.at != null && dayOf(post.at, cfg.timezone) < since) continue;
@@ -63214,7 +63234,7 @@ async function findPosts(ctx, o) {
       const f = s.followups.get(w.followupId);
       if (option(f["\u9636\u6BB5"]) === "\u5DF2\u7EA6\u53D1\u5E03") moved[w.followupId] = { \u9636\u6BB5: ["\u5DF2\u53D1\u5E03"], \u4E0B\u4E00\u6B65: `${today2} \u53D1\u73B0\u5DF2\u53D1\u5E03\uFF1A${post.url}` };
     }
-    for (const w of list2) if (!seen.has(w.followupId)) report.\u6CA1\u6293\u5230.push(`${w.name}\uFF08${w.profileUrl}\uFF09`);
+    for (const w of list3) if (!seen.has(w.followupId)) report.\u6CA1\u6293\u5230.push(`${w.name}\uFF08${w.profileUrl}\uFF09`);
   }
   if (rows.length) {
     await ctx.base.create(t.posts, rows);
@@ -63236,11 +63256,11 @@ import { readFileSync as readFileSync10 } from "node:fs";
 var MAX_CHARS = 4e3;
 async function notifyGroup(cfg, o) {
   if (!cfg.webhook) return { \u53D1\u9001: false, \u539F\u56E0: "\u300C\u8BBE\u7F6E\u300D\u91CC\u6CA1\u586B\u98DE\u4E66\u7FA4\u673A\u5668\u4EBA\uFF0C\u8DF3\u8FC7" };
-  const body = readFileSync10(o.file, "utf8").trim();
-  if (!body) throw new Error(`${o.file} \u662F\u7A7A\u7684`);
-  const head = body.startsWith("KOL") ? "" : `KOL\uFF5C${cfg.project}
+  const body2 = readFileSync10(o.file, "utf8").trim();
+  if (!body2) throw new Error(`${o.file} \u662F\u7A7A\u7684`);
+  const head = body2.startsWith("KOL") ? "" : `KOL\uFF5C${cfg.project}
 `;
-  const message = `${head}${body}`.slice(0, MAX_CHARS);
+  const message = `${head}${body2}`.slice(0, MAX_CHARS);
   if (o.dryRun) return { \u53D1\u9001: false, \u8BD5\u8DD1: true, \u5185\u5BB9: message };
   const res = await (o.fetchImpl ?? fetch)(cfg.webhook, {
     method: "POST",
@@ -63436,6 +63456,220 @@ async function todayLists(ctx) {
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 
+// src/kolops/console/actions.ts
+var Jobs = class {
+  constructor(ctx, onDone = () => {
+  }) {
+    this.ctx = ctx;
+    this.onDone = onDone;
+  }
+  ctx;
+  onDone;
+  list = [];
+  chain = Promise.resolve();
+  n = 0;
+  add(what, person, title, fn) {
+    const job = { id: ++this.n, what, person, state: "\u6392\u961F\u4E2D", note: "", at: Date.now() };
+    this.list.unshift(job);
+    this.list = this.list.slice(0, 50);
+    this.chain = this.chain.then(async () => {
+      job.state = "\u8FDB\u884C\u4E2D";
+      job.at = Date.now();
+      try {
+        job.note = await ExecutorLock.run(title, async () => {
+          const cfg = await loadConfig(this.ctx.base.lark, this.ctx.cfg.project, this.ctx.cfg.baseToken);
+          const why = notExecutor(cfg);
+          if (why) throw new Error(why);
+          const jctx = makeCtx(cfg, this.ctx.base.lark, this.ctx.me, title, false, this.ctx.sleep);
+          await jctx.run.start();
+          try {
+            const note = await fn(jctx);
+            await jctx.run.finish("\u5B8C\u6210");
+            return note;
+          } catch (err) {
+            jctx.run.notes.push(String(err?.message ?? err));
+            await jctx.run.finish("\u5931\u8D25").catch(() => {
+            });
+            throw err;
+          }
+        }, { waitMs: 10 * 6e4 });
+        job.state = "\u505A\u5B8C\u4E86";
+      } catch (err) {
+        job.state = "\u6CA1\u505A\u6210";
+        job.note = String(err?.message ?? err).slice(0, 300);
+      }
+      job.at = Date.now();
+      this.onDone();
+    });
+    return job;
+  }
+};
+async function review(ctx, id) {
+  const [r] = await ctx.base.get(ctx.cfg.tables.reviews, [id]);
+  if (!r) throw new Error("\u5BA1\u6838\u961F\u5217\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u4E00\u6761\uFF0C\u53EF\u80FD\u521A\u88AB\u5904\u7406\u8FC7\u3002\u70B9\u300C\u5237\u65B0\u300D\u770B\u6700\u65B0\u7684");
+  return r;
+}
+function nameOf(data, fid) {
+  const f = data.snapshot.followups.get(fid);
+  return f ? displayName(data.snapshot, f) : "";
+}
+async function approve(ctx, data, jobs, id, edits) {
+  const r = await approveInConsole(ctx, id, cleanEdits(edits));
+  const fid = linkIds(r["KOL"])[0] ?? "";
+  const who = nameOf(data, fid) || text(r["\u5BA1\u6838\u9879"]);
+  return jobs.add(`${who}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, fid, RUN_TITLES.send, async (jctx) => {
+    const rep = await sendApproved(jctx, { dryRun: false, only: [id] });
+    if (rep.failed.length) throw new Error(rep.failed[0].reason);
+    if (rep.sent.length) return `\u5DF2\u53D1\u7ED9 ${rep.sent[0].recipient}\uFF08${rep.sent[0].mailbox}\uFF09`;
+    if (rep.closed.length) return "\u5DF2\u7ED3\u675F\u8DDF\u8FDB";
+    if (rep.skipped.length) throw new Error(rep.skipped[0].reason);
+    return "\u5DF2\u540C\u610F\uFF08\u8FD9\u4EF6\u4E8B\u4E0D\u7528\u53D1\u4FE1\uFF09";
+  });
+}
+var EDITABLE = /* @__PURE__ */ new Set(["\u90AE\u4EF6\u8349\u7A3F", "\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u6B21\u6570", "\u4F53\u9A8C\u5929\u6570", "\u6D3B\u52A8\u7801", "\u7C89\u4E1D\u6298\u6263", "\u9500\u552E\u5E02\u573A", "\u5408\u4F5C\u9875\u540D\u79F0"]);
+var NUMBERS = /* @__PURE__ */ new Set(["\u4F53\u9A8C\u6B21\u6570", "\u4F53\u9A8C\u5929\u6570", "\u7C89\u4E1D\u6298\u6263"]);
+function cleanEdits(edits) {
+  const out = {};
+  for (const [k, v] of Object.entries(edits ?? {})) {
+    if (!EDITABLE.has(k)) continue;
+    if (NUMBERS.has(k)) {
+      const n = Number(v);
+      if (!Number.isFinite(n) || n <= 0) throw new Error(`\u300C${k}\u300D\u8981\u586B\u5927\u4E8E 0 \u7684\u6570\u5B57`);
+      out[k] = n;
+    } else out[k] = String(v ?? "");
+  }
+  return out;
+}
+async function revise(ctx, id, note) {
+  await review(ctx, id);
+  await ctx.base.update(ctx.cfg.tables.reviews, { [id]: { \u5904\u7406: ["\u6539"], \u4F60\u7684\u610F\u89C1: note.trim(), \u540C\u610F\u6765\u6E90: "", \u5185\u5BB9\u6307\u7EB9: "" } });
+}
+async function drop(ctx, id, note) {
+  await review(ctx, id);
+  await ctx.base.update(ctx.cfg.tables.reviews, { [id]: { \u5904\u7406: ["\u4E0D\u53D1"], \u4F60\u7684\u610F\u89C1: note.trim(), \u540C\u610F\u6765\u6E90: "", \u5185\u5BB9\u6307\u7EB9: "" } });
+  await closeDeclined(ctx, { dryRun: false });
+}
+async function problemDone(ctx, id) {
+  const r = await review(ctx, id);
+  await ctx.base.update(ctx.cfg.tables.reviews, { [id]: {
+    \u72B6\u6001: ["\u5DF2\u64A4\u56DE"],
+    \u6267\u884C\u7ED3\u679C: `${text(r["\u6267\u884C\u7ED3\u679C"])}
+${stamp(Date.now(), ctx.cfg.timezone)} ${ctx.me.name} \u6807\u4E3A\u5DF2\u4EBA\u5DE5\u5904\u7406`.trim().slice(0, 2e3)
+  } });
+}
+async function contact(ctx, id) {
+  const [c] = await ctx.base.get(ctx.cfg.tables.contacts, [id], ["\u5F85\u5904\u7406", "KOL", "\u65B9\u5411"]);
+  if (!c) throw new Error("\u63A5\u89E6\u8BB0\u5F55\u91CC\u5DF2\u7ECF\u6CA1\u6709\u8FD9\u5C01\u4FE1");
+  return c;
+}
+async function mailDone(ctx, ids2) {
+  for (const id of ids2) await contact(ctx, id);
+  await ctx.base.update(ctx.cfg.tables.contacts, Object.fromEntries(ids2.map((id) => [id, { \u5F85\u5904\u7406: false }])));
+}
+async function mailNever(ctx, data, ids2) {
+  const first2 = await contact(ctx, ids2[0]);
+  await mailDone(ctx, ids2);
+  const fid = linkIds(first2["KOL"])[0];
+  if (fid) await closeFollowup(ctx, data, fid, { never: true, reason: "\u62D2\u7EDD" });
+}
+async function closeFollowup(ctx, data, fid, o) {
+  const f = data.snapshot.followups.get(fid);
+  if (!f) throw new Error("\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55");
+  const reason = o.reason && CLOSE_REASONS.includes(o.reason) ? o.reason : o.never ? "\u62D2\u7EDD" : "\u5176\u4ED6";
+  const day2 = today(ctx.cfg);
+  const action = o.never ? "\u6C38\u4E0D\u8054\u7CFB" : "\u7ED3\u6848";
+  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { \u9636\u6BB5: ["\u7ED3\u6848"], \u7ED3\u6848\u539F\u56E0: [reason], \u5F53\u524D\u8F6E\u5230\u8C01: ["\u65E0\u9700\u52A8\u4F5C"], \u4E0B\u4E00\u6B65: `${day2} ${action}\uFF08${reason}\uFF0C${ctx.me.name}\u5728\u51B3\u7B56\u53F0\u64CD\u4F5C\uFF09` } });
+  const p = profileOf(data.snapshot, f);
+  if (o.never && p) await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { \u8054\u7CFB\u8BB8\u53EF: ["\u6C38\u4E0D\u8054\u7CFB"], \u8054\u7CFB\u8BB8\u53EF\u539F\u56E0: `${day2} ${reason}` } });
+}
+var FOLLOWUP_EDITS = {
+  \u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F: (v) => v ? `${v} 00:00` : null,
+  \u4E0B\u4E00\u6B65: (v) => v,
+  \u5F53\u524D\u8F6E\u5230\u8C01: (v) => [v],
+  \u7EA7\u522B: (v) => [v]
+};
+async function updateFollowup(ctx, data, fid, fields) {
+  if (!data.snapshot.followups.has(fid)) throw new Error("\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55");
+  const out = {};
+  for (const [k, v] of Object.entries(fields ?? {})) {
+    const to = FOLLOWUP_EDITS[k];
+    if (!to) throw new Error(`\u300C${k}\u300D\u4E0D\u80FD\u5728\u8FD9\u91CC\u6539`);
+    if (k === "\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F" && v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Error("\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F\u7684\u683C\u5F0F\u4E0D\u5BF9");
+    out[k] = to(String(v ?? "").trim(), ctx.cfg.timezone);
+  }
+  if (Object.keys(out).length) await ctx.base.update(ctx.cfg.tables.followups, { [fid]: out });
+}
+async function logPost(ctx, data, fid, link) {
+  const url = link.trim();
+  if (!/^https?:\/\/\S+$/.test(url)) throw new Error("\u8BF7\u8D34\u5B8C\u6574\u7684\u5E16\u5B50\u94FE\u63A5\uFF08https:// \u5F00\u5934\uFF09");
+  if (!data.snapshot.followups.has(fid)) throw new Error("\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55");
+  const platform = /instagram\.com/.test(url) ? "Instagram" : /youtu\.?be/.test(url) ? "YouTube" : /tiktok\.com/.test(url) ? "TikTok" : /threads\.(net|com)/.test(url) ? "Threads" : /facebook\.com|fb\.watch/.test(url) ? "Facebook" : "\u5176\u4ED6";
+  const now = stamp(Date.now(), ctx.cfg.timezone);
+  await ctx.base.create(ctx.cfg.tables.posts, [{ KOL: [{ id: fid }], \u5185\u5BB9\u94FE\u63A5: url, \u5E73\u53F0: [platform], \u53D1\u5E03\u65E5\u671F: now, \u5907\u6CE8: `${ctx.me.name} \u5728\u51B3\u7B56\u53F0\u624B\u52A8\u8BB0\u4E0B` }]);
+  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { \u9636\u6BB5: ["\u5DF2\u53D1\u5E03"], \u4E0B\u4E00\u6B65: `${today(ctx.cfg)} \u8BB0\u4E0B\u53D1\u5E03\uFF1A${url}`.slice(0, 500) } });
+}
+async function writeMail(ctx, data, jobs, fid, subject, body2) {
+  const f = data.snapshot.followups.get(fid);
+  if (!f) throw new Error("\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55");
+  if (!body2.trim()) throw new Error("\u4FE1\u662F\u7A7A\u7684");
+  const to = profileEmails(profileOf(data.snapshot, f))[0];
+  if (!to) throw new Error("\u5979\u7684\u6863\u6848\u91CC\u6CA1\u6709\u90AE\u7BB1");
+  const channel = option(f["\u8054\u7CFB\u6E20\u9053"]);
+  const mb = mailboxFor(ctx.cfg, channel) ?? ctx.cfg.mailboxes[0];
+  if (!mb) throw new Error("\u300C\u53D1\u4FE1\u90AE\u7BB1\u300D\u91CC\u6CA1\u6709\u542F\u7528\u7684\u90AE\u7BB1");
+  const draft = subject.trim() ? `\u4E3B\u9898\uFF1A${subject.trim()}
+${body2.trim()}` : body2.trim();
+  const [id] = await ctx.base.create(ctx.cfg.tables.reviews, [{
+    \u7C7B\u578B: ["\u56DE\u590D\u90AE\u4EF6"],
+    \u72B6\u6001: ["\u5F85\u4F60\u5BA1\u6838"],
+    KOL: [{ id: fid }],
+    \u63D0\u51FA\u65F6\u95F4: stamp(Date.now(), ctx.cfg.timezone),
+    \u5BA1\u6838\u9879: `${ctx.me.name}\u5728\u51B3\u7B56\u53F0\u5199\u7684\u4FE1`,
+    \u53D1\u9001\u6E20\u9053: [mb.channel],
+    \u6536\u4EF6\u4EBA: to,
+    \u90AE\u4EF6\u8349\u7A3F: draft
+  }]);
+  return approve(ctx, data, jobs, id, {});
+}
+async function setPaused(ctx, on) {
+  const [row] = await ctx.base.records(ctx.cfg.tables.settings, { fields: ["\u6682\u505C\u6240\u6709\u53D1\u9001"] });
+  if (!row) throw new Error("\u300C\u8BBE\u7F6E\u300D\u8868\u662F\u7A7A\u7684");
+  await ctx.base.update(ctx.cfg.tables.settings, { [row.record_id]: { \u6682\u505C\u6240\u6709\u53D1\u9001: on } });
+  return on;
+}
+async function isPaused(ctx) {
+  return sendingPaused(ctx.base.lark, ctx.cfg.baseToken);
+}
+var list = (v) => String(v ?? "").split(/[,，、\s]+/).map((x) => x.trim().replace(/^@/, "")).filter(Boolean);
+function startFind(jobs, req) {
+  const budget = Number(req.budget);
+  if (!["instagram", "youtube", "tiktok"].includes(req.platform)) throw new Error("\u5E73\u53F0\u53EA\u80FD\u662F Instagram\u3001YouTube \u6216 TikTok");
+  if (!Number.isFinite(budget) || budget <= 0 || budget > 50) throw new Error("\u6700\u591A\u82B1\u591A\u5C11\u8981\u5728 0 \u5230 50 \u7F8E\u5143\u4E4B\u95F4");
+  if (!req.batch) throw new Error("\u8981\u9009\u4E00\u4E2A\u5165\u5E93\u6279\u6B21");
+  const keywords = list(req.keywords);
+  const seeds = list(req.seeds);
+  if (!keywords.length && !seeds.length) throw new Error("\u5173\u952E\u8BCD\u548C\u76F8\u4F3C\u8D26\u53F7\u81F3\u5C11\u586B\u4E00\u6837");
+  return jobs.add(`\u627E\u65B0\u4EBA\uFF1A${req.batch}\uFF08${req.platform}\uFF09`, "", RUN_TITLES.find, async (jctx) => {
+    const r = await find(jctx, {
+      platform: req.platform,
+      keywords,
+      seeds,
+      handles: [],
+      budget,
+      batch: req.batch,
+      job: req.batch,
+      youtubeHidden: false,
+      dryRun: false,
+      minFollowers: req.minFollowers ? Number(req.minFollowers) : null,
+      maxFollowers: req.maxFollowers ? Number(req.maxFollowers) : null
+    });
+    return `\u65B0\u5165\u5E93 ${r.\u65B0\u5165\u5E93} \u4EBA\uFF0C\u5176\u4E2D\u6709\u90AE\u7BB1 ${r.\u5176\u4E2D\u6709\u90AE\u7BB1} \u4EBA\uFF0C\u82B1\u4E86 $${r.\u82B1\u8D39\u7F8E\u5143}`;
+  });
+}
+async function findOptions(ctx) {
+  return await ctx.base.fieldOptions(ctx.cfg.tables.profiles, "\u5165\u5E93\u6279\u6B21") ?? [];
+}
+
 // src/kolops/console/page.html
 var page_default = `<!doctype html>
 <html lang="zh-CN">
@@ -63446,6 +63680,7 @@ var page_default = `<!doctype html>
 <style>
 :root{--bg:#F5F6F8;--card:#FFFFFF;--line:#E3E6EB;--line2:#EEF0F3;--ink:#1A1D23;--ink2:#3B414C;--muted:#5B6270;--blue:#2457D6;--blue2:#1A3FA0;--blue-bg:#E6ECFB;--warn:#8A3D00;--warn-bg:#FDEBD8;--warn-line:#F2C9A0;--bad:#8F1D12;--bad-bg:#FBE1DE;--ok:#155C39;--ok-bg:#DDF1E6;--purple:#4B2A93;--purple-bg:#EEE7FB}
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;font-size:14px;line-height:1.55}
 a{color:var(--blue);text-decoration:none}a:hover{color:var(--blue2);text-decoration:underline}
 button{font:inherit}
@@ -63510,6 +63745,10 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 .stepper .seg{height:6px;border-radius:3px;background:var(--line)}
 .err{background:var(--bad-bg);color:var(--bad);border-radius:8px;padding:12px 14px}
 .loading{padding:40px;text-align:center;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.field .input{font-size:14px}
+.modal{position:fixed;inset:0;background:rgba(20,20,30,.35);display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:40;overflow:auto}
+.modal>div{background:#fff;border-radius:12px;padding:20px 22px;width:100%;max-width:620px;display:flex;flex-direction:column;gap:12px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
 @media (max-width:640px){.top,main{padding-left:16px;padding-right:16px}.actions{padding:12px 16px}}
 </style>
@@ -63530,15 +63769,16 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
     </div>
     <span class="muted small" id="synced"></span>
     <button class="btn sm" id="refresh">\u5237\u65B0</button>
-    <button class="btn sm" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB\u3002\u6025\u7740\u505C\u7684\u8BDD\uFF0C\u5728\u98DE\u4E66\u300C\u8BBE\u7F6E\u300D\u8868\u91CC\u52FE\u4E0A\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D">\u6682\u505C\u6240\u6709\u53D1\u9001</button>
+    <button class="btn sm" id="pause" style="border-color:#E9B4AE;color:var(--bad)">\u6682\u505C\u6240\u6709\u53D1\u9001</button>
   </div>
 </header>
-<div class="banner">\u53EA\u8BFB\u9884\u89C8\uFF1A\u8FD9\u4E00\u7248\u53EA\u80FD\u770B\uFF0C\u6309\u94AE\u8FD8\u4E0D\u80FD\u7528\u3002\u8981\u540C\u610F\u6216\u5904\u7406\uFF0C\u7167\u65E7\u5728\u98DE\u4E66\u5BA1\u6838\u961F\u5217\u91CC\u6279\u51C6\u3001\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\u3002</div>
+<div class="banner" id="paused-banner" style="background:var(--bad-bg);color:var(--bad);border-color:#E9B4AE" hidden>\u5DF2\u6682\u505C\u6240\u6709\u53D1\u9001\uFF1A\u4F60\u540C\u610F\u7684\u4E8B\u4F1A\u5148\u6392\u7740\uFF0C\u70B9\u300C\u6062\u590D\u53D1\u9001\u300D\u540E\u624D\u6267\u884C\u3002</div>
 <main id="app"><div class="loading">\u6B63\u5728\u4ECE\u98DE\u4E66\u8BFB\u6570\u636E\u2026</div></main>
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" hidden><span id="toast-text"></span> <button class="btn sm" id="toast-undo" style="margin-left:10px;background:transparent;color:#fff;border-color:#5B6270" hidden>\u64A4\u9500</button></div>
+<div class="modal" id="modal" hidden><div id="modal-body"></div></div>
 <script>
 "use strict";
-var state = { overview: null, idx: 0, group: null };
+var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {} };
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
@@ -63549,10 +63789,28 @@ function api(path, opts) {
     return r.json().then(function (body) { if (!r.ok) throw new Error(body.error || ("\u51FA\u9519\u4E86\uFF08" + r.status + "\uFF09")); return body; });
   });
 }
-function toast(text) {
-  var t = $("toast"); t.textContent = text; t.hidden = false;
-  clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 3000);
+function post(path, body) {
+  return api(path, { method: "POST", headers: { "content-type": "application/json", "x-kol-console": "1" }, body: JSON.stringify(body || {}) });
 }
+function toast(text, undo) {
+  $("toast-text").textContent = text; $("toast").hidden = false;
+  var u = $("toast-undo"); u.hidden = !undo; u.onclick = function () { $("toast").hidden = true; if (undo) undo(); };
+  clearTimeout(toast.t); toast.t = setTimeout(function () { $("toast").hidden = true; }, undo ? 5200 : 4000);
+}
+/** Hides a card at once and does the action after five seconds unless \u64A4\u9500 is pressed. */
+function later(id, text, action) {
+  state.handled[id] = true;
+  var undone = false;
+  toast(text, function () { undone = true; delete state.handled[id]; renderDecide(); });
+  renderDecide();
+  setTimeout(function () {
+    if (undone) return;
+    action().then(function (r) { if (r && r.job) watchJobs(); }).catch(function (e) { delete state.handled[id]; toast("\u6CA1\u505A\u6210\uFF1A" + e.message); renderDecide(); });
+  }, 5000);
+}
+function modal(html) { $("modal-body").innerHTML = html; $("modal").hidden = false; }
+function closeModal() { $("modal").hidden = true; }
+$("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
 function fail(err) { $("app").innerHTML = '<div class="narrow"><div class="err">' + esc(err.message || err) + '</div></div>'; }
 function timeOf(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 
@@ -63562,22 +63820,62 @@ function loadOverview() {
     $("project").textContent = o.project;
     $("n-decide").textContent = o.cards.length;
     $("synced").textContent = "\u98DE\u4E66 " + timeOf(o.loadedAt) + " \u5DF2\u540C\u6B65";
-    renderStatus(o.status);
+    renderStatus(o.status, o.jobs);
+    renderPause(o.paused);
+    o.jobs.forEach(function (j) { state.jobsSeen[j.id] = j.state; });
+    if (o.jobs.some(function (j) { return j.state === "\u6392\u961F\u4E2D" || j.state === "\u8FDB\u884C\u4E2D"; })) watchJobs();
     return o;
   });
 }
 
-function renderStatus(s) {
+function renderPause(on) {
+  state.paused = on;
+  $("pause").textContent = on ? "\u6062\u590D\u53D1\u9001" : "\u6682\u505C\u6240\u6709\u53D1\u9001";
+  $("paused-banner").hidden = !on;
+}
+$("pause").addEventListener("click", function () {
+  var on = !state.paused;
+  if (on && !confirm("\u6682\u505C\u540E\uFF0C\u6240\u6709\u53D1\u4FE1\u90FD\u4F1A\u505C\u4E0B\uFF0C\u5DF2\u540C\u610F\u7684\u4E8B\u5148\u6392\u7740\u3002\u786E\u5B9A\u6682\u505C\u5417\uFF1F")) return;
+  post("/api/pause", { on: on }).then(function (r) { renderPause(r.paused); toast(r.paused ? "\u5DF2\u6682\u505C\u6240\u6709\u53D1\u9001" : "\u5DF2\u6062\u590D\u53D1\u9001"); }).catch(function (e) { toast("\u6CA1\u505A\u6210\uFF1A" + e.message); });
+});
+var jobTimer = null;
+function watchJobs() {
+  if (jobTimer) return;
+  jobTimer = setInterval(function () {
+    api("/api/jobs").then(function (r) {
+      var busy = false;
+      r.jobs.forEach(function (j) {
+        var was = state.jobsSeen[j.id];
+        if ((j.state === "\u505A\u5B8C\u4E86" || j.state === "\u6CA1\u505A\u6210") && was && was !== j.state) toast((j.state === "\u505A\u5B8C\u4E86" ? "\u505A\u5B8C\u4E86\uFF1A" : "\u6CA1\u505A\u6210\uFF1A") + j.what + (j.note ? "\uFF08" + j.note + "\uFF09" : ""));
+        state.jobsSeen[j.id] = j.state;
+        if (j.state === "\u6392\u961F\u4E2D" || j.state === "\u8FDB\u884C\u4E2D") busy = true;
+      });
+      if (state.overview) { state.overview.jobs = r.jobs; renderStatus(state.overview.status, r.jobs); }
+      if (!busy) { clearInterval(jobTimer); jobTimer = null; }
+    }).catch(function () {});
+  }, 3000);
+}
+function renderStatus(s, jobs) {
+  jobs = jobs || [];
+  var recent = jobs.filter(function (j) { return Date.now() - j.at < 30 * 60 * 1000 || j.state === "\u6392\u961F\u4E2D" || j.state === "\u8FDB\u884C\u4E2D"; });
+  var busy = recent.filter(function (j) { return j.state === "\u6392\u961F\u4E2D" || j.state === "\u8FDB\u884C\u4E2D"; }).length;
+  var failedJobs = recent.filter(function (j) { return j.state === "\u6CA1\u505A\u6210"; }).length;
+  var failed = s.failed + failedJobs, running = s.running + busy;
   var pill = $("status");
-  pill.className = "pill" + (s.failed ? " bad" : s.running ? " warn" : "");
-  $("status-text").textContent = s.failed ? (s.failed + " \u4EF6\u6CA1\u505A\u6210" + (s.running ? " \xB7 \u7B49\u53D1\u51FA " + s.running : "")) : s.running ? ("\u7B49\u53D1\u51FA " + s.running) : "\u90FD\u505A\u5B8C\u4E86";
-  var rows = s.items.map(function (i) {
+  pill.className = "pill" + (failed ? " bad" : running ? " warn" : "");
+  $("status-text").textContent = state.paused && running ? ("\u5DF2\u6682\u505C \xB7 " + running + " \u4EF6\u6392\u7740") : failed ? (failed + " \u4EF6\u6CA1\u505A\u6210" + (running ? " \xB7 \u6267\u884C\u4E2D " + running : "")) : running ? ("\u6267\u884C\u4E2D " + running) : "\u90FD\u505A\u5B8C\u4E86";
+  var jobRows = recent.map(function (j) {
+    var cls = j.state === "\u6CA1\u505A\u6210" ? "b-bad" : j.state === "\u505A\u5B8C\u4E86" ? "b-ok" : "b-warn";
+    return '<div class="row"><span class="badge ' + cls + '">' + esc(j.state) + '</span><div style="flex:1;min-width:0"><div style="font-weight:500">' + esc(j.what) + '</div>' +
+      (j.note ? '<div class="muted tiny">' + esc(j.note) + '</div>' : "") + '</div>' + (j.person ? '<a class="tiny" href="#/person/' + esc(j.person) + '">\u770B</a>' : "") + '</div>';
+  }).join("");
+  var rows = jobRows + s.items.map(function (i) {
     var cls = i.st === "\u6CA1\u505A\u6210" ? "b-bad" : i.st === "\u8FDB\u884C\u4E2D" ? "b-warn" : "b-blue";
     return '<div class="row"><span class="badge ' + cls + '">' + esc(i.st) + '</span><div style="flex:1;min-width:0"><div style="font-weight:500">' + esc(i.text) + '</div>' +
       (i.note ? '<div class="muted tiny">' + esc(i.note) + '</div>' : "") + '</div>' + (i.person ? '<a class="tiny" href="#/person/' + esc(i.person) + '">\u770B</a>' : "") + '</div>';
   }).join("");
   $("status-panel").innerHTML = '<div style="display:flex;justify-content:space-between;padding:12px 14px 8px"><b>\u540E\u53F0\u5728\u505A\u7684\u4E8B</b><a href="#/log" class="small">\u5168\u90E8\u6267\u884C\u8BB0\u5F55</a></div>' +
-    (rows || '<div class="row muted">\u6CA1\u6709\u5728\u7B49\u7684\u4E8B</div>');
+    (rows || '<div class="row muted">\u6CA1\u6709\u5728\u505A\u7684\u4E8B</div>');
 }
 $("status").addEventListener("click", function () {
   var p = $("status-panel"); p.hidden = !p.hidden; $("status").setAttribute("aria-expanded", String(!p.hidden));
@@ -63588,15 +63886,59 @@ document.addEventListener("click", function (e) {
 });
 $("refresh").addEventListener("click", function () {
   var b = $("refresh"); b.disabled = true; b.textContent = "\u5237\u65B0\u4E2D\u2026";
-  api("/api/refresh", { method: "POST" }).then(loadOverview).then(route).catch(fail).then(function () { b.disabled = false; b.textContent = "\u5237\u65B0"; });
+  post("/api/refresh").then(loadOverview).then(route).catch(fail).then(function () { b.disabled = false; b.textContent = "\u5237\u65B0"; });
 });
 
 // --- \u5F85\u4F60\u51B3\u5B9A ---
 var GROUPS = ["\u51FA\u4E86\u95EE\u9898", "\u53D1\u5E03", "\u56DE\u4FE1", "\u6765\u4FE1", "\u9080\u7EA6\u548C\u51B3\u5B9A", "\u6A21\u677F", "\u5176\u4ED6"];
 var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", batch: "b-warn", template: "", todo: "" };
 
+function visibleCards() {
+  return state.overview.cards.filter(function (c) { return !state.handled[c.id]; });
+}
+function draftText(c) {
+  var ta = $("draft-body");
+  if (!ta) return null;
+  var body = ta.value.trim();
+  return c.draft.subject ? "\u4E3B\u9898\uFF1A" + c.draft.subject + "\\n" + body : body;
+}
+function cardEdits(c) {
+  var edits = {};
+  if (c.draft && $("draft-body") && $("draft-body").value.trim() !== c.draft.body.trim()) edits["\u90AE\u4EF6\u8349\u7A3F"] = draftText(c);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-field]"), function (el) {
+    var orig = el.getAttribute("data-orig"), v = el.value.trim();
+    if (v && v !== orig && v.charAt(0) !== "\uFF08") edits[el.getAttribute("data-field")] = v;
+  });
+  return edits;
+}
+function who(c) { return c.who ? c.who.name : c.headline; }
+
+function actionsFor(c) {
+  if (c.kind === "mail") return [
+    { label: "\u4E0D\u7528\u56DE", key: "D", primary: true, run: function () { later(c.id, "\u5DF2\u6807\u6210\u4E0D\u7528\u56DE\uFF1A" + who(c), function () { return post("/api/mail-done", { id: c.id.slice(5) }); }); } },
+    { label: "\u6807\u6210\u6C38\u4E0D\u8054\u7CFB", key: "N", danger: true, run: function () { if (confirm("\u4EE5\u540E\u8FD9\u4E2A\u9879\u76EE\u4E0D\u518D\u8054\u7CFB " + who(c) + "\uFF0C\u786E\u5B9A\u5417\uFF1F")) later(c.id, "\u5DF2\u6807\u6210\u6C38\u4E0D\u8054\u7CFB\uFF1A" + who(c), function () { return post("/api/mail-never", { id: c.id.slice(5) }); }); } },
+  ];
+  if (c.kind === "overdue") return [
+    { label: "\u8BB0\u4E0B\u8FD9\u6761\u53D1\u5E03", key: "A", primary: true, run: function () {
+      var link = ($("post-link") || {}).value || "";
+      if (!/^https?:\\/\\//.test(link.trim())) { toast("\u5148\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u4E0A\u9762\u7684\u6846\u91CC"); return; }
+      later(c.id, "\u5DF2\u8BB0\u4E0B\u53D1\u5E03\uFF1A" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
+    } },
+  ];
+  if (c.kind === "problem") return [
+    { label: "\u6211\u5904\u7406\u597D\u4E86", key: "A", primary: true, run: function () { later(c.id, "\u5DF2\u6807\u6210\u5904\u7406\u597D\u4E86", function () { return post("/api/problem-done", { id: c.id }); }); } },
+  ];
+  return [
+    { label: "\u540C\u610F", key: "A", primary: true, run: function () {
+      var edits = cardEdits(c);
+      later(c.id, "\u5DF2\u540C\u610F\uFF1A" + who(c) + "\uFF0C5 \u79D2\u540E\u5F00\u59CB\u6267\u884C", function () { return post("/api/approve", { id: c.id, edits: edits }); });
+    } },
+    { label: "\u8981\u6539", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } },
+  ];
+}
+
 function renderDecide() {
-  var o = state.overview, cards = o.cards;
+  var o = state.overview, cards = visibleCards();
   if (state.idx >= cards.length) state.idx = 0;
   var c = cards[state.idx];
   var chips = GROUPS.map(function (g) {
@@ -63604,20 +63946,34 @@ function renderDecide() {
     if (!n) return "";
     return '<button class="chip' + (c && c.group === g ? " on" : "") + '" data-group="' + esc(g) + '">' + esc(g) + " " + n + "</button>";
   }).join("");
+  $("n-decide").textContent = cards.length;
   var head = '<div style="display:flex;flex-direction:column;gap:8px">' +
     '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><b>' + (cards.length ? "\u6709 " + cards.length + " \u4EF6\u8981\u4F60\u51B3\u5B9A" + (c ? "\uFF0C\u8FD9\u662F\u7B2C " + (state.idx + 1) + " \u4EF6" : "") : "\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B") + '</b>' +
     '<span class="muted small">J / K \u4E0A\u4E00\u4EF6 \xB7 \u4E0B\u4E00\u4EF6</span></div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' + chips + '</div>' +
-    (o.waitingClaude ? '<div class="muted small">\u53E6\u6709 ' + o.waitingClaude + ' \u4EF6\u5728\u7B49 Claude \u6309\u4F60\u7684\u610F\u89C1\u91CD\u5199\uFF0C\u5199\u597D\u4F1A\u6392\u8FDB\u6765\u3002</div>' : "") + '</div>';
+    (o.waitingClaude ? '<div class="muted small">\u53E6\u6709 ' + o.waitingClaude + ' \u4EF6\u5728\u7B49 Claude \u6309\u4F60\u7684\u610F\u89C1\u91CD\u5199\uFF08\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF09\uFF0C\u5199\u597D\u4F1A\u6392\u8FDB\u6765\u3002</div>' : "") + '</div>';
   if (!c) {
-    $("app").innerHTML = '<div class="narrow">' + head + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">\u73B0\u5728\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B</div><div class="muted">\u65B0\u6765\u4FE1\u548C Claude \u51C6\u5907\u597D\u7684\u8349\u7A3F\u4F1A\u81EA\u52A8\u6392\u8FDB\u6765\u3002</div></section></div>';
+    $("app").innerHTML = '<div class="narrow">' + head + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">\u73B0\u5728\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B</div><div class="muted">\u540C\u610F\u7684\u4E8B\u5728\u540E\u53F0\u6267\u884C\uFF0C\u7ED3\u679C\u770B\u53F3\u4E0A\u89D2\u3002\u65B0\u6765\u4FE1\u548C Claude \u51C6\u5907\u597D\u7684\u8349\u7A3F\u4F1A\u81EA\u52A8\u6392\u8FDB\u6765\u3002</div></section></div>';
     return;
   }
   var steps = c.steps.map(function (s, i) {
-    var params = (s.params || []).map(function (p) { return '<span class="param">' + esc(p.label) + '<span>' + esc(p.value) + '</span></span>'; }).join("");
+    var params = (s.params || []).map(function (p) {
+      var editable = c.kind === "reply" && p.field;
+      return '<label class="param">' + esc(p.label) + (editable ? '<input class="input" style="width:140px;padding:4px 8px" data-field="' + esc(p.field) + '" data-orig="' + esc(p.value) + '" value="' + esc(p.value) + '">' : '<span>' + esc(p.value) + '</span>') + '</label>';
+    }).join("");
     return '<div class="step"><span class="num">' + (i + 1) + '</span><div style="flex:1;min-width:0"><div>' + esc(s.text) + '</div>' + (params ? "<div>" + params + "</div>" : "") + '</div></div>';
   }).join("");
   var next = cards[state.idx + 1];
+  var acts = actionsFor(c);
+  var buttons = acts.map(function (a, i) {
+    return '<button class="btn big' + (a.primary ? " primary" : "") + '" data-act="' + i + '"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + '>' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
+  }).join("") + '<button class="btn big" id="skip">\u8DF3\u8FC7 <span class="kbd">S</span></button>';
+  var mailHint = c.kind === "mail" ? '<div class="muted small">\u8981\u56DE\u4FE1\u7684\u8BDD\uFF1A\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u8349\u7A3F\u4F1A\u6392\u8FDB\u8FD9\u91CC\u3002</div>' : "";
+  var linkBox = c.kind === "overdue" ? '<label class="field">\u5176\u5B9E\u5DF2\u7ECF\u53D1\u4E86\uFF1F\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u8FD9\u91CC<input class="input" id="post-link" placeholder="https://"></label>' : "";
+  var change = state.changing ? '<div style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
+    '<label class="field" style="font-weight:500;color:var(--ink)">\u54EA\u91CC\u8981\u6539\uFF1F<textarea class="input" id="change-note" rows="2" placeholder="\u5199\u7ED9 Claude\uFF0C\u6BD4\u5982\uFF1A\u8BED\u6C14\u8F7B\u4E00\u70B9\uFF0C\u4E0D\u8981\u63D0\u5206\u6DA6\u6BD4\u4F8B\uFF1B\u6216\u8005\uFF1A\u4E0D\u8981\u7ED3\u6848\uFF0C\u6539\u6210\u4E0B\u4E2A\u6708\u518D\u95EE"></textarea></label>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="to-claude">\u4EA4\u7ED9 Claude \u91CD\u5199</button><button class="btn" id="drop" style="border-color:transparent;color:var(--muted)">\u8FD9\u4EF6\u4E8B\u4E0D\u7528\u505A\u4E86</button><button class="btn" id="cancel-change" style="border-color:transparent;color:var(--muted)">\u53D6\u6D88</button></div>' +
+    '<div class="muted tiny">\u4EA4\u7ED9 Claude \u540E\uFF0C\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF1B\u6539\u597D\u7684\u4F1A\u6392\u56DE\u8FD9\u91CC\u3002\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u4E0A\u9762\u7684\u4FE1\uFF0C\u518D\u70B9\u540C\u610F\u5C31\u884C\u3002</div></div>' : "";
   $("app").innerHTML = '<div class="narrow">' + head +
     '<section class="card" aria-label="\u5F53\u524D\u8FD9\u4EF6\u4E8B"><div style="padding:24px 28px 12px;display:flex;flex-direction:column;gap:18px">' +
       '<div><div class="small" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge ' + (TAG[c.kind] || "") + '">' + esc(c.tag) + '</span>' +
@@ -63625,36 +63981,61 @@ function renderDecide() {
         '<h1 style="margin:6px 0 0;font-size:24px;line-height:1.35">' + esc(c.headline) + '</h1></div>' +
       (c.mail ? '<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " \xB7 " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + '</div></div>' : "") +
       '<div class="suggest"><div><div class="lbl" style="color:var(--blue2)">\u5EFA\u8BAE</div><div style="font-size:18px;font-weight:600">' + esc(c.suggest) + '</div></div>' +
-        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A</div>' + steps + '</div>' : "") +
+        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" || c.kind === "todo" ? "\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A") + '</div>' + steps + '</div>' : "") +
         (c.why ? '<details><summary>\u4E3A\u4EC0\u4E48\u8FD9\u4E48\u5EFA\u8BAE</summary><div class="muted" style="margin-top:6px;white-space:pre-wrap">' + esc(c.why) + '</div></details>' : "") + '</div>' +
-      (c.draft ? '<div><div class="lbl">' + esc(c.draft.label) + '</div>' + (c.draft.subject ? '<div class="muted small" style="margin-bottom:6px">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") + '<div class="draft">' + esc(c.draft.body) + '</div></div>' : "") +
-    '</div><div class="actions">' +
-      '<button class="btn primary big" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB\uFF0C\u8BF7\u5728\u98DE\u4E66\u5BA1\u6838\u961F\u5217\u91CC\u6279\u51C6">\u540C\u610F <span class="kbd">A</span></button>' +
-      '<button class="btn big" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB">\u8981\u6539 <span class="kbd">E</span></button>' +
-      '<button class="btn big" id="skip">\u8DF3\u8FC7 <span class="kbd">S</span></button>' +
+      linkBox +
+      (c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u5B57\uFF0C\u6539\u5B8C\u70B9\u540C\u610F</span>' : "") + '</div>' +
+        (c.draft.subject ? '<div class="muted small">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") +
+        (c.kind === "reply" ? '<textarea class="input draft" id="draft-body" rows="9" style="resize:vertical">' + esc(c.draft.body) + '</textarea>' : '<div class="draft">' + esc(c.draft.body) + '</div>') + '</div>' : "") +
+      mailHint + change +
+    '</div><div class="actions">' + buttons +
       '<span class="muted small" style="margin-left:auto">' + (next ? "\u4E0B\u4E00\u4EF6\uFF1A" + esc(next.headline) : "\u8FD9\u662F\u6700\u540E\u4E00\u4EF6") + '</span>' +
     '</div></section></div>';
+  Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) { b.addEventListener("click", function () { acts[Number(b.getAttribute("data-act"))].run(); }); });
   $("skip").addEventListener("click", function () { move(1); });
+  if (state.changing) {
+    $("cancel-change").addEventListener("click", function () { state.changing = false; renderDecide(); });
+    $("to-claude").addEventListener("click", function () {
+      var note = $("change-note").value.trim();
+      if (!note) { toast("\u5199\u4E00\u53E5\u54EA\u91CC\u8981\u6539\uFF0CClaude \u624D\u77E5\u9053\u600E\u4E48\u6539"); return; }
+      state.changing = false;
+      later(c.id, "\u5DF2\u4EA4\u7ED9 Claude \u91CD\u5199\uFF1A" + who(c), function () { return post("/api/revise", { id: c.id, note: note }); });
+    });
+    $("drop").addEventListener("click", function () {
+      var note = $("change-note").value.trim();
+      state.changing = false;
+      later(c.id, "\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF1A" + who(c), function () { return post("/api/drop", { id: c.id, note: note }); });
+    });
+  }
   Array.prototype.forEach.call(document.querySelectorAll("[data-group]"), function (b) {
     b.addEventListener("click", function () {
       var g = b.getAttribute("data-group");
       var i = cards.findIndex(function (x) { return x.group === g; });
-      if (i >= 0) { state.idx = i; renderDecide(); }
+      if (i >= 0) { state.idx = i; state.changing = false; renderDecide(); }
     });
   });
 }
 function move(d) {
-  var n = state.overview.cards.length;
+  var n = visibleCards().length;
   if (!n) return;
   state.idx = (state.idx + d + n) % n;
+  state.changing = false;
   renderDecide();
   window.scrollTo(0, 0);
 }
 document.addEventListener("keydown", function (e) {
   if (location.hash && location.hash !== "#/" && location.hash !== "#") return;
+  if (!$("modal").hidden) return;
   if (e.target.closest && e.target.closest("input,textarea,select")) return;
-  if (e.key === "j" || e.key === "s") move(1);
-  if (e.key === "k") move(-1);
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  var k = e.key.toLowerCase();
+  if (k === "j" || k === "s") return move(1);
+  if (k === "k") return move(-1);
+  var c = visibleCards()[state.idx];
+  if (!c) return;
+  var acts = actionsFor(c);
+  var hit = acts.find(function (a) { return a.key.toLowerCase() === k; });
+  if (hit) { e.preventDefault(); hit.run(); }
 });
 
 // --- KOL ---
@@ -63667,11 +64048,12 @@ function renderPeople(view, q) {
   $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' +
     '<div style="display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline"><h1 style="margin:0;font-size:22px">KOL</h1>' +
       '<span class="muted">\u6B63\u5728\u8DDF\u8FDB ' + (o.counts.all || 0) + ' \u4F4D \xB7 \u8FD8\u6CA1\u8054\u7CFB\u8FC7 ' + (o.counts.pool || 0) + ' \u4F4D</span>' +
-      '<button class="btn primary" style="margin-left:auto" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB\u3002\u627E\u4EBA\u8BF7\u5728 Claude \u91CC\u8BF4\u300C\u627E\u4E00\u6279\u2026\u7684 KOL\u300D">\u627E\u65B0\u4EBA</button></div>' +
+      '<button class="btn primary" style="margin-left:auto" id="find">\u627E\u65B0\u4EBA</button></div>' +
     '<div class="views" role="tablist">' + tabs + '</div>' +
     '<div class="muted small" id="question"></div>' +
     '<input class="input" id="q" placeholder="\u641C\u540D\u5B57\u3001\u8D26\u53F7\u3001\u90AE\u7BB1" value="' + esc(q) + '" style="max-width:360px">' +
     '<section class="card" style="overflow-x:auto" id="table"><div class="loading">\u8BFB\u53D6\u4E2D\u2026</div></section></div>';
+  $("find").addEventListener("click", openFind);
   var input = $("q");
   input.addEventListener("input", function () {
     clearTimeout(searchTimer);
@@ -63698,6 +64080,28 @@ function loadPeople(view, q) {
     $("table").innerHTML = '<table style="min-width:760px"><thead>' + head + "</thead><tbody>" + (rows || '<tr><td colspan="9" class="muted">\u8FD9\u91CC\u6CA1\u6709\u4EBA</td></tr>') + "</tbody></table>" +
       '<div class="muted small" style="padding:10px 12px">' + (r.total > r.rows.length ? "\u4E00\u5171 " + r.total + " \u4F4D\uFF0C\u53EA\u663E\u793A\u524D " + r.rows.length + " \u4F4D\uFF0C\u53EF\u4EE5\u7528\u4E0A\u9762\u7684\u641C\u7D22\u3002" : "\u4E00\u5171 " + r.total + " \u4F4D") + "</div>";
   }).catch(function (e) { $("table").innerHTML = '<div class="err">' + esc(e.message) + "</div>"; });
+}
+
+function openFind() {
+  modal('<div class="loading">\u8BFB\u53D6\u5165\u5E93\u6279\u6B21\u2026</div>');
+  api("/api/find-options").then(function (r) {
+    var opts = r.batches.slice().reverse().map(function (b) { return "<option>" + esc(b) + "</option>"; }).join("");
+    modal('<h2 style="margin:0;font-size:18px">\u627E\u4E00\u6279\u65B0\u7684 KOL</h2><div class="muted small">\u53BB Instagram / YouTube \u4E0A\u641C\uFF0C\u67E5\u4ED6\u4EEC\u516C\u5F00\u7684\u90AE\u7BB1\uFF0C\u5230\u4F60\u8BBE\u7684\u4E0A\u9650\u5C31\u505C\u3002\u627E\u5230\u7684\u4EBA\u8FDB\u300C\u8FD8\u6CA1\u8054\u7CFB\u8FC7\u300D\uFF0C\u5DF2\u7ECF\u5728\u5E93\u91CC\u7684\u4F1A\u8DF3\u8FC7\u3002</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">' +
+      '<label class="field">\u5728\u54EA\u4E2A\u5E73\u53F0\u627E<select class="input" id="f-platform"><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="tiktok">TikTok\uFF08\u53EA\u80FD\u67E5\u5DF2\u77E5\u8D26\u53F7\uFF09</option></select></label>' +
+      '<label class="field">\u627E\u4EC0\u4E48\u6837\u7684\u4EBA\uFF08\u5173\u952E\u8BCD\uFF0C\u9017\u53F7\u9694\u5F00\uFF09<input class="input" id="f-keywords" placeholder="\u4F34\u4FB6, \u611F\u60C5, \u5169\u6027"></label>' +
+      '<label class="field">\u6216\u8005\uFF1A\u627E\u50CF\u8FD9\u51E0\u4F4D\u7684\u4EBA<input class="input" id="f-seeds" placeholder="@love.notes.tw, @couple.daily"></label>' +
+      '<label class="field">\u7C89\u4E1D\u6570<span style="display:flex;gap:6px;align-items:center"><input class="input" id="f-min" style="width:100px" value="5000"> \u5230 <input class="input" id="f-max" style="width:100px" value="50000"></span></label>' +
+      '<label class="field">\u6700\u591A\u82B1\u591A\u5C11\uFF08\u7F8E\u5143\uFF09<input class="input" id="f-budget" value="5"></label>' +
+      '<label class="field">\u653E\u8FDB\u54EA\u4E2A\u5165\u5E93\u6279\u6B21<select class="input" id="f-batch">' + opts + '</select><span class="tiny">\u65B0\u6279\u6B21\u8BF7\u5148\u5728\u98DE\u4E66\u300CKOL \u6863\u6848\u300D\u7684\u5165\u5E93\u6279\u6B21\u91CC\u52A0\u9009\u9879</span></label></div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="f-cancel">\u53D6\u6D88</button><button class="btn primary" id="f-go">\u5F00\u59CB\u627E</button></div>');
+    $("f-cancel").onclick = closeModal;
+    $("f-go").onclick = function () {
+      var req = { platform: $("f-platform").value, keywords: $("f-keywords").value, seeds: $("f-seeds").value, minFollowers: $("f-min").value, maxFollowers: $("f-max").value, budget: $("f-budget").value, batch: $("f-batch").value };
+      if (!confirm("\u4F1A\u82B1 Apify \u7684\u94B1\uFF0C\u6700\u591A $" + req.budget + "\u3002\u5F00\u59CB\u627E\u5417\uFF1F")) return;
+      post("/api/find", req).then(function () { closeModal(); toast("\u5F00\u59CB\u627E\u4E86\uFF0C\u8FDB\u5EA6\u770B\u53F3\u4E0A\u89D2\uFF1B\u627E\u5B8C\u4F1A\u51FA\u73B0\u5728\u300C\u8FD8\u6CA1\u8054\u7CFB\u8FC7\u300D"); watchJobs(); }).catch(function (e) { toast("\u6CA1\u5F00\u59CB\uFF1A" + e.message); });
+    };
+  }).catch(function (e) { modal('<div class="err">' + esc(e.message) + '</div><button class="btn" onclick="closeModal()">\u5173\u95ED</button>'); });
 }
 
 // --- \u4E00\u4F4D KOL ---
@@ -63735,15 +64139,57 @@ function renderPerson(id) {
         '<section class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:16px"><div><div class="lbl">\u73B0\u5728\u7684\u60C5\u51B5</div><div style="font-size:19px;font-weight:600">' + esc(p.situation) + '</div>' +
           (p.lastContact ? '<div class="muted small">\u6700\u8FD1\u4E00\u6B21\u8054\u7CFB\uFF1A' + esc(p.lastContact) + "</div>" : "") + "</div>" + stepper +
           '<div style="border-top:1px solid var(--line2);padding-top:14px;display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">\u63A5\u4E0B\u6765</div>' + pending +
-            '<div>' + (p.next ? esc(p.next) : '<span class="muted">\u6CA1\u5199\u4E0B\u4E00\u6B65</span>') + (p.nextDate ? ' <span class="muted small">\uFF08\u4E0B\u6B21\u8DDF\u8FDB\uFF1A' + esc(p.nextDate) + "\uFF09</span>" : "") + "</div></div>" +
-          '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:14px"><button class="btn" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB">\u5199\u4FE1\u7ED9\u5979</button><button class="btn" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB">\u4E0D\u518D\u8DDF\u8FDB</button><button class="btn" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB">\u4E0D\u8981\u518D\u8054\u7CFB\u5979</button></div></section>' +
+            '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1 1 260px">' + (p.next ? esc(p.next) : '<span class="muted">\u6CA1\u5199\u4E0B\u4E00\u6B65</span>') + (p.nextDate ? ' <span class="muted small">\uFF08\u4E0B\u6B21\u8DDF\u8FDB\uFF1A' + esc(p.nextDate) + "\uFF09</span>" : "") + '</div><button class="btn sm" id="p-edit">\u6539</button></div></div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:14px"><button class="btn primary" id="p-write"' + (p.doNotContact ? " disabled" : "") + '>\u5199\u4FE1\u7ED9\u5979</button>' +
+          (p.stage !== "\u7ED3\u6848" ? '<button class="btn" id="p-close" style="border-color:transparent;color:var(--muted)">\u4E0D\u518D\u8DDF\u8FDB</button>' : "") +
+          (p.doNotContact ? "" : '<button class="btn" id="p-never" style="border-color:transparent;color:var(--bad)">\u4E0D\u8981\u518D\u8054\u7CFB\u5979</button>') + '</div></section>' +
         '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>\u6765\u5F80\u8BB0\u5F55</b><span class="muted small">\u5DE6\u8FB9\u662F\u5979\uFF0C\u53F3\u8FB9\u662F\u6211\u4EEC' + (p.olderCount ? " \xB7 \u66F4\u65E9\u8FD8\u6709 " + p.olderCount + " \u6761" : "") + "</span></div>" +
           (bubbles || '<div class="muted">\u8FD8\u6CA1\u6709\u6765\u5F80</div>') + "</section></div>" +
         '<aside style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px">' +
           '<section class="card" style="padding:16px 18px;display:flex;flex-direction:column;gap:8px">' + trial + partner + "</section>" +
           '<section class="card" style="padding:16px 18px"><b>\u8D44\u6599</b>' + info + "</section>" +
-          '<section class="card" style="padding:16px 18px"><b>\u53D1\u5E03</b>' + posts + "</section></aside></div></div>";
+          '<section class="card" style="padding:16px 18px"><b>\u53D1\u5E03</b>' + posts + '<button class="btn sm" id="p-post" style="margin-top:10px">\u8BB0\u4E0B\u4E00\u6761\u53D1\u5E03</button></section></aside></div></div>';
+    wirePerson(p);
   }).catch(fail);
+}
+
+function wirePerson(p) {
+  var reload = function () { renderPerson(p.id); };
+  $("p-edit").onclick = function () {
+    modal('<h2 style="margin:0;font-size:18px">\u63A5\u4E0B\u6765</h2>' +
+      '<label class="field">\u4E0B\u4E00\u6B65\u8981\u505A\u4EC0\u4E48<input class="input" id="e-next" value="' + esc(p.next) + '"></label>' +
+      '<label class="field">\u4E0B\u6B21\u8DDF\u8FDB<input class="input" type="date" id="e-date" value="' + esc(p.nextDateIso || "") + '"></label>' +
+      '<label class="field">\u7B49\u8C01<select class="input" id="e-turn"><option' + (p.turn === "\u6211\u4EEC" ? " selected" : "") + '>\u6211\u4EEC</option><option' + (p.turn === "KOL" ? " selected" : "") + '>KOL</option><option' + (p.turn === "\u65E0\u9700\u52A8\u4F5C" ? " selected" : "") + '>\u65E0\u9700\u52A8\u4F5C</option></select></label>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="e-cancel">\u53D6\u6D88</button><button class="btn primary" id="e-save">\u4FDD\u5B58</button></div>');
+    $("e-cancel").onclick = closeModal;
+    $("e-save").onclick = function () {
+      post("/api/followup", { id: p.id, fields: { \u4E0B\u4E00\u6B65: $("e-next").value, \u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F: $("e-date").value, \u5F53\u524D\u8F6E\u5230\u8C01: $("e-turn").value } })
+        .then(function () { closeModal(); toast("\u5DF2\u4FDD\u5B58"); reload(); }).catch(function (e) { toast("\u6CA1\u4FDD\u5B58\uFF1A" + e.message); });
+    };
+  };
+  if ($("p-write")) $("p-write").onclick = function () {
+    modal('<h2 style="margin:0;font-size:18px">\u5199\u4FE1\u7ED9 ' + esc(p.name) + '</h2><div class="muted small">\u70B9\u300C\u53D1\u51FA\u300D\u5C31\u7B97\u4F60\u540C\u610F\u4E86\uFF0C\u4F1A\u6309\u989D\u5EA6\u6392\u961F\u53D1\u51FA\uFF1B\u5728\u300C\u6267\u884C\u8BB0\u5F55\u300D\u91CC\u80FD\u770B\u5230\u7ED3\u679C\u3002</div>' +
+      '<label class="field">\u4E3B\u65E8\uFF08\u56DE\u590D\u5979\u4E0A\u4E00\u5C01\u4FE1\u65F6\u53EF\u4EE5\u4E0D\u586B\uFF09<input class="input" id="w-subject"></label>' +
+      '<label class="field">\u6B63\u6587<textarea class="input" id="w-body" rows="10"></textarea></label>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="w-cancel">\u53D6\u6D88</button><button class="btn primary" id="w-send">\u53D1\u51FA</button></div>');
+    $("w-cancel").onclick = closeModal;
+    $("w-send").onclick = function () {
+      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value })
+        .then(function () { closeModal(); toast("\u5DF2\u6392\u961F\u53D1\u51FA\uFF0C\u7ED3\u679C\u770B\u53F3\u4E0A\u89D2"); watchJobs(); }).catch(function (e) { toast("\u6CA1\u53D1\u51FA\uFF1A" + e.message); });
+    };
+  };
+  var close = function (never) {
+    var q = never ? "\u4EE5\u540E\u8FD9\u4E2A\u9879\u76EE\u4E0D\u518D\u8054\u7CFB " + p.name + "\uFF0C\u5E76\u7ED3\u675F\u8DDF\u8FDB\u3002\u786E\u5B9A\u5417\uFF1F" : "\u7ED3\u675F\u5BF9 " + p.name + " \u7684\u8DDF\u8FDB\uFF1F\u4EE5\u540E\u4E0D\u4F1A\u518D\u81EA\u52A8\u50AC\u4FE1\u3002";
+    if (!confirm(q)) return;
+    post("/api/close", { id: p.id, never: never }).then(function () { toast(never ? "\u5DF2\u6807\u6210\u6C38\u4E0D\u8054\u7CFB" : "\u5DF2\u7ED3\u675F\u8DDF\u8FDB"); reload(); }).catch(function (e) { toast("\u6CA1\u505A\u6210\uFF1A" + e.message); });
+  };
+  if ($("p-close")) $("p-close").onclick = function () { close(false); };
+  if ($("p-never")) $("p-never").onclick = function () { close(true); };
+  $("p-post").onclick = function () {
+    var link = prompt("\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u8FD9\u91CC\uFF08https:// \u5F00\u5934\uFF09");
+    if (!link) return;
+    post("/api/post", { id: p.id, link: link }).then(function () { toast("\u5DF2\u8BB0\u4E0B\u53D1\u5E03"); reload(); }).catch(function (e) { toast("\u6CA1\u8BB0\u4E0B\uFF1A" + e.message); });
+  };
 }
 
 // --- \u6267\u884C\u8BB0\u5F55 ---
@@ -63987,22 +64433,31 @@ function decisionCards(data, cfg, todayStr, mails = /* @__PURE__ */ new Map()) {
     if (state !== "pending") continue;
     cards.push(reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid)));
   }
+  const byKol = /* @__PURE__ */ new Map();
   for (const m of data.pendingMail) {
     const fid = linkIds(m["KOL"])[0] ?? "";
     if (fid && openByKol.has(fid)) continue;
+    const key = fid || `contact:${m.record_id}`;
+    byKol.set(key, [...byKol.get(key) ?? [], m]);
+  }
+  for (const [key, ms] of byKol) {
+    const fid = key.startsWith("contact:") ? "" : key;
+    ms.sort((a, b) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b["\u65E5\u671F"], tz) ?? 0));
+    const first2 = cellTime(ms[0]["\u65E5\u671F"], tz);
+    const latest = ms[ms.length - 1];
     const w = who(fid);
-    const body = mails.get(`msg:${text(m["Message ID"])}`);
-    const when = cellTime(m["\u65E5\u671F"], tz);
-    const waited = when ? daysBetween(day(when, tz), todayStr) : 0;
+    const body2 = mails.get(`msg:${text(latest["Message ID"])}`);
+    const when = cellTime(latest["\u65E5\u671F"], tz);
+    const waited = first2 ? daysBetween(day(first2, tz), todayStr) : 0;
     cards.push({
-      id: `mail:${m.record_id}`,
+      id: `mail:${ms.map((m) => m.record_id).join(",")}`,
       kind: "mail",
       group: "\u6765\u4FE1",
       tag: "\u8FD8\u6CA1\u8349\u7A3F",
       who: w,
-      headline: `${w?.name ?? "\u4E00\u4F4D KOL"} \u6765\u4FE1${waited >= 2 ? `\uFF0C\u5DF2\u7ECF ${waited} \u5929\u6CA1\u4EBA\u56DE\u4E86` : ""}`,
-      meta: [meta(fid), option(m["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(m["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
-      mail: { label: `${w?.name ?? "\u5BF9\u65B9"}\u8BF4 \xB7 ${text(m["\u6458\u8981"])}`, text: body?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
+      headline: `${w?.name ?? "\u4E00\u4F4D KOL"} \u6765\u4FE1${ms.length > 1 ? `\uFF08${ms.length} \u5C01\uFF09` : ""}${waited >= 2 ? `\uFF0C\u5DF2\u7ECF ${waited} \u5929\u6CA1\u4EBA\u56DE\u4E86` : ""}`,
+      meta: [meta(fid), option(latest["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(latest["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
+      mail: { label: `${w?.name ?? "\u5BF9\u65B9"}${ms.length > 1 ? "\u6700\u8FD1\u4E00\u5C01" : ""}\u8BF4 \xB7 ${text(latest["\u6458\u8981"])}`, text: body2?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
       suggest: "\u8BA9 Claude \u5199\u4E00\u5C01\u56DE\u4FE1",
       steps: [{ text: "\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u56DE\u4FE1\u4F1A\u6392\u8FDB\u8FD9\u91CC\u7B49\u4F60\u770B" }],
       why: "\u8FD9\u5C01\u4FE1\u8FD8\u6CA1\u6709\u8349\u7A3F\uFF0C\u591A\u534A\u662F\u4ECA\u5929\u65E9\u4E0A\u7684\u4F8B\u884C\u8DD1\u5B8C\u4EE5\u540E\u624D\u6536\u5230\u7684\u3002"
@@ -64022,23 +64477,23 @@ function reviewCard(r, s, cfg, w, meta, latest) {
   const action = option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"]);
   if (action === "\u53D1\u7801") {
     steps.push({ text: "\u5728 TAFU \u540E\u53F0\u5EFA\u4E00\u4E2A\u4F53\u9A8C\u7801", params: [
-      { label: "\u7801\u540D", value: text(r["\u4F53\u9A8C\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09" },
-      { label: "\u80FD\u7528\u51E0\u6B21", value: String(Number(r["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses) },
-      { label: "\u51E0\u5929\u5185\u6709\u6548", value: String(Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days) }
+      { label: "\u7801\u540D", value: text(r["\u4F53\u9A8C\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09", field: "\u4F53\u9A8C\u7801" },
+      { label: "\u80FD\u7528\u51E0\u6B21", value: String(Number(r["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses), field: "\u4F53\u9A8C\u6B21\u6570" },
+      { label: "\u51E0\u5929\u5185\u6709\u6548", value: String(Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days), field: "\u4F53\u9A8C\u5929\u6570" }
     ] });
   } else if (action === "\u5EF6\u671F") {
     steps.push({ text: `\u628A\u4F53\u9A8C\u7801 ${text(r["\u4F53\u9A8C\u7801"]) || text(f?.["\u4F53\u9A8C\u7801"]) || ""} \u5EF6\u957F ${Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days} \u5929` });
   } else if (action === "\u5F00\u6D3B\u52A8\u7801") {
     steps.push({ text: "\u5728 TAFU \u540E\u53F0\u5F00\u5408\u4F5C\u6D3B\u52A8\uFF08\u7C89\u4E1D\u901A\u8FC7\u5979\u7684\u8FDE\u7ED3\u8D2D\u4E70\u6709\u6298\u6263\uFF0C\u5979\u62FF\u5206\u6DA6\uFF09", params: [
-      { label: "\u6D3B\u52A8\u7801", value: text(r["\u6D3B\u52A8\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09" },
-      { label: "\u7C89\u4E1D\u51CF\u51E0 %", value: String(Number(r["\u7C89\u4E1D\u6298\u6263"]) || cfg.partner.percentOff) },
-      { label: "\u5E02\u573A", value: text(r["\u9500\u552E\u5E02\u573A"]) || "\uFF08\u6309\u6863\u6848\u7684\u5E02\u573A\uFF09" }
+      { label: "\u6D3B\u52A8\u7801", value: text(r["\u6D3B\u52A8\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09", field: "\u6D3B\u52A8\u7801" },
+      { label: "\u7C89\u4E1D\u51CF\u51E0 %", value: String(Number(r["\u7C89\u4E1D\u6298\u6263"]) || cfg.partner.percentOff), field: "\u7C89\u4E1D\u6298\u6263" },
+      { label: "\u5E02\u573A", value: text(r["\u9500\u552E\u5E02\u573A"]) || "\uFF08\u6309\u6863\u6848\u7684\u5E02\u573A\uFF09", field: "\u9500\u552E\u5E02\u573A" }
     ] });
   }
   const channel = option(r["\u53D1\u9001\u6E20\u9053"]) || option(f?.["\u8054\u7CFB\u6E20\u9053"]);
-  const { subject, body } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
+  const { subject, body: body2 } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
   const recipient = emailsIn(r["\u6536\u4EF6\u4EBA"])[0] ?? "";
-  const sends = kind === "reply" && channel !== "\u4E0D\u53D1\u90AE\u4EF6" && body.trim();
+  const sends = kind === "reply" && channel !== "\u4E0D\u53D1\u90AE\u4EF6" && body2.trim();
   if (sends) {
     const mb = mailboxFor(cfg, channel);
     steps.push({ text: mb ? `${action ? "\u6210\u529F\u540E\uFF0C" : ""}\u4ECE ${mb.address} \u628A\u4E0B\u9762\u8FD9\u5C01\u4FE1\u53D1\u7ED9 ${recipient || "\u5979"}` : `\u8FD9\u5C01\u4FE1\u8981\u4ECE\u300C${channel}\u300D\u53D1\uFF0C\u7CFB\u7EDF\u53D1\u4E0D\u4E86\uFF0C\u8981\u624B\u52A8\u53D1` });
@@ -64057,7 +64512,7 @@ function reviewCard(r, s, cfg, w, meta, latest) {
     suggest: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) || text(r["\u5BA1\u6838\u9879"]),
     steps,
     why: text(r["\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE"]),
-    draft: body.trim() ? { label: sends ? `\u8981\u53D1\u7ED9 ${recipient || "\u5979"} \u7684\u4FE1` : kind === "template" ? "\u6A21\u677F\u5185\u5BB9" : "\u8349\u7A3F", subject, body } : void 0
+    draft: body2.trim() ? { label: sends ? `\u8981\u53D1\u7ED9 ${recipient || "\u5979"} \u7684\u4FE1` : kind === "template" ? "\u6A21\u677F\u5185\u5BB9" : "\u8349\u7A3F", subject, body: body2 } : void 0
   };
 }
 async function readBodies(ctx, mails) {
@@ -64067,15 +64522,15 @@ async function readBodies(ctx, mails) {
     if (mb && m.messageId) byMailbox.set(mb.address, [...byMailbox.get(mb.address) ?? [], m.messageId]);
   }
   const out = /* @__PURE__ */ new Map();
-  for (const [mailbox, ids] of byMailbox) {
-    for (let i = 0; i < ids.length; i += 20) {
+  for (const [mailbox, ids2] of byMailbox) {
+    for (let i = 0; i < ids2.length; i += 20) {
       const data = await ctx.base.lark.json([
         "mail",
         "+messages",
         "--mailbox",
         mailbox,
         "--message-ids",
-        ids.slice(i, i + 20).join(","),
+        ids2.slice(i, i + 20).join(","),
         "--html=false",
         "--format",
         "json",
@@ -64202,10 +64657,10 @@ function peopleView(data, cfg, view, todayStr, q = "") {
     const profiles = [...s.profiles.values()].filter((p) => !linkIds(p["\u8DDF\u8FDB\u8BB0\u5F55"]).length && profileEmails(p).length && option(p["\u8054\u7CFB\u8BB8\u53EF"]) !== "\u6C38\u4E0D\u8054\u7CFB");
     const term2 = q.trim().toLowerCase();
     const hit = (p) => !term2 || [text(p["\u8D26\u53F7"]), text(p["\u8D26\u53F7\u540D\u79F0"]), text(p["\u79F0\u547C"]), ...profileEmails(p)].some((x) => x.toLowerCase().includes(term2));
-    const list2 = profiles.filter(hit);
+    const list3 = profiles.filter(hit);
     return {
-      total: list2.length,
-      rows: list2.slice(0, 300).map((p) => ({
+      total: list3.length,
+      rows: list3.slice(0, 300).map((p) => ({
         id: p.record_id,
         hasDetail: false,
         handle: text(p["\u8D26\u53F7"]) ? `@${text(p["\u8D26\u53F7"]).replace(/^@/, "")}` : text(p["\u8D26\u53F7\u540D\u79F0"]),
@@ -64276,6 +64731,7 @@ async function personDetail(ctx, data, fid) {
     turn: option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]),
     next: text(f["\u4E0B\u4E00\u6B65"]),
     nextDate: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr),
+    nextDateIso: day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz),
     pending: pending.map((r) => ({ id: r.record_id, title: text(r["\u5BA1\u6838\u9879"]), ask: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) })),
     bubbles,
     olderCount: Math.max(0, contacts.length - recent.length),
@@ -64367,14 +64823,17 @@ async function runStatus(ctx, data) {
 
 // src/kolops/console/server.ts
 var REFRESH_MS = 5 * 6e4;
+var WRITE_HEADER = "x-kol-console";
 async function startConsole(ctx, o) {
   const data = new ConsoleData(ctx);
   let loading = null;
   let mails = { at: -1, map: /* @__PURE__ */ new Map() };
   const refresh = () => loading ??= data.refresh().finally(() => loading = null);
+  const refreshSoon = () => void refresh().catch(() => {
+  });
+  const jobs = new Jobs(ctx, refreshSoon);
   await refresh();
-  const timer = setInterval(() => refresh().catch(() => {
-  }), REFRESH_MS);
+  const timer = setInterval(refreshSoon, REFRESH_MS);
   timer.unref();
   const server = createServer((req, res) => {
     handle(req, res).catch((err) => send(res, 500, { error: String(err?.message ?? err) }));
@@ -64384,59 +64843,126 @@ async function startConsole(ctx, o) {
     if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) return send(res, 403, { error: "\u53EA\u80FD\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\u7528 127.0.0.1 \u6253\u5F00" });
     const url2 = new URL(req.url ?? "/", `http://${host}`);
     const day2 = today(ctx.cfg);
-    if (req.method === "GET" && url2.pathname === "/") {
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
-      return res.end(PAGE);
+    if (req.method === "GET") {
+      if (url2.pathname === "/") {
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+        return res.end(PAGE);
+      }
+      if (url2.pathname === "/api/overview") {
+        if (mails.at !== data.loadedAt) mails = { at: data.loadedAt, map: await cardMails(ctx, data) };
+        const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day2, mails.map);
+        return send(res, 200, {
+          project: ctx.cfg.project,
+          me: ctx.me.name,
+          loadedAt: data.loadedAt,
+          today: day2,
+          paused: await isPaused(ctx),
+          cards,
+          waitingClaude,
+          status: await runStatus(ctx, data),
+          jobs: jobs.list,
+          views: Object.entries(VIEWS).map(([key, v]) => ({ key, label: v.label })),
+          counts: viewCounts(data, ctx.cfg, day2)
+        });
+      }
+      if (url2.pathname === "/api/jobs") return send(res, 200, { jobs: jobs.list });
+      if (url2.pathname === "/api/people") {
+        const view = url2.searchParams.get("view") ?? "wait";
+        if (!(view in VIEWS)) return send(res, 400, { error: `\u6CA1\u6709\u8FD9\u4E2A\u89C6\u56FE\uFF1A${view}` });
+        const { rows, total } = peopleView(data, ctx.cfg, view, day2, url2.searchParams.get("q") ?? "");
+        return send(res, 200, { view, ...VIEWS[view], rows, total });
+      }
+      if (url2.pathname === "/api/person") {
+        const detail = await personDetail(ctx, data, url2.searchParams.get("id") ?? "");
+        return detail ? send(res, 200, detail) : send(res, 404, { error: "\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55" });
+      }
+      if (url2.pathname === "/api/log") return send(res, 200, await activityLog(ctx));
+      if (url2.pathname === "/api/find-options") return send(res, 200, { batches: await findOptions(ctx) });
+      return send(res, 404, { error: "\u6CA1\u6709\u8FD9\u4E2A\u5730\u5740" });
     }
-    if (req.method === "POST" && url2.pathname === "/api/refresh") {
+    if (req.method !== "POST") return send(res, 405, { error: "\u4E0D\u652F\u6301\u8FD9\u4E2A\u8BF7\u6C42" });
+    if (req.headers[WRITE_HEADER] !== "1" || !String(req.headers["content-type"] ?? "").startsWith("application/json")) {
+      return send(res, 403, { error: "\u53EA\u63A5\u53D7\u51B3\u7B56\u53F0\u9875\u9762\u81EA\u5DF1\u53D1\u51FA\u7684\u64CD\u4F5C" });
+    }
+    if (url2.pathname === "/api/refresh") {
       await refresh();
       return send(res, 200, { loadedAt: data.loadedAt });
     }
-    if (req.method !== "GET") return send(res, 405, { error: "\u8FD9\u4E00\u7248\u53EA\u8BFB" });
-    if (url2.pathname === "/api/overview") {
-      if (mails.at !== data.loadedAt) mails = { at: data.loadedAt, map: await cardMails(ctx, data) };
-      const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day2, mails.map);
-      return send(res, 200, {
-        project: ctx.cfg.project,
-        me: ctx.me.name,
-        loadedAt: data.loadedAt,
-        today: day2,
-        cards,
-        waitingClaude,
-        status: await runStatus(ctx, data),
-        views: Object.entries(VIEWS).map(([key, v]) => ({ key, label: v.label })),
-        counts: viewCounts(data, ctx.cfg, day2)
-      });
+    const b = await body(req);
+    const done = (extra = {}) => {
+      refreshSoon();
+      return send(res, 200, { ok: true, ...extra });
+    };
+    switch (url2.pathname) {
+      case "/api/approve":
+        return done({ job: await approve(ctx, data, jobs, String(b.id), b.edits ?? {}) });
+      case "/api/revise":
+        await revise(ctx, String(b.id), String(b.note ?? ""));
+        return done();
+      case "/api/drop":
+        await drop(ctx, String(b.id), String(b.note ?? ""));
+        return done();
+      case "/api/problem-done":
+        await problemDone(ctx, String(b.id));
+        return done();
+      case "/api/mail-done":
+        await mailDone(ctx, ids(b.id));
+        return done();
+      case "/api/mail-never":
+        await mailNever(ctx, data, ids(b.id));
+        return done();
+      case "/api/post":
+        await logPost(ctx, data, String(b.id), String(b.link ?? ""));
+        return done();
+      case "/api/followup":
+        await updateFollowup(ctx, data, String(b.id), b.fields ?? {});
+        return done();
+      case "/api/close":
+        await closeFollowup(ctx, data, String(b.id), { never: Boolean(b.never), reason: b.reason });
+        return done();
+      case "/api/write":
+        return done({ job: await writeMail(ctx, data, jobs, String(b.id), String(b.subject ?? ""), String(b.body ?? "")) });
+      case "/api/find":
+        return done({ job: startFind(jobs, b) });
+      case "/api/pause":
+        return done({ paused: await setPaused(ctx, Boolean(b.on)) });
+      default:
+        return send(res, 404, { error: "\u6CA1\u6709\u8FD9\u4E2A\u64CD\u4F5C" });
     }
-    if (url2.pathname === "/api/people") {
-      const view = url2.searchParams.get("view") ?? "wait";
-      if (!(view in VIEWS)) return send(res, 400, { error: `\u6CA1\u6709\u8FD9\u4E2A\u89C6\u56FE\uFF1A${view}` });
-      const { rows, total } = peopleView(data, ctx.cfg, view, day2, url2.searchParams.get("q") ?? "");
-      return send(res, 200, { view, ...VIEWS[view], rows, total });
-    }
-    if (url2.pathname === "/api/person") {
-      const detail = await personDetail(ctx, data, url2.searchParams.get("id") ?? "");
-      return detail ? send(res, 200, detail) : send(res, 404, { error: "\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55" });
-    }
-    if (url2.pathname === "/api/log") return send(res, 200, await activityLog(ctx));
-    return send(res, 404, { error: "\u6CA1\u6709\u8FD9\u4E2A\u5730\u5740" });
   }
   const url = await listen(server, o.port);
   if (o.openBrowser) openInBrowser(url);
-  return { url, server };
+  return { url, server, jobs };
 }
-function send(res, status, body) {
+function ids(v) {
+  const list3 = String(v ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (!list3.length) throw new Error("\u6CA1\u6709\u8BF4\u662F\u54EA\u4E00\u6761");
+  return list3;
+}
+async function body(req) {
+  let raw = "";
+  for await (const chunk of req) {
+    raw += chunk;
+    if (raw.length > 1e6) throw new Error("\u8BF7\u6C42\u592A\u5927");
+  }
+  try {
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    throw new Error("\u8BF7\u6C42\u7684\u5185\u5BB9\u4E0D\u662F JSON");
+  }
+}
+function send(res, status, payload) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
-  res.end(JSON.stringify(body));
+  res.end(JSON.stringify(payload));
 }
 async function listen(server, port) {
-  const tries = port ? [port] : Array.from({ length: 20 }, (_, i) => 4173 + i);
+  const tries = port != null ? [port] : Array.from({ length: 20 }, (_, i) => 4173 + i);
   for (const p of tries) {
     const ok = await new Promise((resolve) => {
       server.once("error", () => resolve(false));
       server.listen(p, "127.0.0.1", () => resolve(true));
     });
-    if (ok) return `http://127.0.0.1:${p}/`;
+    if (ok) return `http://127.0.0.1:${server.address().port}/`;
   }
   throw new Error(port ? `\u7AEF\u53E3 ${port} \u88AB\u5360\u7528\u4E86\uFF0C\u6362\u4E00\u4E2A --port \u8BD5\u8BD5` : "4173 \u5230 4192 \u7684\u7AEF\u53E3\u90FD\u88AB\u5360\u7528\u4E86\uFF0C\u7528 --port \u6307\u5B9A\u4E00\u4E2A");
 }
@@ -64452,7 +64978,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
 
   today                         \u4ECA\u5929\u7684\u6E05\u5355\uFF1A\u5F85\u5904\u7406\u6765\u4FE1\u3001\u8F6E\u5230\u6211\u4EEC\u3001\u7B49\u4F60\u5BA1\u6838\u3001\u4F53\u9A8C\u7801\u5FEB\u5230\u671F\u3001\u5FEB\u5230\u7684\u53D1\u5E03\uFF08\u53EA\u8BFB\uFF09
   console [--port N] [--no-browser]
-                                \u5728\u8FD9\u53F0\u7535\u8111\u4E0A\u6253\u5F00\u51B3\u7B56\u53F0\u9875\u9762\uFF1A\u5F85\u4F60\u51B3\u5B9A\u3001\u5404\u9636\u6BB5\u7684 KOL\u3001\u5355\u4E2A KOL \u7684\u6765\u5F80\u3001\u6267\u884C\u8BB0\u5F55\uFF08\u8FD9\u4E00\u7248\u53EA\u8BFB\uFF09\u3002\u6309 Ctrl+C \u5173\u6389
+                                \u5728\u8FD9\u53F0\u7535\u8111\u4E0A\u6253\u5F00\u51B3\u7B56\u53F0\uFF1A\u4E00\u4EF6\u4E00\u4EF6\u5904\u7406\u5F85\u4F60\u51B3\u5B9A\u7684\u4E8B\u3001\u770B\u5404\u9636\u6BB5\u7684 KOL \u548C\u6765\u5F80\u3001\u6267\u884C\u8BB0\u5F55\u3002\u6309 Ctrl+C \u5173\u6389
   sync    [--days N]            \u628A\u5404\u90AE\u7BB1\u4ECE\u4E0A\u6B21\u540C\u6B65\u4EE5\u6765\u7684\u6765\u4FE1\u540C\u6B65\u8FDB\u63A5\u89E6\u8BB0\u5F55\uFF08--days \u6539\u6210\u53EA\u770B\u6700\u8FD1 N \u5929\uFF09\uFF0C\u6765\u4FE1\u7684 KOL \u6539\u6210\u300C\u8F6E\u5230\u6211\u4EEC\u300D
   inbox   [--limit 30]          \u5217\u51FA\u5F85\u5904\u7406\u7684\u6765\u4FE1\uFF1A\u5BF9\u65B9\u539F\u8BDD\u3001\u8DDF\u8FDB\u9636\u6BB5\u3001\u4F53\u9A8C\u7801\u3001\u5EFA\u8BAE\u7801\u540D\uFF08\u53EA\u8BFB\uFF09
   inbox   --apply \u6587\u4EF6.json      \u6309\u51B3\u5B9A\u6587\u4EF6\u628A\u8FD9\u6279\u6765\u4FE1\u4E00\u6B21\u63D0\u4EA4\u5230\u5BA1\u6838\u961F\u5217\uFF08\u60F3\u4F53\u9A8C / \u8981\u56DE\u590D / \u62D2\u7EDD / \u4E0D\u7528\u56DE\uFF09\uFF0C
@@ -64488,7 +65014,7 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
 \u6BCF\u5C01\u4FE1\u53D1\u51FA\u524D\u90FD\u4F1A\u68C0\u67E5\uFF1A\u6682\u505C\u5F00\u5173\u3001\u6C38\u4E0D\u8054\u7CFB\u3001\u6536\u4EF6\u4EBA\u662F\u4E0D\u662F\u8FD9\u4F4D KOL\u3001\u6536\u4EF6\u4EBA\u90AE\u7BB1\u7684\u57DF\u540D\u80FD\u4E0D\u80FD\u6536\u4FE1\u3001\u5F53\u5929\u989D\u5EA6\u3001\u662F\u5426\u91CD\u590D\u3002
 \u901A\u7528\u9009\u9879\uFF1A--project \u9879\u76EE\u540D \u9009\u9879\u76EE\uFF08\u4E0D\u5199\u5C31\u7528\u9ED8\u8BA4\u9879\u76EE\uFF09\uFF1B--dry-run \u53EA\u68C0\u67E5\u3001\u5217\u51FA\u4F1A\u505A\u4EC0\u4E48\uFF0C\u4E0D\u53D1\u4FE1\u4E5F\u4E0D\u6539\u8868\uFF1B--scheduled \u7531\u5B9A\u65F6\u4EFB\u52A1\u8C03\u7528\u3002
 \u7ED3\u679C\u4EE5 JSON \u6253\u5370\u5230\u6807\u51C6\u8F93\u51FA\u3002`;
-var list = (v) => v ? String(v).split(",").map((x) => x.trim()).filter(Boolean) : [];
+var list2 = (v) => v ? String(v).split(",").map((x) => x.trim()).filter(Boolean) : [];
 var num2 = (v) => v == null || v === "" ? null : Number(v);
 function need(v, ...keys) {
   const missing = keys.filter((k) => !v[k]);
@@ -64497,13 +65023,13 @@ function need(v, ...keys) {
 var COMMANDS = {
   today: { title: "", writes: false, run: (ctx) => todayLists(ctx) },
   sync: { title: RUN_TITLES.sync, writes: true, run: (ctx, v) => syncInbox(ctx, { days: v.days ? Number(v.days) : void 0, dryRun: !!v["dry-run"] }) },
-  send: { title: RUN_TITLES.send, writes: true, run: (ctx, v) => sendApproved(ctx, { dryRun: !!v["dry-run"], only: list(v.only) }) },
+  send: { title: RUN_TITLES.send, writes: true, run: (ctx, v) => sendApproved(ctx, { dryRun: !!v["dry-run"], only: list2(v.only) }) },
   invite: {
     title: RUN_TITLES.invite,
     writes: true,
     run: (ctx, v) => {
       need(v, "batch", "template", "mailbox", "approval");
-      const profiles = v["profiles-file"] ? list(readFileSync11(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list(v.profiles);
+      const profiles = v["profiles-file"] ? list2(readFileSync11(String(v["profiles-file"]), "utf8").replace(/\s+/g, ",")) : list2(v.profiles);
       if (!profiles.length) throw new Error("\u6CA1\u6709\u7ED9\u8981\u9080\u7EA6\u7684\u6863\u6848\u8BB0\u5F55\uFF08--profiles \u6216 --profiles-file\uFF09");
       return invite(ctx, { batch: v.batch, template: v.template, mailbox: v.mailbox, approval: v.approval, profiles, dryRun: !!v["dry-run"] });
     }
@@ -64516,9 +65042,9 @@ var COMMANDS = {
       need(v, "platform", "batch", "job", "budget");
       return find(ctx, {
         platform: v.platform,
-        keywords: list(v.keywords),
-        seeds: list(v.seeds),
-        handles: list(v.handles),
+        keywords: list2(v.keywords),
+        seeds: list2(v.seeds),
+        handles: list2(v.handles),
         minFollowers: num2(v["min-followers"]),
         maxFollowers: num2(v["max-followers"]),
         budget: Number(v.budget),
@@ -64671,7 +65197,7 @@ async function main() {
     ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
     if (name === "console") {
       const { url } = await startConsole(ctx, { port: values.port ? Number(values.port) : void 0, openBrowser: !values["no-browser"] });
-      print({ \u5730\u5740: url, \u8BF4\u660E: "\u51B3\u7B56\u53F0\u5DF2\u7ECF\u6253\u5F00\uFF08\u8FD9\u4E00\u7248\u53EA\u8BFB\uFF09\u3002\u53EA\u6709\u8FD9\u53F0\u7535\u8111\u80FD\u8BBF\u95EE\uFF1B\u6309 Ctrl+C \u5173\u6389\u3002" });
+      print({ \u5730\u5740: url, \u8BF4\u660E: "\u51B3\u7B56\u53F0\u5DF2\u7ECF\u6253\u5F00\u3002\u53EA\u6709\u8FD9\u53F0\u7535\u8111\u80FD\u8BBF\u95EE\uFF1B\u6309 Ctrl+C \u5173\u6389\u3002" });
       return new Promise(() => {
       });
     }

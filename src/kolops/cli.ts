@@ -29,7 +29,7 @@ const HELP = `kol <命令> [选项]
 
   today                         今天的清单：待处理来信、轮到我们、等你审核、体验码快到期、快到的发布（只读）
   console [--port N] [--no-browser]
-                                在这台电脑上打开决策台页面：待你决定、各阶段的 KOL、单个 KOL 的来往、执行记录（这一版只读）。按 Ctrl+C 关掉
+                                在这台电脑上打开决策台：一件一件处理待你决定的事、看各阶段的 KOL 和来往、执行记录。按 Ctrl+C 关掉
   sync    [--days N]            把各邮箱从上次同步以来的来信同步进接触记录（--days 改成只看最近 N 天），来信的 KOL 改成「轮到我们」
   inbox   [--limit 30]          列出待处理的来信：对方原话、跟进阶段、体验码、建议码名（只读）
   inbox   --apply 文件.json      按决定文件把这批来信一次提交到审核队列（想体验 / 要回复 / 拒绝 / 不用回），
@@ -215,7 +215,7 @@ async function main(): Promise<number> {
     ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
     if (name === "console") {
       const { url } = await startConsole(ctx, { port: values.port ? Number(values.port) : undefined, openBrowser: !values["no-browser"] });
-      print({ 地址: url, 说明: "决策台已经打开（这一版只读）。只有这台电脑能访问；按 Ctrl+C 关掉。" });
+      print({ 地址: url, 说明: "决策台已经打开。只有这台电脑能访问；按 Ctrl+C 关掉。" });
       return new Promise<number>(() => {});
     }
     if (name === "executor") return print(await executorCommand(ctx, positionals[1]));

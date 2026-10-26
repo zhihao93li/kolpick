@@ -2,23 +2,29 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Ctx } from "../ctx.js";
 import { today } from "../ops.js";
+import { approve, closeFollowup, drop, findOptions, isPaused, Jobs, logPost, mailDone, mailNever, problemDone, revise, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
 import { PAGE } from "./page.js";
 import { activityLog, cardMails, ConsoleData, decisionCards, peopleView, personDetail, runStatus, VIEWS, viewCounts, type MailText, type ViewKey } from "./state.js";
 
 /** How often the console re-reads what changed in the base while it is open. */
 const REFRESH_MS = 5 * 60_000;
+/** Every write from the page carries this header; a form on another website can't send it without a preflight we never answer. */
+const WRITE_HEADER = "x-kol-console";
 
 /**
  * `kol console`: a page on this computer only (127.0.0.1) showing what waits on the user, every KOL by stage,
- * one KOL's history, and what the background did. This first version only reads.
+ * one KOL's history and what the background did. Decisions made here are written to the base at once; sending,
+ * codes and finding people are queued for the executor.
  */
-export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: boolean }): Promise<{ url: string; server: Server }> {
+export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: boolean }): Promise<{ url: string; server: Server; jobs: Jobs }> {
   const data = new ConsoleData(ctx);
   let loading: Promise<void> | null = null;
   let mails: { at: number; map: Map<string, MailText> } = { at: -1, map: new Map() };
   const refresh = () => (loading ??= data.refresh().finally(() => (loading = null)));
+  const refreshSoon = () => void refresh().catch(() => {});
+  const jobs = new Jobs(ctx, refreshSoon);
   await refresh();
-  const timer = setInterval(() => refresh().catch(() => {}), REFRESH_MS);
+  const timer = setInterval(refreshSoon, REFRESH_MS);
   timer.unref();
 
   const server = createServer((req, res) => {
@@ -31,57 +37,106 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
     if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) return send(res, 403, { error: "只能在这台电脑上用 127.0.0.1 打开" });
     const url = new URL(req.url ?? "/", `http://${host}`);
     const day = today(ctx.cfg);
-    if (req.method === "GET" && url.pathname === "/") {
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
-      return res.end(PAGE);
+    if (req.method === "GET") {
+      if (url.pathname === "/") {
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+        return res.end(PAGE);
+      }
+      if (url.pathname === "/api/overview") {
+        if (mails.at !== data.loadedAt) mails = { at: data.loadedAt, map: await cardMails(ctx, data) };
+        const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day, mails.map);
+        return send(res, 200, {
+          project: ctx.cfg.project, me: ctx.me.name, loadedAt: data.loadedAt, today: day, paused: await isPaused(ctx),
+          cards, waitingClaude, status: await runStatus(ctx, data), jobs: jobs.list,
+          views: Object.entries(VIEWS).map(([key, v]) => ({ key, label: v.label })), counts: viewCounts(data, ctx.cfg, day),
+        });
+      }
+      if (url.pathname === "/api/jobs") return send(res, 200, { jobs: jobs.list });
+      if (url.pathname === "/api/people") {
+        const view = (url.searchParams.get("view") ?? "wait") as ViewKey;
+        if (!(view in VIEWS)) return send(res, 400, { error: `没有这个视图：${view}` });
+        const { rows, total } = peopleView(data, ctx.cfg, view, day, url.searchParams.get("q") ?? "");
+        return send(res, 200, { view, ...VIEWS[view], rows, total });
+      }
+      if (url.pathname === "/api/person") {
+        const detail = await personDetail(ctx, data, url.searchParams.get("id") ?? "");
+        return detail ? send(res, 200, detail) : send(res, 404, { error: "找不到这位 KOL 的跟进记录" });
+      }
+      if (url.pathname === "/api/log") return send(res, 200, await activityLog(ctx));
+      if (url.pathname === "/api/find-options") return send(res, 200, { batches: await findOptions(ctx) });
+      return send(res, 404, { error: "没有这个地址" });
     }
-    if (req.method === "POST" && url.pathname === "/api/refresh") {
+
+    if (req.method !== "POST") return send(res, 405, { error: "不支持这个请求" });
+    if (req.headers[WRITE_HEADER] !== "1" || !String(req.headers["content-type"] ?? "").startsWith("application/json")) {
+      return send(res, 403, { error: "只接受决策台页面自己发出的操作" });
+    }
+    if (url.pathname === "/api/refresh") {
       await refresh();
       return send(res, 200, { loadedAt: data.loadedAt });
     }
-    if (req.method !== "GET") return send(res, 405, { error: "这一版只读" });
-    if (url.pathname === "/api/overview") {
-      if (mails.at !== data.loadedAt) mails = { at: data.loadedAt, map: await cardMails(ctx, data) };
-      const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day, mails.map);
-      return send(res, 200, {
-        project: ctx.cfg.project, me: ctx.me.name, loadedAt: data.loadedAt, today: day,
-        cards, waitingClaude, status: await runStatus(ctx, data),
-        views: Object.entries(VIEWS).map(([key, v]) => ({ key, label: v.label })), counts: viewCounts(data, ctx.cfg, day),
-      });
+    const b = await body(req);
+    const done = (extra: Record<string, unknown> = {}) => {
+      refreshSoon();
+      return send(res, 200, { ok: true, ...extra });
+    };
+    switch (url.pathname) {
+      case "/api/approve": return done({ job: await approve(ctx, data, jobs, String(b.id), b.edits ?? {}) });
+      case "/api/revise": await revise(ctx, String(b.id), String(b.note ?? "")); return done();
+      case "/api/drop": await drop(ctx, String(b.id), String(b.note ?? "")); return done();
+      case "/api/problem-done": await problemDone(ctx, String(b.id)); return done();
+      case "/api/mail-done": await mailDone(ctx, ids(b.id)); return done();
+      case "/api/mail-never": await mailNever(ctx, data, ids(b.id)); return done();
+      case "/api/post": await logPost(ctx, data, String(b.id), String(b.link ?? "")); return done();
+      case "/api/followup": await updateFollowup(ctx, data, String(b.id), b.fields ?? {}); return done();
+      case "/api/close": await closeFollowup(ctx, data, String(b.id), { never: Boolean(b.never), reason: b.reason }); return done();
+      case "/api/write": return done({ job: await writeMail(ctx, data, jobs, String(b.id), String(b.subject ?? ""), String(b.body ?? "")) });
+      case "/api/find": return done({ job: startFind(jobs, b) });
+      case "/api/pause": return done({ paused: await setPaused(ctx, Boolean(b.on)) });
+      default: return send(res, 404, { error: "没有这个操作" });
     }
-    if (url.pathname === "/api/people") {
-      const view = (url.searchParams.get("view") ?? "wait") as ViewKey;
-      if (!(view in VIEWS)) return send(res, 400, { error: `没有这个视图：${view}` });
-      const { rows, total } = peopleView(data, ctx.cfg, view, day, url.searchParams.get("q") ?? "");
-      return send(res, 200, { view, ...VIEWS[view], rows, total });
-    }
-    if (url.pathname === "/api/person") {
-      const detail = await personDetail(ctx, data, url.searchParams.get("id") ?? "");
-      return detail ? send(res, 200, detail) : send(res, 404, { error: "找不到这位 KOL 的跟进记录" });
-    }
-    if (url.pathname === "/api/log") return send(res, 200, await activityLog(ctx));
-    return send(res, 404, { error: "没有这个地址" });
   }
 
   const url = await listen(server, o.port);
   if (o.openBrowser) openInBrowser(url);
-  return { url, server };
+  return { url, server, jobs };
 }
 
-function send(res: ServerResponse, status: number, body: unknown) {
+/** One id or several, comma-separated. */
+function ids(v: unknown): string[] {
+  const list = String(v ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (!list.length) throw new Error("没有说是哪一条");
+  return list;
+}
+
+async function body(req: IncomingMessage): Promise<any> {
+  let raw = "";
+  for await (const chunk of req) {
+    raw += chunk;
+    if (raw.length > 1_000_000) throw new Error("请求太大");
+  }
+  try {
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    throw new Error("请求的内容不是 JSON");
+  }
+}
+
+function send(res: ServerResponse, status: number, payload: unknown) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
-  res.end(JSON.stringify(body));
+  res.end(JSON.stringify(payload));
 }
 
-/** Listens on the given port, or the first free one from 4173. */
+/** Listens on the given port (0 for any free one), or the first free one from 4173. */
 async function listen(server: Server, port?: number): Promise<string> {
-  const tries = port ? [port] : Array.from({ length: 20 }, (_, i) => 4173 + i);
+  const tries = port != null ? [port] : Array.from({ length: 20 }, (_, i) => 4173 + i);
   for (const p of tries) {
     const ok = await new Promise<boolean>((resolve) => {
       server.once("error", () => resolve(false));
       server.listen(p, "127.0.0.1", () => resolve(true));
     });
-    if (ok) return `http://127.0.0.1:${p}/`;
+    // Port 0 asks the system for any free port; read back which one it gave.
+    if (ok) return `http://127.0.0.1:${(server.address() as { port: number }).port}/`;
   }
   throw new Error(port ? `端口 ${port} 被占用了，换一个 --port 试试` : "4173 到 4192 的端口都被占用了，用 --port 指定一个");
 }

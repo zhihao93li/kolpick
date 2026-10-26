@@ -7,6 +7,7 @@
 <style>
 :root{--bg:#F5F6F8;--card:#FFFFFF;--line:#E3E6EB;--line2:#EEF0F3;--ink:#1A1D23;--ink2:#3B414C;--muted:#5B6270;--blue:#2457D6;--blue2:#1A3FA0;--blue-bg:#E6ECFB;--warn:#8A3D00;--warn-bg:#FDEBD8;--warn-line:#F2C9A0;--bad:#8F1D12;--bad-bg:#FBE1DE;--ok:#155C39;--ok-bg:#DDF1E6;--purple:#4B2A93;--purple-bg:#EEE7FB}
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;font-size:14px;line-height:1.55}
 a{color:var(--blue);text-decoration:none}a:hover{color:var(--blue2);text-decoration:underline}
 button{font:inherit}
@@ -71,6 +72,10 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 .stepper .seg{height:6px;border-radius:3px;background:var(--line)}
 .err{background:var(--bad-bg);color:var(--bad);border-radius:8px;padding:12px 14px}
 .loading{padding:40px;text-align:center;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.field .input{font-size:14px}
+.modal{position:fixed;inset:0;background:rgba(20,20,30,.35);display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:40;overflow:auto}
+.modal>div{background:#fff;border-radius:12px;padding:20px 22px;width:100%;max-width:620px;display:flex;flex-direction:column;gap:12px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
 @media (max-width:640px){.top,main{padding-left:16px;padding-right:16px}.actions{padding:12px 16px}}
 </style>
@@ -91,15 +96,16 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
     </div>
     <span class="muted small" id="synced"></span>
     <button class="btn sm" id="refresh">刷新</button>
-    <button class="btn sm" disabled title="这一版只读。急着停的话，在飞书「设置」表里勾上「暂停所有发送」">暂停所有发送</button>
+    <button class="btn sm" id="pause" style="border-color:#E9B4AE;color:var(--bad)">暂停所有发送</button>
   </div>
 </header>
-<div class="banner">只读预览：这一版只能看，按钮还不能用。要同意或处理，照旧在飞书审核队列里批准、在 Claude 里说「处理来信」。</div>
+<div class="banner" id="paused-banner" style="background:var(--bad-bg);color:var(--bad);border-color:#E9B4AE" hidden>已暂停所有发送：你同意的事会先排着，点「恢复发送」后才执行。</div>
 <main id="app"><div class="loading">正在从飞书读数据…</div></main>
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" hidden><span id="toast-text"></span> <button class="btn sm" id="toast-undo" style="margin-left:10px;background:transparent;color:#fff;border-color:#5B6270" hidden>撤销</button></div>
+<div class="modal" id="modal" hidden><div id="modal-body"></div></div>
 <script>
 "use strict";
-var state = { overview: null, idx: 0, group: null };
+var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {} };
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
@@ -110,10 +116,28 @@ function api(path, opts) {
     return r.json().then(function (body) { if (!r.ok) throw new Error(body.error || ("出错了（" + r.status + "）")); return body; });
   });
 }
-function toast(text) {
-  var t = $("toast"); t.textContent = text; t.hidden = false;
-  clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 3000);
+function post(path, body) {
+  return api(path, { method: "POST", headers: { "content-type": "application/json", "x-kol-console": "1" }, body: JSON.stringify(body || {}) });
 }
+function toast(text, undo) {
+  $("toast-text").textContent = text; $("toast").hidden = false;
+  var u = $("toast-undo"); u.hidden = !undo; u.onclick = function () { $("toast").hidden = true; if (undo) undo(); };
+  clearTimeout(toast.t); toast.t = setTimeout(function () { $("toast").hidden = true; }, undo ? 5200 : 4000);
+}
+/** Hides a card at once and does the action after five seconds unless 撤销 is pressed. */
+function later(id, text, action) {
+  state.handled[id] = true;
+  var undone = false;
+  toast(text, function () { undone = true; delete state.handled[id]; renderDecide(); });
+  renderDecide();
+  setTimeout(function () {
+    if (undone) return;
+    action().then(function (r) { if (r && r.job) watchJobs(); }).catch(function (e) { delete state.handled[id]; toast("没做成：" + e.message); renderDecide(); });
+  }, 5000);
+}
+function modal(html) { $("modal-body").innerHTML = html; $("modal").hidden = false; }
+function closeModal() { $("modal").hidden = true; }
+$("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
 function fail(err) { $("app").innerHTML = '<div class="narrow"><div class="err">' + esc(err.message || err) + '</div></div>'; }
 function timeOf(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 
@@ -123,22 +147,62 @@ function loadOverview() {
     $("project").textContent = o.project;
     $("n-decide").textContent = o.cards.length;
     $("synced").textContent = "飞书 " + timeOf(o.loadedAt) + " 已同步";
-    renderStatus(o.status);
+    renderStatus(o.status, o.jobs);
+    renderPause(o.paused);
+    o.jobs.forEach(function (j) { state.jobsSeen[j.id] = j.state; });
+    if (o.jobs.some(function (j) { return j.state === "排队中" || j.state === "进行中"; })) watchJobs();
     return o;
   });
 }
 
-function renderStatus(s) {
+function renderPause(on) {
+  state.paused = on;
+  $("pause").textContent = on ? "恢复发送" : "暂停所有发送";
+  $("paused-banner").hidden = !on;
+}
+$("pause").addEventListener("click", function () {
+  var on = !state.paused;
+  if (on && !confirm("暂停后，所有发信都会停下，已同意的事先排着。确定暂停吗？")) return;
+  post("/api/pause", { on: on }).then(function (r) { renderPause(r.paused); toast(r.paused ? "已暂停所有发送" : "已恢复发送"); }).catch(function (e) { toast("没做成：" + e.message); });
+});
+var jobTimer = null;
+function watchJobs() {
+  if (jobTimer) return;
+  jobTimer = setInterval(function () {
+    api("/api/jobs").then(function (r) {
+      var busy = false;
+      r.jobs.forEach(function (j) {
+        var was = state.jobsSeen[j.id];
+        if ((j.state === "做完了" || j.state === "没做成") && was && was !== j.state) toast((j.state === "做完了" ? "做完了：" : "没做成：") + j.what + (j.note ? "（" + j.note + "）" : ""));
+        state.jobsSeen[j.id] = j.state;
+        if (j.state === "排队中" || j.state === "进行中") busy = true;
+      });
+      if (state.overview) { state.overview.jobs = r.jobs; renderStatus(state.overview.status, r.jobs); }
+      if (!busy) { clearInterval(jobTimer); jobTimer = null; }
+    }).catch(function () {});
+  }, 3000);
+}
+function renderStatus(s, jobs) {
+  jobs = jobs || [];
+  var recent = jobs.filter(function (j) { return Date.now() - j.at < 30 * 60 * 1000 || j.state === "排队中" || j.state === "进行中"; });
+  var busy = recent.filter(function (j) { return j.state === "排队中" || j.state === "进行中"; }).length;
+  var failedJobs = recent.filter(function (j) { return j.state === "没做成"; }).length;
+  var failed = s.failed + failedJobs, running = s.running + busy;
   var pill = $("status");
-  pill.className = "pill" + (s.failed ? " bad" : s.running ? " warn" : "");
-  $("status-text").textContent = s.failed ? (s.failed + " 件没做成" + (s.running ? " · 等发出 " + s.running : "")) : s.running ? ("等发出 " + s.running) : "都做完了";
-  var rows = s.items.map(function (i) {
+  pill.className = "pill" + (failed ? " bad" : running ? " warn" : "");
+  $("status-text").textContent = state.paused && running ? ("已暂停 · " + running + " 件排着") : failed ? (failed + " 件没做成" + (running ? " · 执行中 " + running : "")) : running ? ("执行中 " + running) : "都做完了";
+  var jobRows = recent.map(function (j) {
+    var cls = j.state === "没做成" ? "b-bad" : j.state === "做完了" ? "b-ok" : "b-warn";
+    return '<div class="row"><span class="badge ' + cls + '">' + esc(j.state) + '</span><div style="flex:1;min-width:0"><div style="font-weight:500">' + esc(j.what) + '</div>' +
+      (j.note ? '<div class="muted tiny">' + esc(j.note) + '</div>' : "") + '</div>' + (j.person ? '<a class="tiny" href="#/person/' + esc(j.person) + '">看</a>' : "") + '</div>';
+  }).join("");
+  var rows = jobRows + s.items.map(function (i) {
     var cls = i.st === "没做成" ? "b-bad" : i.st === "进行中" ? "b-warn" : "b-blue";
     return '<div class="row"><span class="badge ' + cls + '">' + esc(i.st) + '</span><div style="flex:1;min-width:0"><div style="font-weight:500">' + esc(i.text) + '</div>' +
       (i.note ? '<div class="muted tiny">' + esc(i.note) + '</div>' : "") + '</div>' + (i.person ? '<a class="tiny" href="#/person/' + esc(i.person) + '">看</a>' : "") + '</div>';
   }).join("");
   $("status-panel").innerHTML = '<div style="display:flex;justify-content:space-between;padding:12px 14px 8px"><b>后台在做的事</b><a href="#/log" class="small">全部执行记录</a></div>' +
-    (rows || '<div class="row muted">没有在等的事</div>');
+    (rows || '<div class="row muted">没有在做的事</div>');
 }
 $("status").addEventListener("click", function () {
   var p = $("status-panel"); p.hidden = !p.hidden; $("status").setAttribute("aria-expanded", String(!p.hidden));
@@ -149,15 +213,59 @@ document.addEventListener("click", function (e) {
 });
 $("refresh").addEventListener("click", function () {
   var b = $("refresh"); b.disabled = true; b.textContent = "刷新中…";
-  api("/api/refresh", { method: "POST" }).then(loadOverview).then(route).catch(fail).then(function () { b.disabled = false; b.textContent = "刷新"; });
+  post("/api/refresh").then(loadOverview).then(route).catch(fail).then(function () { b.disabled = false; b.textContent = "刷新"; });
 });
 
 // --- 待你决定 ---
 var GROUPS = ["出了问题", "发布", "回信", "来信", "邀约和决定", "模板", "其他"];
 var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", batch: "b-warn", template: "", todo: "" };
 
+function visibleCards() {
+  return state.overview.cards.filter(function (c) { return !state.handled[c.id]; });
+}
+function draftText(c) {
+  var ta = $("draft-body");
+  if (!ta) return null;
+  var body = ta.value.trim();
+  return c.draft.subject ? "主题：" + c.draft.subject + "\n" + body : body;
+}
+function cardEdits(c) {
+  var edits = {};
+  if (c.draft && $("draft-body") && $("draft-body").value.trim() !== c.draft.body.trim()) edits["邮件草稿"] = draftText(c);
+  Array.prototype.forEach.call(document.querySelectorAll("[data-field]"), function (el) {
+    var orig = el.getAttribute("data-orig"), v = el.value.trim();
+    if (v && v !== orig && v.charAt(0) !== "（") edits[el.getAttribute("data-field")] = v;
+  });
+  return edits;
+}
+function who(c) { return c.who ? c.who.name : c.headline; }
+
+function actionsFor(c) {
+  if (c.kind === "mail") return [
+    { label: "不用回", key: "D", primary: true, run: function () { later(c.id, "已标成不用回：" + who(c), function () { return post("/api/mail-done", { id: c.id.slice(5) }); }); } },
+    { label: "标成永不联系", key: "N", danger: true, run: function () { if (confirm("以后这个项目不再联系 " + who(c) + "，确定吗？")) later(c.id, "已标成永不联系：" + who(c), function () { return post("/api/mail-never", { id: c.id.slice(5) }); }); } },
+  ];
+  if (c.kind === "overdue") return [
+    { label: "记下这条发布", key: "A", primary: true, run: function () {
+      var link = ($("post-link") || {}).value || "";
+      if (!/^https?:\/\//.test(link.trim())) { toast("先把帖子链接贴在上面的框里"); return; }
+      later(c.id, "已记下发布：" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
+    } },
+  ];
+  if (c.kind === "problem") return [
+    { label: "我处理好了", key: "A", primary: true, run: function () { later(c.id, "已标成处理好了", function () { return post("/api/problem-done", { id: c.id }); }); } },
+  ];
+  return [
+    { label: "同意", key: "A", primary: true, run: function () {
+      var edits = cardEdits(c);
+      later(c.id, "已同意：" + who(c) + "，5 秒后开始执行", function () { return post("/api/approve", { id: c.id, edits: edits }); });
+    } },
+    { label: "要改", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } },
+  ];
+}
+
 function renderDecide() {
-  var o = state.overview, cards = o.cards;
+  var o = state.overview, cards = visibleCards();
   if (state.idx >= cards.length) state.idx = 0;
   var c = cards[state.idx];
   var chips = GROUPS.map(function (g) {
@@ -165,20 +273,34 @@ function renderDecide() {
     if (!n) return "";
     return '<button class="chip' + (c && c.group === g ? " on" : "") + '" data-group="' + esc(g) + '">' + esc(g) + " " + n + "</button>";
   }).join("");
+  $("n-decide").textContent = cards.length;
   var head = '<div style="display:flex;flex-direction:column;gap:8px">' +
     '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><b>' + (cards.length ? "有 " + cards.length + " 件要你决定" + (c ? "，这是第 " + (state.idx + 1) + " 件" : "") : "没有要你决定的事") + '</b>' +
     '<span class="muted small">J / K 上一件 · 下一件</span></div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' + chips + '</div>' +
-    (o.waitingClaude ? '<div class="muted small">另有 ' + o.waitingClaude + ' 件在等 Claude 按你的意见重写，写好会排进来。</div>' : "") + '</div>';
+    (o.waitingClaude ? '<div class="muted small">另有 ' + o.waitingClaude + ' 件在等 Claude 按你的意见重写（在 Claude 里说「改退回的草稿」），写好会排进来。</div>' : "") + '</div>';
   if (!c) {
-    $("app").innerHTML = '<div class="narrow">' + head + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">现在没有要你决定的事</div><div class="muted">新来信和 Claude 准备好的草稿会自动排进来。</div></section></div>';
+    $("app").innerHTML = '<div class="narrow">' + head + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">现在没有要你决定的事</div><div class="muted">同意的事在后台执行，结果看右上角。新来信和 Claude 准备好的草稿会自动排进来。</div></section></div>';
     return;
   }
   var steps = c.steps.map(function (s, i) {
-    var params = (s.params || []).map(function (p) { return '<span class="param">' + esc(p.label) + '<span>' + esc(p.value) + '</span></span>'; }).join("");
+    var params = (s.params || []).map(function (p) {
+      var editable = c.kind === "reply" && p.field;
+      return '<label class="param">' + esc(p.label) + (editable ? '<input class="input" style="width:140px;padding:4px 8px" data-field="' + esc(p.field) + '" data-orig="' + esc(p.value) + '" value="' + esc(p.value) + '">' : '<span>' + esc(p.value) + '</span>') + '</label>';
+    }).join("");
     return '<div class="step"><span class="num">' + (i + 1) + '</span><div style="flex:1;min-width:0"><div>' + esc(s.text) + '</div>' + (params ? "<div>" + params + "</div>" : "") + '</div></div>';
   }).join("");
   var next = cards[state.idx + 1];
+  var acts = actionsFor(c);
+  var buttons = acts.map(function (a, i) {
+    return '<button class="btn big' + (a.primary ? " primary" : "") + '" data-act="' + i + '"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + '>' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
+  }).join("") + '<button class="btn big" id="skip">跳过 <span class="kbd">S</span></button>';
+  var mailHint = c.kind === "mail" ? '<div class="muted small">要回信的话：在 Claude 里说「处理来信」，写好的草稿会排进这里。</div>' : "";
+  var linkBox = c.kind === "overdue" ? '<label class="field">其实已经发了？把帖子链接贴在这里<input class="input" id="post-link" placeholder="https://"></label>' : "";
+  var change = state.changing ? '<div style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
+    '<label class="field" style="font-weight:500;color:var(--ink)">哪里要改？<textarea class="input" id="change-note" rows="2" placeholder="写给 Claude，比如：语气轻一点，不要提分润比例；或者：不要结案，改成下个月再问"></textarea></label>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="to-claude">交给 Claude 重写</button><button class="btn" id="drop" style="border-color:transparent;color:var(--muted)">这件事不用做了</button><button class="btn" id="cancel-change" style="border-color:transparent;color:var(--muted)">取消</button></div>' +
+    '<div class="muted tiny">交给 Claude 后，在 Claude 里说「改退回的草稿」；改好的会排回这里。小改动直接改上面的信，再点同意就行。</div></div>' : "";
   $("app").innerHTML = '<div class="narrow">' + head +
     '<section class="card" aria-label="当前这件事"><div style="padding:24px 28px 12px;display:flex;flex-direction:column;gap:18px">' +
       '<div><div class="small" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge ' + (TAG[c.kind] || "") + '">' + esc(c.tag) + '</span>' +
@@ -186,36 +308,61 @@ function renderDecide() {
         '<h1 style="margin:6px 0 0;font-size:24px;line-height:1.35">' + esc(c.headline) + '</h1></div>' +
       (c.mail ? '<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " · " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + '</div></div>' : "") +
       '<div class="suggest"><div><div class="lbl" style="color:var(--blue2)">建议</div><div style="font-size:18px;font-weight:600">' + esc(c.suggest) + '</div></div>' +
-        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">点「同意」后会：</div>' + steps + '</div>' : "") +
+        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" || c.kind === "todo" ? "点「同意」后会：" : "可以这样处理：") + '</div>' + steps + '</div>' : "") +
         (c.why ? '<details><summary>为什么这么建议</summary><div class="muted" style="margin-top:6px;white-space:pre-wrap">' + esc(c.why) + '</div></details>' : "") + '</div>' +
-      (c.draft ? '<div><div class="lbl">' + esc(c.draft.label) + '</div>' + (c.draft.subject ? '<div class="muted small" style="margin-bottom:6px">主旨：' + esc(c.draft.subject) + '</div>' : "") + '<div class="draft">' + esc(c.draft.body) + '</div></div>' : "") +
-    '</div><div class="actions">' +
-      '<button class="btn primary big" disabled title="这一版只读，请在飞书审核队列里批准">同意 <span class="kbd">A</span></button>' +
-      '<button class="btn big" disabled title="这一版只读">要改 <span class="kbd">E</span></button>' +
-      '<button class="btn big" id="skip">跳过 <span class="kbd">S</span></button>' +
+      linkBox +
+      (c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">小改动直接改字，改完点同意</span>' : "") + '</div>' +
+        (c.draft.subject ? '<div class="muted small">主旨：' + esc(c.draft.subject) + '</div>' : "") +
+        (c.kind === "reply" ? '<textarea class="input draft" id="draft-body" rows="9" style="resize:vertical">' + esc(c.draft.body) + '</textarea>' : '<div class="draft">' + esc(c.draft.body) + '</div>') + '</div>' : "") +
+      mailHint + change +
+    '</div><div class="actions">' + buttons +
       '<span class="muted small" style="margin-left:auto">' + (next ? "下一件：" + esc(next.headline) : "这是最后一件") + '</span>' +
     '</div></section></div>';
+  Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) { b.addEventListener("click", function () { acts[Number(b.getAttribute("data-act"))].run(); }); });
   $("skip").addEventListener("click", function () { move(1); });
+  if (state.changing) {
+    $("cancel-change").addEventListener("click", function () { state.changing = false; renderDecide(); });
+    $("to-claude").addEventListener("click", function () {
+      var note = $("change-note").value.trim();
+      if (!note) { toast("写一句哪里要改，Claude 才知道怎么改"); return; }
+      state.changing = false;
+      later(c.id, "已交给 Claude 重写：" + who(c), function () { return post("/api/revise", { id: c.id, note: note }); });
+    });
+    $("drop").addEventListener("click", function () {
+      var note = $("change-note").value.trim();
+      state.changing = false;
+      later(c.id, "这件事不做了：" + who(c), function () { return post("/api/drop", { id: c.id, note: note }); });
+    });
+  }
   Array.prototype.forEach.call(document.querySelectorAll("[data-group]"), function (b) {
     b.addEventListener("click", function () {
       var g = b.getAttribute("data-group");
       var i = cards.findIndex(function (x) { return x.group === g; });
-      if (i >= 0) { state.idx = i; renderDecide(); }
+      if (i >= 0) { state.idx = i; state.changing = false; renderDecide(); }
     });
   });
 }
 function move(d) {
-  var n = state.overview.cards.length;
+  var n = visibleCards().length;
   if (!n) return;
   state.idx = (state.idx + d + n) % n;
+  state.changing = false;
   renderDecide();
   window.scrollTo(0, 0);
 }
 document.addEventListener("keydown", function (e) {
   if (location.hash && location.hash !== "#/" && location.hash !== "#") return;
+  if (!$("modal").hidden) return;
   if (e.target.closest && e.target.closest("input,textarea,select")) return;
-  if (e.key === "j" || e.key === "s") move(1);
-  if (e.key === "k") move(-1);
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  var k = e.key.toLowerCase();
+  if (k === "j" || k === "s") return move(1);
+  if (k === "k") return move(-1);
+  var c = visibleCards()[state.idx];
+  if (!c) return;
+  var acts = actionsFor(c);
+  var hit = acts.find(function (a) { return a.key.toLowerCase() === k; });
+  if (hit) { e.preventDefault(); hit.run(); }
 });
 
 // --- KOL ---
@@ -228,11 +375,12 @@ function renderPeople(view, q) {
   $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' +
     '<div style="display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline"><h1 style="margin:0;font-size:22px">KOL</h1>' +
       '<span class="muted">正在跟进 ' + (o.counts.all || 0) + ' 位 · 还没联系过 ' + (o.counts.pool || 0) + ' 位</span>' +
-      '<button class="btn primary" style="margin-left:auto" disabled title="这一版只读。找人请在 Claude 里说「找一批…的 KOL」">找新人</button></div>' +
+      '<button class="btn primary" style="margin-left:auto" id="find">找新人</button></div>' +
     '<div class="views" role="tablist">' + tabs + '</div>' +
     '<div class="muted small" id="question"></div>' +
     '<input class="input" id="q" placeholder="搜名字、账号、邮箱" value="' + esc(q) + '" style="max-width:360px">' +
     '<section class="card" style="overflow-x:auto" id="table"><div class="loading">读取中…</div></section></div>';
+  $("find").addEventListener("click", openFind);
   var input = $("q");
   input.addEventListener("input", function () {
     clearTimeout(searchTimer);
@@ -259,6 +407,28 @@ function loadPeople(view, q) {
     $("table").innerHTML = '<table style="min-width:760px"><thead>' + head + "</thead><tbody>" + (rows || '<tr><td colspan="9" class="muted">这里没有人</td></tr>') + "</tbody></table>" +
       '<div class="muted small" style="padding:10px 12px">' + (r.total > r.rows.length ? "一共 " + r.total + " 位，只显示前 " + r.rows.length + " 位，可以用上面的搜索。" : "一共 " + r.total + " 位") + "</div>";
   }).catch(function (e) { $("table").innerHTML = '<div class="err">' + esc(e.message) + "</div>"; });
+}
+
+function openFind() {
+  modal('<div class="loading">读取入库批次…</div>');
+  api("/api/find-options").then(function (r) {
+    var opts = r.batches.slice().reverse().map(function (b) { return "<option>" + esc(b) + "</option>"; }).join("");
+    modal('<h2 style="margin:0;font-size:18px">找一批新的 KOL</h2><div class="muted small">去 Instagram / YouTube 上搜，查他们公开的邮箱，到你设的上限就停。找到的人进「还没联系过」，已经在库里的会跳过。</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">' +
+      '<label class="field">在哪个平台找<select class="input" id="f-platform"><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="tiktok">TikTok（只能查已知账号）</option></select></label>' +
+      '<label class="field">找什么样的人（关键词，逗号隔开）<input class="input" id="f-keywords" placeholder="伴侶, 感情, 兩性"></label>' +
+      '<label class="field">或者：找像这几位的人<input class="input" id="f-seeds" placeholder="@love.notes.tw, @couple.daily"></label>' +
+      '<label class="field">粉丝数<span style="display:flex;gap:6px;align-items:center"><input class="input" id="f-min" style="width:100px" value="5000"> 到 <input class="input" id="f-max" style="width:100px" value="50000"></span></label>' +
+      '<label class="field">最多花多少（美元）<input class="input" id="f-budget" value="5"></label>' +
+      '<label class="field">放进哪个入库批次<select class="input" id="f-batch">' + opts + '</select><span class="tiny">新批次请先在飞书「KOL 档案」的入库批次里加选项</span></label></div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="f-cancel">取消</button><button class="btn primary" id="f-go">开始找</button></div>');
+    $("f-cancel").onclick = closeModal;
+    $("f-go").onclick = function () {
+      var req = { platform: $("f-platform").value, keywords: $("f-keywords").value, seeds: $("f-seeds").value, minFollowers: $("f-min").value, maxFollowers: $("f-max").value, budget: $("f-budget").value, batch: $("f-batch").value };
+      if (!confirm("会花 Apify 的钱，最多 $" + req.budget + "。开始找吗？")) return;
+      post("/api/find", req).then(function () { closeModal(); toast("开始找了，进度看右上角；找完会出现在「还没联系过」"); watchJobs(); }).catch(function (e) { toast("没开始：" + e.message); });
+    };
+  }).catch(function (e) { modal('<div class="err">' + esc(e.message) + '</div><button class="btn" onclick="closeModal()">关闭</button>'); });
 }
 
 // --- 一位 KOL ---
@@ -296,15 +466,57 @@ function renderPerson(id) {
         '<section class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:16px"><div><div class="lbl">现在的情况</div><div style="font-size:19px;font-weight:600">' + esc(p.situation) + '</div>' +
           (p.lastContact ? '<div class="muted small">最近一次联系：' + esc(p.lastContact) + "</div>" : "") + "</div>" + stepper +
           '<div style="border-top:1px solid var(--line2);padding-top:14px;display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">接下来</div>' + pending +
-            '<div>' + (p.next ? esc(p.next) : '<span class="muted">没写下一步</span>') + (p.nextDate ? ' <span class="muted small">（下次跟进：' + esc(p.nextDate) + "）</span>" : "") + "</div></div>" +
-          '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:14px"><button class="btn" disabled title="这一版只读">写信给她</button><button class="btn" disabled title="这一版只读">不再跟进</button><button class="btn" disabled title="这一版只读">不要再联系她</button></div></section>' +
+            '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1 1 260px">' + (p.next ? esc(p.next) : '<span class="muted">没写下一步</span>') + (p.nextDate ? ' <span class="muted small">（下次跟进：' + esc(p.nextDate) + "）</span>" : "") + '</div><button class="btn sm" id="p-edit">改</button></div></div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:14px"><button class="btn primary" id="p-write"' + (p.doNotContact ? " disabled" : "") + '>写信给她</button>' +
+          (p.stage !== "结案" ? '<button class="btn" id="p-close" style="border-color:transparent;color:var(--muted)">不再跟进</button>' : "") +
+          (p.doNotContact ? "" : '<button class="btn" id="p-never" style="border-color:transparent;color:var(--bad)">不要再联系她</button>') + '</div></section>' +
         '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>来往记录</b><span class="muted small">左边是她，右边是我们' + (p.olderCount ? " · 更早还有 " + p.olderCount + " 条" : "") + "</span></div>" +
           (bubbles || '<div class="muted">还没有来往</div>') + "</section></div>" +
         '<aside style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px">' +
           '<section class="card" style="padding:16px 18px;display:flex;flex-direction:column;gap:8px">' + trial + partner + "</section>" +
           '<section class="card" style="padding:16px 18px"><b>资料</b>' + info + "</section>" +
-          '<section class="card" style="padding:16px 18px"><b>发布</b>' + posts + "</section></aside></div></div>";
+          '<section class="card" style="padding:16px 18px"><b>发布</b>' + posts + '<button class="btn sm" id="p-post" style="margin-top:10px">记下一条发布</button></section></aside></div></div>';
+    wirePerson(p);
   }).catch(fail);
+}
+
+function wirePerson(p) {
+  var reload = function () { renderPerson(p.id); };
+  $("p-edit").onclick = function () {
+    modal('<h2 style="margin:0;font-size:18px">接下来</h2>' +
+      '<label class="field">下一步要做什么<input class="input" id="e-next" value="' + esc(p.next) + '"></label>' +
+      '<label class="field">下次跟进<input class="input" type="date" id="e-date" value="' + esc(p.nextDateIso || "") + '"></label>' +
+      '<label class="field">等谁<select class="input" id="e-turn"><option' + (p.turn === "我们" ? " selected" : "") + '>我们</option><option' + (p.turn === "KOL" ? " selected" : "") + '>KOL</option><option' + (p.turn === "无需动作" ? " selected" : "") + '>无需动作</option></select></label>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="e-cancel">取消</button><button class="btn primary" id="e-save">保存</button></div>');
+    $("e-cancel").onclick = closeModal;
+    $("e-save").onclick = function () {
+      post("/api/followup", { id: p.id, fields: { 下一步: $("e-next").value, 下次跟进日期: $("e-date").value, 当前轮到谁: $("e-turn").value } })
+        .then(function () { closeModal(); toast("已保存"); reload(); }).catch(function (e) { toast("没保存：" + e.message); });
+    };
+  };
+  if ($("p-write")) $("p-write").onclick = function () {
+    modal('<h2 style="margin:0;font-size:18px">写信给 ' + esc(p.name) + '</h2><div class="muted small">点「发出」就算你同意了，会按额度排队发出；在「执行记录」里能看到结果。</div>' +
+      '<label class="field">主旨（回复她上一封信时可以不填）<input class="input" id="w-subject"></label>' +
+      '<label class="field">正文<textarea class="input" id="w-body" rows="10"></textarea></label>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="w-cancel">取消</button><button class="btn primary" id="w-send">发出</button></div>');
+    $("w-cancel").onclick = closeModal;
+    $("w-send").onclick = function () {
+      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value })
+        .then(function () { closeModal(); toast("已排队发出，结果看右上角"); watchJobs(); }).catch(function (e) { toast("没发出：" + e.message); });
+    };
+  };
+  var close = function (never) {
+    var q = never ? "以后这个项目不再联系 " + p.name + "，并结束跟进。确定吗？" : "结束对 " + p.name + " 的跟进？以后不会再自动催信。";
+    if (!confirm(q)) return;
+    post("/api/close", { id: p.id, never: never }).then(function () { toast(never ? "已标成永不联系" : "已结束跟进"); reload(); }).catch(function (e) { toast("没做成：" + e.message); });
+  };
+  if ($("p-close")) $("p-close").onclick = function () { close(false); };
+  if ($("p-never")) $("p-never").onclick = function () { close(true); };
+  $("p-post").onclick = function () {
+    var link = prompt("把帖子链接贴在这里（https:// 开头）");
+    if (!link) return;
+    post("/api/post", { id: p.id, link: link }).then(function () { toast("已记下发布"); reload(); }).catch(function (e) { toast("没记下：" + e.message); });
+  };
 }
 
 // --- 执行记录 ---

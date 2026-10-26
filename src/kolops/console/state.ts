@@ -16,7 +16,8 @@ import { SENDING_TYPES } from "../send.js";
 
 export interface Step {
   text: string;
-  params?: { label: string; value: string }[];
+  /** `field` names the 审核队列 field a reviewer may change from the card; `value` starting with 「（」 is a default shown only. */
+  params?: { label: string; value: string; field?: string }[];
 }
 
 export interface Card {
@@ -231,18 +232,28 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
     cards.push(reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid)));
   }
 
+  // One card per KOL: several unanswered mails from the same person are one conversation to answer.
+  const byKol = new Map<string, Row[]>();
   for (const m of data.pendingMail) {
     const fid = linkIds(m["KOL"])[0] ?? "";
     if (fid && openByKol.has(fid)) continue;
+    const key = fid || `contact:${m.record_id}`;
+    byKol.set(key, [...(byKol.get(key) ?? []), m]);
+  }
+  for (const [key, ms] of byKol) {
+    const fid = key.startsWith("contact:") ? "" : key;
+    ms.sort((a, b) => (cellTime(a["日期"], tz) ?? 0) - (cellTime(b["日期"], tz) ?? 0));
+    const first = cellTime(ms[0]["日期"], tz);
+    const latest = ms[ms.length - 1];
     const w = who(fid);
-    const body = mails.get(`msg:${text(m["Message ID"])}`);
-    const when = cellTime(m["日期"], tz);
-    const waited = when ? daysBetween(day(when, tz), todayStr) : 0;
+    const body = mails.get(`msg:${text(latest["Message ID"])}`);
+    const when = cellTime(latest["日期"], tz);
+    const waited = first ? daysBetween(day(first, tz), todayStr) : 0;
     cards.push({
-      id: `mail:${m.record_id}`, kind: "mail", group: "来信", tag: "还没草稿", who: w,
-      headline: `${w?.name ?? "一位 KOL"} 来信${waited >= 2 ? `，已经 ${waited} 天没人回了` : ""}`,
-      meta: [meta(fid), option(m["渠道"]) ? `收件 ${option(m["渠道"])}` : ""].filter(Boolean).join(" · "),
-      mail: { label: `${w?.name ?? "对方"}说 · ${text(m["摘要"])}`, text: body?.text ?? "（正文没读到，可以去邮箱里看）", when: when ? stamp(when, tz) : "" },
+      id: `mail:${ms.map((m) => m.record_id).join(",")}`, kind: "mail", group: "来信", tag: "还没草稿", who: w,
+      headline: `${w?.name ?? "一位 KOL"} 来信${ms.length > 1 ? `（${ms.length} 封）` : ""}${waited >= 2 ? `，已经 ${waited} 天没人回了` : ""}`,
+      meta: [meta(fid), option(latest["渠道"]) ? `收件 ${option(latest["渠道"])}` : ""].filter(Boolean).join(" · "),
+      mail: { label: `${w?.name ?? "对方"}${ms.length > 1 ? "最近一封" : ""}说 · ${text(latest["摘要"])}`, text: body?.text ?? "（正文没读到，可以去邮箱里看）", when: when ? stamp(when, tz) : "" },
       suggest: "让 Claude 写一封回信",
       steps: [{ text: "在 Claude 里说「处理来信」，写好的回信会排进这里等你看" }],
       why: "这封信还没有草稿，多半是今天早上的例行跑完以后才收到的。",
@@ -265,17 +276,17 @@ function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: stri
   const action = option(r["体验码动作"]);
   if (action === "发码") {
     steps.push({ text: "在 TAFU 后台建一个体验码", params: [
-      { label: "码名", value: text(r["体验码"]) || "（用她的账号名）" },
-      { label: "能用几次", value: String(Number(r["体验次数"]) || cfg.trial.maxUses) },
-      { label: "几天内有效", value: String(Number(r["体验天数"]) || cfg.trial.days) },
+      { label: "码名", value: text(r["体验码"]) || "（用她的账号名）", field: "体验码" },
+      { label: "能用几次", value: String(Number(r["体验次数"]) || cfg.trial.maxUses), field: "体验次数" },
+      { label: "几天内有效", value: String(Number(r["体验天数"]) || cfg.trial.days), field: "体验天数" },
     ] });
   } else if (action === "延期") {
     steps.push({ text: `把体验码 ${text(r["体验码"]) || text(f?.["体验码"]) || ""} 延长 ${Number(r["体验天数"]) || cfg.trial.days} 天` });
   } else if (action === "开活动码") {
     steps.push({ text: "在 TAFU 后台开合作活动（粉丝通过她的连结购买有折扣，她拿分润）", params: [
-      { label: "活动码", value: text(r["活动码"]) || "（用她的账号名）" },
-      { label: "粉丝减几 %", value: String(Number(r["粉丝折扣"]) || cfg.partner.percentOff) },
-      { label: "市场", value: text(r["销售市场"]) || "（按档案的市场）" },
+      { label: "活动码", value: text(r["活动码"]) || "（用她的账号名）", field: "活动码" },
+      { label: "粉丝减几 %", value: String(Number(r["粉丝折扣"]) || cfg.partner.percentOff), field: "粉丝折扣" },
+      { label: "市场", value: text(r["销售市场"]) || "（按档案的市场）", field: "销售市场" },
     ] });
   }
 
@@ -525,6 +536,7 @@ export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string) {
     turn: option(f["当前轮到谁"]),
     next: text(f["下一步"]),
     nextDate: ahead(day(f["下次跟进日期"], tz), todayStr),
+    nextDateIso: day(f["下次跟进日期"], tz),
     pending: pending.map((r) => ({ id: r.record_id, title: text(r["审核项"]), ask: text(r["要你定什么"]) })),
     bubbles,
     olderCount: Math.max(0, contacts.length - recent.length),

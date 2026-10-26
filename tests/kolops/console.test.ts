@@ -50,7 +50,7 @@ describe("decision queue", () => {
     const c = cards[0];
     expect(c).toMatchObject({ kind: "reply", group: "回信", headline: "米卡想先试用", suggest: "给她发体验码，并回信告诉她怎么用" });
     expect(c.steps.map((s) => s.text)).toEqual(["在 TAFU 后台建一个体验码", "成功后，从 hello@tafu.me 把下面这封信发给 mika.daily@example.com"]);
-    expect(c.steps[0].params).toEqual([{ label: "码名", value: "MIKADAILY" }, { label: "能用几次", value: "3" }, { label: "几天内有效", value: "14" }]);
+    expect(c.steps[0].params).toEqual([{ label: "码名", value: "MIKADAILY", field: "体验码" }, { label: "能用几次", value: "3", field: "体验次数" }, { label: "几天内有效", value: "14", field: "体验天数" }]);
     expect(c.draft?.body).toContain("這是妳的體驗碼");
   });
 
@@ -71,6 +71,16 @@ describe("decision queue", () => {
     expect(cards[1].mail?.text).toBe(undefined);
     expect(cards[2]).toMatchObject({ headline: "@chen.family 来信，已经 4 天没人回了" });
     expect(cards[2].mail?.text).toBe("想了解一下合作方式");
+  });
+
+  it("puts one KOL's unanswered mails on one card", async () => {
+    const a = kol("chen.family", { 阶段: ["已回复"], 当前轮到谁: ["我们"] });
+    const m1 = lark.add(T.contacts, { 方向: ["收到"], 待处理: true, 渠道: ["hello@tafu.me"], 摘要: "第一封", 日期: at(addDays(day, -3)), KOL: [{ id: a.f }] });
+    const m2 = lark.add(T.contacts, { 方向: ["收到"], 待处理: true, 渠道: ["hello@tafu.me"], 摘要: "第二封", 日期: at(day), KOL: [{ id: a.f }] });
+    const { cards } = decisionCards(await loaded(), ctx.cfg, day);
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toMatchObject({ id: `mail:${m1},${m2}`, headline: "@chen.family 来信（2 封），已经 3 天没人回了" });
+    expect(cards[0].mail?.label).toContain("第二封");
   });
 
   it("raises an agreed post that is two days late", async () => {
@@ -146,7 +156,7 @@ describe("one KOL", () => {
 describe("the console server", () => {
   it("serves the page and data to this computer only, and refuses writes", async () => {
     kol("a", { 阶段: ["已回复"], 当前轮到谁: ["我们"] });
-    const { url, server } = await startConsole(ctx, { openBrowser: false });
+    const { url, server } = await startConsole(ctx, { port: 0, openBrowser: false });
     try {
       const page = await fetch(url);
       expect(await page.text()).toContain("KOL 决策台");
