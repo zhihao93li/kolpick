@@ -59534,6 +59534,135 @@ var require_dist19 = __commonJS({
 import { readFileSync as readFileSync10 } from "node:fs";
 import { parseArgs } from "node:util";
 
+// src/kolops/lark.ts
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+var exec = promisify(execFile);
+var REQUIRED_SCOPES = [
+  "base:record:read",
+  "base:record:create",
+  "base:record:update",
+  "base:field:read",
+  "contact:user.basic_profile:readonly",
+  "mail:user_mailbox:readonly",
+  "mail:user_mailbox.message:readonly",
+  "mail:user_mailbox.message.address:read",
+  "mail:user_mailbox.message.subject:read",
+  "mail:user_mailbox.message.body:read",
+  "mail:user_mailbox.message:modify",
+  "mail:user_mailbox.message:send"
+];
+function authHint(missing) {
+  return `\u98DE\u4E66\u6388\u6743\u7F3A\u5C11\u6743\u9650\uFF1A${missing.join("\u3001")}\u3002
+\u8BF7\u5728\u7EC8\u7AEF\u8FD0\u884C\uFF1Alark-cli auth login --scope "${REQUIRED_SCOPES.join(" ")}"
+\u5B83\u4F1A\u7ED9\u51FA\u4E00\u4E2A\u94FE\u63A5\uFF0C\u5728\u6D4F\u89C8\u5668\u91CC\u6253\u5F00\u5E76\u540C\u610F\u3002\u5982\u679C\u6388\u6743\u9875\u8BF4\u5E94\u7528\u6CA1\u6709\u5F00\u901A\u8FD9\u4E9B\u6743\u9650\uFF0C\u8981\u5148\u8BF7\u98DE\u4E66\u7BA1\u7406\u5458\u5728\u5F00\u653E\u5E73\u53F0\u7ED9 lark-cli \u7528\u7684\u5E94\u7528\u5F00\u901A\u90AE\u7BB1\u548C\u901A\u8BAF\u5F55\u6743\u9650\uFF08\u8BE6\u89C1\u63D2\u4EF6 README\uFF09\u3002`;
+}
+var LarkError = class extends Error {
+  /** True when lark-cli answered with an API error: the call was refused, so nothing happened. */
+  constructor(message, definite = false, transport = false) {
+    super(message);
+    this.definite = definite;
+    this.transport = transport;
+  }
+  definite;
+  transport;
+};
+var READS = /* @__PURE__ */ new Set(["+record-list", "+record-get", "+field-list", "+messages", "+message", "+triage", "+thread", "user_mailbox.messages"]);
+var LarkCli = class {
+  constructor(baseToken, bin = process.env.KOL_LARK_CLI || "lark-cli") {
+    this.baseToken = baseToken;
+    this.bin = bin;
+  }
+  baseToken;
+  bin;
+  async json(args) {
+    const out = await this.raw(args);
+    return unwrap(out, args);
+  }
+  async records(table, opts = {}) {
+    const rows = [];
+    for (let offset = 0; ; offset += 200) {
+      const args = [
+        "base",
+        "+record-list",
+        "--base-token",
+        opts.baseToken ?? this.baseToken,
+        "--table-id",
+        table,
+        "--format",
+        "json",
+        "--limit",
+        "200",
+        "--offset",
+        String(offset),
+        "--as",
+        "user"
+      ];
+      if (opts.filter) args.push("--filter-json", JSON.stringify(opts.filter));
+      for (const f of opts.fields ?? []) args.push("--field-id", f);
+      const page = await this.json(args);
+      rows.push(...matrixRows(page));
+      if (!page?.has_more) break;
+    }
+    return rows;
+  }
+  async raw(args) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.once(args);
+      } catch (err) {
+        const retry = err instanceof LarkError && err.transport && READS.has(args[1]) && attempt < 4;
+        if (!retry) throw err;
+        await new Promise((r) => setTimeout(r, 2e3 * attempt));
+      }
+    }
+  }
+  async once(args, cwd) {
+    try {
+      const { stdout } = await exec(this.bin, args, { cwd, maxBuffer: 64 * 1024 * 1024 });
+      return stdout;
+    } catch (err) {
+      if (err.code === "ENOENT") throw new LarkError("\u8FD9\u53F0\u7535\u8111\u4E0A\u627E\u4E0D\u5230 lark-cli\u3002\u8BF7\u5148\u6309\u63D2\u4EF6 README \u5B89\u88C5\u5E76\u767B\u5F55 lark-cli", true);
+      const detail = (err.stdout || err.stderr || err.message || "").toString().trim();
+      let envelope;
+      for (const out of [err.stdout, err.stderr]) {
+        try {
+          envelope ??= JSON.parse(out);
+        } catch {
+        }
+      }
+      if (envelope?.error?.type === "authorization") {
+        const missing = envelope.error.missing_scopes ?? [];
+        throw new LarkError(missing.length ? authHint(missing) : `\u98DE\u4E66\u767B\u5F55\u6709\u95EE\u9898\uFF1A${envelope.error.message}\u3002\u8BF7\u5728\u7EC8\u7AEF\u8FD0\u884C lark-cli auth login \u91CD\u65B0\u767B\u5F55`, true);
+      }
+      const transport = envelope?.error?.type === "network";
+      throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${detail.slice(0, 800)}`, envelope?.ok === false && !transport, transport);
+    }
+  }
+};
+function matrixRows(page) {
+  const fields = page?.fields ?? [];
+  const ids = page?.record_id_list ?? [];
+  return (page?.data ?? []).map((cells, i) => {
+    const row = { record_id: ids[i] };
+    fields.forEach((f, j) => row[f] = cells[j] ?? null);
+    return row;
+  });
+}
+function unwrap(stdout, args = []) {
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u6CA1\u6709\u8FD4\u56DE JSON\uFF1A${stdout.slice(0, 300)}`);
+  }
+  if (parsed && typeof parsed === "object" && "ok" in parsed) {
+    if (!parsed.ok) throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${JSON.stringify(parsed.error ?? parsed).slice(0, 800)}`, true);
+    return parsed.data ?? {};
+  }
+  return parsed;
+}
+
 // src/kolops/base.ts
 var Base = class {
   constructor(lark, token) {
@@ -59544,6 +59673,17 @@ var Base = class {
   token;
   records(table, opts = {}) {
     return this.lark.records(table, { ...opts, baseToken: this.token });
+  }
+  /** The records with these ids, 100 per call. Ids that no longer exist are simply missing from the result. */
+  async get(table, ids, fields = []) {
+    const rows = [];
+    for (let i = 0; i < ids.length; i += 100) {
+      const args = ["base", "+record-get", "--base-token", this.token, "--table-id", table, "--format", "json", "--as", "user"];
+      for (const id of ids.slice(i, i + 100)) args.push("--record-id", id);
+      for (const f of fields) args.push("--field-id", f);
+      rows.push(...matrixRows(await this.lark.json(args)));
+    }
+    return rows;
   }
   /** Names of a table's fields, or null when the base has no such table. Other errors (login, network) are thrown. */
   async fieldNames(table) {
@@ -59672,6 +59812,9 @@ function addDays(dayStr, n) {
 }
 function onOrAfter(field, dayStr) {
   return [field, ">", `ExactDate(${addDays(dayStr, -1)})`];
+}
+function daysBetween(a, b) {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 864e5);
 }
 function emailsIn(v) {
   return (text(v).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) ?? []).map((e) => e.toLowerCase());
@@ -60026,137 +60169,6 @@ function splitDraft(draft) {
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-
-// src/kolops/lark.ts
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-var exec = promisify(execFile);
-var REQUIRED_SCOPES = [
-  "base:record:read",
-  "base:record:create",
-  "base:record:update",
-  "base:field:read",
-  "contact:user.basic_profile:readonly",
-  "mail:user_mailbox:readonly",
-  "mail:user_mailbox.message:readonly",
-  "mail:user_mailbox.message.address:read",
-  "mail:user_mailbox.message.subject:read",
-  "mail:user_mailbox.message.body:read",
-  "mail:user_mailbox.message:modify",
-  "mail:user_mailbox.message:send"
-];
-function authHint(missing) {
-  return `\u98DE\u4E66\u6388\u6743\u7F3A\u5C11\u6743\u9650\uFF1A${missing.join("\u3001")}\u3002
-\u8BF7\u5728\u7EC8\u7AEF\u8FD0\u884C\uFF1Alark-cli auth login --scope "${REQUIRED_SCOPES.join(" ")}"
-\u5B83\u4F1A\u7ED9\u51FA\u4E00\u4E2A\u94FE\u63A5\uFF0C\u5728\u6D4F\u89C8\u5668\u91CC\u6253\u5F00\u5E76\u540C\u610F\u3002\u5982\u679C\u6388\u6743\u9875\u8BF4\u5E94\u7528\u6CA1\u6709\u5F00\u901A\u8FD9\u4E9B\u6743\u9650\uFF0C\u8981\u5148\u8BF7\u98DE\u4E66\u7BA1\u7406\u5458\u5728\u5F00\u653E\u5E73\u53F0\u7ED9 lark-cli \u7528\u7684\u5E94\u7528\u5F00\u901A\u90AE\u7BB1\u548C\u901A\u8BAF\u5F55\u6743\u9650\uFF08\u8BE6\u89C1\u63D2\u4EF6 README\uFF09\u3002`;
-}
-var LarkError = class extends Error {
-  /** True when lark-cli answered with an API error: the call was refused, so nothing happened. */
-  constructor(message, definite = false, transport = false) {
-    super(message);
-    this.definite = definite;
-    this.transport = transport;
-  }
-  definite;
-  transport;
-};
-var READS = /* @__PURE__ */ new Set(["+record-list", "+field-list", "+messages", "+message", "+triage", "+thread", "user_mailbox.messages"]);
-var LarkCli = class {
-  constructor(baseToken, bin = process.env.KOL_LARK_CLI || "lark-cli") {
-    this.baseToken = baseToken;
-    this.bin = bin;
-  }
-  baseToken;
-  bin;
-  async json(args) {
-    const out = await this.raw(args);
-    return unwrap(out, args);
-  }
-  async records(table, opts = {}) {
-    const rows = [];
-    for (let offset = 0; ; offset += 200) {
-      const args = [
-        "base",
-        "+record-list",
-        "--base-token",
-        opts.baseToken ?? this.baseToken,
-        "--table-id",
-        table,
-        "--format",
-        "json",
-        "--limit",
-        "200",
-        "--offset",
-        String(offset),
-        "--as",
-        "user"
-      ];
-      if (opts.filter) args.push("--filter-json", JSON.stringify(opts.filter));
-      for (const f of opts.fields ?? []) args.push("--field-id", f);
-      const page = await this.json(args);
-      rows.push(...matrixRows(page));
-      if (!page?.has_more) break;
-    }
-    return rows;
-  }
-  async raw(args) {
-    for (let attempt = 1; ; attempt++) {
-      try {
-        return await this.once(args);
-      } catch (err) {
-        const retry = err instanceof LarkError && err.transport && READS.has(args[1]) && attempt < 4;
-        if (!retry) throw err;
-        await new Promise((r) => setTimeout(r, 2e3 * attempt));
-      }
-    }
-  }
-  async once(args, cwd) {
-    try {
-      const { stdout } = await exec(this.bin, args, { cwd, maxBuffer: 64 * 1024 * 1024 });
-      return stdout;
-    } catch (err) {
-      if (err.code === "ENOENT") throw new LarkError("\u8FD9\u53F0\u7535\u8111\u4E0A\u627E\u4E0D\u5230 lark-cli\u3002\u8BF7\u5148\u6309\u63D2\u4EF6 README \u5B89\u88C5\u5E76\u767B\u5F55 lark-cli", true);
-      const detail = (err.stdout || err.stderr || err.message || "").toString().trim();
-      let envelope;
-      for (const out of [err.stdout, err.stderr]) {
-        try {
-          envelope ??= JSON.parse(out);
-        } catch {
-        }
-      }
-      if (envelope?.error?.type === "authorization") {
-        const missing = envelope.error.missing_scopes ?? [];
-        throw new LarkError(missing.length ? authHint(missing) : `\u98DE\u4E66\u767B\u5F55\u6709\u95EE\u9898\uFF1A${envelope.error.message}\u3002\u8BF7\u5728\u7EC8\u7AEF\u8FD0\u884C lark-cli auth login \u91CD\u65B0\u767B\u5F55`, true);
-      }
-      const transport = envelope?.error?.type === "network";
-      throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${detail.slice(0, 800)}`, envelope?.ok === false && !transport, transport);
-    }
-  }
-};
-function matrixRows(page) {
-  const fields = page?.fields ?? [];
-  const ids = page?.record_id_list ?? [];
-  return (page?.data ?? []).map((cells, i) => {
-    const row = { record_id: ids[i] };
-    fields.forEach((f, j) => row[f] = cells[j] ?? null);
-    return row;
-  });
-}
-function unwrap(stdout, args = []) {
-  let parsed;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch {
-    throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u6CA1\u6709\u8FD4\u56DE JSON\uFF1A${stdout.slice(0, 300)}`);
-  }
-  if (parsed && typeof parsed === "object" && "ok" in parsed) {
-    if (!parsed.ok) throw new LarkError(`lark-cli ${args.slice(0, 2).join(" ")} \u5931\u8D25\uFF1A${JSON.stringify(parsed.error ?? parsed).slice(0, 800)}`, true);
-    return parsed.data ?? {};
-  }
-  return parsed;
-}
-
-// src/kolops/ops.ts
 function dataDir() {
   const dir = process.env.KOL_DATA_DIR || join(homedir(), ".kol-ops");
   mkdirSync(dir, { recursive: true });
@@ -63184,10 +63196,1027 @@ async function todayLists(ctx) {
   };
 }
 
+// src/kolops/console/server.ts
+import { spawn } from "node:child_process";
+import { createServer } from "node:http";
+
+// src/kolops/console/page.html
+var page_default = `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KOL \u51B3\u7B56\u53F0</title>
+<style>
+:root{--bg:#F5F6F8;--card:#FFFFFF;--line:#E3E6EB;--line2:#EEF0F3;--ink:#1A1D23;--ink2:#3B414C;--muted:#5B6270;--blue:#2457D6;--blue2:#1A3FA0;--blue-bg:#E6ECFB;--warn:#8A3D00;--warn-bg:#FDEBD8;--warn-line:#F2C9A0;--bad:#8F1D12;--bad-bg:#FBE1DE;--ok:#155C39;--ok-bg:#DDF1E6;--purple:#4B2A93;--purple-bg:#EEE7FB}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;font-size:14px;line-height:1.55}
+a{color:var(--blue);text-decoration:none}a:hover{color:var(--blue2);text-decoration:underline}
+button{font:inherit}
+.top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:10px 24px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.brand{font-weight:700;font-size:16px}
+.tab{padding:7px 12px;border-radius:6px;color:var(--ink2);display:inline-flex;gap:6px;align-items:center}
+.tab:hover{background:#ECEEF2;text-decoration:none;color:var(--ink)}
+.tab.on{background:var(--blue-bg);color:var(--blue2);font-weight:600}
+.cnt{font-size:12px;font-weight:600;background:var(--blue);color:#fff;border-radius:10px;padding:0 7px;line-height:20px}
+.right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--muted)}.small{font-size:13px}.tiny{font-size:12px}
+.btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:36px;padding:0 14px;border-radius:7px;border:1px solid #CDD2DA;background:#fff;color:var(--ink);font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--bg);text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:var(--blue2)}
+.btn.big{min-height:44px;padding:0 18px;font-size:15px}
+.btn.sm{min-height:30px;padding:0 10px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.kbd{font-size:11px;line-height:18px;padding:0 5px;border-radius:4px;border:1px solid currentColor;opacity:.65;font-family:ui-monospace,Menlo,monospace}
+.pill{display:inline-flex;gap:6px;align-items:center;min-height:30px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-weight:600;font-size:13px;cursor:pointer}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:#1F8A55}
+.pill.bad{background:var(--bad-bg);border-color:#E9B4AE;color:var(--bad)}.pill.bad .dot{background:#B42318}
+.pill.warn{background:#FFF8F1;border-color:var(--warn-line);color:var(--warn)}.pill.warn .dot{background:#C2620C}
+.panel{position:absolute;right:0;top:40px;width:400px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(20,20,30,.14);z-index:30}
+.panel .row{display:flex;gap:10px;padding:10px 14px;border-top:1px solid var(--line2);align-items:flex-start}
+.banner{background:#FFF8F1;border-bottom:1px solid var(--warn-line);color:var(--warn);padding:8px 24px;font-size:13px}
+main{padding:20px 24px 48px;max-width:1440px;margin:0 auto}
+.narrow{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.badge{display:inline-block;font-size:12px;line-height:20px;padding:0 8px;border-radius:4px;white-space:nowrap;background:#ECEEF2;color:var(--ink2)}
+.b-blue{background:var(--blue-bg);color:var(--blue2)}.b-warn{background:var(--warn-bg);color:var(--warn)}.b-bad{background:var(--bad-bg);color:var(--bad)}.b-ok{background:var(--ok-bg);color:var(--ok)}.b-purple{background:var(--purple-bg);color:var(--purple)}
+.chip{border:1px solid var(--line);background:#fff;border-radius:16px;padding:3px 12px;font-size:13px;color:var(--ink2);cursor:pointer;min-height:30px}
+.chip.on{border-color:var(--blue);color:var(--blue2);background:#EEF2FD;font-weight:600}
+.bar{height:6px;background:var(--line);border-radius:3px}.bar>div{height:6px;border-radius:3px;background:#1F8A55}
+.lbl{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:6px}
+.quote{background:var(--bg);border-radius:8px;padding:12px 16px;white-space:pre-wrap;font-size:15px}
+.suggest{border:2px solid #C9D6F6;background:#F7F9FE;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:12px;align-items:flex-start}
+.num{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.param{display:inline-flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);margin:6px 10px 0 0}
+.param span{font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 10px;background:#fff;min-width:80px}
+.draft{border:1px solid #CDD2DA;border-radius:8px;padding:12px 14px;white-space:pre-wrap;font-size:15px;line-height:1.75;background:#fff}
+.actions{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);border-radius:0 0 12px 12px;padding:14px 28px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+.views{display:flex;gap:4px;flex-wrap:wrap;background:#ECEEF2;padding:4px;border-radius:8px;align-self:flex-start;max-width:100%}
+.view{padding:7px 12px;border-radius:6px;color:var(--ink2);white-space:nowrap}
+.view:hover{background:var(--line);text-decoration:none;color:var(--ink)}
+.view.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--line)}
+.input{font:inherit;font-size:14px;color:var(--ink);border:1px solid #CDD2DA;border-radius:6px;padding:7px 10px;background:#fff}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFBFC}
+td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
+.tone-warn{color:var(--warn);font-weight:600}.tone-bad{color:var(--bad);font-weight:600}.tone-ok{color:var(--ok)}.tone-muted{color:var(--muted)}
+.two{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.them{align-self:flex-start;max-width:78%;background:#F1F2F4;border-radius:4px 14px 14px 14px;padding:10px 14px;white-space:pre-wrap}
+.us{align-self:flex-end;max-width:78%;background:var(--blue-bg);border-radius:14px 4px 14px 14px;padding:10px 14px;white-space:pre-wrap}
+.event{align-self:center;font-size:12px;color:var(--muted);background:#FAFBFC;border:1px solid var(--line2);border-radius:12px;padding:2px 10px;text-align:center}
+.who{font-size:12px;color:var(--muted);margin-bottom:2px;white-space:normal}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line2)}
+.kv span:last-child{text-align:right;word-break:break-all}
+.stepper{list-style:none;margin:0;padding:0;display:flex;gap:4px;flex-wrap:wrap}
+.stepper li{flex:1 1 80px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.stepper .seg{height:6px;border-radius:3px;background:var(--line)}
+.err{background:var(--bad-bg);color:var(--bad);border-radius:8px;padding:12px 14px}
+.loading{padding:40px;text-align:center;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
+@media (max-width:640px){.top,main{padding-left:16px;padding-right:16px}.actions{padding:12px 16px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">KOL \u51B3\u7B56\u53F0</span>
+  <span class="muted small" id="project"></span>
+  <nav aria-label="\u4E3B\u5BFC\u822A" style="display:flex;gap:4px;flex-wrap:wrap">
+    <a class="tab" data-tab="decide" href="#/">\u5F85\u4F60\u51B3\u5B9A <span class="cnt" id="n-decide">\xB7</span></a>
+    <a class="tab" data-tab="people" href="#/people/wait">KOL</a>
+    <a class="tab" data-tab="log" href="#/log">\u6267\u884C\u8BB0\u5F55</a>
+  </nav>
+  <div class="right">
+    <div style="position:relative">
+      <button class="pill" id="status" aria-expanded="false"><span class="dot"></span><span id="status-text">\u2026</span></button>
+      <div class="panel" id="status-panel" hidden></div>
+    </div>
+    <span class="muted small" id="synced"></span>
+    <button class="btn sm" id="refresh">\u5237\u65B0</button>
+    <button class="btn sm" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB\u3002\u6025\u7740\u505C\u7684\u8BDD\uFF0C\u5728\u98DE\u4E66\u300C\u8BBE\u7F6E\u300D\u8868\u91CC\u52FE\u4E0A\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D">\u6682\u505C\u6240\u6709\u53D1\u9001</button>
+  </div>
+</header>
+<div class="banner">\u53EA\u8BFB\u9884\u89C8\uFF1A\u8FD9\u4E00\u7248\u53EA\u80FD\u770B\uFF0C\u6309\u94AE\u8FD8\u4E0D\u80FD\u7528\u3002\u8981\u540C\u610F\u6216\u5904\u7406\uFF0C\u7167\u65E7\u5728\u98DE\u4E66\u5BA1\u6838\u961F\u5217\u91CC\u6279\u51C6\u3001\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\u3002</div>
+<main id="app"><div class="loading">\u6B63\u5728\u4ECE\u98DE\u4E66\u8BFB\u6570\u636E\u2026</div></main>
+<div class="toast" id="toast" hidden></div>
+<script>
+"use strict";
+var state = { overview: null, idx: 0, group: null };
+
+function esc(v) {
+  return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+}
+function $(id) { return document.getElementById(id); }
+function api(path, opts) {
+  return fetch(path, opts).then(function (r) {
+    return r.json().then(function (body) { if (!r.ok) throw new Error(body.error || ("\u51FA\u9519\u4E86\uFF08" + r.status + "\uFF09")); return body; });
+  });
+}
+function toast(text) {
+  var t = $("toast"); t.textContent = text; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 3000);
+}
+function fail(err) { $("app").innerHTML = '<div class="narrow"><div class="err">' + esc(err.message || err) + '</div></div>'; }
+function timeOf(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+
+function loadOverview() {
+  return api("/api/overview").then(function (o) {
+    state.overview = o;
+    $("project").textContent = o.project;
+    $("n-decide").textContent = o.cards.length;
+    $("synced").textContent = "\u98DE\u4E66 " + timeOf(o.loadedAt) + " \u5DF2\u540C\u6B65";
+    renderStatus(o.status);
+    return o;
+  });
+}
+
+function renderStatus(s) {
+  var pill = $("status");
+  pill.className = "pill" + (s.failed ? " bad" : s.running ? " warn" : "");
+  $("status-text").textContent = s.failed ? (s.failed + " \u4EF6\u6CA1\u505A\u6210" + (s.running ? " \xB7 \u7B49\u53D1\u51FA " + s.running : "")) : s.running ? ("\u7B49\u53D1\u51FA " + s.running) : "\u90FD\u505A\u5B8C\u4E86";
+  var rows = s.items.map(function (i) {
+    var cls = i.st === "\u6CA1\u505A\u6210" ? "b-bad" : i.st === "\u8FDB\u884C\u4E2D" ? "b-warn" : "b-blue";
+    return '<div class="row"><span class="badge ' + cls + '">' + esc(i.st) + '</span><div style="flex:1;min-width:0"><div style="font-weight:500">' + esc(i.text) + '</div>' +
+      (i.note ? '<div class="muted tiny">' + esc(i.note) + '</div>' : "") + '</div>' + (i.person ? '<a class="tiny" href="#/person/' + esc(i.person) + '">\u770B</a>' : "") + '</div>';
+  }).join("");
+  $("status-panel").innerHTML = '<div style="display:flex;justify-content:space-between;padding:12px 14px 8px"><b>\u540E\u53F0\u5728\u505A\u7684\u4E8B</b><a href="#/log" class="small">\u5168\u90E8\u6267\u884C\u8BB0\u5F55</a></div>' +
+    (rows || '<div class="row muted">\u6CA1\u6709\u5728\u7B49\u7684\u4E8B</div>');
+}
+$("status").addEventListener("click", function () {
+  var p = $("status-panel"); p.hidden = !p.hidden; $("status").setAttribute("aria-expanded", String(!p.hidden));
+});
+document.addEventListener("click", function (e) {
+  if (!e.target.closest || e.target.closest("#status") || e.target.closest("#status-panel")) return;
+  $("status-panel").hidden = true;
+});
+$("refresh").addEventListener("click", function () {
+  var b = $("refresh"); b.disabled = true; b.textContent = "\u5237\u65B0\u4E2D\u2026";
+  api("/api/refresh", { method: "POST" }).then(loadOverview).then(route).catch(fail).then(function () { b.disabled = false; b.textContent = "\u5237\u65B0"; });
+});
+
+// --- \u5F85\u4F60\u51B3\u5B9A ---
+var GROUPS = ["\u51FA\u4E86\u95EE\u9898", "\u53D1\u5E03", "\u56DE\u4FE1", "\u6765\u4FE1", "\u9080\u7EA6\u548C\u51B3\u5B9A", "\u6A21\u677F", "\u5176\u4ED6"];
+var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", batch: "b-warn", template: "", todo: "" };
+
+function renderDecide() {
+  var o = state.overview, cards = o.cards;
+  if (state.idx >= cards.length) state.idx = 0;
+  var c = cards[state.idx];
+  var chips = GROUPS.map(function (g) {
+    var n = cards.filter(function (x) { return x.group === g; }).length;
+    if (!n) return "";
+    return '<button class="chip' + (c && c.group === g ? " on" : "") + '" data-group="' + esc(g) + '">' + esc(g) + " " + n + "</button>";
+  }).join("");
+  var head = '<div style="display:flex;flex-direction:column;gap:8px">' +
+    '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><b>' + (cards.length ? "\u6709 " + cards.length + " \u4EF6\u8981\u4F60\u51B3\u5B9A" + (c ? "\uFF0C\u8FD9\u662F\u7B2C " + (state.idx + 1) + " \u4EF6" : "") : "\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B") + '</b>' +
+    '<span class="muted small">J / K \u4E0A\u4E00\u4EF6 \xB7 \u4E0B\u4E00\u4EF6</span></div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' + chips + '</div>' +
+    (o.waitingClaude ? '<div class="muted small">\u53E6\u6709 ' + o.waitingClaude + ' \u4EF6\u5728\u7B49 Claude \u6309\u4F60\u7684\u610F\u89C1\u91CD\u5199\uFF0C\u5199\u597D\u4F1A\u6392\u8FDB\u6765\u3002</div>' : "") + '</div>';
+  if (!c) {
+    $("app").innerHTML = '<div class="narrow">' + head + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">\u73B0\u5728\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B</div><div class="muted">\u65B0\u6765\u4FE1\u548C Claude \u51C6\u5907\u597D\u7684\u8349\u7A3F\u4F1A\u81EA\u52A8\u6392\u8FDB\u6765\u3002</div></section></div>';
+    return;
+  }
+  var steps = c.steps.map(function (s, i) {
+    var params = (s.params || []).map(function (p) { return '<span class="param">' + esc(p.label) + '<span>' + esc(p.value) + '</span></span>'; }).join("");
+    return '<div class="step"><span class="num">' + (i + 1) + '</span><div style="flex:1;min-width:0"><div>' + esc(s.text) + '</div>' + (params ? "<div>" + params + "</div>" : "") + '</div></div>';
+  }).join("");
+  var next = cards[state.idx + 1];
+  $("app").innerHTML = '<div class="narrow">' + head +
+    '<section class="card" aria-label="\u5F53\u524D\u8FD9\u4EF6\u4E8B"><div style="padding:24px 28px 12px;display:flex;flex-direction:column;gap:18px">' +
+      '<div><div class="small" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge ' + (TAG[c.kind] || "") + '">' + esc(c.tag) + '</span>' +
+        (c.who ? '<a href="#/person/' + esc(c.who.id) + '">' + esc(c.who.name) + '</a>' : "") + '<span class="muted">' + esc(c.meta) + '</span></div>' +
+        '<h1 style="margin:6px 0 0;font-size:24px;line-height:1.35">' + esc(c.headline) + '</h1></div>' +
+      (c.mail ? '<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " \xB7 " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + '</div></div>' : "") +
+      '<div class="suggest"><div><div class="lbl" style="color:var(--blue2)">\u5EFA\u8BAE</div><div style="font-size:18px;font-weight:600">' + esc(c.suggest) + '</div></div>' +
+        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A</div>' + steps + '</div>' : "") +
+        (c.why ? '<details><summary>\u4E3A\u4EC0\u4E48\u8FD9\u4E48\u5EFA\u8BAE</summary><div class="muted" style="margin-top:6px;white-space:pre-wrap">' + esc(c.why) + '</div></details>' : "") + '</div>' +
+      (c.draft ? '<div><div class="lbl">' + esc(c.draft.label) + '</div>' + (c.draft.subject ? '<div class="muted small" style="margin-bottom:6px">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") + '<div class="draft">' + esc(c.draft.body) + '</div></div>' : "") +
+    '</div><div class="actions">' +
+      '<button class="btn primary big" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB\uFF0C\u8BF7\u5728\u98DE\u4E66\u5BA1\u6838\u961F\u5217\u91CC\u6279\u51C6">\u540C\u610F <span class="kbd">A</span></button>' +
+      '<button class="btn big" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB">\u8981\u6539 <span class="kbd">E</span></button>' +
+      '<button class="btn big" id="skip">\u8DF3\u8FC7 <span class="kbd">S</span></button>' +
+      '<span class="muted small" style="margin-left:auto">' + (next ? "\u4E0B\u4E00\u4EF6\uFF1A" + esc(next.headline) : "\u8FD9\u662F\u6700\u540E\u4E00\u4EF6") + '</span>' +
+    '</div></section></div>';
+  $("skip").addEventListener("click", function () { move(1); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-group]"), function (b) {
+    b.addEventListener("click", function () {
+      var g = b.getAttribute("data-group");
+      var i = cards.findIndex(function (x) { return x.group === g; });
+      if (i >= 0) { state.idx = i; renderDecide(); }
+    });
+  });
+}
+function move(d) {
+  var n = state.overview.cards.length;
+  if (!n) return;
+  state.idx = (state.idx + d + n) % n;
+  renderDecide();
+  window.scrollTo(0, 0);
+}
+document.addEventListener("keydown", function (e) {
+  if (location.hash && location.hash !== "#/" && location.hash !== "#") return;
+  if (e.target.closest && e.target.closest("input,textarea,select")) return;
+  if (e.key === "j" || e.key === "s") move(1);
+  if (e.key === "k") move(-1);
+});
+
+// --- KOL ---
+var searchTimer = null;
+function renderPeople(view, q) {
+  var o = state.overview;
+  var tabs = o.views.map(function (v) {
+    return '<a class="view' + (v.key === view ? " on" : "") + '" href="#/people/' + v.key + '">' + esc(v.label) + ' <span class="muted tiny">' + (o.counts[v.key] || 0) + '</span></a>';
+  }).join("");
+  $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' +
+    '<div style="display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline"><h1 style="margin:0;font-size:22px">KOL</h1>' +
+      '<span class="muted">\u6B63\u5728\u8DDF\u8FDB ' + (o.counts.all || 0) + ' \u4F4D \xB7 \u8FD8\u6CA1\u8054\u7CFB\u8FC7 ' + (o.counts.pool || 0) + ' \u4F4D</span>' +
+      '<button class="btn primary" style="margin-left:auto" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB\u3002\u627E\u4EBA\u8BF7\u5728 Claude \u91CC\u8BF4\u300C\u627E\u4E00\u6279\u2026\u7684 KOL\u300D">\u627E\u65B0\u4EBA</button></div>' +
+    '<div class="views" role="tablist">' + tabs + '</div>' +
+    '<div class="muted small" id="question"></div>' +
+    '<input class="input" id="q" placeholder="\u641C\u540D\u5B57\u3001\u8D26\u53F7\u3001\u90AE\u7BB1" value="' + esc(q) + '" style="max-width:360px">' +
+    '<section class="card" style="overflow-x:auto" id="table"><div class="loading">\u8BFB\u53D6\u4E2D\u2026</div></section></div>';
+  var input = $("q");
+  input.addEventListener("input", function () {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () { loadPeople(view, input.value); }, 300);
+  });
+  loadPeople(view, q);
+}
+function cell(c) {
+  var cls = c.tone ? "tone-" + c.tone : "";
+  var body = esc(c.v);
+  if (c.badge) body = '<span class="badge ' + (c.tone === "bad" ? "b-bad" : c.tone === "warn" ? "b-warn" : "") + '">' + body + "</span>";
+  if (c.link === "decide") body = '<a href="#/" style="text-decoration:none">' + body + "</a>";
+  else if (c.link) body = '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">' + body + " \u2197</a>";
+  return '<td class="' + cls + '">' + body + "</td>";
+}
+function loadPeople(view, q) {
+  api("/api/people?view=" + encodeURIComponent(view) + "&q=" + encodeURIComponent(q || "")).then(function (r) {
+    $("question").textContent = r.question;
+    var head = "<tr><th>KOL</th>" + r.columns.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>";
+    var rows = r.rows.map(function (x) {
+      var who = x.hasDetail ? '<a href="#/person/' + esc(x.id) + '" style="font-weight:500">' + esc(x.handle) + "</a>" : '<span style="font-weight:500">' + esc(x.handle) + "</span>";
+      return '<tr><td style="white-space:nowrap">' + who + '<div class="muted tiny">' + esc(x.sub) + "</div></td>" + x.cells.map(cell).join("") + "</tr>";
+    }).join("");
+    $("table").innerHTML = '<table style="min-width:760px"><thead>' + head + "</thead><tbody>" + (rows || '<tr><td colspan="9" class="muted">\u8FD9\u91CC\u6CA1\u6709\u4EBA</td></tr>') + "</tbody></table>" +
+      '<div class="muted small" style="padding:10px 12px">' + (r.total > r.rows.length ? "\u4E00\u5171 " + r.total + " \u4F4D\uFF0C\u53EA\u663E\u793A\u524D " + r.rows.length + " \u4F4D\uFF0C\u53EF\u4EE5\u7528\u4E0A\u9762\u7684\u641C\u7D22\u3002" : "\u4E00\u5171 " + r.total + " \u4F4D") + "</div>";
+  }).catch(function (e) { $("table").innerHTML = '<div class="err">' + esc(e.message) + "</div>"; });
+}
+
+// --- \u4E00\u4F4D KOL ---
+function renderPerson(id) {
+  $("app").innerHTML = '<div class="loading">\u8BFB\u53D6\u5979\u7684\u6765\u5F80\u8BB0\u5F55\u2026</div>';
+  api("/api/person?id=" + encodeURIComponent(id)).then(function (p) {
+    var stepper = p.stageStep >= 0 ? '<ol class="stepper" aria-label="\u5408\u4F5C\u8FDB\u5EA6">' + p.stages.map(function (s, i) {
+      var color = i < p.stageStep ? "#1F8A55" : i === p.stageStep ? "var(--blue)" : "var(--line)";
+      return '<li><div class="seg" style="background:' + color + '"></div><span style="' + (i === p.stageStep ? "font-weight:600" : i > p.stageStep ? "color:var(--muted)" : "") + '">' + esc(s) + (i === p.stageStep ? "\uFF08\u73B0\u5728\uFF09" : "") + "</span></li>";
+    }).join("") + "</ol>" : '<div><span class="badge">' + esc(p.stage) + "</span></div>";
+    var pending = p.pending.map(function (r) {
+      return '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#FFF8F1;border:1px solid var(--warn-line);border-radius:10px;padding:12px 14px">' +
+        '<div style="flex:1 1 240px"><div style="font-weight:600">\u6709 1 \u4EF6\u4E8B\u7B49\u4F60\u51B3\u5B9A\uFF1A' + esc(r.title) + '</div><div class="muted small">' + esc(r.ask) + '</div></div><a class="btn primary" href="#/">\u53BB\u770B</a></div>';
+    }).join("");
+    var bubbles = p.bubbles.map(function (b) {
+      return '<div class="' + b.side + '">' + (b.side === "event" ? esc(b.when.slice(0, 10) + " \xB7 " + b.text) : '<div class="who">' + esc(b.who + " \xB7 " + b.when) + "</div>" + esc(b.text)) + "</div>";
+    }).join("");
+    var trial = p.trial ? '<div style="display:flex;justify-content:space-between"><b>\u4F53\u9A8C\u7801 ' + esc(p.trial.code) + '</b><span class="muted small">' + esc(p.trial.expires) + ' \u5230\u671F</span></div>' +
+      (p.trial.max ? '<div class="bar" role="img" aria-label="\u7528\u4E86 ' + p.trial.used + ' \u6B21\uFF0C\u5171 ' + p.trial.max + ' \u6B21"><div style="width:' + Math.min(100, Math.round(p.trial.used / p.trial.max * 100)) + '%;background:var(--blue)"></div></div><div class="muted small">\u7528\u4E86 ' + p.trial.used + ' \u6B21\uFF0C\u5171 ' + p.trial.max + ' \u6B21</div>' : "") : '<div class="muted small">\u8FD8\u6CA1\u6709\u4F53\u9A8C\u7801</div>';
+    var partner = p.partner ? '<div class="kv"><span>\u6D3B\u52A8\u7801</span><span>' + esc(p.partner.code) + "</span></div>" + (p.partner.link ? '<div class="kv"><span>\u4E13\u5C5E\u8FDE\u7ED3</span><span><a href="' + esc(p.partner.link) + '" target="_blank" rel="noopener">\u6253\u5F00 \u2197</a></span></div>' : "") +
+      (p.partner.ledger ? '<div class="kv"><span>\u8D26\u672C</span><span><a href="' + esc(p.partner.ledger) + '" target="_blank" rel="noopener">\u6253\u5F00 \u2197</a></span></div>' : "") : '<div class="muted small" style="padding-top:8px">\u8FD8\u6CA1\u6709\u6D3B\u52A8\u7801</div>';
+    var posts = p.posts.length ? p.posts.map(function (x) {
+      return '<div style="padding:8px 0;border-top:1px solid var(--line2)"><div>' + (x.link ? '<a href="' + esc(x.link) + '" target="_blank" rel="noopener">' + esc(x.title) + " \u2197</a>" : esc(x.title)) + '</div><div class="muted small">' + esc([x.platform, x.date].filter(Boolean).join(" \xB7 ")) + '</div>' +
+        '<div class="small">' + x.metrics.map(function (m) { return "\u7B2C " + m.day + " \u5929 " + (m.views == null ? "\u2014" : m.views.toLocaleString()); }).join(" \xB7 ") + "</div></div>";
+    }).join("") : '<div class="muted small">\u8FD8\u6CA1\u6709\u8BB0\u4E0B\u7684\u53D1\u5E03\u3002</div>';
+    var info = p.info.map(function (x) {
+      var link = /^https?:\\/\\//.test(x.v) ? x.v.split(/[\\s,\uFF0C]+|(?=https?:\\/\\/)/).filter(Boolean)[0] : "";
+      return '<div class="kv"><span class="muted">' + esc(x.k) + "</span><span>" + (link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">\u6253\u5F00 \u2197</a>' : esc(x.v)) + "</span></div>";
+    }).join("") +
+      p.emails.map(function (e) { return '<div class="kv"><span class="muted">\u90AE\u7BB1</span><span>' + esc(e.address) + (e.blocked ? ' <span class="badge b-bad">\u6C38\u4E0D\u8054\u7CFB</span>' : "") + "</span></div>"; }).join("");
+    $("app").innerHTML = '<div style="max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px">' +
+      '<a href="#/people/wait" class="small">\u2190 KOL</a>' +
+      '<div><h1 style="margin:0;font-size:24px">' + esc(p.name) + ' <span class="muted" style="font-weight:400;font-size:16px">' + esc(p.handle) + '</span></h1><div class="muted">' + esc(p.sub) + (p.doNotContact ? ' \xB7 <span class="badge b-bad">\u6C38\u4E0D\u8054\u7CFB</span>' : "") + '</div></div>' +
+      '<div class="two"><div style="flex:2 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px">' +
+        '<section class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:16px"><div><div class="lbl">\u73B0\u5728\u7684\u60C5\u51B5</div><div style="font-size:19px;font-weight:600">' + esc(p.situation) + '</div>' +
+          (p.lastContact ? '<div class="muted small">\u6700\u8FD1\u4E00\u6B21\u8054\u7CFB\uFF1A' + esc(p.lastContact) + "</div>" : "") + "</div>" + stepper +
+          '<div style="border-top:1px solid var(--line2);padding-top:14px;display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">\u63A5\u4E0B\u6765</div>' + pending +
+            '<div>' + (p.next ? esc(p.next) : '<span class="muted">\u6CA1\u5199\u4E0B\u4E00\u6B65</span>') + (p.nextDate ? ' <span class="muted small">\uFF08\u4E0B\u6B21\u8DDF\u8FDB\uFF1A' + esc(p.nextDate) + "\uFF09</span>" : "") + "</div></div>" +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:14px"><button class="btn" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB">\u5199\u4FE1\u7ED9\u5979</button><button class="btn" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB">\u4E0D\u518D\u8DDF\u8FDB</button><button class="btn" disabled title="\u8FD9\u4E00\u7248\u53EA\u8BFB">\u4E0D\u8981\u518D\u8054\u7CFB\u5979</button></div></section>' +
+        '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>\u6765\u5F80\u8BB0\u5F55</b><span class="muted small">\u5DE6\u8FB9\u662F\u5979\uFF0C\u53F3\u8FB9\u662F\u6211\u4EEC' + (p.olderCount ? " \xB7 \u66F4\u65E9\u8FD8\u6709 " + p.olderCount + " \u6761" : "") + "</span></div>" +
+          (bubbles || '<div class="muted">\u8FD8\u6CA1\u6709\u6765\u5F80</div>') + "</section></div>" +
+        '<aside style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px">' +
+          '<section class="card" style="padding:16px 18px;display:flex;flex-direction:column;gap:8px">' + trial + partner + "</section>" +
+          '<section class="card" style="padding:16px 18px"><b>\u8D44\u6599</b>' + info + "</section>" +
+          '<section class="card" style="padding:16px 18px"><b>\u53D1\u5E03</b>' + posts + "</section></aside></div></div>";
+  }).catch(fail);
+}
+
+// --- \u6267\u884C\u8BB0\u5F55 ---
+function renderLog() {
+  $("app").innerHTML = '<div class="loading">\u8BFB\u53D6\u6267\u884C\u8BB0\u5F55\u2026</div>';
+  api("/api/log").then(function (l) {
+    var runs = l.runs.map(function (r) {
+      var cls = r.result === "\u5B8C\u6210" ? "b-ok" : r.result === "\u8FDB\u884C\u4E2D" ? "b-warn" : r.result === "\u5931\u8D25" ? "b-bad" : "";
+      return '<div style="display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line2);flex-wrap:wrap"><span class="badge ' + cls + '">' + esc(r.result) + '</span><span style="flex:1 1 260px">' + esc(r.title) +
+        (r.counts ? ' <span class="muted small">\xB7 ' + esc(r.counts) + "</span>" : "") + (r.notes ? '<div class="tone-bad small">' + esc(r.notes) + "</div>" : "") + '</span><span class="muted small">' + esc(r.start + (r.end ? "\u2013" + r.end : "")) + " \xB7 " + esc(r.how === "\u5B9A\u65F6\u4EFB\u52A1" ? "\u6BCF\u5929\u4F8B\u884C" : "\u5728 Claude \u91CC\u8DD1\u7684") + "</span></div>";
+    }).join("");
+    var ops = l.ops.map(function (o) {
+      var cls = /\u5B8C\u6210|\u9001\u8FBE/.test(o.result) ? "b-ok" : /\u5931\u8D25|\u9000\u4FE1/.test(o.result) ? "b-bad" : "";
+      return '<tr><td class="muted" style="white-space:nowrap">' + esc(o.when) + "</td><td>" + esc(o.what) + (o.note ? '<div class="muted tiny">' + esc(o.note) + "</div>" : "") + '</td><td class="muted">' + esc([o.source, o.by].filter(Boolean).join(" \xB7 ")) + '</td><td><span class="badge ' + cls + '">' + esc(o.result) + "</span></td></tr>";
+    }).join("");
+    $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:14px"><div><h1 style="margin:0;font-size:22px">\u6267\u884C\u8BB0\u5F55</h1><div class="muted">\u6700\u8FD1 3 \u5929\u7CFB\u7EDF\u505A\u8FC7\u7684\u4E8B\uFF0C\u6700\u65B0\u7684\u5728\u6700\u4E0A\u9762</div></div>' +
+      '<section class="card" style="padding:14px 16px"><b>\u8FD0\u884C</b>' + (runs || '<div class="muted">\u6700\u8FD1 3 \u5929\u6CA1\u6709\u8FD0\u884C\u8BB0\u5F55</div>') + "</section>" +
+      '<section class="card" style="overflow-x:auto"><table style="min-width:760px"><thead><tr><th>\u65F6\u95F4</th><th>\u505A\u4E86\u4EC0\u4E48</th><th>\u8C01\u8BA9\u505A\u7684</th><th>\u7ED3\u679C</th></tr></thead><tbody>' + (ops || '<tr><td colspan="4" class="muted">\u6CA1\u6709\u8BB0\u5F55</td></tr>') + "</tbody></table></section></div>";
+  }).catch(fail);
+}
+
+// --- \u8DEF\u7531 ---
+function route() {
+  var h = location.hash.replace(/^#/, "") || "/";
+  var parts = h.split("?")[0].split("/").filter(Boolean);
+  var tab = parts[0] === "people" || parts[0] === "person" ? "people" : parts[0] === "log" ? "log" : "decide";
+  Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (a) { a.classList.toggle("on", a.getAttribute("data-tab") === tab); });
+  if (!state.overview) return;
+  if (parts[0] === "people") renderPeople(parts[1] || "wait", "");
+  else if (parts[0] === "person" && parts[1]) renderPerson(decodeURIComponent(parts[1]));
+  else if (parts[0] === "log") renderLog();
+  else renderDecide();
+}
+window.addEventListener("hashchange", function () { route(); window.scrollTo(0, 0); });
+loadOverview().then(route).catch(fail);
+setInterval(function () { loadOverview().then(function () { if (!location.hash || location.hash === "#/") renderDecide(); }).catch(function () {}); }, 5 * 60 * 1000);
+</script>
+</body>
+</html>
+`;
+
+// src/kolops/console/page.ts
+var PAGE = page_default;
+
+// src/kolops/console/state.ts
+var VIEWS = {
+  wait: { label: "\u7B49\u6211\u4EEC\u56DE", question: "\u5148\u56DE\u8C01\uFF1F\u7B49\u5F97\u6700\u4E45\u7684\u5728\u4E0A\u9762\u3002", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u7B49\u4E86", "\u5F85\u4F60\u51B3\u5B9A", "\u4E0B\u6B21\u8DDF\u8FDB"] },
+  noreply: { label: "\u9080\u4E86\u6CA1\u56DE", question: "\u9080\u7EA6\u4E86\u8FD8\u6CA1\u56DE\u4FE1\u7684\u4EBA\u3002", columns: ["\u54EA\u5929\u9080\u7684", "\u4E0B\u6B21\u8DDF\u8FDB", "\u9080\u7EA6\u6279\u6B21", "\u7528\u54EA\u4E2A\u90AE\u7BB1"] },
+  trial: { label: "\u5728\u8BD5\u7528", question: "\u53D1\u4E86\u4F53\u9A8C\u7801\u3001\u8FD8\u6CA1\u8C08\u5408\u4F5C\u7684\u4EBA\u3002\u8C01\u5FEB\u5230\u671F\u3001\u8C01\u9886\u4E86\u7801\u8FD8\u6CA1\u7528\uFF1F", columns: ["\u7528\u4E86\u51E0\u6B21", "\u54EA\u5929\u5230\u671F", "\u4E0A\u6B21\u8054\u7CFB", "\u63A5\u4E0B\u6765"] },
+  deal: { label: "\u8C08\u5408\u4F5C", question: "\u8BD5\u7528\u8FC7\u3001\u60F3\u5408\u4F5C\uFF0C\u4F46\u8FD8\u6CA1\u7EA6\u597D\u54EA\u5929\u53D1\u3002\u5361\u5728\u54EA\u4E00\u6B65\uFF1F", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u6D3B\u52A8\u7801", "\u4E0A\u6B21\u8054\u7CFB", "\u63A5\u4E0B\u6765"] },
+  post: { label: "\u7EA6\u597D\u8981\u53D1\u5E03", question: "\u7EA6\u597D\u4E86\u65E5\u671F\u3001\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50\u7684\u4EBA\u3002\u8C01\u5FEB\u8BE5\u53D1\u4E86\uFF1F", columns: ["\u7EA6\u597D\u54EA\u5929", "\u6D3B\u52A8\u7801", "\u63A5\u4E0B\u6765"] },
+  posted: { label: "\u5DF2\u53D1\u5E03", question: "\u53D1\u4E86\u4EC0\u4E48\u3001\u6548\u679C\u600E\u4E48\u6837\uFF1F", columns: ["\u5E16\u5B50", "\u54EA\u5929\u53D1\u7684", "\u64AD\u653E\uFF08\u6700\u65B0\uFF09", "\u6D3B\u52A8\u7801"] },
+  pool: { label: "\u8FD8\u6CA1\u8054\u7CFB\u8FC7", question: "\u6709\u80FD\u7528\u7684\u90AE\u7BB1\u3001\u8FD8\u6CA1\u8054\u7CFB\u8FC7\u7684\u4EBA\u3002\u6311\u8C01\u53BB\u9080\u7EA6\uFF1F", columns: ["\u5185\u5BB9", "\u7C89\u4E1D", "\u5E02\u573A", "\u54EA\u4E00\u6279\u627E\u5230\u7684"] },
+  all: { label: "\u5168\u90E8\u5728\u8DDF\u8FDB\u7684", question: "\u6574\u4F53\u626B\u4E00\u773C\u3002", columns: ["\u73B0\u5728\u7684\u60C5\u51B5", "\u5230\u54EA\u4E00\u6B65", "\u4E0B\u6B21\u8DDF\u8FDB"] }
+};
+var STAGES = ["\u9080\u7EA6", "\u56DE\u590D", "\u8BD5\u7528", "\u5408\u4F5C", "\u7EA6\u597D\u53D1\u5E03", "\u5DF2\u53D1\u5E03"];
+var STAGE_STEP = { \u5DF2\u9080\u7EA6: 0, \u5DF2\u56DE\u590D: 1, \u4F53\u9A8C\u4E2D: 2, \u5DF2\u770B\u62A5\u544A: 3, \u5408\u4F5C\u4E2D: 3, \u5DF2\u7EA6\u53D1\u5E03: 4, \u5DF2\u53D1\u5E03: 5 };
+var OVERDUE_GRACE_DAYS = 2;
+var PROBLEM_DAYS = 7;
+var REVIEW_FIELDS2 = [
+  "\u5BA1\u6838\u9879",
+  "\u7C7B\u578B",
+  "\u72B6\u6001",
+  "\u5904\u7406",
+  "\u5BA1\u6838\u7ED3\u679C",
+  "KOL",
+  "\u4F60\u7684\u610F\u89C1",
+  "\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE",
+  "\u8981\u4F60\u5B9A\u4EC0\u4E48",
+  "\u90AE\u4EF6\u8349\u7A3F",
+  "\u6536\u4EF6\u4EBA",
+  "\u53D1\u9001\u6E20\u9053",
+  "\u63D0\u51FA\u65F6\u95F4",
+  "\u6267\u884C\u65F6\u95F4",
+  "\u6267\u884C\u7ED3\u679C",
+  "\u4F53\u9A8C\u7801\u52A8\u4F5C",
+  "\u4F53\u9A8C\u7801",
+  "\u4F53\u9A8C\u6B21\u6570",
+  "\u4F53\u9A8C\u5929\u6570",
+  "\u6D3B\u52A8\u7801",
+  "\u7C89\u4E1D\u6298\u6263",
+  "\u9500\u552E\u5E02\u573A",
+  "\u53D1\u540E\u52A8\u4F5C",
+  "\u7ED3\u6848\u539F\u56E0"
+];
+var POST_FIELDS = ["KOL", "\u5185\u5BB9\u94FE\u63A5", "\u5185\u5BB9\u6807\u9898", "\u53D1\u5E03\u65E5\u671F", "\u5E73\u53F0", "\u5F62\u5F0F", "\u7B2C1\u5929\u64AD\u653E", "\u7B2C3\u5929\u64AD\u653E", "\u7B2C7\u5929\u64AD\u653E", "\u7B2C30\u5929\u64AD\u653E"];
+var ConsoleData = class {
+  constructor(ctx) {
+    this.ctx = ctx;
+  }
+  ctx;
+  snapshot;
+  reviews = [];
+  pendingMail = [];
+  posts = [];
+  loadedAt = 0;
+  async refresh() {
+    const { base, cfg } = this.ctx;
+    const t = cfg.tables;
+    const since = addDays(today(cfg), -PROBLEM_DAYS);
+    const [snapshot, open, failed, pendingMail, posts] = await Promise.all([
+      loadSnapshot(base, cfg),
+      base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"]]] }, fields: REVIEW_FIELDS2 }),
+      base.records(t.reviews, { filter: { logic: "and", conditions: [["\u72B6\u6001", "intersects", ["\u6267\u884C\u5931\u8D25"]], onOrAfter("\u6267\u884C\u65F6\u95F4", since)] }, fields: REVIEW_FIELDS2 }),
+      base.records(t.contacts, {
+        filter: { logic: "and", conditions: [["\u5F85\u5904\u7406", "==", true], ["\u65B9\u5411", "intersects", ["\u6536\u5230"]]] },
+        fields: ["Message ID", "\u6E20\u9053", "\u6458\u8981", "\u65E5\u671F", "KOL", "\u5F85\u5904\u7406", "\u65B9\u5411"]
+      }),
+      base.records(t.posts, { fields: POST_FIELDS }).catch(() => [])
+    ]);
+    this.snapshot = snapshot;
+    this.reviews = [...open, ...failed];
+    this.pendingMail = pendingMail;
+    this.posts = posts;
+    this.loadedAt = Date.now();
+  }
+};
+function fans(v) {
+  const n = Number(v);
+  if (!v || Number.isNaN(n)) return "";
+  return n >= 1e4 ? `${(n / 1e4).toFixed(1).replace(/\.0$/, "")} \u4E07` : n.toLocaleString("en-US");
+}
+function ago(dayStr, todayStr) {
+  if (!dayStr) return "";
+  const n = daysBetween(dayStr, todayStr);
+  if (n <= 0) return n === 0 ? "\u4ECA\u5929" : shortDay(dayStr);
+  if (n === 1) return "\u6628\u5929";
+  return n <= 30 ? `${n} \u5929\u524D` : shortDay(dayStr);
+}
+function ahead(dayStr, todayStr) {
+  if (!dayStr) return "";
+  const n = daysBetween(todayStr, dayStr);
+  if (n === 0) return "\u4ECA\u5929";
+  if (n === 1) return "\u660E\u5929";
+  if (n > 1 && n <= 7) return `${n} \u5929\u540E\uFF08${shortDay(dayStr)}\uFF09`;
+  return shortDay(dayStr);
+}
+function shortDay(dayStr) {
+  const [, m, d] = dayStr.split("-").map(Number);
+  return m && d ? `${m} \u6708 ${d} \u65E5` : dayStr;
+}
+function handleOf2(s, f) {
+  const p = profileOf(s, f);
+  const h = text(p?.["\u8D26\u53F7"]);
+  return h ? h.startsWith("@") ? h : `@${h}` : displayName(s, f);
+}
+function subOf(p, name) {
+  const platform = text(p?.["\u4E3B\u8981\u5E73\u53F0"]).split(",")[0]?.trim();
+  return [text(p?.["\u79F0\u547C"]) || name, [platform, fans(p?.["\u7C89\u4E1D\u6570"])].filter(Boolean).join(" ")].filter(Boolean).join(" \xB7 ");
+}
+function situationOf(f, cfg, todayStr) {
+  const tz = cfg.timezone;
+  const stage = option(f["\u9636\u6BB5"]);
+  const turn = option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]);
+  const code = text(f["\u6D3B\u52A8\u7801"]);
+  switch (stage) {
+    case "\u5DF2\u9080\u7EA6":
+      return `\u9080\u7EA6\u4E86\u8FD8\u6CA1\u56DE\uFF08${shortDay(day(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], tz)) || "\u65E5\u671F\u4E0D\u8BE6"}\uFF09`;
+    case "\u5DF2\u56DE\u590D":
+      return turn === "\u6211\u4EEC" || turn === "\u7B49\u4F60\u5BA1\u6838" ? "\u56DE\u4FE1\u4E86\uFF0C\u7B49\u6211\u4EEC\u56DE" : "\u56DE\u8FC7\u4FE1\uFF0C\u5728\u7B49\u5BF9\u65B9";
+    case "\u4F53\u9A8C\u4E2D": {
+      const used = Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0;
+      const max = Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0;
+      const exp = day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz);
+      return `\u5728\u8BD5\u7528${max ? `\uFF0C\u7528\u4E86 ${used} / ${max} \u6B21` : ""}${exp ? `\uFF0C${ahead(exp, todayStr)}\u5230\u671F` : ""}`;
+    }
+    case "\u5DF2\u770B\u62A5\u544A":
+      return "\u8BD5\u7528\u8FC7\uFF0C\u770B\u4E86\u62A5\u544A";
+    case "\u5408\u4F5C\u4E2D":
+      return code ? `\u5728\u8C08\u5408\u4F5C\uFF0C\u6D3B\u52A8\u7801 ${code} \u5DF2\u5F00` : "\u5728\u8C08\u5408\u4F5C";
+    case "\u5DF2\u7EA6\u53D1\u5E03":
+      return `\u7EA6\u597D ${shortDay(day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz)) || "\uFF08\u65E5\u671F\u6CA1\u586B\uFF09"} \u53D1\u5E03`;
+    case "\u5DF2\u53D1\u5E03":
+      return "\u5DF2\u7ECF\u53D1\u5E03";
+    case "\u6682\u7F13":
+      return "\u6682\u7F13";
+    case "\u7ED3\u6848":
+      return `\u5DF2\u7ED3\u6848${option(f["\u7ED3\u6848\u539F\u56E0"]) ? `\uFF08${option(f["\u7ED3\u6848\u539F\u56E0"])}\uFF09` : ""}`;
+    default:
+      return text(f["\u4E0B\u4E00\u6B65"]) || stage;
+  }
+}
+var GROUP_ORDER = ["\u51FA\u4E86\u95EE\u9898", "\u53D1\u5E03", "\u56DE\u4FE1", "\u6765\u4FE1", "\u9080\u7EA6\u548C\u51B3\u5B9A", "\u6A21\u677F", "\u5176\u4ED6"];
+function decisionCards(data, cfg, todayStr, mails = /* @__PURE__ */ new Map()) {
+  const s = data.snapshot;
+  const tz = cfg.timezone;
+  const cards = [];
+  const who = (fid) => {
+    const f = s.followups.get(fid);
+    return f ? { id: fid, name: `${handleOf2(s, f)} ${text(profileOf(s, f)?.["\u79F0\u547C"]) || ""}`.trim() } : void 0;
+  };
+  const meta = (fid) => {
+    const f = s.followups.get(fid);
+    if (!f) return "";
+    const p = profileOf(s, f);
+    return [option(f["\u9636\u6BB5"]), subOf(p, "").replace(/^ · /, "")].filter(Boolean).join(" \xB7 ");
+  };
+  for (const r of data.reviews.filter((r2) => option(r2["\u72B6\u6001"]) === "\u6267\u884C\u5931\u8D25")) {
+    const fid = linkIds(r["KOL"])[0] ?? "";
+    const w = who(fid);
+    cards.push({
+      id: r.record_id,
+      kind: "problem",
+      group: "\u51FA\u4E86\u95EE\u9898",
+      tag: "\u6CA1\u505A\u6210",
+      who: w,
+      headline: `${w?.name ?? text(r["\u5BA1\u6838\u9879"])}\uFF1A${text(r["\u5BA1\u6838\u9879"]) || "\u8FD9\u4EF6\u4E8B"}\u6CA1\u505A\u6210`,
+      meta: `${stamp(cellTime(r["\u6267\u884C\u65F6\u95F4"], tz) ?? Date.now(), tz)} \u6267\u884C`,
+      suggest: "\u770B\u4E00\u4E0B\u539F\u56E0\uFF0C\u5904\u7406\u597D\u4EE5\u540E\u5728\u98DE\u4E66\u5BA1\u6838\u961F\u5217\u91CC\u91CD\u65B0\u5B89\u6392",
+      steps: [],
+      why: text(r["\u6267\u884C\u7ED3\u679C"]) || "\u6CA1\u6709\u5199\u539F\u56E0"
+    });
+  }
+  for (const f of s.followups.values()) {
+    if (option(f["\u9636\u6BB5"]) !== "\u5DF2\u7EA6\u53D1\u5E03") continue;
+    const due = day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz);
+    if (!due || daysBetween(due, todayStr) < OVERDUE_GRACE_DAYS) continue;
+    const late = daysBetween(due, todayStr);
+    const w = who(f.record_id);
+    const code = text(f["\u6D3B\u52A8\u7801"]);
+    cards.push({
+      id: `overdue:${f.record_id}`,
+      kind: "overdue",
+      group: "\u53D1\u5E03",
+      tag: "\u6CA1\u6309\u65F6\u53D1\u5E03",
+      who: w,
+      headline: `${w?.name ?? displayName(s, f)} \u7EA6\u597D ${shortDay(due)} \u53D1\u5E03\uFF0C\u8FC7\u4E86 ${late} \u5929\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50`,
+      meta: meta(f.record_id),
+      suggest: "\u5148\u53BB\u5979\u7684\u4E3B\u9875\u770B\u4E00\u773C\uFF1B\u8FD8\u6CA1\u53D1\u7684\u8BDD\uFF0C\u5199\u4FE1\u95EE\u5979\u4E00\u4E0B",
+      steps: [{ text: "\u5DF2\u7ECF\u53D1\u4E86\u7684\u8BDD\uFF0C\u628A\u5E16\u5B50\u94FE\u63A5\u8BB0\u8FDB\u300C\u53D1\u5E03\u5185\u5BB9\u300D\uFF0C\u4E4B\u540E\u4F1A\u81EA\u52A8\u8BB0\u64AD\u653E\u548C\u4E92\u52A8" }, { text: "\u8FD8\u6CA1\u53D1\u7684\u8BDD\uFF0C\u5728 Claude \u91CC\u8BF4\u300C\u7ED9\u5979\u5199\u4E00\u5C01\u786E\u8BA4\u53D1\u5E03\u65F6\u95F4\u7684\u4FE1\u300D" }],
+      why: `\u7CFB\u7EDF\u6BCF\u5929\u770B\u5979\u6700\u8FD1\u7684\u5E16\u5B50\uFF0C\u6CA1\u627E\u5230\u63D0\u5230\u300C${cfg.postWords.join("\u3001") || "\u9879\u76EE\u8BC6\u522B\u8BCD"}\u300D${code ? `\u6216\u6D3B\u52A8\u7801 ${code}` : ""}\u7684\u3002\u53EF\u80FD\u8FD8\u6CA1\u53D1\uFF0C\u4E5F\u53EF\u80FD\u53D1\u4E86\u4F46\u6CA1\u63D0\uFF0C\u7CFB\u7EDF\u8BA4\u4E0D\u51FA\u6765\u3002`
+    });
+  }
+  const openByKol = /* @__PURE__ */ new Set();
+  let waitingClaude = 0;
+  for (const r of data.reviews.filter((r2) => option(r2["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25")) {
+    const state = reviewState(r);
+    const fid = linkIds(r["KOL"])[0] ?? "";
+    if (fid) openByKol.add(fid);
+    if (state === "revise") waitingClaude++;
+    if (state !== "pending") continue;
+    cards.push(reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid)));
+  }
+  for (const m of data.pendingMail) {
+    const fid = linkIds(m["KOL"])[0] ?? "";
+    if (fid && openByKol.has(fid)) continue;
+    const w = who(fid);
+    const body = mails.get(`msg:${text(m["Message ID"])}`);
+    const when = cellTime(m["\u65E5\u671F"], tz);
+    const waited = when ? daysBetween(day(when, tz), todayStr) : 0;
+    cards.push({
+      id: `mail:${m.record_id}`,
+      kind: "mail",
+      group: "\u6765\u4FE1",
+      tag: "\u8FD8\u6CA1\u8349\u7A3F",
+      who: w,
+      headline: `${w?.name ?? "\u4E00\u4F4D KOL"} \u6765\u4FE1${waited >= 2 ? `\uFF0C\u5DF2\u7ECF ${waited} \u5929\u6CA1\u4EBA\u56DE\u4E86` : ""}`,
+      meta: [meta(fid), option(m["\u6E20\u9053"]) ? `\u6536\u4EF6 ${option(m["\u6E20\u9053"])}` : ""].filter(Boolean).join(" \xB7 "),
+      mail: { label: `${w?.name ?? "\u5BF9\u65B9"}\u8BF4 \xB7 ${text(m["\u6458\u8981"])}`, text: body?.text ?? "\uFF08\u6B63\u6587\u6CA1\u8BFB\u5230\uFF0C\u53EF\u4EE5\u53BB\u90AE\u7BB1\u91CC\u770B\uFF09", when: when ? stamp(when, tz) : "" },
+      suggest: "\u8BA9 Claude \u5199\u4E00\u5C01\u56DE\u4FE1",
+      steps: [{ text: "\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u56DE\u4FE1\u4F1A\u6392\u8FDB\u8FD9\u91CC\u7B49\u4F60\u770B" }],
+      why: "\u8FD9\u5C01\u4FE1\u8FD8\u6CA1\u6709\u8349\u7A3F\uFF0C\u591A\u534A\u662F\u4ECA\u5929\u65E9\u4E0A\u7684\u4F8B\u884C\u8DD1\u5B8C\u4EE5\u540E\u624D\u6536\u5230\u7684\u3002"
+    });
+  }
+  const at = (c) => GROUP_ORDER.indexOf(c.group);
+  cards.sort((a, b) => at(a) - at(b));
+  return { cards, waitingClaude };
+}
+function reviewCard(r, s, cfg, w, meta, latest) {
+  const type = option(r["\u7C7B\u578B"]);
+  const fid = linkIds(r["KOL"])[0] ?? "";
+  const f = s.followups.get(fid);
+  const kind = SENDING_TYPES.includes(type) ? "reply" : type === "\u51B3\u5B9A" ? "batch" : type === "\u6A21\u677F\u5BA1\u6279" ? "template" : "todo";
+  const group = { reply: "\u56DE\u4FE1", batch: "\u9080\u7EA6\u548C\u51B3\u5B9A", template: "\u6A21\u677F", todo: "\u5176\u4ED6" }[kind];
+  const steps = [];
+  const action = option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"]);
+  if (action === "\u53D1\u7801") {
+    steps.push({ text: "\u5728 TAFU \u540E\u53F0\u5EFA\u4E00\u4E2A\u4F53\u9A8C\u7801", params: [
+      { label: "\u7801\u540D", value: text(r["\u4F53\u9A8C\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09" },
+      { label: "\u80FD\u7528\u51E0\u6B21", value: String(Number(r["\u4F53\u9A8C\u6B21\u6570"]) || cfg.trial.maxUses) },
+      { label: "\u51E0\u5929\u5185\u6709\u6548", value: String(Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days) }
+    ] });
+  } else if (action === "\u5EF6\u671F") {
+    steps.push({ text: `\u628A\u4F53\u9A8C\u7801 ${text(r["\u4F53\u9A8C\u7801"]) || text(f?.["\u4F53\u9A8C\u7801"]) || ""} \u5EF6\u957F ${Number(r["\u4F53\u9A8C\u5929\u6570"]) || cfg.trial.days} \u5929` });
+  } else if (action === "\u5F00\u6D3B\u52A8\u7801") {
+    steps.push({ text: "\u5728 TAFU \u540E\u53F0\u5F00\u5408\u4F5C\u6D3B\u52A8\uFF08\u7C89\u4E1D\u901A\u8FC7\u5979\u7684\u8FDE\u7ED3\u8D2D\u4E70\u6709\u6298\u6263\uFF0C\u5979\u62FF\u5206\u6DA6\uFF09", params: [
+      { label: "\u6D3B\u52A8\u7801", value: text(r["\u6D3B\u52A8\u7801"]) || "\uFF08\u7528\u5979\u7684\u8D26\u53F7\u540D\uFF09" },
+      { label: "\u7C89\u4E1D\u51CF\u51E0 %", value: String(Number(r["\u7C89\u4E1D\u6298\u6263"]) || cfg.partner.percentOff) },
+      { label: "\u5E02\u573A", value: text(r["\u9500\u552E\u5E02\u573A"]) || "\uFF08\u6309\u6863\u6848\u7684\u5E02\u573A\uFF09" }
+    ] });
+  }
+  const channel = option(r["\u53D1\u9001\u6E20\u9053"]) || option(f?.["\u8054\u7CFB\u6E20\u9053"]);
+  const { subject, body } = splitDraft(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
+  const recipient = emailsIn(r["\u6536\u4EF6\u4EBA"])[0] ?? "";
+  const sends = kind === "reply" && channel !== "\u4E0D\u53D1\u90AE\u4EF6" && body.trim();
+  if (sends) {
+    const mb = mailboxFor(cfg, channel);
+    steps.push({ text: mb ? `${action ? "\u6210\u529F\u540E\uFF0C" : ""}\u4ECE ${mb.address} \u628A\u4E0B\u9762\u8FD9\u5C01\u4FE1\u53D1\u7ED9 ${recipient || "\u5979"}` : `\u8FD9\u5C01\u4FE1\u8981\u4ECE\u300C${channel}\u300D\u53D1\uFF0C\u7CFB\u7EDF\u53D1\u4E0D\u4E86\uFF0C\u8981\u624B\u52A8\u53D1` });
+  }
+  const after = option(r["\u53D1\u540E\u52A8\u4F5C"]);
+  if (after) steps.push({ text: `${after === "\u6C38\u4E0D\u8054\u7CFB" ? "\u6807\u6210\u6C38\u4E0D\u8054\u7CFB\uFF0C" : ""}\u7ED3\u675F\u8DDF\u8FDB\uFF08\u539F\u56E0\uFF1A${option(r["\u7ED3\u6848\u539F\u56E0"]) || "\u6CA1\u5199"}\uFF09` });
+  return {
+    id: r.record_id,
+    kind,
+    group,
+    tag: type || "\u5F85\u529E",
+    who: w,
+    meta,
+    headline: text(r["\u5BA1\u6838\u9879"]) || w?.name || "\u4E00\u4EF6\u5F85\u4F60\u51B3\u5B9A\u7684\u4E8B",
+    mail: latest ? { label: `${w?.name ?? "\u5BF9\u65B9"}\u8BF4`, text: latest.text, when: latest.when } : void 0,
+    suggest: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) || text(r["\u5BA1\u6838\u9879"]),
+    steps,
+    why: text(r["\u6211\u7684\u5224\u65AD\u548C\u5EFA\u8BAE"]),
+    draft: body.trim() ? { label: sends ? `\u8981\u53D1\u7ED9 ${recipient || "\u5979"} \u7684\u4FE1` : kind === "template" ? "\u6A21\u677F\u5185\u5BB9" : "\u8349\u7A3F", subject, body } : void 0
+  };
+}
+async function readBodies(ctx, mails) {
+  const byMailbox = /* @__PURE__ */ new Map();
+  for (const m of mails) {
+    const mb = mailboxFor(ctx.cfg, m.channel);
+    if (mb && m.messageId) byMailbox.set(mb.address, [...byMailbox.get(mb.address) ?? [], m.messageId]);
+  }
+  const out = /* @__PURE__ */ new Map();
+  for (const [mailbox, ids] of byMailbox) {
+    for (let i = 0; i < ids.length; i += 20) {
+      const data = await ctx.base.lark.json([
+        "mail",
+        "+messages",
+        "--mailbox",
+        mailbox,
+        "--message-ids",
+        ids.slice(i, i + 20).join(","),
+        "--html=false",
+        "--format",
+        "json",
+        "--as",
+        "user"
+      ]).catch(() => null);
+      for (const m of data?.messages ?? []) out.set(String(m.message_id), ownWords(String(m.body_plain_text ?? "")));
+    }
+  }
+  return out;
+}
+async function cardMails(ctx, data) {
+  const tz = ctx.cfg.timezone;
+  const bodies = await readBodies(ctx, data.pendingMail.map((m) => ({ messageId: text(m["Message ID"]), channel: option(m["\u6E20\u9053"]) })));
+  const out = /* @__PURE__ */ new Map();
+  const sorted = [...data.pendingMail].sort((a, b) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b["\u65E5\u671F"], tz) ?? 0));
+  for (const m of sorted) {
+    const id = text(m["Message ID"]);
+    const t = bodies.get(id);
+    if (!t) continue;
+    const mt = { text: t, when: stamp(cellTime(m["\u65E5\u671F"], tz) ?? Date.now(), tz) };
+    out.set(`msg:${id}`, mt);
+    for (const fid of linkIds(m["KOL"])) out.set(fid, mt);
+  }
+  return out;
+}
+function peopleView(data, cfg, view, todayStr, q = "") {
+  const s = data.snapshot;
+  const tz = cfg.timezone;
+  const decided = new Set(data.reviews.filter((r) => reviewState(r) === "pending" && option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25").flatMap((r) => linkIds(r["KOL"])));
+  const open = [...s.followups.values()].filter((f) => option(f["\u9636\u6BB5"]) !== "\u7ED3\u6848");
+  const stage = (f) => option(f["\u9636\u6BB5"]);
+  const lastContact = (f) => {
+    const a = day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz);
+    const b = day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz);
+    return a > b ? a : b;
+  };
+  const muted = (v) => ({ v, tone: "muted" });
+  const nextUp = (f) => ({ v: text(f["\u4E0B\u4E00\u6B65"]) || "" });
+  const followupRow = (f, cells) => ({
+    id: f.record_id,
+    hasDetail: true,
+    handle: handleOf2(s, f),
+    sub: subOf(profileOf(s, f), displayName(s, f)),
+    cells
+  });
+  let rows = [];
+  let pick = [];
+  if (view === "wait") {
+    pick = open.filter((f) => ["\u6211\u4EEC", "\u7B49\u4F60\u5BA1\u6838"].includes(option(f["\u5F53\u524D\u8F6E\u5230\u8C01"])));
+    const waited = (f) => day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz) ? daysBetween(day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz), todayStr) : 0;
+    pick.sort((a, b) => waited(b) - waited(a));
+    rows = pick.map((f) => {
+      const w = waited(f);
+      return followupRow(f, [
+        { v: situationOf(f, cfg, todayStr) },
+        { v: w <= 0 ? "\u4ECA\u5929" : `${w} \u5929`, tone: w >= 3 ? "warn" : void 0 },
+        decided.has(f.record_id) ? { v: "\u7B49\u4F60\u51B3\u5B9A", badge: true, tone: "warn", link: "decide" } : { v: "" },
+        { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) }
+      ]);
+    });
+  } else if (view === "noreply") {
+    pick = open.filter((f) => stage(f) === "\u5DF2\u9080\u7EA6");
+    pick.sort((a, b) => day(a["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz).localeCompare(day(b["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz)));
+    rows = pick.map((f) => followupRow(f, [
+      muted(shortDay(day(f["\u9996\u6B21\u9080\u7EA6\u65E5\u671F"], tz))),
+      { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) },
+      muted(option(f["\u9080\u7EA6\u6279\u6B21"])),
+      muted(option(f["\u8054\u7CFB\u6E20\u9053"]))
+    ]));
+  } else if (view === "trial") {
+    pick = open.filter((f) => stage(f) === "\u4F53\u9A8C\u4E2D");
+    pick.sort((a, b) => (day(a["\u4F53\u9A8C\u7801\u5230\u671F"], tz) || "9").localeCompare(day(b["\u4F53\u9A8C\u7801\u5230\u671F"], tz) || "9"));
+    rows = pick.map((f) => {
+      const used = Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0;
+      const max = Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0;
+      const exp = day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz);
+      const left = exp ? daysBetween(todayStr, exp) : 99;
+      return followupRow(f, [
+        { v: max ? `${used} / ${max}${used === 0 ? " \xB7 \u8FD8\u6CA1\u7528" : used >= max ? " \xB7 \u7528\u5B8C\u4E86" : ""}` : "\uFF08\u6CA1\u540C\u6B65\u5230\uFF09", tone: max && used === 0 ? "warn" : void 0 },
+        { v: exp ? left < 0 ? `\u5DF2\u8FC7\u671F\uFF08${shortDay(exp)}\uFF09` : ahead(exp, todayStr) : "", tone: left <= 2 ? "warn" : void 0 },
+        muted(ago(lastContact(f), todayStr)),
+        nextUp(f)
+      ]);
+    });
+  } else if (view === "deal") {
+    pick = open.filter((f) => ["\u5DF2\u770B\u62A5\u544A", "\u5408\u4F5C\u4E2D"].includes(stage(f)));
+    rows = pick.map((f) => {
+      const last = lastContact(f);
+      return followupRow(f, [
+        { v: situationOf(f, cfg, todayStr) },
+        text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("\u8FD8\u6CA1\u5F00"),
+        { v: ago(last, todayStr), tone: last && daysBetween(last, todayStr) >= 5 ? "warn" : "muted" },
+        nextUp(f)
+      ]);
+    });
+  } else if (view === "post") {
+    pick = open.filter((f) => stage(f) === "\u5DF2\u7EA6\u53D1\u5E03");
+    pick.sort((a, b) => (day(a["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz) || "9").localeCompare(day(b["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz) || "9"));
+    rows = pick.map((f) => {
+      const due = day(f["\u7EA6\u5B9A\u53D1\u5E03\u65E5\u671F"], tz);
+      const late = due ? daysBetween(due, todayStr) : 0;
+      const when = !due ? muted("\u6CA1\u586B\u65E5\u671F") : late >= OVERDUE_GRACE_DAYS ? { v: `\u5DF2\u8FC7 ${late} \u5929\uFF08${shortDay(due)}\uFF09\uFF0C\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50`, tone: "bad", badge: true } : { v: late >= 0 ? `${shortDay(due)}\uFF08\u4ECA\u5929\u524D\u540E\uFF09` : ahead(due, todayStr), tone: late >= -3 ? "warn" : void 0 };
+      return followupRow(f, [when, text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("\u8FD8\u6CA1\u5F00"), nextUp(f)]);
+    });
+  } else if (view === "posted") {
+    const byKol = /* @__PURE__ */ new Map();
+    for (const p of data.posts) for (const id of linkIds(p["KOL"])) byKol.set(id, [...byKol.get(id) ?? [], p]);
+    pick = [...s.followups.values()].filter((f) => stage(f) === "\u5DF2\u53D1\u5E03" || byKol.has(f.record_id));
+    const latestPost = (f) => (byKol.get(f.record_id) ?? []).sort((a, b) => (cellTime(b["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0) - (cellTime(a["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0))[0];
+    pick.sort((a, b) => (cellTime(latestPost(b)?.["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0) - (cellTime(latestPost(a)?.["\u53D1\u5E03\u65E5\u671F"], tz) ?? 0));
+    rows = pick.map((f) => {
+      const p = latestPost(f);
+      const n = byKol.get(f.record_id)?.length ?? 0;
+      const views = p ? [30, 7, 3, 1].map((d) => ({ d, v: Number(p[`\u7B2C${d}\u5929\u64AD\u653E`]) })).find((x) => x.v > 0) : void 0;
+      return followupRow(f, [
+        p ? { v: `${text(p["\u5185\u5BB9\u6807\u9898"]) || option(p["\u5F62\u5F0F"]) || "\u5E16\u5B50"}${n > 1 ? ` \xB7 \u5171 ${n} \u6761` : ""}`, link: text(p["\u5185\u5BB9\u94FE\u63A5"]) || void 0 } : muted("\u6CA1\u8BB0\u94FE\u63A5"),
+        muted(p ? shortDay(day(p["\u53D1\u5E03\u65E5\u671F"], tz)) : ""),
+        views ? { v: `${views.v.toLocaleString("en-US")}\uFF08\u7B2C ${views.d} \u5929\uFF09` } : muted("\u8FD8\u6CA1\u6570\u636E"),
+        text(f["\u6D3B\u52A8\u7801"]) ? { v: text(f["\u6D3B\u52A8\u7801"]) } : muted("")
+      ]);
+    });
+  } else if (view === "pool") {
+    const profiles = [...s.profiles.values()].filter((p) => !linkIds(p["\u8DDF\u8FDB\u8BB0\u5F55"]).length && profileEmails(p).length && option(p["\u8054\u7CFB\u8BB8\u53EF"]) !== "\u6C38\u4E0D\u8054\u7CFB");
+    const term2 = q.trim().toLowerCase();
+    const hit = (p) => !term2 || [text(p["\u8D26\u53F7"]), text(p["\u8D26\u53F7\u540D\u79F0"]), text(p["\u79F0\u547C"]), ...profileEmails(p)].some((x) => x.toLowerCase().includes(term2));
+    const list2 = profiles.filter(hit);
+    return {
+      total: list2.length,
+      rows: list2.slice(0, 300).map((p) => ({
+        id: p.record_id,
+        hasDetail: false,
+        handle: text(p["\u8D26\u53F7"]) ? `@${text(p["\u8D26\u53F7"]).replace(/^@/, "")}` : text(p["\u8D26\u53F7\u540D\u79F0"]),
+        sub: subOf(p, text(p["\u8D26\u53F7\u540D\u79F0"])),
+        cells: [
+          { v: [option(p["\u5185\u5BB9\u7C7B\u578B"])].filter(Boolean).join(" \xB7 ") || "\uFF08\u8FD8\u6CA1\u8865\u597D\u8D44\u6599\uFF09", tone: option(p["\u5185\u5BB9\u7C7B\u578B"]) ? void 0 : "muted" },
+          { v: fans(p["\u7C89\u4E1D\u6570"]) },
+          muted(option(p["\u5E02\u573A"])),
+          muted(option(p["\u5165\u5E93\u6279\u6B21"]))
+        ]
+      }))
+    };
+  } else {
+    pick = open;
+    pick.sort((a, b) => lastContact(b).localeCompare(lastContact(a)));
+    rows = pick.map((f) => followupRow(f, [{ v: situationOf(f, cfg, todayStr) }, { v: stage(f), badge: true }, { v: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr) }]));
+  }
+  const term = q.trim().toLowerCase();
+  if (term) {
+    rows = rows.filter((r) => {
+      const f = s.followups.get(r.id);
+      return [r.handle, r.sub, ...f ? profileEmails(profileOf(s, f)) : []].some((x) => x.toLowerCase().includes(term));
+    });
+  }
+  return { rows: rows.slice(0, 500), total: rows.length };
+}
+function viewCounts(data, cfg, todayStr) {
+  const out = {};
+  for (const k of Object.keys(VIEWS)) out[k] = peopleView(data, cfg, k, todayStr).total;
+  return out;
+}
+async function personDetail(ctx, data, fid) {
+  const { base, cfg } = ctx;
+  const t = cfg.tables;
+  const tz = cfg.timezone;
+  const todayStr = today(cfg);
+  const s = data.snapshot;
+  const f = s.followups.get(fid);
+  if (!f) return null;
+  const p = profileOf(s, f);
+  const [links] = await base.get(t.followups, [fid], ["\u63A5\u89E6\u8BB0\u5F55", "\u53D1\u5E03\u5185\u5BB9"]);
+  const contacts = (await base.get(t.contacts, linkIds(links?.["\u63A5\u89E6\u8BB0\u5F55"]), ["\u65B9\u5411", "\u6458\u8981", "\u5185\u5BB9", "\u65E5\u671F", "\u6E20\u9053", "Message ID", "\u5F85\u5904\u7406"])).sort((a, b) => (cellTime(a["\u65E5\u671F"], tz) ?? 0) - (cellTime(b["\u65E5\u671F"], tz) ?? 0));
+  const posts = await base.get(t.posts, linkIds(links?.["\u53D1\u5E03\u5185\u5BB9"]), POST_FIELDS).catch(() => []);
+  const recent = contacts.slice(-12);
+  const unread = recent.filter((c) => option(c["\u65B9\u5411"]) === "\u6536\u5230" && !text(c["\u5185\u5BB9"]) && text(c["Message ID"]) && !text(c["\u6458\u8981"]).startsWith("["));
+  const bodies = await readBodies(ctx, unread.map((c) => ({ messageId: text(c["Message ID"]), channel: option(c["\u6E20\u9053"]) })));
+  const name = text(p?.["\u79F0\u547C"]) || displayName(s, f);
+  const bubbles = recent.map((c) => {
+    const dir = option(c["\u65B9\u5411"]);
+    const when = stamp(cellTime(c["\u65E5\u671F"], tz) ?? 0, tz);
+    const summary = text(c["\u6458\u8981"]);
+    if (dir === "\u53D1\u51FA") return { side: "us", who: `\u6211\u4EEC \xB7 ${option(c["\u6E20\u9053"])}`, when, text: text(c["\u5185\u5BB9"]) || summary };
+    if (dir === "\u6536\u5230" && !summary.startsWith("[")) return { side: "them", who: name, when, text: bodies.get(text(c["Message ID"])) || text(c["\u5185\u5BB9"]) || summary };
+    return { side: "event", who: "", when, text: summary };
+  });
+  const pending = data.reviews.filter((r) => linkIds(r["KOL"]).includes(fid) && reviewState(r) === "pending" && option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25");
+  const emails = profileEmails(p).map((e) => ({ address: e, blocked: s.doNotContact.has(e) }));
+  return {
+    id: fid,
+    handle: handleOf2(s, f),
+    name,
+    sub: subOf(p, displayName(s, f)),
+    stage: option(f["\u9636\u6BB5"]),
+    stageStep: STAGE_STEP[option(f["\u9636\u6BB5"])] ?? -1,
+    stages: STAGES,
+    situation: situationOf(f, cfg, todayStr),
+    lastContact: ago(day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz) > day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz) ? day(f["\u6700\u8FD1\u8054\u7CFB\u65E5\u671F"], tz) : day(f["\u6700\u540E\u6765\u4FE1\u65E5\u671F"], tz), todayStr),
+    turn: option(f["\u5F53\u524D\u8F6E\u5230\u8C01"]),
+    next: text(f["\u4E0B\u4E00\u6B65"]),
+    nextDate: ahead(day(f["\u4E0B\u6B21\u8DDF\u8FDB\u65E5\u671F"], tz), todayStr),
+    pending: pending.map((r) => ({ id: r.record_id, title: text(r["\u5BA1\u6838\u9879"]), ask: text(r["\u8981\u4F60\u5B9A\u4EC0\u4E48"]) })),
+    bubbles,
+    olderCount: Math.max(0, contacts.length - recent.length),
+    trial: text(f["\u4F53\u9A8C\u7801"]) ? { code: text(f["\u4F53\u9A8C\u7801"]), used: Number(f["\u4F53\u9A8C\u7801\u5DF2\u7528"]) || 0, max: Number(f["\u4F53\u9A8C\u7801\u4E0A\u9650"]) || 0, expires: shortDay(day(f["\u4F53\u9A8C\u7801\u5230\u671F"], tz)) } : null,
+    partner: text(f["\u6D3B\u52A8\u7801"]) ? { code: text(f["\u6D3B\u52A8\u7801"]), link: text(f["\u4E13\u5C5E\u8FDE\u7ED3"]), ledger: text(f["\u8D26\u672C\u8FDE\u7ED3"]) } : null,
+    posts: posts.map((x) => ({
+      title: text(x["\u5185\u5BB9\u6807\u9898"]) || option(x["\u5F62\u5F0F"]) || "\u5E16\u5B50",
+      link: text(x["\u5185\u5BB9\u94FE\u63A5"]),
+      platform: option(x["\u5E73\u53F0"]),
+      date: shortDay(day(x["\u53D1\u5E03\u65E5\u671F"], tz)),
+      metrics: [1, 3, 7, 30].map((d) => ({ day: d, views: Number(x[`\u7B2C${d}\u5929\u64AD\u653E`]) || null }))
+    })),
+    info: [
+      ["\u600E\u4E48\u79F0\u547C", text(p?.["\u79F0\u547C"])],
+      ["\u4E3B\u9875", text(p?.["\u4E3B\u9875\u94FE\u63A5"])],
+      ["\u5E02\u573A", option(p?.["\u5E02\u573A"])],
+      ["\u5185\u5BB9\u7C7B\u578B", option(p?.["\u5185\u5BB9\u7C7B\u578B"])],
+      ["\u9080\u7EA6\u6279\u6B21", option(f["\u9080\u7EA6\u6279\u6B21"])],
+      ["\u7528\u54EA\u4E2A\u90AE\u7BB1\u8054\u7CFB", option(f["\u8054\u7CFB\u6E20\u9053"])],
+      ["\u91CD\u8981\u7A0B\u5EA6", option(f["\u7EA7\u522B"])]
+    ].filter(([, v]) => v).map(([k, v]) => ({ k, v })),
+    emails,
+    doNotContact: option(p?.["\u8054\u7CFB\u8BB8\u53EF"]) === "\u6C38\u4E0D\u8054\u7CFB"
+  };
+}
+async function activityLog(ctx) {
+  const { base, cfg } = ctx;
+  const t = cfg.tables;
+  const tz = cfg.timezone;
+  const since = addDays(today(cfg), -3);
+  const [runs, ops] = await Promise.all([
+    base.records(t.runs, {
+      filter: { logic: "and", conditions: [onOrAfter("\u5F00\u59CB\u65F6\u95F4", since)] },
+      fields: ["\u8FD0\u884C", "\u65B9\u5F0F", "\u7ED3\u679C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u675F\u65F6\u95F4", "\u5904\u7406\u6765\u4FE1", "\u53D1\u51FA\u90AE\u4EF6", "\u65B0\u589E\u5F85\u5BA1", "\u95EE\u9898\u4E0E\u5907\u6CE8"]
+    }),
+    base.records(t.oplog, {
+      filter: { logic: "and", conditions: [onOrAfter("\u65F6\u95F4", since)] },
+      fields: ["\u65F6\u95F4", "\u7C7B\u578B", "\u7ED3\u679C", "\u64CD\u4F5C", "\u8BF4\u660E", "\u6240\u5C5E\u8FD0\u884C"]
+    })
+  ]);
+  const runById = new Map(runs.map((r) => [r.record_id, r]));
+  const time = (r, f) => cellTime(r[f], tz) ?? 0;
+  return {
+    runs: runs.sort((a, b) => time(b, "\u5F00\u59CB\u65F6\u95F4") - time(a, "\u5F00\u59CB\u65F6\u95F4")).slice(0, 30).map((r) => ({
+      title: text(r["\u8FD0\u884C"]),
+      how: option(r["\u65B9\u5F0F"]),
+      result: option(r["\u7ED3\u679C"]),
+      start: stamp(time(r, "\u5F00\u59CB\u65F6\u95F4"), tz),
+      end: time(r, "\u7ED3\u675F\u65F6\u95F4") ? stamp(time(r, "\u7ED3\u675F\u65F6\u95F4"), tz).slice(11) : "",
+      counts: [["\u5904\u7406\u6765\u4FE1", r["\u5904\u7406\u6765\u4FE1"]], ["\u53D1\u51FA\u90AE\u4EF6", r["\u53D1\u51FA\u90AE\u4EF6"]], ["\u65B0\u589E\u5F85\u5BA1", r["\u65B0\u589E\u5F85\u5BA1"]]].filter(([, n]) => Number(n) > 0).map(([k, n]) => `${k} ${n}`).join(" \xB7 "),
+      notes: text(r["\u95EE\u9898\u4E0E\u5907\u6CE8"])
+    })),
+    ops: ops.sort((a, b) => time(b, "\u65F6\u95F4") - time(a, "\u65F6\u95F4")).slice(0, 300).map((o) => {
+      const run = runById.get(linkIds(o["\u6240\u5C5E\u8FD0\u884C"])[0] ?? "");
+      return {
+        when: stamp(time(o, "\u65F6\u95F4"), tz),
+        type: option(o["\u7C7B\u578B"]),
+        result: option(o["\u7ED3\u679C"]),
+        what: text(o["\u64CD\u4F5C"]),
+        note: text(o["\u8BF4\u660E"]).split("\n").filter((l) => !l.startsWith("\u6267\u884C\u4EBA\uFF1A")).join(" "),
+        source: run ? `${option(run["\u65B9\u5F0F"]) === "\u5B9A\u65F6\u4EFB\u52A1" ? "\u6BCF\u5929\u4F8B\u884C" : "\u5728 Claude \u91CC\u8DD1\u7684"}` : "",
+        by: (text(o["\u8BF4\u660E"]).match(/执行人：(.+)/) ?? [])[1] ?? ""
+      };
+    })
+  };
+}
+async function runStatus(ctx, data) {
+  const { base, cfg } = ctx;
+  const tz = cfg.timezone;
+  const running = await base.records(cfg.tables.runs, { filter: { logic: "and", conditions: [["\u7ED3\u679C", "intersects", ["\u8FDB\u884C\u4E2D"]]] }, fields: ["\u8FD0\u884C", "\u5F00\u59CB\u65F6\u95F4", "\u7ED3\u679C"] });
+  const fresh = running.filter((r) => (cellTime(r["\u5F00\u59CB\u65F6\u95F4"], tz) ?? 0) > Date.now() - 2 * 36e5);
+  const s = data.snapshot;
+  const name = (r) => {
+    const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
+    return f ? displayName(s, f) : "";
+  };
+  const failed = data.reviews.filter((r) => option(r["\u72B6\u6001"]) === "\u6267\u884C\u5931\u8D25");
+  const queued = data.reviews.filter((r) => option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25" && reviewState(r) === "approved");
+  return {
+    failed: failed.length,
+    running: fresh.length + queued.length,
+    items: [
+      ...failed.map((r) => ({ st: "\u6CA1\u505A\u6210", text: `${name(r)}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, note: text(r["\u6267\u884C\u7ED3\u679C"]).slice(0, 120), person: linkIds(r["KOL"])[0] ?? "" })),
+      ...fresh.map((r) => ({ st: "\u8FDB\u884C\u4E2D", text: text(r["\u8FD0\u884C"]), note: `${stamp(cellTime(r["\u5F00\u59CB\u65F6\u95F4"], tz) ?? 0, tz).slice(11)} \u5F00\u59CB`, person: "" })),
+      ...queued.map((r) => ({ st: "\u7B49\u53D1\u51FA", text: `${name(r)}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, note: "\u98DE\u4E66\u91CC\u5DF2\u6279\u51C6\uFF0C\u7B49\u4E0B\u4E00\u6B21\u300C\u53D1\u51FA\u5DF2\u6279\u51C6\u7684\u4FE1\u300D", person: linkIds(r["KOL"])[0] ?? "" }))
+    ]
+  };
+}
+
+// src/kolops/console/server.ts
+var REFRESH_MS = 5 * 6e4;
+async function startConsole(ctx, o) {
+  const data = new ConsoleData(ctx);
+  let loading = null;
+  let mails = { at: -1, map: /* @__PURE__ */ new Map() };
+  const refresh = () => loading ??= data.refresh().finally(() => loading = null);
+  await refresh();
+  const timer = setInterval(() => refresh().catch(() => {
+  }), REFRESH_MS);
+  timer.unref();
+  const server = createServer((req, res) => {
+    handle(req, res).catch((err) => send(res, 500, { error: String(err?.message ?? err) }));
+  });
+  async function handle(req, res) {
+    const host = String(req.headers.host ?? "");
+    if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) return send(res, 403, { error: "\u53EA\u80FD\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\u7528 127.0.0.1 \u6253\u5F00" });
+    const url2 = new URL(req.url ?? "/", `http://${host}`);
+    const day2 = today(ctx.cfg);
+    if (req.method === "GET" && url2.pathname === "/") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      return res.end(PAGE);
+    }
+    if (req.method === "POST" && url2.pathname === "/api/refresh") {
+      await refresh();
+      return send(res, 200, { loadedAt: data.loadedAt });
+    }
+    if (req.method !== "GET") return send(res, 405, { error: "\u8FD9\u4E00\u7248\u53EA\u8BFB" });
+    if (url2.pathname === "/api/overview") {
+      if (mails.at !== data.loadedAt) mails = { at: data.loadedAt, map: await cardMails(ctx, data) };
+      const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day2, mails.map);
+      return send(res, 200, {
+        project: ctx.cfg.project,
+        me: ctx.me.name,
+        loadedAt: data.loadedAt,
+        today: day2,
+        cards,
+        waitingClaude,
+        status: await runStatus(ctx, data),
+        views: Object.entries(VIEWS).map(([key, v]) => ({ key, label: v.label })),
+        counts: viewCounts(data, ctx.cfg, day2)
+      });
+    }
+    if (url2.pathname === "/api/people") {
+      const view = url2.searchParams.get("view") ?? "wait";
+      if (!(view in VIEWS)) return send(res, 400, { error: `\u6CA1\u6709\u8FD9\u4E2A\u89C6\u56FE\uFF1A${view}` });
+      const { rows, total } = peopleView(data, ctx.cfg, view, day2, url2.searchParams.get("q") ?? "");
+      return send(res, 200, { view, ...VIEWS[view], rows, total });
+    }
+    if (url2.pathname === "/api/person") {
+      const detail = await personDetail(ctx, data, url2.searchParams.get("id") ?? "");
+      return detail ? send(res, 200, detail) : send(res, 404, { error: "\u627E\u4E0D\u5230\u8FD9\u4F4D KOL \u7684\u8DDF\u8FDB\u8BB0\u5F55" });
+    }
+    if (url2.pathname === "/api/log") return send(res, 200, await activityLog(ctx));
+    return send(res, 404, { error: "\u6CA1\u6709\u8FD9\u4E2A\u5730\u5740" });
+  }
+  const url = await listen(server, o.port);
+  if (o.openBrowser) openInBrowser(url);
+  return { url, server };
+}
+function send(res, status, body) {
+  res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+  res.end(JSON.stringify(body));
+}
+async function listen(server, port) {
+  const tries = port ? [port] : Array.from({ length: 20 }, (_, i) => 4173 + i);
+  for (const p of tries) {
+    const ok = await new Promise((resolve) => {
+      server.once("error", () => resolve(false));
+      server.listen(p, "127.0.0.1", () => resolve(true));
+    });
+    if (ok) return `http://127.0.0.1:${p}/`;
+  }
+  throw new Error(port ? `\u7AEF\u53E3 ${port} \u88AB\u5360\u7528\u4E86\uFF0C\u6362\u4E00\u4E2A --port \u8BD5\u8BD5` : "4173 \u5230 4192 \u7684\u7AEF\u53E3\u90FD\u88AB\u5360\u7528\u4E86\uFF0C\u7528 --port \u6307\u5B9A\u4E00\u4E2A");
+}
+function openInBrowser(url) {
+  const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
+  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
+  spawn(cmd, args, { stdio: "ignore", detached: true }).on("error", () => {
+  }).unref();
+}
+
 // src/kolops/cli.ts
 var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
 
   today                         \u4ECA\u5929\u7684\u6E05\u5355\uFF1A\u5F85\u5904\u7406\u6765\u4FE1\u3001\u8F6E\u5230\u6211\u4EEC\u3001\u7B49\u4F60\u5BA1\u6838\u3001\u4F53\u9A8C\u7801\u5FEB\u5230\u671F\u3001\u5FEB\u5230\u7684\u53D1\u5E03\uFF08\u53EA\u8BFB\uFF09
+  console [--port N] [--no-browser]
+                                \u5728\u8FD9\u53F0\u7535\u8111\u4E0A\u6253\u5F00\u51B3\u7B56\u53F0\u9875\u9762\uFF1A\u5F85\u4F60\u51B3\u5B9A\u3001\u5404\u9636\u6BB5\u7684 KOL\u3001\u5355\u4E2A KOL \u7684\u6765\u5F80\u3001\u6267\u884C\u8BB0\u5F55\uFF08\u8FD9\u4E00\u7248\u53EA\u8BFB\uFF09\u3002\u6309 Ctrl+C \u5173\u6389
   sync    [--days N]            \u628A\u5404\u90AE\u7BB1\u4ECE\u4E0A\u6B21\u540C\u6B65\u4EE5\u6765\u7684\u6765\u4FE1\u540C\u6B65\u8FDB\u63A5\u89E6\u8BB0\u5F55\uFF08--days \u6539\u6210\u53EA\u770B\u6700\u8FD1 N \u5929\uFF09\uFF0C\u6765\u4FE1\u7684 KOL \u6539\u6210\u300C\u8F6E\u5230\u6211\u4EEC\u300D
   inbox   [--limit 30]          \u5217\u51FA\u5F85\u5904\u7406\u7684\u6765\u4FE1\uFF1A\u5BF9\u65B9\u539F\u8BDD\u3001\u8DDF\u8FDB\u9636\u6BB5\u3001\u4F53\u9A8C\u7801\u3001\u5EFA\u8BAE\u7801\u540D\uFF08\u53EA\u8BFB\uFF09
   inbox   --apply \u6587\u4EF6.json      \u6309\u51B3\u5B9A\u6587\u4EF6\u628A\u8FD9\u6279\u6765\u4FE1\u4E00\u6B21\u63D0\u4EA4\u5230\u5BA1\u6838\u961F\u5217\uFF08\u60F3\u4F53\u9A8C / \u8981\u56DE\u590D / \u62D2\u7EDD / \u4E0D\u7528\u56DE\uFF09\uFF0C
@@ -63303,6 +64332,8 @@ var COMMANDS = {
     }
   },
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
+  // Handled in main(): it keeps running until stopped.
+  console: { title: "", writes: false, run: async () => null },
   // These three are handled in main(): they must work before the project's settings can be read.
   check: { title: "", writes: false, run: async () => null },
   project: { title: "", writes: false, run: async () => null },
@@ -63343,6 +64374,8 @@ async function main() {
       scheduled: { type: "boolean" },
       help: { type: "boolean", short: "h" },
       "youtube-hidden": { type: "boolean" },
+      "no-browser": { type: "boolean" },
+      port: str,
       days: str,
       only: str,
       batch: str,
@@ -63398,6 +64431,12 @@ async function main() {
     }
     const cfg = await loadConfig(lark, project.name, project.baseToken);
     ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
+    if (name === "console") {
+      const { url } = await startConsole(ctx, { port: values.port ? Number(values.port) : void 0, openBrowser: !values["no-browser"] });
+      print({ \u5730\u5740: url, \u8BF4\u660E: "\u51B3\u7B56\u53F0\u5DF2\u7ECF\u6253\u5F00\uFF08\u8FD9\u4E00\u7248\u53EA\u8BFB\uFF09\u3002\u53EA\u6709\u8FD9\u53F0\u7535\u8111\u80FD\u8BBF\u95EE\uFF1B\u6309 Ctrl+C \u5173\u6389\u3002" });
+      return new Promise(() => {
+      });
+    }
     if (logged) await ctx.run.start();
     const result = await cmd.run(ctx, values);
     if (logged) await ctx.run.finish(hasFailures(result) ? "\u90E8\u5206\u5B8C\u6210" : "\u5B8C\u6210");

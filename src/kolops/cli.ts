@@ -22,10 +22,13 @@ import { applyRevisions, toRevise } from "./reviews.js";
 import { syncInbox } from "./sync.js";
 import { trialFollowup } from "./trialfollow.js";
 import { todayLists } from "./today.js";
+import { startConsole } from "./console/server.js";
 
 const HELP = `kol <命令> [选项]
 
   today                         今天的清单：待处理来信、轮到我们、等你审核、体验码快到期、快到的发布（只读）
+  console [--port N] [--no-browser]
+                                在这台电脑上打开决策台页面：待你决定、各阶段的 KOL、单个 KOL 的来往、执行记录（这一版只读）。按 Ctrl+C 关掉
   sync    [--days N]            把各邮箱从上次同步以来的来信同步进接触记录（--days 改成只看最近 N 天），来信的 KOL 改成「轮到我们」
   inbox   [--limit 30]          列出待处理的来信：对方原话、跟进阶段、体验码、建议码名（只读）
   inbox   --apply 文件.json      按决定文件把这批来信一次提交到审核队列（想体验 / 要回复 / 拒绝 / 不用回），
@@ -128,6 +131,8 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
     },
   },
   whoami: { title: "", writes: false, run: async (ctx) => ctx.me },
+  // Handled in main(): it keeps running until stopped.
+  console: { title: "", writes: false, run: async () => null },
   // These three are handled in main(): they must work before the project's settings can be read.
   check: { title: "", writes: false, run: async () => null },
   project: { title: "", writes: false, run: async () => null },
@@ -170,7 +175,7 @@ async function main(): Promise<number> {
     allowPositionals: true,
     options: {
       "dry-run": { type: "boolean" }, scheduled: { type: "boolean" }, help: { type: "boolean", short: "h" },
-      "youtube-hidden": { type: "boolean" },
+      "youtube-hidden": { type: "boolean" }, "no-browser": { type: "boolean" }, port: str,
       days: str, only: str, batch: str, template: str, mailbox: str, approval: str, profiles: str, "profiles-file": str,
       platform: str, job: str, budget: str, keywords: str, seeds: str, handles: str, "min-followers": str, "max-followers": str,
       project: str, "import-templates": str, "template-language": str, apply: str, limit: str, file: str, code: str,
@@ -205,6 +210,11 @@ async function main(): Promise<number> {
     }
     const cfg = await loadConfig(lark, project.name, project.baseToken);
     ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
+    if (name === "console") {
+      const { url } = await startConsole(ctx, { port: values.port ? Number(values.port) : undefined, openBrowser: !values["no-browser"] });
+      print({ 地址: url, 说明: "决策台已经打开（这一版只读）。只有这台电脑能访问；按 Ctrl+C 关掉。" });
+      return new Promise<number>(() => {});
+    }
     if (logged) await ctx.run.start();
     const result = await cmd.run(ctx, values);
     if (logged) await ctx.run.finish(hasFailures(result) ? "部分完成" : "完成");

@@ -78,6 +78,12 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
 
 共同规则见 `reference/rules.md`。
 
+## 决策台（只读预览）
+
+对 Claude 说「打开决策台」，或者在终端运行 `node "<插件目录>/scripts/kol.mjs" console`，会在这台电脑上打开一个页面：要你决定的事一件一件排好、各阶段的 KOL 列表、单个 KOL 的来往记录、最近的执行记录。只有这台电脑能打开（127.0.0.1），按 Ctrl+C 关掉。
+
+这一版只能看：同意、要改、找新人这些按钮还不能用，照旧在飞书审核队列里批准、在 Claude 里处理。以后的规则见仓库里的 `docs/decision-console-rules.md`。
+
 ## 改动
 
 脚本源码在仓库的 `src/kolops/`。改完先运行 `npm run build:plugin`，重新打包 `scripts/kol.mjs`；再运行 `npm test`，测试里会直接运行打包后的脚本，确认它能正常启动。然后把 `plugin.json` 的版本号加一。同事装的是 `stable` 分支，要等 stable 推到这个版本（见仓库根目录 README 的「发布」）才会拿到。发信规则和邮件模板不在插件里，在每个项目飞书表的「设置」「发信邮箱」「模板」表里，改那里就行。

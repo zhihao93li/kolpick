@@ -8,7 +8,7 @@
 node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" <命令> [选项]
 ```
 
-命令：`today`、`sync`、`inbox`、`send`、`revise`、`invite`、`remind`、`find`、`classify`、`metrics`、`codes`、`trial-followup`、`posts`、`trial-check`、`notify`、`whoami`、`check`、`project`、`setup-base`。`--help` 看完整参数。
+命令：`today`、`console`、`sync`、`inbox`、`send`、`revise`、`invite`、`remind`、`find`、`classify`、`metrics`、`codes`、`trial-followup`、`posts`、`trial-check`、`notify`、`whoami`、`check`、`project`、`setup-base`。`--help` 看完整参数。同事说「打开决策台」时，用 `run_in_background` 运行 `console`（它会一直开着），把它打印的地址告诉同事。
 
 ## 项目
 

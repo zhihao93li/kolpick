@@ -46,7 +46,7 @@ export class LarkError extends Error {
 }
 
 /** lark-cli commands that only read, so a dropped connection can simply be tried again. */
-const READS = new Set(["+record-list", "+field-list", "+messages", "+message", "+triage", "+thread", "user_mailbox.messages"]);
+const READS = new Set(["+record-list", "+record-get", "+field-list", "+messages", "+message", "+triage", "+thread", "user_mailbox.messages"]);
 
 export class LarkCli implements Lark {
   constructor(private baseToken: string, private bin = process.env.KOL_LARK_CLI || "lark-cli") {}

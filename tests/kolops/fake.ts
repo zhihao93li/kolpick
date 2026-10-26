@@ -41,6 +41,13 @@ export class FakeLark implements Lark {
       const ids = JSON.parse(flag("--json")).create_records.map((f: any) => this.add(flag("--table-id"), f));
       return { record_id_list: ids };
     }
+    if (svc === "base" && cmd === "+record-get") {
+      const ids = args.filter((_, i) => args[i - 1] === "--record-id");
+      const wanted = args.filter((_, i) => args[i - 1] === "--field-id");
+      const rows = this.table(flag("--table-id")).filter((r) => ids.includes(r.record_id));
+      const fields = wanted.length ? wanted : [...new Set(rows.flatMap((r) => Object.keys(r).filter((k) => k !== "record_id")))];
+      return { fields, record_id_list: rows.map((r) => r.record_id), data: rows.map((r) => fields.map((f) => r[f] ?? null)) };
+    }
     if (svc === "base" && cmd === "+record-batch-update") {
       for (const [id, f] of Object.entries<any>(JSON.parse(flag("--json")).update_records)) {
         const row = this.table(flag("--table-id")).find((r) => r.record_id === id);

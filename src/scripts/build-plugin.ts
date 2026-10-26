@@ -9,6 +9,8 @@ await build({
   platform: "node",
   format: "esm",
   target: "node20",
+  // The decision console's page is one HTML file, inlined as a string.
+  loader: { ".html": "text" },
   banner: {
     // apify-client and its dependencies are CommonJS and call require("fs") at load time. An ES module has no
     // require, so without this the script dies on startup with "Dynamic require of "fs" is not supported".

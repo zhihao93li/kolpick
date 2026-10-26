@@ -1,4 +1,4 @@
-import type { Lark, RecordQuery, Row } from "./lark.js";
+import { matrixRows, type Lark, type RecordQuery, type Row } from "./lark.js";
 
 export type Fields = Record<string, unknown>;
 
@@ -8,6 +8,18 @@ export class Base {
 
   records(table: string, opts: Omit<RecordQuery, "baseToken"> = {}): Promise<Row[]> {
     return this.lark.records(table, { ...opts, baseToken: this.token });
+  }
+
+  /** The records with these ids, 100 per call. Ids that no longer exist are simply missing from the result. */
+  async get(table: string, ids: string[], fields: string[] = []): Promise<Row[]> {
+    const rows: Row[] = [];
+    for (let i = 0; i < ids.length; i += 100) {
+      const args = ["base", "+record-get", "--base-token", this.token, "--table-id", table, "--format", "json", "--as", "user"];
+      for (const id of ids.slice(i, i + 100)) args.push("--record-id", id);
+      for (const f of fields) args.push("--field-id", f);
+      rows.push(...matrixRows(await this.lark.json(args)));
+    }
+    return rows;
   }
 
   /** Names of a table's fields, or null when the base has no such table. Other errors (login, network) are thrown. */
