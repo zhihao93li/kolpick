@@ -60422,6 +60422,11 @@ function estimate(key, expectedItems) {
   const a = ACTORS[key];
   return a.start + a.perItem * expectedItems;
 }
+var MIN_CHARGE_CAP = 0.5;
+function chargeCap(estimateUsd, left) {
+  const cap = Math.min(Math.max(estimateUsd * 1.3 + 0.05, MIN_CHARGE_CAP), left);
+  return cap < MIN_CHARGE_CAP ? null : Math.floor(cap * 100) / 100;
+}
 var ApifyRunner = class {
   // A retried job replays the pipeline from the top; every step it already ran is found in the
   // ledger and re-read from its dataset, so `spent` adds each step's cost exactly once.
@@ -60439,9 +60444,9 @@ var ApifyRunner = class {
     let record = await this.ledger.find(key);
     if (!record) {
       const left = this.maxSpend - this.spent;
-      const cap = Math.min(estimate(key, expectedItems) * 1.3 + 0.05, left);
-      if (cap <= 0.01) throw new BudgetExceeded(`\u9884\u7B97 $${this.maxSpend.toFixed(2)} \u5DF2\u7528\u5B8C\uFF0C${actor} \u6CA1\u6709\u542F\u52A8`);
-      const run2 = await this.client.actor(actor).start(input, { maxTotalChargeUsd: Math.round(cap * 100) / 100 });
+      const cap = chargeCap(estimate(key, expectedItems), left);
+      if (cap == null) throw new BudgetExceeded(`\u9884\u7B97 $${this.maxSpend.toFixed(2)} \u53EA\u5269 $${Math.max(0, left).toFixed(2)}\uFF0C\u4E0D\u591F Apify \u6BCF\u6B21\u8FD0\u884C\u6700\u4F4E\u7684 $${MIN_CHARGE_CAP.toFixed(2)} \u4E0A\u9650\uFF0C${actor} \u6CA1\u6709\u542F\u52A8`);
+      const run2 = await this.client.actor(actor).start(input, { maxTotalChargeUsd: cap });
       record = { runId: run2.id, datasetId: run2.defaultDatasetId };
       await this.ledger.started(key, actor, record);
     }

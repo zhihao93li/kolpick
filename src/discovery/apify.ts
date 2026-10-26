@@ -46,6 +46,19 @@ export interface RunLedger {
   finished(step: string, result: { status: string; items: number; costUsd: number }): Promise<void>;
 }
 
+/** Apify refuses a run whose maxTotalChargeUsd is below this. */
+export const MIN_CHARGE_CAP = 0.5;
+
+/**
+ * The charge cap for one run: the estimate plus 30% headroom, raised to Apify's minimum and clipped to what's
+ * left of the budget; null when what's left is below the minimum. The cap only bounds the run: pay-per-result
+ * actors charge for what they return, so a small run still costs about its estimate.
+ */
+export function chargeCap(estimateUsd: number, left: number): number | null {
+  const cap = Math.min(Math.max(estimateUsd * 1.3 + 0.05, MIN_CHARGE_CAP), left);
+  return cap < MIN_CHARGE_CAP ? null : Math.floor(cap * 100) / 100;
+}
+
 /** Runs actors with a spend cap. Each step is recorded in the ledger before waiting on it. */
 export class ApifyRunner implements ActorRunner {
   private client: ApifyClient;
@@ -62,10 +75,9 @@ export class ApifyRunner implements ActorRunner {
     let record = await this.ledger.find(key);
     if (!record) {
       const left = this.maxSpend - this.spent;
-      // The charge cap is the estimate plus 30% headroom, clipped to what's left.
-      const cap = Math.min(estimate(key, expectedItems) * 1.3 + 0.05, left);
-      if (cap <= 0.01) throw new BudgetExceeded(`预算 $${this.maxSpend.toFixed(2)} 已用完，${actor} 没有启动`);
-      const run = await this.client.actor(actor).start(input, { maxTotalChargeUsd: Math.round(cap * 100) / 100 });
+      const cap = chargeCap(estimate(key, expectedItems), left);
+      if (cap == null) throw new BudgetExceeded(`预算 $${this.maxSpend.toFixed(2)} 只剩 $${Math.max(0, left).toFixed(2)}，不够 Apify 每次运行最低的 $${MIN_CHARGE_CAP.toFixed(2)} 上限，${actor} 没有启动`);
+      const run = await this.client.actor(actor).start(input, { maxTotalChargeUsd: cap });
       record = { runId: run.id, datasetId: run.defaultDatasetId };
       await this.ledger.started(key, actor, record);
     }
