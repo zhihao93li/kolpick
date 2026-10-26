@@ -2,9 +2,9 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Ctx } from "../ctx.js";
 import { today } from "../ops.js";
-import { approve, closeFollowup, drop, findOptions, isPaused, Jobs, logPost, mailDone, mailNever, problemDone, revise, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
+import { approve, closeFollowup, drop, findOptions, isPaused, Jobs, logPost, mailDone, mailLink, mailNever, problemDone, revise, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
 import { PAGE } from "./page.js";
-import { activityLog, cardMails, ConsoleData, decisionCards, peopleView, personDetail, runStatus, VIEWS, viewCounts, type MailText, type ViewKey } from "./state.js";
+import { activityLog, cardMails, ConsoleData, decisionCards, newsSince, peopleView, personDetail, runStatus, VIEWS, viewCounts, type MailText, type ViewKey } from "./state.js";
 
 /** How often the console re-reads what changed in the base while it is open. */
 const REFRESH_MS = 5 * 60_000;
@@ -63,6 +63,7 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
         return detail ? send(res, 200, detail) : send(res, 404, { error: "找不到这位 KOL 的跟进记录" });
       }
       if (url.pathname === "/api/log") return send(res, 200, await activityLog(ctx));
+      if (url.pathname === "/api/news") return send(res, 200, await newsSince(ctx, data, Number(url.searchParams.get("since")) || Date.now() - 86_400_000));
       if (url.pathname === "/api/find-options") return send(res, 200, { batches: await findOptions(ctx) });
       return send(res, 404, { error: "没有这个地址" });
     }
@@ -87,6 +88,7 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
       case "/api/problem-done": await problemDone(ctx, String(b.id)); return done();
       case "/api/mail-done": await mailDone(ctx, ids(b.id)); return done();
       case "/api/mail-never": await mailNever(ctx, data, ids(b.id)); return done();
+      case "/api/mail-link": await mailLink(ctx, data, ids(b.id), String(b.followup ?? "")); return done();
       case "/api/post": await logPost(ctx, data, String(b.id), String(b.link ?? "")); return done();
       case "/api/followup": await updateFollowup(ctx, data, String(b.id), b.fields ?? {}); return done();
       case "/api/close": await closeFollowup(ctx, data, String(b.id), { never: Boolean(b.never), reason: b.reason }); return done();

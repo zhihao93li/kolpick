@@ -218,7 +218,7 @@ $("refresh").addEventListener("click", function () {
 
 // --- 待你决定 ---
 var GROUPS = ["出了问题", "发布", "回信", "来信", "邀约和决定", "模板", "其他"];
-var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", batch: "b-warn", template: "", todo: "" };
+var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", unknown: "b-purple", batch: "b-warn", template: "", todo: "" };
 
 function visibleCards() {
   return state.overview.cards.filter(function (c) { return !state.handled[c.id]; });
@@ -245,6 +245,10 @@ function actionsFor(c) {
     { label: "不用回", key: "D", primary: true, run: function () { later(c.id, "已标成不用回：" + who(c), function () { return post("/api/mail-done", { id: c.id.slice(5) }); }); } },
     { label: "标成永不联系", key: "N", danger: true, run: function () { if (confirm("以后这个项目不再联系 " + who(c) + "，确定吗？")) later(c.id, "已标成永不联系：" + who(c), function () { return post("/api/mail-never", { id: c.id.slice(5) }); }); } },
   ];
+  if (c.kind === "unknown") return [
+    { label: "关联到 KOL", key: "L", primary: true, run: function () { linkMail(c); } },
+    { label: "跟 KOL 无关", key: "D", run: function () { later(c.id, "已归档：" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(8) }); }); } },
+  ];
   if (c.kind === "overdue") return [
     { label: "记下这条发布", key: "A", primary: true, run: function () {
       var link = ($("post-link") || {}).value || "";
@@ -264,6 +268,44 @@ function actionsFor(c) {
   ];
 }
 
+function linkMail(c) {
+  modal('<h2 style="margin:0;font-size:18px">这是哪位 KOL 的？</h2><div class="muted small">' + esc(c.headline) + '</div>' +
+    '<input class="input" id="l-q" placeholder="搜名字、账号、邮箱"><div id="l-list" class="small"></div>' +
+    '<div style="display:flex;justify-content:flex-end"><button class="btn" id="l-cancel">取消</button></div>');
+  $("l-cancel").onclick = closeModal;
+  var t = null;
+  $("l-q").oninput = function () {
+    clearTimeout(t);
+    var q = $("l-q").value.trim();
+    t = setTimeout(function () {
+      if (!q) { $("l-list").innerHTML = ""; return; }
+      api("/api/people?view=all&q=" + encodeURIComponent(q)).then(function (r) {
+        $("l-list").innerHTML = r.rows.slice(0, 8).map(function (x) {
+          return '<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line2)"><span><b>' + esc(x.handle) + '</b> <span class="muted">' + esc(x.sub) + '</span></span><button class="btn sm" data-pick="' + esc(x.id) + '">就是她</button></div>';
+        }).join("") || '<div class="muted" style="padding:8px 0">没找到，换个关键词</div>';
+        Array.prototype.forEach.call(document.querySelectorAll("[data-pick]"), function (b) {
+          b.onclick = function () {
+            closeModal();
+            later(c.id, "已关联，这封信会排回她的卡片", function () { return post("/api/mail-link", { id: c.id.slice(8), followup: b.getAttribute("data-pick") }); });
+          };
+        });
+      });
+    }, 300);
+  };
+  $("l-q").focus();
+}
+
+function newsBlock() {
+  var n = state.news;
+  if (!n || (!n.chips.length && !n.items.length)) return "";
+  var chips = n.chips.map(function (c) { return '<span class="badge ' + (c.tone === "ok" ? "b-ok" : "") + '">' + esc(c.label) + " " + c.n + "</span>"; }).join(" ");
+  var items = n.items.map(function (i) {
+    return '<div style="display:flex;gap:12px;padding:6px 0;border-top:1px solid var(--line2)"><span class="muted tiny" style="width:120px;flex:0 0 auto">' + esc(i.when) + '</span><span style="flex:1">' + esc(i.text) + '</span>' +
+      (i.link ? '<a class="tiny" href="' + esc(i.link) + '" target="_blank" rel="noopener">帖子 ↗</a>' : "") + (i.person ? '<a class="tiny" href="#/person/' + esc(i.person) + '">看</a>' : "") + '</div>';
+  }).join("");
+  return '<details class="card" style="padding:10px 16px"' + (visibleCards().length ? "" : " open") + '><summary style="font-size:14px;color:var(--ink)"><b>你不在时发生的</b> <span class="muted small">' + esc(n.since) + ' 以后 · 不用你处理</span> ' + chips + '</summary>' + items + '</details>';
+}
+
 function renderDecide() {
   var o = state.overview, cards = visibleCards();
   if (state.idx >= cards.length) state.idx = 0;
@@ -278,7 +320,7 @@ function renderDecide() {
     '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><b>' + (cards.length ? "有 " + cards.length + " 件要你决定" + (c ? "，这是第 " + (state.idx + 1) + " 件" : "") : "没有要你决定的事") + '</b>' +
     '<span class="muted small">J / K 上一件 · 下一件</span></div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' + chips + '</div>' +
-    (o.waitingClaude ? '<div class="muted small">另有 ' + o.waitingClaude + ' 件在等 Claude 按你的意见重写（在 Claude 里说「改退回的草稿」），写好会排进来。</div>' : "") + '</div>';
+    (o.waitingClaude ? '<div class="muted small">另有 ' + o.waitingClaude + ' 件在等 Claude 按你的意见重写（在 Claude 里说「改退回的草稿」），写好会排进来。</div>' : "") + '</div>' + newsBlock();
   if (!c) {
     $("app").innerHTML = '<div class="narrow">' + head + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">现在没有要你决定的事</div><div class="muted">同意的事在后台执行，结果看右上角。新来信和 Claude 准备好的草稿会自动排进来。</div></section></div>';
     return;
@@ -551,7 +593,16 @@ function route() {
   else renderDecide();
 }
 window.addEventListener("hashchange", function () { route(); window.scrollTo(0, 0); });
-loadOverview().then(route).catch(fail);
+var SEEN_KEY = "kol-console-seen";
+function loadNews() {
+  var since = 0;
+  try { since = Number(localStorage.getItem(SEEN_KEY)) || 0; } catch (e) {}
+  if (!since) since = Date.now() - 24 * 3600 * 1000;
+  return api("/api/news?since=" + since).then(function (n) { state.news = n; }).catch(function () {});
+}
+function markSeen() { try { localStorage.setItem(SEEN_KEY, String(Date.now())); } catch (e) {} }
+window.addEventListener("pagehide", markSeen);
+loadOverview().then(function () { return loadNews(); }).then(route).catch(fail);
 setInterval(function () { loadOverview().then(function () { if (!location.hash || location.hash === "#/") renderDecide(); }).catch(function () {}); }, 5 * 60 * 1000);
 </script>
 </body>

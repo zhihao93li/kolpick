@@ -1,4 +1,4 @@
-import { linkIds, option, text } from "../base.js";
+import { cellTime, linkIds, option, text } from "../base.js";
 import { loadConfig, mailboxFor, sendingPaused } from "../config.js";
 import { makeCtx, type Ctx } from "../ctx.js";
 import { displayName, profileEmails, profileOf } from "../data.js";
@@ -153,6 +153,28 @@ export async function mailNever(ctx: Ctx, data: ConsoleData, ids: string[]): Pro
   await mailDone(ctx, ids);
   const fid = linkIds(first["KOL"])[0];
   if (fid) await closeFollowup(ctx, data, fid, { never: true, reason: "拒绝" });
+}
+
+/**
+ * 关联到 KOL: mail from an address no profile had. The mails join her followup (still 待处理, so they come back
+ * as her card), the address joins her profile so later mail matches, and the followup waits on us.
+ */
+export async function mailLink(ctx: Ctx, data: ConsoleData, ids: string[], fid: string): Promise<void> {
+  const f = data.snapshot.followups.get(fid);
+  if (!f) throw new Error("找不到这位 KOL 的跟进记录");
+  const rows = await ctx.base.get(ctx.cfg.tables.contacts, ids, ["内容", "日期", "KOL"]);
+  if (rows.length !== ids.length) throw new Error("接触记录里有的信已经不在了，点「刷新」再试");
+  const senders = [...new Set(rows.map((r) => text(r["内容"]).replace(/^发件人：/, "").trim().toLowerCase()).filter((e) => e.includes("@")))];
+  await ctx.base.update(ctx.cfg.tables.contacts, Object.fromEntries(ids.map((id) => [id, { KOL: [{ id: fid }] }])));
+  const p = profileOf(data.snapshot, f);
+  const known = profileEmails(p);
+  const extra = senders.filter((e) => !known.includes(e));
+  if (p && extra.length) {
+    const others = [text(p["其他邮箱"]), ...extra].filter(Boolean).join(", ");
+    await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { 其他邮箱: others } });
+  }
+  const last = Math.max(0, ...rows.map((r) => cellTime(r["日期"], ctx.cfg.timezone) ?? 0));
+  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { 当前轮到谁: ["我们"], ...(last ? { 最后来信日期: stamp(last, ctx.cfg.timezone) } : {}) } });
 }
 
 /** 不再跟进 / 不要再联系她. */

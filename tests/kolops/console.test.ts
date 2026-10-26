@@ -83,6 +83,16 @@ describe("decision queue", () => {
     expect(cards[0].mail?.label).toContain("第二封");
   });
 
+  it("shows mail from an unknown sender and from a closed KOL for what they are", async () => {
+    const closed = kol("gone", { 阶段: ["结案"], 结案原因: ["无回应"] });
+    lark.add(T.contacts, { 方向: ["收到"], 待处理: true, 渠道: ["hello@tafu.me"], 摘要: "合作", 内容: "发件人：agent@mcn.tw", 日期: at(day) });
+    lark.add(T.contacts, { 方向: ["收到"], 待处理: true, 渠道: ["hello@tafu.me"], 摘要: "我回來了", 日期: at(day), KOL: [{ id: closed.f }] });
+    const { cards } = decisionCards(await loaded(), ctx.cfg, day);
+    expect(cards.map((c) => [c.kind, c.tag])).toEqual([["unknown", "对不上人"], ["mail", "之前已结案"]]);
+    expect(cards[0].headline).toBe("agent@mcn.tw 来信，对不上任何 KOL");
+    expect(cards[1].headline).toContain("又来信了（之前已结案：无回应）");
+  });
+
   it("raises an agreed post that is two days late", async () => {
     kol("moon.notes", { 阶段: ["已约发布"], 约定发布日期: at(addDays(day, -3)), 活动码: "moonnotes" });
     kol("workday.wen", { 阶段: ["已约发布"], 约定发布日期: at(addDays(day, -1)) });

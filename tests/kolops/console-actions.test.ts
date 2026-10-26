@@ -103,6 +103,23 @@ describe("writes from the console", () => {
     expect(lark.table(T.reviews).at(-1)).toMatchObject({ 审核项: "林运营在决策台写的信", 同意来源: "决策台", 状态: ["已执行"] });
   });
 
+  it("links an unknown sender's mail to a KOL and remembers the address", async () => {
+    const m = lark.add(T.contacts, { 方向: ["收到"], 待处理: true, 内容: "发件人：agent@mcn.tw", 日期: "2026-10-26 09:00" });
+    await call("/api/mail-link", { id: m, followup: fid });
+    expect(row(T.contacts, m)).toMatchObject({ KOL: [{ id: fid }], 待处理: true });
+    expect(row(T.profiles, pid)["其他邮箱"]).toBe("agent@mcn.tw");
+    expect(row(T.followups, fid)).toMatchObject({ 当前轮到谁: ["我们"], 最后来信日期: "2026-10-26 09:00" });
+  });
+
+  it("tells what happened since the last look", async () => {
+    lark.add(T.oplog, { 时间: "2099-01-01 10:00", 类型: ["发出邮件"], 结果: ["完成"], 操作: "回复：安安", KOL: [{ id: fid }] });
+    lark.add(T.posts, { KOL: [{ id: fid }], 内容标题: "新影片", 平台: ["YouTube"], 发布日期: "2099-01-01 09:00", 内容链接: "https://youtu.be/x" });
+    await call("/api/refresh");
+    const n = await (await fetch(`${url}api/news?since=${Date.parse("2098-12-31T00:00:00Z")}`)).json();
+    expect(n.chips).toEqual(expect.arrayContaining([{ label: "新发布", n: 1, tone: "ok" }, { label: "发出的信", n: 1, tone: "" }]));
+    expect(n.items.map((i: any) => i.text)).toEqual(["回复：安安", expect.stringContaining("「新影片」")]);
+  });
+
   it("pauses and resumes sending", async () => {
     expect((await call("/api/pause", { on: true })).body).toMatchObject({ paused: true });
     expect(lark.table(T.settings)[0]["暂停所有发送"]).toBe(true);

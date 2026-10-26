@@ -35,11 +35,13 @@ it("files a known KOL's reply and hands the followup to us, once", async () => {
   const f = lark.table(T.followups).find((x) => x.record_id === fid)!;
   expect(f["当前轮到谁"]).toEqual(["我们"]);
   expect(f["阶段"]).toEqual(["已回复"]);
-  expect(lark.table(T.contacts)).toHaveLength(1);
+  // The unknown sender is filed too, without a KOL, so someone can say whose it is.
+  expect(lark.table(T.contacts)).toHaveLength(2);
+  expect(lark.table(T.contacts).find((c) => !c["KOL"])).toMatchObject({ 待处理: true, 内容: "发件人：news@shop.com", 摘要: "促销" });
 
   const again = await syncInbox(ctx, { days: 3, dryRun: false });
   expect(again.newReplies).toHaveLength(0);
-  expect(lark.table(T.contacts)).toHaveLength(1);
+  expect(lark.table(T.contacts)).toHaveLength(2);
 });
 
 it("files an auto-reply without treating it as an answer", async () => {

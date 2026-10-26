@@ -11,6 +11,24 @@ import { listProjects } from "./projects.js";
 import { CLOSE_ACTIONS, CLOSE_REASONS } from "./schema.js";
 import { missingPlaceholder, suggestTrialCode, trialPlan } from "./trial.js";
 
+/** 审核队列 types that send a mail once approved. */
+const MAIL_TYPES = ["回复邮件", "协议"];
+
+/** Open items that will send a mail, by KOL: a KOL gets at most one at a time, so a new reply replaces the old one. */
+async function openMailItems(ctx: Ctx): Promise<Map<string, Row[]>> {
+  const rows = await ctx.base.records(ctx.cfg.tables.reviews, {
+    filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] },
+    fields: ["审核项", "类型", "状态", "处理", "审核结果", "KOL", "邮件草稿", "发送渠道", "执行结果"],
+  });
+  const out = new Map<string, Row[]>();
+  for (const r of rows) {
+    if (!MAIL_TYPES.includes(option(r["类型"])) || option(r["发送渠道"]) === "不发邮件" || ["不发"].includes(option(r["处理"]))) continue;
+    if (text(r["执行结果"]).startsWith("执行中")) continue;
+    for (const fid of linkIds(r["KOL"])) out.set(fid, [...(out.get(fid) ?? []), r]);
+  }
+  return out;
+}
+
 /** How Claude sorts a mail from a KOL; each becomes one 审核队列 item, except 不用回. */
 export const INBOX_CATEGORIES = ["想体验", "要回复", "拒绝", "不用回"] as const;
 type Category = (typeof INBOX_CATEGORIES)[number];
@@ -45,12 +63,13 @@ export function ownWords(body: string): string {
  */
 export async function listInbox(ctx: Ctx, o: { limit: number }) {
   const cfg = ctx.cfg;
-  const [s, pending] = await Promise.all([
+  const [s, pending, waiting] = await Promise.all([
     loadSnapshot(ctx.base, cfg),
     ctx.base.records(cfg.tables.contacts, {
       filter: { logic: "and", conditions: [["待处理", "==", true], ["方向", "intersects", ["收到"]]] },
-      fields: ["Message ID", "渠道", "摘要", "日期", "KOL", "待处理", "方向"],
+      fields: ["Message ID", "渠道", "摘要", "日期", "KOL", "待处理", "方向", "内容"],
     }),
+    openMailItems(ctx),
   ]);
   const time = (r: Row) => cellTime(r["日期"], cfg.timezone) ?? 0;
   pending.sort((a, b) => time(a) - time(b));
@@ -106,7 +125,9 @@ export async function listInbox(ctx: Ctx, o: { limit: number }) {
     这一批: batch.length,
     之后已回过信: batch.filter(answered).length,
     分类: INBOX_CATEGORIES,
-    说明: "「之后回过信」有日期的，多半已经手动回过，只是没取消待处理，一般选不用回。逐封判断分类，写成决定文件再用 inbox --apply 提交。想体验：草稿用 {體驗碼}{次數}{到期日}；拒绝：发后动作选结案或永不联系并给结案原因；不用回：只取消待处理。",
+    说明: "「之后回过信」有日期的，多半已经手动回过，只是没取消待处理，一般选不用回。逐封判断分类，写成决定文件再用 inbox --apply 提交。想体验：草稿用 {體驗碼}{次數}{到期日}；拒绝：发后动作选结案或永不联系并给结案原因；不用回：只取消待处理。"
+      + "一位 KOL 同时只能有一封待发的信：「已有待发」不是空的，就把它的意思和新来信合在一起重写一封，并在决定里写 \"replaces\": 那条审核记录的 id，旧的会被撤回。同一位 KOL 的几封来信只写一封回信，其余选不用回。"
+      + "「没关联跟进」的是对不上 KOL 的发件人，只能选不用回；是某位 KOL 的话请同事在决策台里关联。",
     来信: batch.map((r) => {
       const fid = linkIds(r["KOL"])[0] ?? "";
       const f = s.followups.get(fid);
@@ -126,6 +147,8 @@ export async function listInbox(ctx: Ctx, o: { limit: number }) {
         主题: text(r["摘要"]),
         日期: stamp(time(r), cfg.timezone),
         之后回过信: answered(r),
+        已有待发: (waiting.get(fid) ?? []).map((w) => ({ review: w.record_id, 审核项: text(w["审核项"]), 草稿: text(w["邮件草稿"]).slice(0, 1500) })),
+        ...(f ? {} : { 发件人: text(r["内容"]).replace(/^发件人：/, "") || b?.from || "" }),
         内容: b?.text ?? (mb ? "（读不到正文）" : "（这个渠道插件读不了，请手动看）"),
         ...(suggested ? { 建议码名: suggested, 码名可用: checked ? !taken.has(suggested.toLowerCase()) : "没查（这台电脑没有接口密钥）" } : {}),
       };
@@ -165,6 +188,8 @@ export interface InboxDecision {
   note?: string;
   /** Short label for 审核项, e.g. 「想体验，发码 deer_jay」. */
   label?: string;
+  /** The open item this reply replaces: a KOL has at most one mail waiting, so the new draft must cover both. */
+  replaces?: string;
 }
 
 /**
@@ -181,6 +206,9 @@ export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean })
     fields: ["Message ID", "渠道", "摘要", "KOL", "待处理", "方向"],
   })).map((r) => [r.record_id, r]));
 
+  const waiting = await openMailItems(ctx);
+  const withdraw: Record<string, Record<string, unknown>> = {};
+  const replyingTo = new Set<string>();
   const errors: string[] = [];
   const reviews: Record<string, unknown>[] = [];
   const untick: Record<string, Record<string, unknown>> = {};
@@ -209,6 +237,27 @@ export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean })
     const mb = mailboxFor(cfg, option(c["渠道"]));
     const draft = (d.draft ?? "").trim();
     const replying = d.category !== "拒绝" || Boolean(draft);
+    if (replying) {
+      if (replyingTo.has(fid)) {
+        errors.push(`${where}（${name}）：这一批里已经有一封给她的回信，同一位 KOL 只写一封，其余的来信选「不用回」`);
+        continue;
+      }
+      replyingTo.add(fid);
+      const old = waiting.get(fid) ?? [];
+      const unknown = old.filter((w) => w.record_id !== d.replaces);
+      if (unknown.length) {
+        errors.push(`${where}（${name}）：她已经有一封待发的信「${text(unknown[0]["审核项"])}」（${unknown[0].record_id}）。`
+          + `把新来信的意思合并进去重写一封，并写 "replaces": "${unknown[0].record_id}"`);
+        continue;
+      }
+      if (d.replaces) {
+        if (!old.length) {
+          errors.push(`${where}（${name}）：replaces 写的 ${d.replaces} 不是她现在待发的信`);
+          continue;
+        }
+        withdraw[d.replaces] = { 状态: ["已撤回"], 执行结果: `${now} 被新的回信取代（合并了 ${text(c["摘要"]).slice(0, 60)}）` };
+      }
+    }
     if (replying && !mb) {
       errors.push(`${where}（${name}）：渠道「${option(c["渠道"])}」插件发不了，请手动回，或选「不用回」`);
       continue;
@@ -276,6 +325,7 @@ export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean })
     试跑: o.dryRun || undefined,
   };
   if (o.dryRun) return report;
+  if (Object.keys(withdraw).length) await ctx.base.update(t.reviews, withdraw);
   if (rows.length) await ctx.base.create(t.reviews, rows);
   await ctx.base.update(t.contacts, untick);
   if (Object.keys(handOver).length) await ctx.base.update(t.followups, handOver);

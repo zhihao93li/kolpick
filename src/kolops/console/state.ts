@@ -22,7 +22,7 @@ export interface Step {
 
 export interface Card {
   id: string;
-  kind: "problem" | "overdue" | "reply" | "mail" | "batch" | "template" | "todo";
+  kind: "problem" | "overdue" | "reply" | "mail" | "unknown" | "batch" | "template" | "todo";
   group: string;
   tag: string;
   headline: string;
@@ -95,7 +95,7 @@ export class ConsoleData {
       base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] }, fields: REVIEW_FIELDS }),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["执行失败"]], onOrAfter("执行时间", since)] }, fields: REVIEW_FIELDS }),
       base.records(t.contacts, { filter: { logic: "and", conditions: [["待处理", "==", true], ["方向", "intersects", ["收到"]]] },
-        fields: ["Message ID", "渠道", "摘要", "日期", "KOL", "待处理", "方向"] }),
+        fields: ["Message ID", "渠道", "摘要", "日期", "KOL", "待处理", "方向", "内容"] }),
       base.records(t.posts, { fields: POST_FIELDS }).catch(() => [] as Row[]),
     ]);
     this.snapshot = snapshot;
@@ -249,8 +249,35 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
     const body = mails.get(`msg:${text(latest["Message ID"])}`);
     const when = cellTime(latest["日期"], tz);
     const waited = first ? daysBetween(day(first, tz), todayStr) : 0;
+    const ids = ms.map((m) => m.record_id).join(",");
+    if (!fid) {
+      const from = text(latest["内容"]).replace(/^发件人：/, "") || "陌生发件人";
+      cards.push({
+        id: `unknown:${ids}`, kind: "unknown", group: "来信", tag: "对不上人",
+        headline: `${from} 来信，对不上任何 KOL`, meta: [when ? stamp(when, tz) : "", option(latest["渠道"]) ? `收件 ${option(latest["渠道"])}` : ""].filter(Boolean).join(" · "),
+        mail: { label: `${from} 说 · ${text(latest["摘要"])}`, text: body?.text ?? "（正文没读到，可以去邮箱里看）", when: when ? stamp(when, tz) : "" },
+        suggest: "说一下这是哪位 KOL 的；跟 KOL 无关就直接归档",
+        steps: [{ text: "关联到 KOL 后，这个邮箱记进她的档案，以后的来信会自动对上；这封信会排回这里等你处理" }],
+        why: "发件人的邮箱不在任何档案里。可能是她换了邮箱、经纪人代回，也可能是广告或系统邮件。",
+      });
+      continue;
+    }
+    const closed = option(data.snapshot.followups.get(fid)?.["阶段"]) === "结案";
+    if (closed) {
+      const reason = option(data.snapshot.followups.get(fid)?.["结案原因"]);
+      cards.push({
+        id: `mail:${ids}`, kind: "mail", group: "来信", tag: "之前已结案", who: w,
+        headline: `${w?.name ?? "一位 KOL"} 又来信了（之前已结案${reason ? `：${reason}` : ""}）`,
+        meta: [meta(fid), option(latest["渠道"]) ? `收件 ${option(latest["渠道"])}` : ""].filter(Boolean).join(" · "),
+        mail: { label: `${w?.name ?? "对方"}说 · ${text(latest["摘要"])}`, text: body?.text ?? "（正文没读到，可以去邮箱里看）", when: when ? stamp(when, tz) : "" },
+        suggest: "看看她说什么；想继续的话让 Claude 写回信，跟进会重新打开",
+        steps: [{ text: "在 Claude 里说「处理来信」，写好的回信会排进这里等你看" }],
+        why: "这位之前已经结束跟进了。她主动来信，多半值得再看一眼。",
+      });
+      continue;
+    }
     cards.push({
-      id: `mail:${ms.map((m) => m.record_id).join(",")}`, kind: "mail", group: "来信", tag: "还没草稿", who: w,
+      id: `mail:${ids}`, kind: "mail", group: "来信", tag: "还没草稿", who: w,
       headline: `${w?.name ?? "一位 KOL"} 来信${ms.length > 1 ? `（${ms.length} 封）` : ""}${waited >= 2 ? `，已经 ${waited} 天没人回了` : ""}`,
       meta: [meta(fid), option(latest["渠道"]) ? `收件 ${option(latest["渠道"])}` : ""].filter(Boolean).join(" · "),
       mail: { label: `${w?.name ?? "对方"}${ms.length > 1 ? "最近一封" : ""}说 · ${text(latest["摘要"])}`, text: body?.text ?? "（正文没读到，可以去邮箱里看）", when: when ? stamp(when, tz) : "" },
@@ -611,4 +638,37 @@ export async function runStatus(ctx: Ctx, data: ConsoleData) {
       ...queued.map((r) => ({ st: "等发出", text: `${name(r)}：${text(r["审核项"])}`, note: "飞书里已批准，等下一次「发出已批准的信」", person: linkIds(r["KOL"])[0] ?? "" })),
     ],
   };
+}
+
+// --- What happened while the user was away ---
+
+/**
+ * Things worth knowing that need nothing from the user: mail sent and received, posts found, codes used, people
+ * found. Read from 操作日志 and 发布内容 since `since` (the last time this browser looked).
+ */
+export async function newsSince(ctx: Ctx, data: ConsoleData, since: number) {
+  const { base, cfg } = ctx;
+  const tz = cfg.timezone;
+  const sinceDay = day(since, tz);
+  const ops = await base.records(cfg.tables.oplog, { filter: { logic: "and", conditions: [onOrAfter("时间", sinceDay)] }, fields: ["时间", "类型", "结果", "操作", "KOL"] });
+  const at = (r: Row, f: string) => cellTime(r[f], tz) ?? 0;
+  const fresh = ops.filter((o) => at(o, "时间") > since).sort((a, b) => at(b, "时间") - at(a, "时间"));
+  const posts = data.posts.filter((p) => (cellTime(p["发布日期"], tz) ?? 0) > since);
+  const count = (re: RegExp) => fresh.filter((o) => re.test(text(o["操作"]))).length;
+  const chips = [
+    { label: "新发布", n: posts.length, tone: "ok" },
+    { label: "发出的信", n: fresh.filter((o) => option(o["类型"]) === "发出邮件" && option(o["结果"]) === "完成").length, tone: "" },
+    { label: "收到来信", n: count(/^收到来信/), tone: "" },
+    { label: "催信", n: count(/^催信|催信 \d/), tone: "" },
+    { label: "找到新人", n: fresh.filter((o) => /^找人入库/.test(text(o["操作"]))).reduce((n, o) => n + (Number(text(o["操作"]).match(/(\d+) 人/)?.[1]) || 0), 0), tone: "ok" },
+  ].filter((c) => c.n > 0);
+  const name = (r: Row) => {
+    const f = data.snapshot.followups.get(linkIds(r["KOL"])[0] ?? "");
+    return f ? displayName(data.snapshot, f) : "";
+  };
+  const items = [
+    ...posts.map((p) => ({ when: stamp(at(p, "发布日期"), tz), text: `${name(p) || "一位 KOL"} 发了${option(p["平台"]) ? ` ${option(p["平台"])} ` : ""}「${text(p["内容标题"]) || "新帖子"}」`, person: linkIds(p["KOL"])[0] ?? "", link: text(p["内容链接"]) })),
+    ...fresh.slice(0, 40).map((o) => ({ when: stamp(at(o, "时间"), tz), text: text(o["操作"]) + (option(o["结果"]) && option(o["结果"]) !== "完成" ? `（${option(o["结果"])}）` : ""), person: linkIds(o["KOL"])[0] ?? "", link: "" })),
+  ].sort((a, b) => b.when.localeCompare(a.when)).slice(0, 40);
+  return { since: stamp(since, tz), chips, items };
 }

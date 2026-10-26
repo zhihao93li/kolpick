@@ -30,7 +30,7 @@ export interface SyncReport {
 /**
  * `kol sync`: reads each mailbox's inbox since the last finished sync (a day of overlap, deduplicated by
  * Message ID), files mail from known KOLs into 接触记录 and flips their followup to 轮到我们.
- * Mail from addresses not in the base is listed for a person to look at, not filed.
+ * Mail from addresses not in the base is filed without a KOL and left 待处理, for a person to say whose it is.
  */
 export async function syncInbox(ctx: Ctx, opts: { days?: number; dryRun: boolean }): Promise<SyncReport> {
   const t = ctx.cfg.tables;
@@ -72,8 +72,13 @@ export async function syncInbox(ctx: Ctx, opts: { days?: number; dryRun: boolean
       }
       const fids = s.followupsByEmail.get(from);
       if (!fids?.length) {
-        if (!ours.has(from) && !NOT_A_PERSON.test(from)) {
+        if (!ours.has(from) && !NOT_A_PERSON.test(from) && !AUTO_REPLY.test(m.subject)) {
           report.unknownSenders.push({ mailbox: mb.address, from, subject: m.subject, date: m.date });
+          // Filed without a KOL, so the decision console can show it and someone can say whose it is.
+          contacts.push({
+            方向: ["收到"], 渠道: [mb.channel], "Message ID": m.message_id, 摘要: m.subject.slice(0, 200),
+            内容: `发件人：${from}`, 日期: stamp(when, ctx.cfg.timezone), 待处理: true,
+          });
         }
         continue;
       }

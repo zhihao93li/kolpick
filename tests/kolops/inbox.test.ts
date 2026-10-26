@@ -113,3 +113,25 @@ it("sends a closing reply first, then closes", async () => {
   expect(lark.table(T.followups)[0]).toMatchObject({ 阶段: ["结案"], 结案原因: ["档期"], 当前轮到谁: ["无需动作"] });
   expect(lark.table(T.profiles)[0]["联系许可"]).toEqual(["可联系"]);
 });
+
+it("keeps one waiting mail per KOL: a new reply must say which one it replaces", async () => {
+  const old = lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["回复邮件"], 审核项: "旧的回信", KOL: [{ id: fid }], 发送渠道: ["hello@tafu.me"], 邮件草稿: "舊的" });
+  const listed = await listInbox(ctx, { limit: 30 });
+  expect(listed.来信[0].已有待发).toEqual([{ review: old, 审核项: "旧的回信", 草稿: "舊的" }]);
+
+  const refused = await applyInbox(ctx, { file: decisions([{ contact: c1, category: "要回复", draft: "新的" }]), dryRun: false });
+  expect(refused.问题?.[0]).toContain(`"replaces": "${old}"`);
+
+  const twice = await applyInbox(ctx, { file: decisions([
+    { contact: c1, category: "要回复", draft: "合併後的", replaces: old },
+    { contact: c2, category: "要回复", draft: "又一封" },
+  ]), dryRun: false });
+  expect(twice.问题?.[0]).toContain("同一位 KOL 只写一封");
+
+  const ok = await applyInbox(ctx, { file: decisions([
+    { contact: c1, category: "要回复", draft: "合併後的", replaces: old },
+    { contact: c2, category: "不用回" },
+  ]), dryRun: false });
+  expect(ok.写入).toBe(1);
+  expect(lark.table(T.reviews).find((r) => r.record_id === old)!["状态"]).toEqual(["已撤回"]);
+});
