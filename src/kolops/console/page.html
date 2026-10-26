@@ -462,20 +462,23 @@ function loadPeople(view, q) {
 function openFind() {
   modal('<div class="loading">读取入库批次…</div>');
   api("/api/find-options").then(function (r) {
-    var opts = r.batches.slice().reverse().map(function (b) { return "<option>" + esc(b) + "</option>"; }).join("");
+    var opts = r.batches.slice().reverse().map(function (b) { return '<option value="' + esc(b) + '"></option>'; }).join("");
     modal('<h2 style="margin:0;font-size:18px">找一批新的 KOL</h2><div class="muted small">去 Instagram / YouTube 上搜，查他们公开的邮箱，到你设的上限就停。找到的人进「还没联系过」，已经在库里的会跳过。</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">' +
       '<label class="field">在哪个平台找<select class="input" id="f-platform"><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="tiktok">TikTok（只能查已知账号）</option></select></label>' +
       '<label class="field">找什么样的人（关键词，逗号隔开）<input class="input" id="f-keywords" placeholder="伴侶, 感情, 兩性"></label>' +
       '<label class="field">或者：找像这几位的人<input class="input" id="f-seeds" placeholder="@love.notes.tw, @couple.daily"></label>' +
       '<label class="field">粉丝数<span style="display:flex;gap:6px;align-items:center"><input class="input" id="f-min" style="width:100px" value="5000"> 到 <input class="input" id="f-max" style="width:100px" value="50000"></span></label>' +
-      '<label class="field">最多花多少（美元）<input class="input" id="f-budget" value="5"></label>' +
-      '<label class="field">放进哪个入库批次<select class="input" id="f-batch">' + opts + '</select><span class="tiny">新批次请先在飞书「KOL 档案」的入库批次里加选项</span></label></div>' +
+      '<label class="field">大约搜多少个账号<input class="input" id="f-target" value="100"><span class="tiny">有公开邮箱的通常是其中三到四成</span></label>' +
+      '<label class="field">最多花多少（美元）<input class="input" id="f-budget" value="5"><span class="tiny">到上限就停，已经找到的照样入库</span></label>' +
+      '<label class="field">放进哪个入库批次<input class="input" id="f-batch" list="f-batches" placeholder="选一个，或者写个新名字"><datalist id="f-batches">' + opts + '</datalist><span class="tiny">写新名字的话，会在飞书「入库批次」里加上这个选项</span></label></div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="f-cancel">取消</button><button class="btn primary" id="f-go">开始找</button></div>');
     $("f-cancel").onclick = closeModal;
     $("f-go").onclick = function () {
-      var req = { platform: $("f-platform").value, keywords: $("f-keywords").value, seeds: $("f-seeds").value, minFollowers: $("f-min").value, maxFollowers: $("f-max").value, budget: $("f-budget").value, batch: $("f-batch").value };
-      if (!confirm("会花 Apify 的钱，最多 $" + req.budget + "。开始找吗？")) return;
+      var req = { platform: $("f-platform").value, keywords: $("f-keywords").value, seeds: $("f-seeds").value, minFollowers: $("f-min").value, maxFollowers: $("f-max").value, budget: $("f-budget").value, batch: $("f-batch").value.trim(), target: $("f-target").value };
+      if (!req.batch) { toast("写一个入库批次"); return; }
+      var isNew = r.batches.indexOf(req.batch) < 0;
+      if (!confirm((isNew ? "「" + req.batch + "」是新批次，会在飞书「入库批次」里加上这个选项。\n" : "") + "大约搜 " + req.target + " 个账号，最多花 $" + req.budget + "。开始找吗？")) return;
       post("/api/find", req).then(function () { closeModal(); toast("开始找了，进度看右上角；找完会出现在「还没联系过」"); watchJobs(); }).catch(function (e) { toast("没开始：" + e.message); });
     };
   }).catch(function (e) { modal('<div class="err">' + esc(e.message) + '</div><button class="btn" onclick="closeModal()">关闭</button>'); });

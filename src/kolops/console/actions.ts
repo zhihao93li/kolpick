@@ -274,6 +274,8 @@ export interface FindRequest {
   maxFollowers?: number;
   budget: number;
   batch: string;
+  /** About how many accounts to search. */
+  target?: number;
 }
 
 const list = (v: unknown) => String(v ?? "").split(/[,，、\s]+/).map((x) => x.trim().replace(/^@/, "")).filter(Boolean);
@@ -283,13 +285,17 @@ export function startFind(jobs: Jobs, req: FindRequest): Job {
   const budget = Number(req.budget);
   if (!["instagram", "youtube", "tiktok"].includes(req.platform)) throw new Error("平台只能是 Instagram、YouTube 或 TikTok");
   if (!Number.isFinite(budget) || budget <= 0 || budget > 50) throw new Error("最多花多少要在 0 到 50 美元之间");
-  if (!req.batch) throw new Error("要选一个入库批次");
+  const batch = String(req.batch ?? "").trim();
+  if (!batch) throw new Error("要写一个入库批次");
+  if (batch.length > 40) throw new Error("入库批次名字太长了");
+  const target = req.target ? Number(req.target) : undefined;
+  if (target != null && (!Number.isFinite(target) || target < 10 || target > 2000)) throw new Error("搜多少个账号要在 10 到 2000 之间");
   const keywords = list(req.keywords);
   const seeds = list(req.seeds);
   if (!keywords.length && !seeds.length) throw new Error("关键词和相似账号至少填一样");
-  return jobs.add(`找新人：${req.batch}（${req.platform}）`, "", RUN_TITLES.find, async (jctx) => {
+  return jobs.add(`找新人：${batch}（${req.platform}）`, "", RUN_TITLES.find, async (jctx) => {
     const r = await find(jctx, {
-      platform: req.platform, keywords, seeds, handles: [], budget, batch: req.batch, job: req.batch, youtubeHidden: false, dryRun: false,
+      platform: req.platform, keywords, seeds, handles: [], budget, batch, job: batch, youtubeHidden: false, dryRun: false, target, addBatch: true,
       minFollowers: req.minFollowers ? Number(req.minFollowers) : null, maxFollowers: req.maxFollowers ? Number(req.maxFollowers) : null,
     });
     return `新入库 ${r.新入库} 人，其中有邮箱 ${r.其中有邮箱} 人，花了 $${r.花费美元}`;

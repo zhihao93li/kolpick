@@ -25,6 +25,10 @@ export interface FindOpts {
   job: string;
   youtubeHidden: boolean;
   dryRun: boolean;
+  /** About how many accounts to search in all, shared out over the keywords and seed accounts. */
+  target?: number;
+  /** Add 入库批次 as a new option when the base doesn't have it yet, instead of refusing. */
+  addBatch?: boolean;
 }
 
 /** Remembers each Apify run of a job on disk; a retried `kol find --job X` picks them up. */
@@ -62,7 +66,15 @@ export function apifyToken(): string {
 export async function find(ctx: Ctx, o: FindOpts) {
   const t = ctx.cfg.tables;
   const batches = await ctx.base.fieldOptions(t.profiles, "入库批次");
-  if (!batches?.includes(o.batch)) throw new Error(`「${o.batch}」还不是「入库批次」的选项，先在飞书里加上再找人（免得花了钱写不进去）`);
+  if (!batches) throw new Error("读不到「KOL 档案」的「入库批次」选项，先不找（免得花了钱写不进去）");
+  const newBatch = !batches.includes(o.batch);
+  if (newBatch && !o.addBatch) throw new Error(`「${o.batch}」还不是「入库批次」的选项。在飞书里加上，或者加 --add-batch 让插件加（免得花了钱写不进去）`);
+  if (newBatch && !o.dryRun) {
+    // Feishu replaces a select's whole option list, so the existing options go first, unchanged.
+    await ctx.base.lark.json(["base", "+field-update", "--base-token", ctx.base.token, "--table-id", t.profiles, "--field-id", "入库批次",
+      "--json", JSON.stringify({ name: "入库批次", type: "select", multiple: false, options: [...batches, o.batch].map((name) => ({ name })) }), "--as", "user", "--yes"]);
+    ctx.run.op({ type: "飞书变更", result: "完成", action: `「入库批次」加了选项「${o.batch}」` });
+  }
   const existing = [...(await loadSnapshot(ctx.base, ctx.cfg)).profiles.values()];
   const handles = new Set<string>();
   const emails = new Set<string>();
@@ -72,14 +84,19 @@ export async function find(ctx: Ctx, o: FindOpts) {
     for (const e of profileEmails(p)) emails.add(e);
   }
 
+  // A target is shared out evenly: each keyword and each seed account brings in about the same number of accounts.
+  const sources = o.keywords.length + o.seeds.length;
+  const per = o.target && sources ? Math.max(10, Math.ceil(o.target / sources)) : null;
   const params: DiscoveryParams = {
     ...DEFAULT_PARAMS, platform: o.platform, keywords: o.keywords, seeds: o.seeds, handles: o.handles,
+    ...(per ? { perKeyword: per, perSeed: per } : {}),
     minFollowers: o.minFollowers, maxFollowers: o.maxFollowers, youtubeHidden: o.youtubeHidden, maxSpend: o.budget,
     // Search hints for YouTube; empty in 设置 means no country or language bias.
     country: ctx.cfg.discovery.country, language: ctx.cfg.discovery.language,
   };
   if (o.dryRun) {
-    return { 试跑: true, 已在库里的账号: handles.size, 参数: params, 说明: `正式运行最多花 $${o.budget}，到上限就停，已找到的照样入库` };
+    return { 试跑: true, 已在库里的账号: handles.size, 参数: params, ...(newBatch ? { 会新加入库批次: o.batch } : {}),
+      说明: `正式运行最多花 $${o.budget}，到上限就停，已找到的照样入库` };
   }
   const runner = new ApifyRunner(apifyToken(), o.budget, new FileLedger(o.job));
   const result = await discover(runner, params, handles);

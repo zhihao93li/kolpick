@@ -42,7 +42,9 @@ const HELP = `kol <命令> [选项]
   remind                        先同步收件箱，再按规则发第 1/2 次催信，两次都没回的结案
   find    --platform instagram|youtube|tiktok --batch 入库批次 --job 名字 --budget 美元
           [--keywords a,b] [--seeds a,b] [--handles a,b] [--min-followers N] [--max-followers N] [--youtube-hidden]
-                                找新 KOL 和邮箱，不在库里的写进档案
+          [--target N] [--add-batch]
+                                找新 KOL 和邮箱，不在库里的写进档案。--target 大约搜多少个账号（平分给各关键词和相似账号）；
+                                --add-batch 入库批次还不是选项时由插件加上
   classify --batch 入库批次 [--limit 50]
                                 列出这批里还没填合作邀约方向、市场、語言、内容类型、称呼的人，附简介和可选值（只读）
   classify --apply 文件.json     按文件写入上面这几个字段（{"rec…": {"市场": "台湾", …}}），有一个值不对就一条都不写
@@ -95,6 +97,7 @@ const COMMANDS: Record<string, { title: string; writes: boolean; run: (ctx: Ctx,
         platform: v.platform as Platform, keywords: list(v.keywords), seeds: list(v.seeds), handles: list(v.handles),
         minFollowers: num(v["min-followers"]), maxFollowers: num(v["max-followers"]), budget: Number(v.budget),
         batch: v.batch, job: v.job, youtubeHidden: !!v["youtube-hidden"], dryRun: !!v["dry-run"],
+        target: num(v.target) ?? undefined, addBatch: !!v["add-batch"],
       });
     },
   },
@@ -180,7 +183,7 @@ async function main(): Promise<number> {
       "dry-run": { type: "boolean" }, scheduled: { type: "boolean" }, help: { type: "boolean", short: "h" },
       "youtube-hidden": { type: "boolean" }, "no-browser": { type: "boolean" }, port: str,
       days: str, only: str, batch: str, template: str, mailbox: str, approval: str, profiles: str, "profiles-file": str,
-      platform: str, job: str, budget: str, keywords: str, seeds: str, handles: str, "min-followers": str, "max-followers": str,
+      platform: str, job: str, budget: str, keywords: str, seeds: str, handles: str, "min-followers": str, "max-followers": str, target: str, "add-batch": { type: "boolean" },
       project: str, "import-templates": str, "template-language": str, apply: str, limit: str, file: str, code: str,
     },
   });

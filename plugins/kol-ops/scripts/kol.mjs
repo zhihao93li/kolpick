@@ -61132,7 +61132,27 @@ function apifyToken() {
 async function find(ctx, o) {
   const t = ctx.cfg.tables;
   const batches = await ctx.base.fieldOptions(t.profiles, "\u5165\u5E93\u6279\u6B21");
-  if (!batches?.includes(o.batch)) throw new Error(`\u300C${o.batch}\u300D\u8FD8\u4E0D\u662F\u300C\u5165\u5E93\u6279\u6B21\u300D\u7684\u9009\u9879\uFF0C\u5148\u5728\u98DE\u4E66\u91CC\u52A0\u4E0A\u518D\u627E\u4EBA\uFF08\u514D\u5F97\u82B1\u4E86\u94B1\u5199\u4E0D\u8FDB\u53BB\uFF09`);
+  if (!batches) throw new Error("\u8BFB\u4E0D\u5230\u300CKOL \u6863\u6848\u300D\u7684\u300C\u5165\u5E93\u6279\u6B21\u300D\u9009\u9879\uFF0C\u5148\u4E0D\u627E\uFF08\u514D\u5F97\u82B1\u4E86\u94B1\u5199\u4E0D\u8FDB\u53BB\uFF09");
+  const newBatch = !batches.includes(o.batch);
+  if (newBatch && !o.addBatch) throw new Error(`\u300C${o.batch}\u300D\u8FD8\u4E0D\u662F\u300C\u5165\u5E93\u6279\u6B21\u300D\u7684\u9009\u9879\u3002\u5728\u98DE\u4E66\u91CC\u52A0\u4E0A\uFF0C\u6216\u8005\u52A0 --add-batch \u8BA9\u63D2\u4EF6\u52A0\uFF08\u514D\u5F97\u82B1\u4E86\u94B1\u5199\u4E0D\u8FDB\u53BB\uFF09`);
+  if (newBatch && !o.dryRun) {
+    await ctx.base.lark.json([
+      "base",
+      "+field-update",
+      "--base-token",
+      ctx.base.token,
+      "--table-id",
+      t.profiles,
+      "--field-id",
+      "\u5165\u5E93\u6279\u6B21",
+      "--json",
+      JSON.stringify({ name: "\u5165\u5E93\u6279\u6B21", type: "select", multiple: false, options: [...batches, o.batch].map((name) => ({ name })) }),
+      "--as",
+      "user",
+      "--yes"
+    ]);
+    ctx.run.op({ type: "\u98DE\u4E66\u53D8\u66F4", result: "\u5B8C\u6210", action: `\u300C\u5165\u5E93\u6279\u6B21\u300D\u52A0\u4E86\u9009\u9879\u300C${o.batch}\u300D` });
+  }
   const existing = [...(await loadSnapshot(ctx.base, ctx.cfg)).profiles.values()];
   const handles = /* @__PURE__ */ new Set();
   const emails = /* @__PURE__ */ new Set();
@@ -61141,12 +61161,15 @@ async function find(ctx, o) {
     if (h) handles.add(h);
     for (const e of profileEmails(p)) emails.add(e);
   }
+  const sources = o.keywords.length + o.seeds.length;
+  const per = o.target && sources ? Math.max(10, Math.ceil(o.target / sources)) : null;
   const params = {
     ...DEFAULT_PARAMS,
     platform: o.platform,
     keywords: o.keywords,
     seeds: o.seeds,
     handles: o.handles,
+    ...per ? { perKeyword: per, perSeed: per } : {},
     minFollowers: o.minFollowers,
     maxFollowers: o.maxFollowers,
     youtubeHidden: o.youtubeHidden,
@@ -61156,7 +61179,13 @@ async function find(ctx, o) {
     language: ctx.cfg.discovery.language
   };
   if (o.dryRun) {
-    return { \u8BD5\u8DD1: true, \u5DF2\u5728\u5E93\u91CC\u7684\u8D26\u53F7: handles.size, \u53C2\u6570: params, \u8BF4\u660E: `\u6B63\u5F0F\u8FD0\u884C\u6700\u591A\u82B1 $${o.budget}\uFF0C\u5230\u4E0A\u9650\u5C31\u505C\uFF0C\u5DF2\u627E\u5230\u7684\u7167\u6837\u5165\u5E93` };
+    return {
+      \u8BD5\u8DD1: true,
+      \u5DF2\u5728\u5E93\u91CC\u7684\u8D26\u53F7: handles.size,
+      \u53C2\u6570: params,
+      ...newBatch ? { \u4F1A\u65B0\u52A0\u5165\u5E93\u6279\u6B21: o.batch } : {},
+      \u8BF4\u660E: `\u6B63\u5F0F\u8FD0\u884C\u6700\u591A\u82B1 $${o.budget}\uFF0C\u5230\u4E0A\u9650\u5C31\u505C\uFF0C\u5DF2\u627E\u5230\u7684\u7167\u6837\u5165\u5E93`
+    };
   }
   const runner = new ApifyRunner(apifyToken(), o.budget, new FileLedger(o.job));
   const result = await discover(runner, params, handles);
@@ -63733,21 +63762,27 @@ function startFind(jobs, req) {
   const budget = Number(req.budget);
   if (!["instagram", "youtube", "tiktok"].includes(req.platform)) throw new Error("\u5E73\u53F0\u53EA\u80FD\u662F Instagram\u3001YouTube \u6216 TikTok");
   if (!Number.isFinite(budget) || budget <= 0 || budget > 50) throw new Error("\u6700\u591A\u82B1\u591A\u5C11\u8981\u5728 0 \u5230 50 \u7F8E\u5143\u4E4B\u95F4");
-  if (!req.batch) throw new Error("\u8981\u9009\u4E00\u4E2A\u5165\u5E93\u6279\u6B21");
+  const batch = String(req.batch ?? "").trim();
+  if (!batch) throw new Error("\u8981\u5199\u4E00\u4E2A\u5165\u5E93\u6279\u6B21");
+  if (batch.length > 40) throw new Error("\u5165\u5E93\u6279\u6B21\u540D\u5B57\u592A\u957F\u4E86");
+  const target = req.target ? Number(req.target) : void 0;
+  if (target != null && (!Number.isFinite(target) || target < 10 || target > 2e3)) throw new Error("\u641C\u591A\u5C11\u4E2A\u8D26\u53F7\u8981\u5728 10 \u5230 2000 \u4E4B\u95F4");
   const keywords = list(req.keywords);
   const seeds = list(req.seeds);
   if (!keywords.length && !seeds.length) throw new Error("\u5173\u952E\u8BCD\u548C\u76F8\u4F3C\u8D26\u53F7\u81F3\u5C11\u586B\u4E00\u6837");
-  return jobs.add(`\u627E\u65B0\u4EBA\uFF1A${req.batch}\uFF08${req.platform}\uFF09`, "", RUN_TITLES.find, async (jctx) => {
+  return jobs.add(`\u627E\u65B0\u4EBA\uFF1A${batch}\uFF08${req.platform}\uFF09`, "", RUN_TITLES.find, async (jctx) => {
     const r = await find(jctx, {
       platform: req.platform,
       keywords,
       seeds,
       handles: [],
       budget,
-      batch: req.batch,
-      job: req.batch,
+      batch,
+      job: batch,
       youtubeHidden: false,
       dryRun: false,
+      target,
+      addBatch: true,
       minFollowers: req.minFollowers ? Number(req.minFollowers) : null,
       maxFollowers: req.maxFollowers ? Number(req.maxFollowers) : null
     });
@@ -64223,20 +64258,23 @@ function loadPeople(view, q) {
 function openFind() {
   modal('<div class="loading">\u8BFB\u53D6\u5165\u5E93\u6279\u6B21\u2026</div>');
   api("/api/find-options").then(function (r) {
-    var opts = r.batches.slice().reverse().map(function (b) { return "<option>" + esc(b) + "</option>"; }).join("");
+    var opts = r.batches.slice().reverse().map(function (b) { return '<option value="' + esc(b) + '"></option>'; }).join("");
     modal('<h2 style="margin:0;font-size:18px">\u627E\u4E00\u6279\u65B0\u7684 KOL</h2><div class="muted small">\u53BB Instagram / YouTube \u4E0A\u641C\uFF0C\u67E5\u4ED6\u4EEC\u516C\u5F00\u7684\u90AE\u7BB1\uFF0C\u5230\u4F60\u8BBE\u7684\u4E0A\u9650\u5C31\u505C\u3002\u627E\u5230\u7684\u4EBA\u8FDB\u300C\u8FD8\u6CA1\u8054\u7CFB\u8FC7\u300D\uFF0C\u5DF2\u7ECF\u5728\u5E93\u91CC\u7684\u4F1A\u8DF3\u8FC7\u3002</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">' +
       '<label class="field">\u5728\u54EA\u4E2A\u5E73\u53F0\u627E<select class="input" id="f-platform"><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="tiktok">TikTok\uFF08\u53EA\u80FD\u67E5\u5DF2\u77E5\u8D26\u53F7\uFF09</option></select></label>' +
       '<label class="field">\u627E\u4EC0\u4E48\u6837\u7684\u4EBA\uFF08\u5173\u952E\u8BCD\uFF0C\u9017\u53F7\u9694\u5F00\uFF09<input class="input" id="f-keywords" placeholder="\u4F34\u4FB6, \u611F\u60C5, \u5169\u6027"></label>' +
       '<label class="field">\u6216\u8005\uFF1A\u627E\u50CF\u8FD9\u51E0\u4F4D\u7684\u4EBA<input class="input" id="f-seeds" placeholder="@love.notes.tw, @couple.daily"></label>' +
       '<label class="field">\u7C89\u4E1D\u6570<span style="display:flex;gap:6px;align-items:center"><input class="input" id="f-min" style="width:100px" value="5000"> \u5230 <input class="input" id="f-max" style="width:100px" value="50000"></span></label>' +
-      '<label class="field">\u6700\u591A\u82B1\u591A\u5C11\uFF08\u7F8E\u5143\uFF09<input class="input" id="f-budget" value="5"></label>' +
-      '<label class="field">\u653E\u8FDB\u54EA\u4E2A\u5165\u5E93\u6279\u6B21<select class="input" id="f-batch">' + opts + '</select><span class="tiny">\u65B0\u6279\u6B21\u8BF7\u5148\u5728\u98DE\u4E66\u300CKOL \u6863\u6848\u300D\u7684\u5165\u5E93\u6279\u6B21\u91CC\u52A0\u9009\u9879</span></label></div>' +
+      '<label class="field">\u5927\u7EA6\u641C\u591A\u5C11\u4E2A\u8D26\u53F7<input class="input" id="f-target" value="100"><span class="tiny">\u6709\u516C\u5F00\u90AE\u7BB1\u7684\u901A\u5E38\u662F\u5176\u4E2D\u4E09\u5230\u56DB\u6210</span></label>' +
+      '<label class="field">\u6700\u591A\u82B1\u591A\u5C11\uFF08\u7F8E\u5143\uFF09<input class="input" id="f-budget" value="5"><span class="tiny">\u5230\u4E0A\u9650\u5C31\u505C\uFF0C\u5DF2\u7ECF\u627E\u5230\u7684\u7167\u6837\u5165\u5E93</span></label>' +
+      '<label class="field">\u653E\u8FDB\u54EA\u4E2A\u5165\u5E93\u6279\u6B21<input class="input" id="f-batch" list="f-batches" placeholder="\u9009\u4E00\u4E2A\uFF0C\u6216\u8005\u5199\u4E2A\u65B0\u540D\u5B57"><datalist id="f-batches">' + opts + '</datalist><span class="tiny">\u5199\u65B0\u540D\u5B57\u7684\u8BDD\uFF0C\u4F1A\u5728\u98DE\u4E66\u300C\u5165\u5E93\u6279\u6B21\u300D\u91CC\u52A0\u4E0A\u8FD9\u4E2A\u9009\u9879</span></label></div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="f-cancel">\u53D6\u6D88</button><button class="btn primary" id="f-go">\u5F00\u59CB\u627E</button></div>');
     $("f-cancel").onclick = closeModal;
     $("f-go").onclick = function () {
-      var req = { platform: $("f-platform").value, keywords: $("f-keywords").value, seeds: $("f-seeds").value, minFollowers: $("f-min").value, maxFollowers: $("f-max").value, budget: $("f-budget").value, batch: $("f-batch").value };
-      if (!confirm("\u4F1A\u82B1 Apify \u7684\u94B1\uFF0C\u6700\u591A $" + req.budget + "\u3002\u5F00\u59CB\u627E\u5417\uFF1F")) return;
+      var req = { platform: $("f-platform").value, keywords: $("f-keywords").value, seeds: $("f-seeds").value, minFollowers: $("f-min").value, maxFollowers: $("f-max").value, budget: $("f-budget").value, batch: $("f-batch").value.trim(), target: $("f-target").value };
+      if (!req.batch) { toast("\u5199\u4E00\u4E2A\u5165\u5E93\u6279\u6B21"); return; }
+      var isNew = r.batches.indexOf(req.batch) < 0;
+      if (!confirm((isNew ? "\u300C" + req.batch + "\u300D\u662F\u65B0\u6279\u6B21\uFF0C\u4F1A\u5728\u98DE\u4E66\u300C\u5165\u5E93\u6279\u6B21\u300D\u91CC\u52A0\u4E0A\u8FD9\u4E2A\u9009\u9879\u3002\\n" : "") + "\u5927\u7EA6\u641C " + req.target + " \u4E2A\u8D26\u53F7\uFF0C\u6700\u591A\u82B1 $" + req.budget + "\u3002\u5F00\u59CB\u627E\u5417\uFF1F")) return;
       post("/api/find", req).then(function () { closeModal(); toast("\u5F00\u59CB\u627E\u4E86\uFF0C\u8FDB\u5EA6\u770B\u53F3\u4E0A\u89D2\uFF1B\u627E\u5B8C\u4F1A\u51FA\u73B0\u5728\u300C\u8FD8\u6CA1\u8054\u7CFB\u8FC7\u300D"); watchJobs(); }).catch(function (e) { toast("\u6CA1\u5F00\u59CB\uFF1A" + e.message); });
     };
   }).catch(function (e) { modal('<div class="err">' + esc(e.message) + '</div><button class="btn" onclick="closeModal()">\u5173\u95ED</button>'); });
@@ -65231,7 +65269,9 @@ var HELP = `kol <\u547D\u4EE4> [\u9009\u9879]
   remind                        \u5148\u540C\u6B65\u6536\u4EF6\u7BB1\uFF0C\u518D\u6309\u89C4\u5219\u53D1\u7B2C 1/2 \u6B21\u50AC\u4FE1\uFF0C\u4E24\u6B21\u90FD\u6CA1\u56DE\u7684\u7ED3\u6848
   find    --platform instagram|youtube|tiktok --batch \u5165\u5E93\u6279\u6B21 --job \u540D\u5B57 --budget \u7F8E\u5143
           [--keywords a,b] [--seeds a,b] [--handles a,b] [--min-followers N] [--max-followers N] [--youtube-hidden]
-                                \u627E\u65B0 KOL \u548C\u90AE\u7BB1\uFF0C\u4E0D\u5728\u5E93\u91CC\u7684\u5199\u8FDB\u6863\u6848
+          [--target N] [--add-batch]
+                                \u627E\u65B0 KOL \u548C\u90AE\u7BB1\uFF0C\u4E0D\u5728\u5E93\u91CC\u7684\u5199\u8FDB\u6863\u6848\u3002--target \u5927\u7EA6\u641C\u591A\u5C11\u4E2A\u8D26\u53F7\uFF08\u5E73\u5206\u7ED9\u5404\u5173\u952E\u8BCD\u548C\u76F8\u4F3C\u8D26\u53F7\uFF09\uFF1B
+                                --add-batch \u5165\u5E93\u6279\u6B21\u8FD8\u4E0D\u662F\u9009\u9879\u65F6\u7531\u63D2\u4EF6\u52A0\u4E0A
   classify --batch \u5165\u5E93\u6279\u6B21 [--limit 50]
                                 \u5217\u51FA\u8FD9\u6279\u91CC\u8FD8\u6CA1\u586B\u5408\u4F5C\u9080\u7EA6\u65B9\u5411\u3001\u5E02\u573A\u3001\u8A9E\u8A00\u3001\u5185\u5BB9\u7C7B\u578B\u3001\u79F0\u547C\u7684\u4EBA\uFF0C\u9644\u7B80\u4ECB\u548C\u53EF\u9009\u503C\uFF08\u53EA\u8BFB\uFF09
   classify --apply \u6587\u4EF6.json     \u6309\u6587\u4EF6\u5199\u5165\u4E0A\u9762\u8FD9\u51E0\u4E2A\u5B57\u6BB5\uFF08{"rec\u2026": {"\u5E02\u573A": "\u53F0\u6E7E", \u2026}}\uFF09\uFF0C\u6709\u4E00\u4E2A\u503C\u4E0D\u5BF9\u5C31\u4E00\u6761\u90FD\u4E0D\u5199
@@ -65291,7 +65331,9 @@ var COMMANDS = {
         batch: v.batch,
         job: v.job,
         youtubeHidden: !!v["youtube-hidden"],
-        dryRun: !!v["dry-run"]
+        dryRun: !!v["dry-run"],
+        target: num2(v.target) ?? void 0,
+        addBatch: !!v["add-batch"]
       });
     }
   },
@@ -65396,6 +65438,8 @@ async function main() {
       handles: str,
       "min-followers": str,
       "max-followers": str,
+      target: str,
+      "add-batch": { type: "boolean" },
       project: str,
       "import-templates": str,
       "template-language": str,

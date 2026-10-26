@@ -9,7 +9,7 @@ description: 运营同事要「找一批新 KOL」「按关键词/对标账号�
 
 需要 Apify token，只存在这台电脑上：`~/.kol-ops/apify-token`（或环境变量 APIFY_TOKEN）。没有就请同事向项目负责人要，自己存进去；不要把 token 贴进对话或写进任何文件以外的地方。
 
-1. 和同事确认：平台（instagram / youtube / tiktok）、找法（关键词 `--keywords`、对标账号 `--seeds`、或直接给账号 `--handles`）、粉丝范围、预算（美元）、入库批次名。入库批次请同事先在「KOL 档案」的「入库批次」里加好选项。
+1. 和同事确认：平台（instagram / youtube / tiktok）、找法（关键词 `--keywords`、对标账号 `--seeds`、或直接给账号 `--handles`）、粉丝范围、大约搜多少个账号（`--target`，会平分给各关键词和对标账号；有公开邮箱的通常是三到四成）、预算（美元）、入库批次名。入库批次还不是选项的，同事同意后加 `--add-batch`，插件会在「入库批次」里加上。也可以请同事直接在决策台的「找新人」里填。
 2. 试跑：
 
    ```bash
