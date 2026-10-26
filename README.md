@@ -1,6 +1,6 @@
 # kolpick · KOL 运营插件
 
-一个 Claude 桌面版插件（kol-ops），给运营同事做 KOL 外联：找人和公开邮箱、发邀约、收信、审核后发信、催信和结案。数据放在飞书多维表格，发信用飞书邮箱，都通过本机的 lark-cli 操作。找人和查邮箱调用 Apify 上的现成 actor，支持 Instagram、YouTube、TikTok。
+一个 Claude 桌面版插件（kol-ops），给运营同事做 KOL 外联：找人和公开邮箱、发邀约、收信、审核后发信、催信和结案。人在本机的决策台网页上做决定，执行器排队执行，Claude 只做准备。数据放在 Postgres（还没切过去的项目仍在飞书多维表格），收发信用飞书邮箱（经本机 lark-cli）。找人和查邮箱调用 Apify 上的现成 actor，支持 Instagram、YouTube、TikTok。
 
 安装和使用说明见 [plugins/kol-ops/README.md](plugins/kol-ops/README.md)。
 
@@ -8,8 +8,10 @@
 
 | 位置 | 内容 |
 | --- | --- |
-| `plugins/kol-ops/` | 插件本体：技能（`skills/`）、共同规则和字段说明（`reference/`），以及打包好的脚本 `scripts/kol.mjs`。项目专属的设置、发信邮箱和邮件模板不在这里，在各项目的飞书表里 |
-| `src/kolops/` | `kol.mjs` 的源码：各个命令（`today`、`sync`、`send`、`invite`、`remind`、`find`、`check`、`project`、`setup-base`）、发信前的检查，以及项目飞书表的标准结构（`schema.ts`） |
+| `plugins/kol-ops/` | 插件本体：技能（`skills/`）、共同规则和字段说明（`reference/`），以及打包好的脚本 `scripts/kol.mjs`。项目专属的设置、发信邮箱和邮件模板不在这里，在各项目自己的表里 |
+| `src/kolops/` | `kol.mjs` 的源码：各个命令、发信前的检查、执行器，以及项目表的标准结构（`schema.ts`） |
+| `src/kolops/console/` | 决策台（`kol console`）的本机服务和页面 |
+| `src/kolops/store/` | 存储层：项目表放在 Postgres 时，由它接住所有读写表的命令（`pg.ts`），加上本机副本、备份和 `kol db` 命令 |
 | `src/discovery/` | 找人和查邮箱：actor 列表和价格（`apify.ts`）、各平台步骤（`pipeline.ts`）、整体流程（`run.ts`） |
 | `src/scripts/build-plugin.ts` | 把 `src/kolops/cli.ts` 打包成 `plugins/kol-ops/scripts/kol.mjs` |
 | `.claude-plugin/marketplace.json` | 让 `/plugin marketplace add zhihao93li/kolpick#stable` 能找到插件 |
@@ -47,8 +49,24 @@ git tag kol-ops-v0.12.1 stable && git push origin kol-ops-v0.12.1
 git switch stable && git cherry-pick <修复的提交号> && git push origin stable && git switch main
 ```
 
-为什么这样管、网页版怎么并行开发，见 [docs/web-db-design.md](docs/web-db-design.md) 第十一节。
+
+## 文档
+
+一种作用只有一份文档。要写的内容已经有归属，就改那一份，不另开新文档；方向变了，先改 `docs/design.md`，再顺着改其他文档里受影响的地方，旧的说法直接删掉，不留「以前是这样」。
+
+| 文档 | 管什么 | 给谁看 |
+| --- | --- | --- |
+| [docs/design.md](docs/design.md) | 系统设计、规则、已定的事、接下来做什么、改过的方向 | 你和开发 |
+| [docs/discovery.md](docs/discovery.md) | 找人和查邮箱为什么这样选（实测结论、成本、风险） | 开发 |
+| [docs/data-api.md](docs/data-api.md) | 项目后台要开的 `kol-data` 接口约定 | 项目后台的开发 |
+| 本文件 | 仓库结构、开发、发布 | 开发 |
+| [plugins/kol-ops/README.md](plugins/kol-ops/README.md) | 安装、接入项目、日常用法、切换到 Postgres 的步骤 | 运营同事 |
+| `plugins/kol-ops/reference/rules.md` | Claude 必须遵守的共同规则 | Claude |
+| `plugins/kol-ops/reference/fields.md` | 项目表的表名、字段、选项 | Claude |
+| `plugins/kol-ops/skills/*/SKILL.md` | 每个技能的步骤 | Claude |
+
+`output/` 下的复审报告和临时记录不进 git，不算文档。
 
 ## 历史
 
-最早是一个找邮箱的 Python 脚本，后来做过一个部署在 Zeabur 的独立平台（PostgreSQL + 后台网页），2026 年 10 月改成现在的插件方案，平台代码已删除。当时的技术方案见 [docs/plan.md](docs/plan.md)，其中找人和查邮箱的实测结论仍然适用。
+最早是一个找邮箱的 Python 脚本，后来做过一个部署在 Zeabur 的独立平台，2026 年 10 月改成插件，平台代码已删除。方向怎么变过，见 [docs/design.md](docs/design.md)「改过的方向」。

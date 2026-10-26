@@ -1,8 +1,8 @@
-# 项目飞书表的字段参考
+# 项目表的字段参考
 
-每个项目一张飞书多维表格，表名和字段名都是下面这套。当前项目的 base token 用 `node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" project list` 查。
+每个项目一套表（在 Postgres 或飞书多维表格里），表名和字段名都是下面这套。当前项目的 base token 用 `node "${CLAUDE_PLUGIN_ROOT}/scripts/kol.mjs" project list` 查。
 
-写入时字段名、选项名必须和下面完全一致（包括全角符号）；选项值写成数组，如 `["已回复"]`。批次、标签、渠道这类选项每个项目不一样，也会不断加新的，下面列的是 TAFU 项目的例子；写之前用 `lark-cli base +field-list --base-token <token> --table-id <表名> --as user` 读当前的选项。
+写入时字段名、选项名必须和下面完全一致（包括全角符号）；选项值写成数组，如 `["已回复"]`。批次、标签、渠道这类选项每个项目不一样，也会不断加新的，下面列的是 TAFU 项目的例子；项目在飞书表上时，写之前用 `lark-cli base +field-list --base-token <token> --table-id <表名> --as user` 读当前的选项；在 Postgres 上时不要用 lark-cli（见 rules.md「表和字段」）。
 
 ## KOL 档案
 

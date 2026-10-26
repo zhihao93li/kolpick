@@ -4,7 +4,7 @@
 
 ## 接入
 
-- 项目飞书表「设置」的「业务数据接口」填接口的根地址，例如 `https://api.example.com/api/kol-data`。
+- 项目「设置」表的「业务数据接口」填接口的根地址，例如 `https://api.example.com/api/kol-data`。
 - 密钥只存在运营的电脑上：`kol project set-key <项目名> <密钥>`。插件每次请求都带 `Authorization: Bearer <密钥>`。
 - 接口只读、只走 HTTPS，返回 JSON，响应头带 `Cache-Control: no-store`。密钥不对一律返回 401，不说明原因。
 - 金额一律用主币单位的十进制数（NT$ 1,234.5 写成 `1234.5`），同时给 `currency`（ISO 4217，如 `TWD`）。
