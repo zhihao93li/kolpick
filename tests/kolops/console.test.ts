@@ -99,7 +99,7 @@ describe("decision queue", () => {
     const { cards } = decisionCards(await loaded(), ctx.cfg, day);
     expect(cards.map((x) => x.headline)).toEqual([expect.stringContaining("过了 3 天还没找到帖子")]);
     expect(cards[0].why).toContain("moonnotes");
-    expect(cards[0].draft).toMatchObject({ body: "", note: expect.stringContaining("发布确认") });
+    expect(cards[0].draft).toMatchObject({ subject: "想確認一下發布時間", body: expect.stringContaining("專屬活動碼：moonnotes"), note: expect.stringContaining("插件自带") });
   });
 
   it("fills the check-in mail for a late post from the approved 发布确认 template", async () => {

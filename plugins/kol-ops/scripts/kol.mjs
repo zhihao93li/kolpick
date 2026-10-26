@@ -61026,7 +61026,8 @@ var PROFILE_FIELDS = [
   "\u5185\u5BB9\u7C7B\u578B",
   "\u5E02\u573A",
   "\u5165\u5E93\u6279\u6B21",
-  "\u8DDF\u8FDB\u8BB0\u5F55"
+  "\u8DDF\u8FDB\u8BB0\u5F55",
+  "\u8A9E\u8A00"
 ];
 var FOLLOWUP_FIELDS = [
   "\u8D26\u53F7\u540D\u79F0",
@@ -64714,11 +64715,42 @@ function decisionCards(data, cfg, todayStr, mails = /* @__PURE__ */ new Map()) {
   cards.sort((a, b) => at(a) - at(b));
   return { cards, waitingClaude };
 }
+function defaultCheckIn(language, name, due, code) {
+  const [, m, d] = due.split("-").map(Number);
+  if (/英/.test(language)) {
+    return { subject: "Checking in on your post", body: `Hi ${name},
+
+Just checking in on the post we talked about for ${m}/${d}. If it's already up, could you send us the link? If the timing has changed, that's totally fine \u2014 just let us know when works for you.
+
+Thank you!` };
+  }
+  if (/简|簡體/.test(language) && !/繁/.test(language)) {
+    return { subject: "\u60F3\u786E\u8BA4\u4E00\u4E0B\u53D1\u5E03\u65F6\u95F4", body: `${name}\u4F60\u597D\uFF1A
+
+\u60F3\u8DDF\u4F60\u786E\u8BA4\u4E00\u4E0B\u4E4B\u524D\u7EA6\u597D ${m} \u6708 ${d} \u65E5\u7684\u53D1\u5E03\u8FDB\u5EA6\u3002\u5982\u679C\u5DF2\u7ECF\u53D1\u4E86\uFF0C\u65B9\u4FBF\u628A\u94FE\u63A5\u4F20\u7ED9\u6211\u4EEC\u5417\uFF1F\u5982\u679C\u65F6\u95F4\u8981\u8C03\u6574\u4E5F\u6CA1\u5173\u7CFB\uFF0C\u8DDF\u6211\u4EEC\u8BF4\u4E00\u58F0\u5C31\u597D\u3002
+
+\u8C22\u8C22\u4F60\uFF01` };
+  }
+  return { subject: "\u60F3\u78BA\u8A8D\u4E00\u4E0B\u767C\u5E03\u6642\u9593", body: `${name}\u60A8\u597D\uFF1A
+
+\u60F3\u8DDF\u60A8\u78BA\u8A8D\u4E00\u4E0B\u4E4B\u524D\u7D04\u597D ${m} \u6708 ${d} \u65E5\u7684\u767C\u5E03\u9032\u5EA6\u3002\u5982\u679C\u5DF2\u7D93\u767C\u4E86\uFF0C\u65B9\u4FBF\u628A\u9023\u7D50\u50B3\u7D66\u6211\u5011\u55CE\uFF1F\u5982\u679C\u6642\u9593\u8981\u8ABF\u6574\u4E5F\u6C92\u95DC\u4FC2\uFF0C\u8DDF\u6211\u5011\u8AAA\u4E00\u8072\u5C31\u597D\u3002
+
+\u8B1D\u8B1D\u60A8\uFF01` + (code ? `
+
+\uFF08\u60A8\u7684\u5C08\u5C6C\u6D3B\u52D5\u78BC\uFF1A${code}\uFF09` : "") };
+}
 function checkInDraft(templates, f, p, due, code) {
-  const t = pickTemplate(templates, "\u53D1\u5E03\u786E\u8BA4");
+  const language = option(p?.["\u8A9E\u8A00"]);
+  const t = pickTemplate(templates, "\u53D1\u5E03\u786E\u8BA4", language);
   const label = "\u95EE\u5979\u7684\u4FE1\uFF08\u53EF\u4EE5\u76F4\u63A5\u6539\uFF09";
-  if (!t) return { label, subject: "", body: "", note: "\u8FD8\u6CA1\u6709\u6279\u51C6\u7684\u300C\u53D1\u5E03\u786E\u8BA4\u300D\u6A21\u677F\uFF0C\u81EA\u5DF1\u5199\u51E0\u53E5\u5C31\u884C\uFF1B\u5E38\u7528\u7684\u8BDD\u53EF\u4EE5\u5728\u98DE\u4E66\u300C\u6A21\u677F\u300D\u8868\u52A0\u4E00\u4E2A\uFF0C\u7528\u9014\u9009\u300C\u53D1\u5E03\u786E\u8BA4\u300D" };
   const name = text(p?.["\u79F0\u547C"]) || text(f["\u8D26\u53F7\u540D\u79F0"]) || text(p?.["\u8D26\u53F7\u540D\u79F0"]);
+  if (!t) {
+    return {
+      label,
+      ...defaultCheckIn(language, name, due, code),
+      note: "\u8FD9\u662F\u63D2\u4EF6\u81EA\u5E26\u7684\u5199\u6CD5\uFF0C\u53D1\u4E4B\u524D\u770B\u4E00\u773C\u3002\u5E38\u7528\u7684\u8BDD\u53EF\u4EE5\u5728\u98DE\u4E66\u300C\u6A21\u677F\u300D\u8868\u52A0\u4E00\u4E2A\u7528\u9014\u4E3A\u300C\u53D1\u5E03\u786E\u8BA4\u300D\u7684\u6A21\u677F\uFF0C\u4EE5\u540E\u5C31\u7528\u4F60\u4EEC\u81EA\u5DF1\u7684\u5199\u6CD5"
+    };
+  }
   const values = { \u7A31\u547C: name, \u79F0\u547C: name, \u8D26\u53F7\u540D\u79F0: text(f["\u8D26\u53F7\u540D\u79F0"]), \u7D04\u5B9A\u65E5\u671F: shortDay(due), \u7EA6\u5B9A\u65E5\u671F: shortDay(due), \u6D3B\u52D5\u78BC: code, \u6D3B\u52A8\u7801: code };
   try {
     return { label, ...render(t, values) };

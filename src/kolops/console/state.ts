@@ -298,12 +298,31 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
   return { cards, waitingClaude };
 }
 
-/** The mail asking a late KOL about her post: the approved 发布确认 template filled in, or an empty one to write. */
+/**
+ * When there is no approved 发布确认 template: a short, plain check-in in the KOL's language, for the reviewer
+ * to read over before sending it themselves.
+ */
+function defaultCheckIn(language: string, name: string, due: string, code: string): { subject: string; body: string } {
+  const [, m, d] = due.split("-").map(Number);
+  if (/英/.test(language)) {
+    return { subject: "Checking in on your post", body: `Hi ${name},\n\nJust checking in on the post we talked about for ${m}/${d}. If it's already up, could you send us the link? If the timing has changed, that's totally fine — just let us know when works for you.\n\nThank you!` };
+  }
+  if (/简|簡體/.test(language) && !/繁/.test(language)) {
+    return { subject: "想确认一下发布时间", body: `${name}你好：\n\n想跟你确认一下之前约好 ${m} 月 ${d} 日的发布进度。如果已经发了，方便把链接传给我们吗？如果时间要调整也没关系，跟我们说一声就好。\n\n谢谢你！` };
+  }
+  return { subject: "想確認一下發布時間", body: `${name}您好：\n\n想跟您確認一下之前約好 ${m} 月 ${d} 日的發布進度。如果已經發了，方便把連結傳給我們嗎？如果時間要調整也沒關係，跟我們說一聲就好。\n\n謝謝您！` + (code ? `\n\n（您的專屬活動碼：${code}）` : "") };
+}
+
+/** The mail asking a late KOL about her post: the approved 发布确认 template filled in, or a plain default. */
 function checkInDraft(templates: Template[], f: Row, p: Row | undefined, due: string, code: string): NonNullable<Card["draft"]> {
-  const t = pickTemplate(templates, "发布确认");
+  const language = option(p?.["語言"]);
+  const t = pickTemplate(templates, "发布确认", language);
   const label = "问她的信（可以直接改）";
-  if (!t) return { label, subject: "", body: "", note: "还没有批准的「发布确认」模板，自己写几句就行；常用的话可以在飞书「模板」表加一个，用途选「发布确认」" };
   const name = text(p?.["称呼"]) || text(f["账号名称"]) || text(p?.["账号名称"]);
+  if (!t) {
+    return { label, ...defaultCheckIn(language, name, due, code),
+      note: "这是插件自带的写法，发之前看一眼。常用的话可以在飞书「模板」表加一个用途为「发布确认」的模板，以后就用你们自己的写法" };
+  }
   const values: Record<string, string> = { 稱呼: name, 称呼: name, 账号名称: text(f["账号名称"]), 約定日期: shortDay(due), 约定日期: shortDay(due), 活動碼: code, 活动码: code };
   try {
     return { label, ...render(t, values) };
