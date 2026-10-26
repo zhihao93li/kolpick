@@ -218,7 +218,7 @@ async function main(): Promise<number> {
     ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
     if (name === "console") {
       const { url } = await startConsole(ctx, { port: values.port ? Number(values.port) : undefined, openBrowser: !values["no-browser"] });
-      print({ 地址: url, 说明: "决策台已经打开。只有这台电脑能访问；按 Ctrl+C 关掉。" });
+      print({ 地址: url, 说明: "决策台已经打开，正在从飞书读数据（第一次要一两分钟），页面会自己显示出来。只有这台电脑能访问；按 Ctrl+C 关掉。" });
       return new Promise<number>(() => {});
     }
     if (name === "executor") return print(await executorCommand(ctx, positionals[1]));

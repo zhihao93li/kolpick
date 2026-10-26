@@ -23,13 +23,19 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
   const refresh = () => (loading ??= data.refresh().finally(() => (loading = null)));
   const refreshSoon = () => void refresh().catch(() => {});
   const jobs = new Jobs(ctx, refreshSoon);
-  await refresh();
   // Decisions write 同意来源 and friends; a base that hasn't been given them yet can be looked at but not changed.
-  const [reviewFields, settingFields] = await Promise.all([ctx.base.fieldNames(ctx.cfg.tables.reviews), ctx.base.fieldNames(ctx.cfg.tables.settings)]);
-  const setupNeeded = [
-    ...["同意来源", "同意人", "同意时间", "内容指纹"].filter((f) => !reviewFields?.includes(f)).map((f) => `审核队列.${f}`),
-    ...["执行电脑", "只认决策台的同意"].filter((f) => !settingFields?.includes(f)).map((f) => `设置.${f}`),
-  ];
+  let setupNeeded: string[] = [];
+  // The page opens at once and waits on this: the first read of a large base takes a minute or two.
+  const ready = Promise.all([
+    refresh(),
+    Promise.all([ctx.base.fieldNames(ctx.cfg.tables.reviews), ctx.base.fieldNames(ctx.cfg.tables.settings)]).then(([reviewFields, settingFields]) => {
+      setupNeeded = [
+        ...["同意来源", "同意人", "同意时间", "内容指纹"].filter((f) => !reviewFields?.includes(f)).map((f) => `审核队列.${f}`),
+        ...["执行电脑", "只认决策台的同意"].filter((f) => !settingFields?.includes(f)).map((f) => `设置.${f}`),
+      ];
+    }),
+  ]);
+  ready.catch((err) => console.error(`出错：读飞书数据失败：${err?.message ?? err}`));
   const timer = setInterval(refreshSoon, REFRESH_MS);
   timer.unref();
 
@@ -43,11 +49,12 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
     if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) return send(res, 403, { error: "只能在这台电脑上用 127.0.0.1 打开" });
     const url = new URL(req.url ?? "/", `http://${host}`);
     const day = today(ctx.cfg);
+    if (req.method === "GET" && url.pathname === "/") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      return res.end(PAGE);
+    }
+    await ready;
     if (req.method === "GET") {
-      if (url.pathname === "/") {
-        res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
-        return res.end(PAGE);
-      }
       if (url.pathname === "/api/overview") {
         if (mails.at !== data.loadedAt) mails = { at: data.loadedAt, map: await cardMails(ctx, data) };
         const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day, mails.map);

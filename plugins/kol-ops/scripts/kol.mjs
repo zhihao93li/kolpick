@@ -63911,7 +63911,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 </header>
 <div class="banner" id="paused-banner" style="background:var(--bad-bg);color:var(--bad);border-color:#E9B4AE" hidden>\u5DF2\u6682\u505C\u6240\u6709\u53D1\u9001\uFF1A\u4F60\u540C\u610F\u7684\u4E8B\u4F1A\u5148\u6392\u7740\uFF0C\u70B9\u300C\u6062\u590D\u53D1\u9001\u300D\u540E\u624D\u6267\u884C\u3002</div>
 <div class="banner" id="setup-banner" hidden></div>
-<main id="app"><div class="loading">\u6B63\u5728\u4ECE\u98DE\u4E66\u8BFB\u6570\u636E\u2026</div></main>
+<main id="app"><div class="loading">\u6B63\u5728\u4ECE\u98DE\u4E66\u8BFB\u6570\u636E\u2026\u7B2C\u4E00\u6B21\u6253\u5F00\u6216\u8005\u5F88\u4E45\u6CA1\u5F00\u65F6\u8981\u4E00\u4E24\u5206\u949F\uFF0C\u8BFB\u5B8C\u4F1A\u81EA\u52A8\u663E\u793A\u3002</div></main>
 <div class="toast" id="toast" hidden><span id="toast-text"></span> <button class="btn sm" id="toast-undo" style="margin-left:10px;background:transparent;color:#fff;border-color:#5B6270" hidden>\u64A4\u9500</button></div>
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
 <script>
@@ -65209,12 +65209,17 @@ async function startConsole(ctx, o) {
   const refreshSoon = () => void refresh().catch(() => {
   });
   const jobs = new Jobs(ctx, refreshSoon);
-  await refresh();
-  const [reviewFields, settingFields] = await Promise.all([ctx.base.fieldNames(ctx.cfg.tables.reviews), ctx.base.fieldNames(ctx.cfg.tables.settings)]);
-  const setupNeeded = [
-    ...["\u540C\u610F\u6765\u6E90", "\u540C\u610F\u4EBA", "\u540C\u610F\u65F6\u95F4", "\u5185\u5BB9\u6307\u7EB9"].filter((f) => !reviewFields?.includes(f)).map((f) => `\u5BA1\u6838\u961F\u5217.${f}`),
-    ...["\u6267\u884C\u7535\u8111", "\u53EA\u8BA4\u51B3\u7B56\u53F0\u7684\u540C\u610F"].filter((f) => !settingFields?.includes(f)).map((f) => `\u8BBE\u7F6E.${f}`)
-  ];
+  let setupNeeded = [];
+  const ready = Promise.all([
+    refresh(),
+    Promise.all([ctx.base.fieldNames(ctx.cfg.tables.reviews), ctx.base.fieldNames(ctx.cfg.tables.settings)]).then(([reviewFields, settingFields]) => {
+      setupNeeded = [
+        ...["\u540C\u610F\u6765\u6E90", "\u540C\u610F\u4EBA", "\u540C\u610F\u65F6\u95F4", "\u5185\u5BB9\u6307\u7EB9"].filter((f) => !reviewFields?.includes(f)).map((f) => `\u5BA1\u6838\u961F\u5217.${f}`),
+        ...["\u6267\u884C\u7535\u8111", "\u53EA\u8BA4\u51B3\u7B56\u53F0\u7684\u540C\u610F"].filter((f) => !settingFields?.includes(f)).map((f) => `\u8BBE\u7F6E.${f}`)
+      ];
+    })
+  ]);
+  ready.catch((err) => console.error(`\u51FA\u9519\uFF1A\u8BFB\u98DE\u4E66\u6570\u636E\u5931\u8D25\uFF1A${err?.message ?? err}`));
   const timer = setInterval(refreshSoon, REFRESH_MS);
   timer.unref();
   const server = createServer((req, res) => {
@@ -65225,11 +65230,12 @@ async function startConsole(ctx, o) {
     if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) return send(res, 403, { error: "\u53EA\u80FD\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\u7528 127.0.0.1 \u6253\u5F00" });
     const url2 = new URL(req.url ?? "/", `http://${host}`);
     const day2 = today(ctx.cfg);
+    if (req.method === "GET" && url2.pathname === "/") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      return res.end(PAGE);
+    }
+    await ready;
     if (req.method === "GET") {
-      if (url2.pathname === "/") {
-        res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
-        return res.end(PAGE);
-      }
       if (url2.pathname === "/api/overview") {
         if (mails.at !== data.loadedAt) mails = { at: data.loadedAt, map: await cardMails(ctx, data) };
         const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day2, mails.map);
@@ -65596,7 +65602,7 @@ async function main() {
     ctx = makeCtx(cfg, lark, await whoami(lark), cmd.title, !!values.scheduled);
     if (name === "console") {
       const { url } = await startConsole(ctx, { port: values.port ? Number(values.port) : void 0, openBrowser: !values["no-browser"] });
-      print({ \u5730\u5740: url, \u8BF4\u660E: "\u51B3\u7B56\u53F0\u5DF2\u7ECF\u6253\u5F00\u3002\u53EA\u6709\u8FD9\u53F0\u7535\u8111\u80FD\u8BBF\u95EE\uFF1B\u6309 Ctrl+C \u5173\u6389\u3002" });
+      print({ \u5730\u5740: url, \u8BF4\u660E: "\u51B3\u7B56\u53F0\u5DF2\u7ECF\u6253\u5F00\uFF0C\u6B63\u5728\u4ECE\u98DE\u4E66\u8BFB\u6570\u636E\uFF08\u7B2C\u4E00\u6B21\u8981\u4E00\u4E24\u5206\u949F\uFF09\uFF0C\u9875\u9762\u4F1A\u81EA\u5DF1\u663E\u793A\u51FA\u6765\u3002\u53EA\u6709\u8FD9\u53F0\u7535\u8111\u80FD\u8BBF\u95EE\uFF1B\u6309 Ctrl+C \u5173\u6389\u3002" });
       return new Promise(() => {
       });
     }
