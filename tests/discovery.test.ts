@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ActorKey, ActorRunner, Item } from "../src/discovery/apify.js";
-import { BudgetExceeded } from "../src/discovery/apify.js";
+import { BudgetExceeded, chargeCap } from "../src/discovery/apify.js";
 import * as emails from "../src/discovery/emails.js";
 import { keep, looksChinese } from "../src/discovery/filters.js";
 import { Creator } from "../src/discovery/models.js";
@@ -117,4 +117,11 @@ describe("discover", () => {
     expect(result.stoppedEarly).toBe("budget used up");
     expect(result.creators.map((r) => [r.creator.handle, r.status])).toEqual([["keepme", "no_email"]]);
   });
+});
+
+it("never asks Apify for a charge cap below its $0.50 minimum, nor above what's left", () => {
+  expect(chargeCap(0.13, 1)).toBe(0.5);
+  expect(chargeCap(1, 5)).toBe(1.35);
+  expect(chargeCap(1, 0.8)).toBe(0.8);
+  expect(chargeCap(0.1, 0.4)).toBeNull();
 });
