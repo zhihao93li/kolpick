@@ -57,6 +57,7 @@ git switch stable && git cherry-pick <修复的提交号> && git push origin sta
 | 文档 | 管什么 | 给谁看 |
 | --- | --- | --- |
 | [docs/design.md](docs/design.md) | 系统设计、规则、已定的事、接下来做什么、改过的方向 | 你和开发 |
+| [docs/database-design.md](docs/database-design.md) | 数据库设计v1.9定稿：22张关系表、所有发送入口的约束、历史提醒迁移、收信补扫、一次切换与回退；尚未实施 | 产品、开发、测试与数据分析 |
 | [docs/discovery.md](docs/discovery.md) | 找人和查邮箱为什么这样选（实测结论、成本、风险） | 开发 |
 | [docs/data-api.md](docs/data-api.md) | 项目后台要开的 `kol-data` 接口约定 | 项目后台的开发 |
 | 本文件 | 仓库结构、开发、发布 | 开发 |
