@@ -63830,7 +63830,7 @@ button{font:inherit}
 .panel{position:absolute;right:0;top:40px;width:400px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(20,20,30,.14);z-index:30}
 .panel .row{display:flex;gap:10px;padding:10px 14px;border-top:1px solid var(--line2);align-items:flex-start}
 .banner{background:#FFF8F1;border-bottom:1px solid var(--warn-line);color:var(--warn);padding:8px 24px;font-size:13px}
-main{padding:20px 24px 48px;max-width:1440px;margin:0 auto}
+main{padding:20px 24px 48px;max-width:1680px;margin:0 auto}
 .narrow{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px}
 .badge{display:inline-block;font-size:12px;line-height:20px;padding:0 8px;border-radius:4px;white-space:nowrap;background:#ECEEF2;color:var(--ink2)}
@@ -63873,6 +63873,19 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 .field .input{font-size:14px}
 .modal{position:fixed;inset:0;background:rgba(20,20,30,.35);display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:40;overflow:auto}
 .modal>div{background:#fff;border-radius:12px;padding:20px 22px;width:100%;max-width:620px;display:flex;flex-direction:column;gap:12px}
+.dgrid{display:grid;grid-template-columns:280px minmax(0,1fr) 420px;gap:14px;align-items:start}
+.dlist{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto;padding:6px 0}
+.dgroup{font-size:12px;font-weight:600;color:var(--muted);padding:10px 14px 4px;display:flex;justify-content:space-between}
+.ditem{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;text-align:left;padding:9px 14px;border:0;border-left:3px solid transparent;background:transparent;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
+.ditem:hover{background:var(--bg)}
+.ditem.on{background:#EEF2FD;border-left-color:var(--blue)}
+.dtitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
+.dinfo{padding:20px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.dact{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.dbuttons{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--line2)}
+.dbuttons .btn.primary{flex:1 1 100%}
+@media (max-width:1180px){.dgrid{grid-template-columns:240px minmax(0,1fr)}.dact{grid-column:2;position:static;max-height:none}}
+@media (max-width:760px){.dgrid{grid-template-columns:minmax(0,1fr)}.dact{grid-column:1}.dlist{position:static;max-height:240px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
 @media (max-width:640px){.top,main{padding-left:16px;padding-right:16px}.actions{padding:12px 16px}}
 </style>
@@ -63903,7 +63916,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
 <script>
 "use strict";
-var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {} };
+var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {} };
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
@@ -64123,62 +64136,104 @@ function newsBlock() {
   return '<details class="card" style="padding:10px 16px"' + (visibleCards().length ? "" : " open") + '><summary style="font-size:14px;color:var(--ink)"><b>\u4F60\u4E0D\u5728\u65F6\u53D1\u751F\u7684</b> <span class="muted small">' + esc(n.since) + ' \u4EE5\u540E \xB7 \u4E0D\u7528\u4F60\u5904\u7406</span> ' + chips + '</summary>' + items + '</details>';
 }
 
+function convoHtml(p) {
+  var list = p.bubbles.slice(-4).map(function (b) {
+    if (b.side === "event") return '<div class="event">' + esc(b.when.slice(0, 10) + " \xB7 " + b.text) + "</div>";
+    return '<div class="' + b.side + '"><div class="who">' + esc(b.who + " \xB7 " + b.when) + "</div>" + esc(b.text.length > 220 ? b.text.slice(0, 220) + "\u2026" : b.text) + "</div>";
+  }).join("");
+  return list ? '<div style="display:flex;flex-direction:column;gap:8px">' + list + "</div>" : '<div class="muted small">\u8FD8\u6CA1\u6709\u6765\u5F80</div>';
+}
+function loadConvo(fid) {
+  var box = $("convo");
+  if (!box) return;
+  var cached = state.convo[fid];
+  if (cached) { box.innerHTML = convoHtml(cached); return; }
+  box.innerHTML = '<div class="muted small">\u8BFB\u53D6\u6700\u8FD1\u7684\u6765\u5F80\u2026</div>';
+  api("/api/person?id=" + encodeURIComponent(fid)).then(function (p) {
+    state.convo[fid] = p;
+    var now = $("convo");
+    if (now && now.getAttribute("data-fid") === fid) now.innerHTML = convoHtml(p);
+  }).catch(function () { var now = $("convo"); if (now) now.innerHTML = '<div class="muted small">\u8BFB\u4E0D\u5230\u6765\u5F80\u8BB0\u5F55</div>'; });
+}
+
 function renderDecide() {
   var o = state.overview, cards = visibleCards();
-  if (state.idx >= cards.length) state.idx = 0;
+  if (state.idx >= cards.length) state.idx = Math.max(0, cards.length - 1);
   var c = cards[state.idx];
-  var chips = GROUPS.map(function (g) {
-    var n = cards.filter(function (x) { return x.group === g; }).length;
-    if (!n) return "";
-    return '<button class="chip' + (c && c.group === g ? " on" : "") + '" data-group="' + esc(g) + '">' + esc(g) + " " + n + "</button>";
-  }).join("");
   $("n-decide").textContent = cards.length;
-  var head = '<div style="display:flex;flex-direction:column;gap:8px">' +
-    '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><b>' + (cards.length ? "\u6709 " + cards.length + " \u4EF6\u8981\u4F60\u51B3\u5B9A" + (c ? "\uFF0C\u8FD9\u662F\u7B2C " + (state.idx + 1) + " \u4EF6" : "") : "\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B") + '</b>' +
+  var oldList = document.querySelector(".dlist");
+  var listScroll = oldList ? oldList.scrollTop : 0;
+  var top = '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><b style="font-size:16px">' + (cards.length ? "\u6709 " + cards.length + " \u4EF6\u8981\u4F60\u51B3\u5B9A" : "\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B") + '</b>' +
     '<span class="muted small">J / K \u4E0A\u4E00\u4EF6 \xB7 \u4E0B\u4E00\u4EF6</span></div>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap">' + chips + '</div>' +
-    (o.waitingClaude ? '<div class="muted small">\u53E6\u6709 ' + o.waitingClaude + ' \u4EF6\u5728\u7B49 Claude \u6309\u4F60\u7684\u610F\u89C1\u91CD\u5199\uFF08\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF09\uFF0C\u5199\u597D\u4F1A\u6392\u8FDB\u6765\u3002</div>' : "") + '</div>' + newsBlock();
+    (o.waitingClaude ? '<div class="muted small">\u53E6\u6709 ' + o.waitingClaude + ' \u4EF6\u5728\u7B49 Claude \u6309\u4F60\u7684\u610F\u89C1\u91CD\u5199\uFF08\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF09\uFF0C\u5199\u597D\u4F1A\u6392\u8FDB\u6765\u3002</div>' : "") + newsBlock();
   if (!c) {
-    $("app").innerHTML = '<div class="narrow">' + head + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">\u73B0\u5728\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B</div><div class="muted">\u540C\u610F\u7684\u4E8B\u5728\u540E\u53F0\u6267\u884C\uFF0C\u7ED3\u679C\u770B\u53F3\u4E0A\u89D2\u3002\u65B0\u6765\u4FE1\u548C Claude \u51C6\u5907\u597D\u7684\u8349\u7A3F\u4F1A\u81EA\u52A8\u6392\u8FDB\u6765\u3002</div></section></div>';
+    $("app").innerHTML = '<div class="narrow">' + top + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">\u73B0\u5728\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B</div><div class="muted">\u540C\u610F\u7684\u4E8B\u5728\u540E\u53F0\u6267\u884C\uFF0C\u7ED3\u679C\u770B\u53F3\u4E0A\u89D2\u3002\u65B0\u6765\u4FE1\u548C Claude \u51C6\u5907\u597D\u7684\u8349\u7A3F\u4F1A\u81EA\u52A8\u6392\u8FDB\u6765\u3002</div></section></div>';
     return;
   }
+
+  // --- \u5DE6\uFF1A\u5217\u8868 ---
+  var list = "", lastGroup = "";
+  cards.forEach(function (x, i) {
+    if (x.group !== lastGroup) {
+      var n = cards.filter(function (y) { return y.group === x.group; }).length;
+      list += '<div class="dgroup">' + esc(x.group) + ' <span>' + n + '</span></div>';
+      lastGroup = x.group;
+    }
+    list += '<button class="ditem' + (i === state.idx ? " on" : "") + '" data-i="' + i + '"><span class="badge ' + (TAG[x.kind] || "") + '">' + esc(x.tag) + '</span><span class="dtitle">' + esc(x.headline) + '</span></button>';
+  });
+
+  // --- \u4E2D\uFF1A\u4FE1\u606F ---
+  var info = '<div><div class="small" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge ' + (TAG[c.kind] || "") + '">' + esc(c.tag) + '</span>' +
+      (c.who ? '<a href="#/person/' + esc(c.who.id) + '">' + esc(c.who.name) + '</a>' : "") + '<span class="muted">' + esc(c.meta) + '</span></div>' +
+      '<h1 style="margin:6px 0 0;font-size:22px;line-height:1.4">' + esc(c.headline) + '</h1></div>' +
+    (c.mail ? '<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " \xB7 " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + '</div></div>' : "") +
+    '<div class="suggest"><div class="lbl" style="color:var(--blue2);margin:0">\u5EFA\u8BAE</div><div style="font-size:17px;font-weight:600">' + esc(c.suggest) + '</div>' +
+      (c.why ? '<div class="muted small" style="white-space:pre-wrap">' + esc(c.why) + '</div>' : "") + '</div>' +
+    (c.who ? '<div><div style="display:flex;justify-content:space-between;gap:8px"><span class="lbl">\u6700\u8FD1\u7684\u6765\u5F80</span><a class="small" href="#/person/' + esc(c.who.id) + '">\u770B\u5168\u90E8</a></div><div id="convo" data-fid="' + esc(c.who.id) + '"></div></div>' : "");
+
+  // --- \u53F3\uFF1A\u64CD\u4F5C ---
   var steps = c.steps.map(function (s, i) {
     var params = (s.params || []).map(function (p) {
       var editable = c.kind === "reply" && p.field;
-      return '<label class="param">' + esc(p.label) + (editable ? '<input class="input" style="width:140px;padding:4px 8px" data-field="' + esc(p.field) + '" data-orig="' + esc(p.value) + '" value="' + esc(p.value) + '">' : '<span>' + esc(p.value) + '</span>') + '</label>';
+      return '<label class="param">' + esc(p.label) + (editable ? '<input class="input" style="width:120px;padding:4px 8px" data-field="' + esc(p.field) + '" data-orig="' + esc(p.value) + '" value="' + esc(p.value) + '">' : '<span>' + esc(p.value) + '</span>') + '</label>';
     }).join("");
     return '<div class="step"><span class="num">' + (i + 1) + '</span><div style="flex:1;min-width:0"><div>' + esc(s.text) + '</div>' + (params ? "<div>" + params + "</div>" : "") + '</div></div>';
   }).join("");
-  var next = cards[state.idx + 1];
   var acts = actionsFor(c);
   var buttons = acts.map(function (a, i) {
     return '<button class="btn big' + (a.primary ? " primary" : "") + '" data-act="' + i + '"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + '>' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
   }).join("") + '<button class="btn big" id="skip">\u8DF3\u8FC7 <span class="kbd">S</span></button>';
-  var mailHint = c.kind === "mail" ? '<div class="muted small">\u8981\u56DE\u4FE1\u7684\u8BDD\uFF1A\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u8349\u7A3F\u4F1A\u6392\u8FDB\u8FD9\u91CC\u3002</div>' : "";
   var linkBox = c.kind === "overdue" ? '<label class="field">\u5176\u5B9E\u5DF2\u7ECF\u53D1\u4E86\uFF1F\u628A\u5E16\u5B50\u94FE\u63A5\u8D34\u5728\u8FD9\u91CC<input class="input" id="post-link" placeholder="https://"></label>' : "";
-  var change = state.changing ? '<div style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
-    '<label class="field" style="font-weight:500;color:var(--ink)">\u54EA\u91CC\u8981\u6539\uFF1F<textarea class="input" id="change-note" rows="2" placeholder="\u5199\u7ED9 Claude\uFF0C\u6BD4\u5982\uFF1A\u8BED\u6C14\u8F7B\u4E00\u70B9\uFF0C\u4E0D\u8981\u63D0\u5206\u6DA6\u6BD4\u4F8B\uFF1B\u6216\u8005\uFF1A\u4E0D\u8981\u7ED3\u6848\uFF0C\u6539\u6210\u4E0B\u4E2A\u6708\u518D\u95EE"></textarea></label>' +
+  var draft = c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u5B57</span>' : "") + '</div>' +
+      (c.kind === "overdue" ? '<label class="field">\u4E3B\u65E8\uFF08\u5979\u56DE\u8FC7\u6211\u4EEC\u7684\u4FE1\u5C31\u53EF\u4EE5\u4E0D\u586B\uFF09<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
+        : c.draft.subject ? '<div class="muted small">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") +
+      (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="10" style="resize:vertical;font-size:14px" placeholder="\u5199\u7ED9\u5979\u7684\u4FE1">' + esc(c.draft.body) + '</textarea>' : '<div class="draft" style="font-size:14px">' + esc(c.draft.body) + '</div>') +
+      (c.draft.note ? '<div class="muted tiny">' + esc(c.draft.note) + '</div>' : "") + '</div>' : "";
+  var mailHint = c.kind === "mail" ? '<div class="muted small">\u8981\u56DE\u4FE1\u7684\u8BDD\uFF1A\u5728 Claude \u91CC\u8BF4\u300C\u5904\u7406\u6765\u4FE1\u300D\uFF0C\u5199\u597D\u7684\u8349\u7A3F\u4F1A\u6392\u8FDB\u8FD9\u91CC\u3002</div>' : "";
+  var change = state.changing ? '<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px">' +
+    '<label class="field" style="font-weight:500;color:var(--ink)">\u54EA\u91CC\u8981\u6539\uFF1F<textarea class="input" id="change-note" rows="3" placeholder="\u5199\u7ED9 Claude\uFF0C\u6BD4\u5982\uFF1A\u8BED\u6C14\u8F7B\u4E00\u70B9\uFF0C\u4E0D\u8981\u63D0\u5206\u6DA6\u6BD4\u4F8B\uFF1B\u6216\u8005\uFF1A\u4E0D\u8981\u7ED3\u6848\uFF0C\u6539\u6210\u4E0B\u4E2A\u6708\u518D\u95EE"></textarea></label>' +
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="to-claude">\u4EA4\u7ED9 Claude \u91CD\u5199</button><button class="btn" id="drop" style="border-color:transparent;color:var(--muted)">\u8FD9\u4EF6\u4E8B\u4E0D\u7528\u505A\u4E86</button><button class="btn" id="cancel-change" style="border-color:transparent;color:var(--muted)">\u53D6\u6D88</button></div>' +
-    '<div class="muted tiny">\u4EA4\u7ED9 Claude \u540E\uFF0C\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF1B\u6539\u597D\u7684\u4F1A\u6392\u56DE\u8FD9\u91CC\u3002\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u4E0A\u9762\u7684\u4FE1\uFF0C\u518D\u70B9\u540C\u610F\u5C31\u884C\u3002</div></div>' : "";
-  $("app").innerHTML = '<div class="narrow">' + head +
-    '<section class="card" aria-label="\u5F53\u524D\u8FD9\u4EF6\u4E8B"><div style="padding:24px 28px 12px;display:flex;flex-direction:column;gap:18px">' +
-      '<div><div class="small" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge ' + (TAG[c.kind] || "") + '">' + esc(c.tag) + '</span>' +
-        (c.who ? '<a href="#/person/' + esc(c.who.id) + '">' + esc(c.who.name) + '</a>' : "") + '<span class="muted">' + esc(c.meta) + '</span></div>' +
-        '<h1 style="margin:6px 0 0;font-size:24px;line-height:1.35">' + esc(c.headline) + '</h1></div>' +
-      (c.mail ? '<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " \xB7 " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + '</div></div>' : "") +
-      '<div class="suggest"><div><div class="lbl" style="color:var(--blue2)">\u5EFA\u8BAE</div><div style="font-size:18px;font-weight:600">' + esc(c.suggest) + '</div></div>' +
-        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A") + '</div>' + steps + '</div>' : "") +
-        (c.why ? '<details><summary>\u4E3A\u4EC0\u4E48\u8FD9\u4E48\u5EFA\u8BAE</summary><div class="muted" style="margin-top:6px;white-space:pre-wrap">' + esc(c.why) + '</div></details>' : "") + '</div>' +
-      linkBox +
-      (c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u5B57\uFF0C\u6539\u5B8C\u70B9\u540C\u610F</span>' : "") + '</div>' +
-        (c.kind === "overdue" ? '<label class="field">\u4E3B\u65E8\uFF08\u5979\u56DE\u8FC7\u6211\u4EEC\u7684\u4FE1\u5C31\u53EF\u4EE5\u4E0D\u586B\uFF0C\u4F1A\u63A5\u5728\u90A3\u5C01\u4FE1\u540E\u9762\uFF09<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
-          : c.draft.subject ? '<div class="muted small">\u4E3B\u65E8\uFF1A' + esc(c.draft.subject) + '</div>' : "") +
-        (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="9" style="resize:vertical" placeholder="\u5199\u7ED9\u5979\u7684\u4FE1">' + esc(c.draft.body) + '</textarea>' : '<div class="draft">' + esc(c.draft.body) + '</div>') +
-        (c.draft.note ? '<div class="muted tiny">' + esc(c.draft.note) + '</div>' : "") + '</div>' : "") +
-      mailHint + change +
-    '</div><div class="actions">' + buttons +
-      '<span class="muted small" style="margin-left:auto">' + (next ? "\u4E0B\u4E00\u4EF6\uFF1A" + esc(next.headline) : "\u8FD9\u662F\u6700\u540E\u4E00\u4EF6") + '</span>' +
-    '</div></section></div>';
+    '<div class="muted tiny">\u4EA4\u7ED9 Claude \u540E\uFF0C\u5728 Claude \u91CC\u8BF4\u300C\u6539\u9000\u56DE\u7684\u8349\u7A3F\u300D\uFF1B\u6539\u597D\u7684\u4F1A\u6392\u56DE\u8FD9\u91CC\u3002\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u4FE1\uFF0C\u518D\u70B9\u540C\u610F\u5C31\u884C\u3002</div></div>' : "";
+  var next = cards[state.idx + 1];
+  var actionPane = (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A") + '</div>' + steps + '</div>' : "") +
+    linkBox + draft + mailHint + change +
+    '<div class="dbuttons">' + buttons + '</div>' +
+    '<div class="muted tiny">' + (next ? "\u4E0B\u4E00\u4EF6\uFF1A" + esc(next.headline) : "\u8FD9\u662F\u6700\u540E\u4E00\u4EF6") + '</div>';
+
+  $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' + top +
+    '<div class="dgrid">' +
+      '<nav class="card dlist" aria-label="\u5F85\u4F60\u51B3\u5B9A\u7684\u4E8B">' + list + '</nav>' +
+      '<section class="card dinfo" aria-label="\u8FD9\u4EF6\u4E8B">' + info + '</section>' +
+      '<section class="card dact" aria-label="\u600E\u4E48\u5904\u7406">' + actionPane + '</section>' +
+    '</div></div>';
+
+  var newList = document.querySelector(".dlist");
+  if (newList) newList.scrollTop = listScroll;
+  var on = document.querySelector(".ditem.on");
+  if (on && newList && (on.offsetTop < newList.scrollTop || on.offsetTop > newList.scrollTop + newList.clientHeight - 60)) newList.scrollTop = on.offsetTop - 80;
+  Array.prototype.forEach.call(document.querySelectorAll("[data-i]"), function (b) {
+    b.addEventListener("click", function () { state.idx = Number(b.getAttribute("data-i")); state.changing = false; renderDecide(); });
+  });
   Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) { b.addEventListener("click", function () { acts[Number(b.getAttribute("data-act"))].run(); }); });
   $("skip").addEventListener("click", function () { move(1); });
   if (state.changing) {
@@ -64195,13 +64250,7 @@ function renderDecide() {
       later(c.id, "\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF1A" + who(c), function () { return post("/api/drop", { id: c.id, note: note }); });
     });
   }
-  Array.prototype.forEach.call(document.querySelectorAll("[data-group]"), function (b) {
-    b.addEventListener("click", function () {
-      var g = b.getAttribute("data-group");
-      var i = cards.findIndex(function (x) { return x.group === g; });
-      if (i >= 0) { state.idx = i; state.changing = false; renderDecide(); }
-    });
-  });
+  if (c.who) loadConvo(c.who.id);
 }
 function move(d) {
   var n = visibleCards().length;
