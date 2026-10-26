@@ -25,6 +25,15 @@ export function isApproved(r: Row): boolean {
   return reviewState(r) === "approved";
 }
 
+/**
+ * Whether approving this item makes the executor do something: send a mail, create or extend a code, or close
+ * the followup. Decisions, template approvals and to-dos only record the answer.
+ */
+export function executesOnApproval(r: Row): boolean {
+  const sends = ["回复邮件", "协议"].includes(option(r["类型"])) && option(r["发送渠道"]) !== "不发邮件" && Boolean(text(r["邮件草稿"]));
+  return sends || Boolean(option(r["体验码动作"])) || Boolean(option(r["发后动作"]));
+}
+
 /** What 同意来源 says for an approval made in the decision console. */
 export const CONSOLE_SOURCE = "决策台";
 

@@ -6,7 +6,7 @@ import { notExecutor, ExecutorLock } from "../executor.js";
 import { find } from "../find.js";
 import type { Row } from "../lark.js";
 import { RUN_TITLES, stamp, today } from "../ops.js";
-import { approveInConsole, closeDeclined } from "../reviews.js";
+import { approveInConsole, closeDeclined, executesOnApproval } from "../reviews.js";
 import { CLOSE_REASONS } from "../schema.js";
 import { sendApproved } from "../send.js";
 import type { Platform } from "../../discovery/models.js";
@@ -82,9 +82,13 @@ function nameOf(data: ConsoleData, fid: string): string {
   return f ? displayName(data.snapshot, f) : "";
 }
 
-/** 同意: records the approval (with the reviewer's last edits), then has the executor carry it out. */
-export async function approve(ctx: Ctx, data: ConsoleData, jobs: Jobs, id: string, edits: Record<string, unknown>): Promise<Job> {
+/**
+ * 同意: records the approval (with the reviewer's last edits), then has the executor carry it out. Items that only
+ * record an answer (a decision, a template) get no job.
+ */
+export async function approve(ctx: Ctx, data: ConsoleData, jobs: Jobs, id: string, edits: Record<string, unknown>): Promise<Job | null> {
   const r = await approveInConsole(ctx, id, cleanEdits(edits));
+  if (!executesOnApproval(r)) return null;
   const fid = linkIds(r["KOL"])[0] ?? "";
   const who = nameOf(data, fid) || text(r["审核项"]);
   return jobs.add(`${who}：${text(r["审核项"])}`, fid, RUN_TITLES.send, async (jctx) => {
@@ -125,6 +129,15 @@ export async function drop(ctx: Ctx, id: string, note: string): Promise<void> {
   await review(ctx, id);
   await ctx.base.update(ctx.cfg.tables.reviews, { [id]: { 处理: ["不发"], 你的意见: note.trim(), 同意来源: "", 内容指纹: "" } });
   await closeDeclined(ctx, { dryRun: false });
+}
+
+/** 做完了: a to-do the reviewer has done, closed the way to-dos always were (处理 = 已完成). */
+export async function todoDone(ctx: Ctx, id: string): Promise<void> {
+  const r = await review(ctx, id);
+  if (!["待你审核", "待执行"].includes(option(r["状态"]))) throw new Error(`这一条现在是「${option(r["状态"])}」，已经不在待办里了`);
+  await ctx.base.update(ctx.cfg.tables.reviews, { [id]: {
+    处理: ["已完成"], 状态: ["已执行"], 执行时间: stamp(Date.now(), ctx.cfg.timezone), 执行结果: `${ctx.me.name}在决策台标为做完了`,
+  } });
 }
 
 /** A failed item the reviewer has dealt with by hand. */
@@ -236,7 +249,9 @@ export async function writeMail(ctx: Ctx, data: ConsoleData, jobs: Jobs, fid: st
     类型: ["回复邮件"], 状态: ["待你审核"], KOL: [{ id: fid }], 提出时间: stamp(Date.now(), ctx.cfg.timezone),
     审核项: `${ctx.me.name}在决策台写的信`, 发送渠道: [mb.channel], 收件人: to, 邮件草稿: draft,
   }]);
-  return approve(ctx, data, jobs, id, {});
+  const job = await approve(ctx, data, jobs, id, {});
+  if (!job) throw new Error("这封信没能排进发信队列");
+  return job;
 }
 
 /** 暂停所有发送, from the top bar. */

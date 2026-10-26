@@ -6,7 +6,7 @@ import { ownWords } from "../inbox.js";
 import type { Row } from "../lark.js";
 import { addressOf, splitDraft } from "../mail.js";
 import { stamp, today } from "../ops.js";
-import { reviewState } from "../reviews.js";
+import { executesOnApproval, reviewState } from "../reviews.js";
 import { SENDING_TYPES } from "../send.js";
 
 /**
@@ -327,6 +327,8 @@ function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: stri
   }
   const after = option(r["发后动作"]);
   if (after) steps.push({ text: `${after === "永不联系" ? "标成永不联系，" : ""}结束跟进（原因：${option(r["结案原因"]) || "没写"}）` });
+  if (kind === "batch") steps.push({ text: "记下你同意了。真正发出要在 Claude 里说「发这批邀约」，Claude 会按这个决定分批发" });
+  if (kind === "template") steps.push({ text: "记下你同意了。还要到飞书「模板」表把这个模板的状态改成「已批准」，之后才会被用" });
 
   return {
     id: r.record_id, kind, group, tag: type || "待办", who: w, meta,
@@ -628,7 +630,8 @@ export async function runStatus(ctx: Ctx, data: ConsoleData) {
     return f ? displayName(s, f) : "";
   };
   const failed = data.reviews.filter((r) => option(r["状态"]) === "执行失败");
-  const queued = data.reviews.filter((r) => option(r["状态"]) !== "执行失败" && reviewState(r) === "approved");
+  // Only approvals the executor will carry out are waiting on it; an approved decision or template is simply done.
+  const queued = data.reviews.filter((r) => option(r["状态"]) !== "执行失败" && reviewState(r) === "approved" && executesOnApproval(r));
   return {
     failed: failed.length,
     running: fresh.length + queued.length,

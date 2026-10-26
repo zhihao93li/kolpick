@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Ctx } from "../ctx.js";
 import { today } from "../ops.js";
-import { approve, closeFollowup, drop, findOptions, isPaused, Jobs, logPost, mailDone, mailLink, mailNever, problemDone, revise, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
+import { approve, closeFollowup, drop, todoDone, findOptions, isPaused, Jobs, logPost, mailDone, mailLink, mailNever, problemDone, revise, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
 import { PAGE } from "./page.js";
 import { activityLog, cardMails, ConsoleData, decisionCards, newsSince, peopleView, personDetail, runStatus, VIEWS, viewCounts, type MailText, type ViewKey } from "./state.js";
 
@@ -95,6 +95,7 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
       case "/api/revise": await revise(ctx, String(b.id), String(b.note ?? "")); return done();
       case "/api/drop": await drop(ctx, String(b.id), String(b.note ?? "")); return done();
       case "/api/problem-done": await problemDone(ctx, String(b.id)); return done();
+      case "/api/todo-done": await todoDone(ctx, String(b.id)); return done();
       case "/api/mail-done": await mailDone(ctx, ids(b.id)); return done();
       case "/api/mail-never": await mailNever(ctx, data, ids(b.id)); return done();
       case "/api/mail-link": await mailLink(ctx, data, ids(b.id), String(b.followup ?? "")); return done();

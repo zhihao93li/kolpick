@@ -61560,6 +61560,10 @@ function reviewState(r) {
 function isApproved(r) {
   return reviewState(r) === "approved";
 }
+function executesOnApproval(r) {
+  const sends = ["\u56DE\u590D\u90AE\u4EF6", "\u534F\u8BAE"].includes(option(r["\u7C7B\u578B"])) && option(r["\u53D1\u9001\u6E20\u9053"]) !== "\u4E0D\u53D1\u90AE\u4EF6" && Boolean(text(r["\u90AE\u4EF6\u8349\u7A3F"]));
+  return sends || Boolean(option(r["\u4F53\u9A8C\u7801\u52A8\u4F5C"])) || Boolean(option(r["\u53D1\u540E\u52A8\u4F5C"]));
+}
 var CONSOLE_SOURCE = "\u51B3\u7B56\u53F0";
 var FINGERPRINT_FIELDS = [
   "\u90AE\u4EF6\u8349\u7A3F",
@@ -63569,6 +63573,7 @@ function nameOf(data, fid) {
 }
 async function approve(ctx, data, jobs, id, edits) {
   const r = await approveInConsole(ctx, id, cleanEdits(edits));
+  if (!executesOnApproval(r)) return null;
   const fid = linkIds(r["KOL"])[0] ?? "";
   const who = nameOf(data, fid) || text(r["\u5BA1\u6838\u9879"]);
   return jobs.add(`${who}\uFF1A${text(r["\u5BA1\u6838\u9879"])}`, fid, RUN_TITLES.send, async (jctx) => {
@@ -63602,6 +63607,16 @@ async function drop(ctx, id, note) {
   await review(ctx, id);
   await ctx.base.update(ctx.cfg.tables.reviews, { [id]: { \u5904\u7406: ["\u4E0D\u53D1"], \u4F60\u7684\u610F\u89C1: note.trim(), \u540C\u610F\u6765\u6E90: "", \u5185\u5BB9\u6307\u7EB9: "" } });
   await closeDeclined(ctx, { dryRun: false });
+}
+async function todoDone(ctx, id) {
+  const r = await review(ctx, id);
+  if (!["\u5F85\u4F60\u5BA1\u6838", "\u5F85\u6267\u884C"].includes(option(r["\u72B6\u6001"]))) throw new Error(`\u8FD9\u4E00\u6761\u73B0\u5728\u662F\u300C${option(r["\u72B6\u6001"])}\u300D\uFF0C\u5DF2\u7ECF\u4E0D\u5728\u5F85\u529E\u91CC\u4E86`);
+  await ctx.base.update(ctx.cfg.tables.reviews, { [id]: {
+    \u5904\u7406: ["\u5DF2\u5B8C\u6210"],
+    \u72B6\u6001: ["\u5DF2\u6267\u884C"],
+    \u6267\u884C\u65F6\u95F4: stamp(Date.now(), ctx.cfg.timezone),
+    \u6267\u884C\u7ED3\u679C: `${ctx.me.name}\u5728\u51B3\u7B56\u53F0\u6807\u4E3A\u505A\u5B8C\u4E86`
+  } });
 }
 async function problemDone(ctx, id) {
   const r = await review(ctx, id);
@@ -63700,7 +63715,9 @@ ${body2.trim()}` : body2.trim();
     \u6536\u4EF6\u4EBA: to,
     \u90AE\u4EF6\u8349\u7A3F: draft
   }]);
-  return approve(ctx, data, jobs, id, {});
+  const job = await approve(ctx, data, jobs, id, {});
+  if (!job) throw new Error("\u8FD9\u5C01\u4FE1\u6CA1\u80FD\u6392\u8FDB\u53D1\u4FE1\u961F\u5217");
+  return job;
 }
 async function setPaused(ctx, on) {
   const [row] = await ctx.base.records(ctx.cfg.tables.settings, { fields: ["\u6682\u505C\u6240\u6709\u53D1\u9001"] });
@@ -64003,13 +64020,18 @@ function actionsFor(c) {
       later(c.id, "\u5DF2\u8BB0\u4E0B\u53D1\u5E03\uFF1A" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
     } },
   ];
+  if (c.kind === "todo") return [
+    { label: "\u505A\u5B8C\u4E86", key: "A", primary: true, run: function () { later(c.id, "\u5DF2\u6807\u6210\u505A\u5B8C\u4E86\uFF1A" + c.headline, function () { return post("/api/todo-done", { id: c.id }); }); } },
+    { label: "\u4E0D\u7528\u505A\u4E86", key: "D", run: function () { later(c.id, "\u8FD9\u4EF6\u4E8B\u4E0D\u505A\u4E86\uFF1A" + c.headline, function () { return post("/api/drop", { id: c.id, note: "" }); }); } },
+  ];
   if (c.kind === "problem") return [
     { label: "\u6211\u5904\u7406\u597D\u4E86", key: "A", primary: true, run: function () { later(c.id, "\u5DF2\u6807\u6210\u5904\u7406\u597D\u4E86", function () { return post("/api/problem-done", { id: c.id }); }); } },
   ];
   return [
     { label: "\u540C\u610F", key: "A", primary: true, run: function () {
       var edits = cardEdits(c);
-      later(c.id, "\u5DF2\u540C\u610F\uFF1A" + who(c) + "\uFF0C5 \u79D2\u540E\u5F00\u59CB\u6267\u884C", function () { return post("/api/approve", { id: c.id, edits: edits }); });
+      var runs = c.kind === "reply";
+      later(c.id, runs ? "\u5DF2\u540C\u610F\uFF1A" + who(c) + "\uFF0C5 \u79D2\u540E\u5F00\u59CB\u6267\u884C" : "\u5DF2\u540C\u610F\uFF1A" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits }); });
     } },
     { label: "\u8981\u6539", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } },
   ];
@@ -64097,7 +64119,7 @@ function renderDecide() {
         '<h1 style="margin:6px 0 0;font-size:24px;line-height:1.35">' + esc(c.headline) + '</h1></div>' +
       (c.mail ? '<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " \xB7 " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + '</div></div>' : "") +
       '<div class="suggest"><div><div class="lbl" style="color:var(--blue2)">\u5EFA\u8BAE</div><div style="font-size:18px;font-weight:600">' + esc(c.suggest) + '</div></div>' +
-        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" || c.kind === "todo" ? "\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A") + '</div>' + steps + '</div>' : "") +
+        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "\u70B9\u300C\u540C\u610F\u300D\u540E\u4F1A\uFF1A" : "\u53EF\u4EE5\u8FD9\u6837\u5904\u7406\uFF1A") + '</div>' + steps + '</div>' : "") +
         (c.why ? '<details><summary>\u4E3A\u4EC0\u4E48\u8FD9\u4E48\u5EFA\u8BAE</summary><div class="muted" style="margin-top:6px;white-space:pre-wrap">' + esc(c.why) + '</div></details>' : "") + '</div>' +
       linkBox +
       (c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">\u5C0F\u6539\u52A8\u76F4\u63A5\u6539\u5B57\uFF0C\u6539\u5B8C\u70B9\u540C\u610F</span>' : "") + '</div>' +
@@ -64660,6 +64682,8 @@ function reviewCard(r, s, cfg, w, meta, latest) {
   }
   const after = option(r["\u53D1\u540E\u52A8\u4F5C"]);
   if (after) steps.push({ text: `${after === "\u6C38\u4E0D\u8054\u7CFB" ? "\u6807\u6210\u6C38\u4E0D\u8054\u7CFB\uFF0C" : ""}\u7ED3\u675F\u8DDF\u8FDB\uFF08\u539F\u56E0\uFF1A${option(r["\u7ED3\u6848\u539F\u56E0"]) || "\u6CA1\u5199"}\uFF09` });
+  if (kind === "batch") steps.push({ text: "\u8BB0\u4E0B\u4F60\u540C\u610F\u4E86\u3002\u771F\u6B63\u53D1\u51FA\u8981\u5728 Claude \u91CC\u8BF4\u300C\u53D1\u8FD9\u6279\u9080\u7EA6\u300D\uFF0CClaude \u4F1A\u6309\u8FD9\u4E2A\u51B3\u5B9A\u5206\u6279\u53D1" });
+  if (kind === "template") steps.push({ text: "\u8BB0\u4E0B\u4F60\u540C\u610F\u4E86\u3002\u8FD8\u8981\u5230\u98DE\u4E66\u300C\u6A21\u677F\u300D\u8868\u628A\u8FD9\u4E2A\u6A21\u677F\u7684\u72B6\u6001\u6539\u6210\u300C\u5DF2\u6279\u51C6\u300D\uFF0C\u4E4B\u540E\u624D\u4F1A\u88AB\u7528" });
   return {
     id: r.record_id,
     kind,
@@ -64969,7 +64993,7 @@ async function runStatus(ctx, data) {
     return f ? displayName(s, f) : "";
   };
   const failed = data.reviews.filter((r) => option(r["\u72B6\u6001"]) === "\u6267\u884C\u5931\u8D25");
-  const queued = data.reviews.filter((r) => option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25" && reviewState(r) === "approved");
+  const queued = data.reviews.filter((r) => option(r["\u72B6\u6001"]) !== "\u6267\u884C\u5931\u8D25" && reviewState(r) === "approved" && executesOnApproval(r));
   return {
     failed: failed.length,
     running: fresh.length + queued.length,
@@ -65100,6 +65124,9 @@ async function startConsole(ctx, o) {
         return done();
       case "/api/problem-done":
         await problemDone(ctx, String(b.id));
+        return done();
+      case "/api/todo-done":
+        await todoDone(ctx, String(b.id));
         return done();
       case "/api/mail-done":
         await mailDone(ctx, ids(b.id));

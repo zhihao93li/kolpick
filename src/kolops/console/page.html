@@ -259,13 +259,18 @@ function actionsFor(c) {
       later(c.id, "已记下发布：" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
     } },
   ];
+  if (c.kind === "todo") return [
+    { label: "做完了", key: "A", primary: true, run: function () { later(c.id, "已标成做完了：" + c.headline, function () { return post("/api/todo-done", { id: c.id }); }); } },
+    { label: "不用做了", key: "D", run: function () { later(c.id, "这件事不做了：" + c.headline, function () { return post("/api/drop", { id: c.id, note: "" }); }); } },
+  ];
   if (c.kind === "problem") return [
     { label: "我处理好了", key: "A", primary: true, run: function () { later(c.id, "已标成处理好了", function () { return post("/api/problem-done", { id: c.id }); }); } },
   ];
   return [
     { label: "同意", key: "A", primary: true, run: function () {
       var edits = cardEdits(c);
-      later(c.id, "已同意：" + who(c) + "，5 秒后开始执行", function () { return post("/api/approve", { id: c.id, edits: edits }); });
+      var runs = c.kind === "reply";
+      later(c.id, runs ? "已同意：" + who(c) + "，5 秒后开始执行" : "已同意：" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits }); });
     } },
     { label: "要改", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } },
   ];
@@ -353,7 +358,7 @@ function renderDecide() {
         '<h1 style="margin:6px 0 0;font-size:24px;line-height:1.35">' + esc(c.headline) + '</h1></div>' +
       (c.mail ? '<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " · " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + '</div></div>' : "") +
       '<div class="suggest"><div><div class="lbl" style="color:var(--blue2)">建议</div><div style="font-size:18px;font-weight:600">' + esc(c.suggest) + '</div></div>' +
-        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" || c.kind === "todo" ? "点「同意」后会：" : "可以这样处理：") + '</div>' + steps + '</div>' : "") +
+        (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + (c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "点「同意」后会：" : "可以这样处理：") + '</div>' + steps + '</div>' : "") +
         (c.why ? '<details><summary>为什么这么建议</summary><div class="muted" style="margin-top:6px;white-space:pre-wrap">' + esc(c.why) + '</div></details>' : "") + '</div>' +
       linkBox +
       (c.draft ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">小改动直接改字，改完点同意</span>' : "") + '</div>' +

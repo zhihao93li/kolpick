@@ -74,6 +74,20 @@ describe("writes from the console", () => {
     expect(row(T.reviews, rid)["同意来源"]).toBe("决策台");
   });
 
+  it("closes a to-do as done, and leaves approved decisions out of the top bar", async () => {
+    const todo = lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["待办"], 审核项: "投流开投前准备" });
+    const decision = lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["决定"], 审核项: "第三十九批邀约", 发送渠道: ["不发邮件"] });
+    await call("/api/todo-done", { id: todo });
+    expect(row(T.reviews, todo)).toMatchObject({ 处理: ["已完成"], 状态: ["已执行"] });
+    const r = await call("/api/approve", { id: decision });
+    expect(r.body.job).toBeNull();
+    expect(row(T.reviews, decision)["同意来源"]).toBe("决策台");
+    await call("/api/refresh");
+    const o = await (await fetch(`${url}api/overview`)).json();
+    expect(o.status.running).toBe(0);
+    expect(o.cards.map((c: any) => c.id)).not.toContain(decision);
+  });
+
   it("sends an item back to Claude, or drops it", async () => {
     const a = lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["回复邮件"], KOL: [{ id: fid }] });
     const b = lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["回复邮件"], KOL: [{ id: fid }] });
