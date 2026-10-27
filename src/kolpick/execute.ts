@@ -65,11 +65,13 @@ export interface RunReport {
 }
 
 /** Works through every approved mail card of a project, oldest approval first. */
-export function runApproved(ctx: Ctx, p: Project, opts: { limit?: number } = {}): Promise<RunReport> {
+export function runApproved(ctx: Ctx, p: Project, opts: { limit?: number; grace?: number } = {}): Promise<RunReport> {
   return serial(async () => {
     const report: RunReport = { done: 0, waiting: 0, failed: 0, unknown: 0 };
     const cards = await ctx.db.query<any>(
-      "select * from proposals where project_id = $1 and status = 'approved' and to_addr is not null order by approved_at, id limit $2", [p.id, opts.limit ?? 500]);
+      // A few seconds' grace after approving, for the console's undo.
+      "select * from proposals where project_id = $1 and status = 'approved' and to_addr is not null and approved_at <= $3 order by approved_at, id limit $2",
+      [p.id, opts.limit ?? 500, new Date(ctx.now() - (opts.grace ?? 5_000)).toISOString()]);
     const gap = Math.ceil(60_000 / Math.max(1, p.settings.perMinute));
     let sentAny = false;
     for (const card of cards) {

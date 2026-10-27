@@ -241,6 +241,8 @@ export class App {
       void this.kickExec(p);
       void this.kickAgent(p);
     };
+    // Approvals wait a few seconds before anything goes out, so the console's undo can still take them back.
+    const kickLater = () => setTimeout(kick, 6_000);
     switch (route) {
       case "GET /state":
         return this.state(p);
@@ -264,12 +266,12 @@ export class App {
         const card = await proposeMail(ctx, p, { kind: "mail", kolId: id, subject: b.subject, body: b.body, to: b.to, mailbox: b.mailbox, inReplyTo: b.in_reply_to, who: "operator", title: b.title });
         const row = await one<any>(ctx.db, "select content_hash from proposals where id = $1", [card.id]);
         await approve(ctx, p, card.id, row.content_hash);
-        kick();
+        kickLater();
         return card;
       }
       case "POST /cards/:id/approve": {
         const r = await approve(ctx, p, id, b.hash, b.drop ?? []);
-        kick();
+        kickLater();
         return r;
       }
       case "POST /cards/:id/reject":

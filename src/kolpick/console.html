@@ -1,1 +1,392 @@
-<!doctype html><title>kolpick</title><p>placeholder
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kolpick 决策台</title>
+<style>
+:root {
+  --bg: #f6f6f4; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e3e2dd; --soft: #f0efea;
+  --accent: #2f5bd3; --accent-ink: #ffffff; --ok: #1d7a46; --warn: #a15c00; --bad: #b3261e; --warn-bg: #fff4e0; --bad-bg: #fdecea; --ok-bg: #e7f5ec;
+  --radius: 10px; --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161615; --panel: #1f1f1d; --ink: #ecebe6; --muted: #9a9993; --line: #33322f; --soft: #282825;
+    --accent: #7c9cff; --accent-ink: #10121a; --ok: #6fcf97; --warn: #f2b25c; --bad: #ff8a80; --warn-bg: #3a2c12; --bad-bg: #3d1d1b; --ok-bg: #173323; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.55 -apple-system, "PingFang SC", "Noto Sans SC", system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); padding: 10px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0; }
+.env { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--soft); }
+.env.prod { background: var(--bad-bg); color: var(--bad); font-weight: 600; }
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
+nav button { border: 0; background: none; padding: 6px 10px; border-radius: 8px; color: var(--muted); cursor: pointer; font: inherit; }
+nav button.on { background: var(--soft); color: var(--ink); font-weight: 600; }
+.badge { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); font-size: 11px; text-align: center; margin-left: 4px; }
+.badge.bad { background: var(--bad); }
+.spacer { flex: 1; }
+.switch { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
+.switch input { accent-color: var(--accent); }
+.pause.on { color: var(--bad); font-weight: 600; }
+main { max-width: 1080px; margin: 0 auto; padding: 20px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+.card.drafting { opacity: .6; }
+.card h3 { margin: 0 0 4px; font-size: 15px; }
+.meta { color: var(--muted); font-size: 12px; }
+.why { margin: 6px 0; color: var(--muted); }
+.in { background: var(--soft); border-radius: 8px; padding: 8px 10px; margin: 8px 0; white-space: pre-wrap; max-height: 220px; overflow: auto; font-size: 13px; }
+textarea, input[type=text], input[type=number], input[type=date], select { width: 100%; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+textarea { min-height: 140px; resize: vertical; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+button.b { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+button.b:hover { background: var(--soft); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.primary:hover { filter: brightness(1.05); background: var(--accent); }
+button.danger { color: var(--bad); }
+button:disabled { opacity: .5; cursor: default; }
+.chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--soft); margin-right: 4px; }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.chip.ok { background: var(--ok-bg); color: var(--ok); }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 500; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--soft); }
+.items .item { border-top: 1px solid var(--line); padding: 6px 0; }
+.items .item.off { opacity: .45; }
+.items summary { cursor: pointer; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+label.f { display: block; font-size: 12px; color: var(--muted); }
+label.f > * { margin-top: 2px; }
+.drawer { position: fixed; inset: 0 0 0 auto; width: min(760px, 100%); background: var(--bg); border-left: 1px solid var(--line); overflow: auto; z-index: 10; padding: 20px; box-shadow: -8px 0 24px rgba(0,0,0,.12); }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 20; display: flex; gap: 12px; align-items: center; }
+.toast button { background: none; border: 1px solid var(--bg); color: var(--bg); border-radius: 6px; padding: 2px 10px; cursor: pointer; font: inherit; }
+.msg { border-left: 3px solid var(--line); padding: 4px 10px; margin: 8px 0; }
+.msg.in { border-color: var(--accent); background: none; }
+.msg.out { border-color: var(--ok); }
+.msg pre { white-space: pre-wrap; font: inherit; margin: 4px 0 0; max-height: 200px; overflow: auto; }
+.diff { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.diff pre { white-space: pre-wrap; font: inherit; background: var(--soft); padding: 8px; border-radius: 8px; margin: 0; }
+code { font-family: var(--mono); font-size: 12px; background: var(--soft); padding: 1px 4px; border-radius: 4px; }
+.empty { color: var(--muted); padding: 30px; text-align: center; }
+h2 { font-size: 16px; margin: 18px 0 10px; }
+@media (max-width: 640px) { main { padding: 12px 16px; } .grid2, .grid3, .diff { grid-template-columns: 1fr; } header { padding: 8px 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>kolpick</h1><span id="env" class="env"></span>
+  <nav id="nav"></nav>
+  <span class="spacer"></span>
+  <label class="switch pause" id="pauseWrap"><input type="checkbox" id="pause"> 暂停所有发送</label>
+</header>
+<main id="main"></main>
+<div id="drawer" class="drawer" hidden></div>
+<div id="toast" class="toast" hidden></div>
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const day = (t) => (t ? new Date(t).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "");
+const STAGES = { new: "未联系", invited: "已邀约", replied: "已回复", trial: "体验中", report_seen: "已看报告", publish_agreed: "已约发布", published: "已发布", partner: "合作中", on_hold: "暂缓", closed: "结案" };
+const CLOSE = ["无回应", "题材不符", "只接固定费", "宗教信仰", "隐私", "档期", "拒绝", "回复后失联", "退信或邮箱无效", "作废", "其他"];
+const KINDS = { reply: "回信", mail: "写信", invite: "邀约", followup: "催信", code_expiry: "码到期", checkin: "问发布", invite_batch: "邀约一批", followup_group: "催信和结案",
+  unmatched: "对不上人", bounce: "退信", no_reply: "不用回", close: "结案", template: "模板", discovery: "找人结果", legacy: "旧审核单", other: "决定" };
+const STATUS = { drafting: "agent 在写", pending: "等你决定", approved: "已同意，排队发", running: "正在做", done: "做完", failed: "失败", unknown: "结果不明", rejected: "不做了", dropped: "剔掉", superseded: "被新来信取代" };
+let state = {}, tab = location.hash.slice(1) || "cards";
+
+async function api(path, body) {
+  const r = await fetch("/api" + path, body === undefined ? {} : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function toast(text, undoFn) {
+  const t = $("#toast");
+  t.innerHTML = `<span>${esc(text)}</span>` + (undoFn ? `<button id="undoBtn">撤销</button>` : "");
+  t.hidden = false;
+  clearTimeout(t._h);
+  if (undoFn) $("#undoBtn").onclick = async () => { t.hidden = true; try { await undoFn(); toast("已撤销"); render(); } catch (e) { toast(e.message); } };
+  t._h = setTimeout(() => (t.hidden = true), undoFn ? 5000 : 3500);
+}
+async function act(fn, ok, undoFn) {
+  try { await fn(); if (ok) toast(ok, undoFn); await refresh(); } catch (e) { toast("没成功：" + e.message); }
+}
+
+const TABS = [["cards", "待你决定"], ["problems", "出了问题"], ["kols", "KOL"], ["find", "找人和邀约"], ["agent", "agent 在做什么"], ["settings", "设置"]];
+function drawNav() {
+  const c = state.counts || {};
+  const n = { cards: c.pending, problems: (c.problems || 0) + (c.stuck || 0) };
+  $("#nav").innerHTML = TABS.map(([k, v]) => `<button class="${k === tab ? "on" : ""}" data-t="${k}">${v}${n[k] ? `<span class="badge ${k === "problems" ? "bad" : ""}">${n[k]}</span>` : ""}</button>`).join("");
+  $("#nav").querySelectorAll("button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; location.hash = tab; render(); }));
+  $("#env").textContent = (state.env === "prod" ? "正式库" : "测试库") + " · " + (state.project || "");
+  $("#env").className = "env " + (state.env === "prod" ? "prod" : "");
+  $("#pause").checked = !!state.paused;
+  $("#pauseWrap").classList.toggle("on", !!state.paused);
+}
+$("#pause").onchange = (e) => act(() => api("/tool/pause_sending", { on: e.target.checked }), e.target.checked ? "已暂停所有发送" : "已恢复发送");
+
+async function refresh() { state = await api("/state"); drawNav(); await render(); }
+async function render() {
+  drawNav();
+  const m = $("#main");
+  try {
+    if (tab === "cards") return await renderCards(m);
+    if (tab === "problems") return await renderProblems(m);
+    if (tab === "kols") return await renderKols(m);
+    if (tab === "find") return renderFind(m);
+    if (tab === "agent") return await renderAgent(m);
+    if (tab === "settings") return await renderSettings(m);
+  } catch (e) { m.innerHTML = `<div class="card"><b>出错了：</b>${esc(e.message)}</div>`; }
+}
+
+// ---------- 待你决定 ----------
+function codeLine(a) {
+  if (!a?.code) return "";
+  const c = a.code;
+  if (c.type === "trial_create") return `<span class="chip warn">先建体验码 ${esc(c.code)}，${c.maxUses} 次，${c.days} 天</span>`;
+  if (c.type === "trial_extend") return `<span class="chip warn">先把 ${esc(c.code)} 延期 ${c.days} 天</span>`;
+  return `<span class="chip warn">先开活动码 ${esc(c.code)}（${esc(c.market)}，粉丝 ${100 - c.percentOff}% 价）给 ${esc(c.contact)}</span>`;
+}
+function afterLine(a) {
+  const x = a?.after; if (!x) return "";
+  const parts = [];
+  if (x.close_reason) parts.push(`结案（${x.close_reason}）`);
+  else if (x.stage) parts.push(`阶段改为${STAGES[x.stage] || x.stage}`);
+  if (x.never_contact) parts.push("永不联系");
+  if (x.next_followup_days != null && !x.close_reason) parts.push(`${x.next_followup_days} 天后跟进`);
+  if (x.publish_due_at) parts.push(`约定发布 ${x.publish_due_at.slice(0, 10)}`);
+  return parts.length ? `<span class="chip">发后：${esc(parts.join("，"))}</span>` : "";
+}
+async function renderCards(m) {
+  const [cards, drafting] = await Promise.all([api("/cards?view=pending"), api("/cards?view=drafting")]);
+  const c = state.counts || {};
+  let h = `<div class="meta" style="margin-bottom:10px">${c.approved ? `${c.approved} 张已同意在排队发 · ` : ""}${c.jobs ? `agent 手上 ${c.jobs} 件 · ` : ""}${state.status?.lastCatchUp ? `上次收信 ${day(state.status.lastCatchUp)}` : "收信监听没开"}</div>`;
+  if (!cards.length && !drafting.length) h += `<div class="empty">现在没有要你决定的事。</div>`;
+  h += drafting.filter((d) => !d.parent_id).map((d) => `<div class="card drafting"><h3>${esc(d.kol_name || d.title)} <span class="chip">${KINDS[d.kind] || d.kind}</span></h3><div class="meta">agent 正在写${d.feedback ? `（按你的意见：${esc(d.feedback)}）` : ""}…</div></div>`).join("");
+  h += cards.map(cardHtml).join("");
+  m.innerHTML = h;
+  for (const card of cards) wireCard(card);
+}
+function cardHtml(c) {
+  const head = `<h3>${esc(c.kol_name ? c.kol_name + "：" : "")}${esc(c.title)} <span class="chip">${KINDS[c.kind] || c.kind}</span>${c.kol_stage ? `<span class="chip">${STAGES[c.kol_stage]}</span>` : ""}</h3>
+    <div class="meta">#${c.id} · ${day(c.created_at)}${c.to_addr ? ` · ${esc(c.mailbox)} → ${esc(c.to_addr)}` : ""}</div>${c.why ? `<div class="why">${esc(c.why)}</div>` : ""}`;
+  const incoming = c.in_body ? `<details ${c.kind === "reply" ? "open" : ""}><summary class="meta">来信：${esc(c.in_from)} · ${day(c.in_at)} · ${esc(c.in_subject)}</summary><div class="in">${esc(c.in_body)}</div></details>` : "";
+  let mid = "";
+  if (c.items) {
+    mid = `<div class="items">${c.items.map((i) => `<div class="item" data-item="${i.id}"><label><input type="checkbox" checked data-keep="${i.id}"> <b>${esc(i.kol_name || "")}</b> ${esc(i.to_addr || "")} <span class="meta">${esc(i.title || "")}${i.why ? " · " + esc(i.why) : ""}</span></label>
+      ${i.body ? `<details><summary class="meta">看信</summary><div class="in"><b>${esc(i.subject)}</b>\n\n${esc(i.body)}</div></details>` : ""}</div>`).join("")}</div>`;
+  } else if (c.to_addr) {
+    mid = `${incoming}<label class="f">主题<input type="text" data-f="subject" value="${esc(c.subject)}"></label>
+      <label class="f" style="margin-top:6px">正文<textarea data-f="body">${esc(c.body)}</textarea></label>
+      <div style="margin-top:6px">${codeLine(c.action)}${afterLine(c.action)}</div>`;
+  } else if (c.kind === "template") {
+    const d = c.draft || {}, cur = c.current;
+    mid = `<div class="meta">${esc(d.purpose)} · ${esc(d.language || "")}</div><div class="diff"><div><div class="meta">${cur ? "现在在用" : "（新模板）"}</div><pre>${cur ? `<b>${esc(cur.subject || "")}</b>\n${esc(cur.body)}` : ""}</pre></div>
+      <div><div class="meta">新版</div><pre><b>${esc(d.subject || "")}</b>\n${esc(d.body)}</pre></div></div>`;
+  } else if (c.kind === "discovery") {
+    const list = c.action?.candidates || [];
+    mid = `<details><summary class="meta">看名单（${list.length} 人）</summary><table><tr><th>账号</th><th>粉丝</th><th>邮箱</th></tr>${list.slice(0, 300).map((x) => `<tr><td><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a></td><td>${x.followers ?? ""}</td><td>${esc(x.email)}</td></tr>`).join("")}</table></details>`;
+  } else if (c.kind === "legacy") {
+    mid = `${c.body ? `<div class="in">${esc(c.body)}</div>` : ""}<div class="meta">旧版插件留下的审核单，新版不会替你执行。处理过了就点「已处理」。</div>`;
+  } else {
+    mid = `${incoming}<div>${c.action?.match_kol_id ? `<span class="chip">关联到 KOL #${c.action.match_kol_id}</span>` : ""}${c.action?.bounce ? `<span class="chip warn">${c.action.bounce === "close" ? "邮箱无效，结案" : "只解除拦截"}</span>` : ""}${afterLine(c.action)}</div>`;
+  }
+  const n = c.items ? c.items.length : 0;
+  const okLabel = c.items ? `同意（${n} 项）` : c.to_addr ? "同意，发出" : c.kind === "legacy" ? "已处理" : "同意";
+  const revise = c.to_addr || c.kind === "template" ? `<button class="b" data-a="revise">让它改</button>` : "";
+  return `<div class="card" data-card="${c.id}">${head}${mid}<div class="row"><button class="b primary" data-a="ok">${okLabel}</button>${revise}<button class="b danger" data-a="no">不做了</button>
+    <span class="spacer"></span><span class="meta" data-a="dirty" hidden>改过的内容会先保存，再同意</span></div>
+    <div class="row" data-a="fb" hidden><input type="text" placeholder="说一句怎么改，比如：语气再轻松一点，提一下可以先用 3 次" data-a="fbtext"><button class="b primary" data-a="fbsend">交给 agent 改</button></div></div>`;
+}
+function wireCard(c) {
+  const el = document.querySelector(`[data-card="${c.id}"]`);
+  if (!el) return;
+  const subj = el.querySelector('[data-f="subject"]'), body = el.querySelector('[data-f="body"]');
+  const dirty = () => (subj && subj.value !== (c.subject ?? "")) || (body && body.value !== (c.body ?? ""));
+  [subj, body].forEach((x) => x && (x.oninput = () => (el.querySelector('[data-a="dirty"]').hidden = !dirty())));
+  el.querySelectorAll("[data-keep]").forEach((cb) => (cb.onchange = () => {
+    cb.closest(".item").classList.toggle("off", !cb.checked);
+    const n = [...el.querySelectorAll("[data-keep]")].filter((x) => x.checked).length;
+    el.querySelector('[data-a="ok"]').textContent = `同意（${n} 项）`;
+  }));
+  el.querySelector('[data-a="ok"]').onclick = () => act(async () => {
+    let hash = c.hash;
+    if (dirty()) {
+      await api(`/cards/${c.id}/edit`, { subject: subj.value, body: body.value });
+      const fresh = (await api("/cards?view=pending")).find((x) => x.id === c.id);
+      hash = fresh.hash;
+    }
+    const drop = [...el.querySelectorAll("[data-keep]")].filter((x) => !x.checked).map((x) => Number(x.dataset.keep));
+    await api(`/cards/${c.id}/approve`, { hash, drop });
+  }, c.to_addr || c.items ? "已同意，几秒后发出" : "已同意", () => api(`/cards/${c.id}/undo`, {}));
+  el.querySelector('[data-a="no"]').onclick = () => act(() => api(`/cards/${c.id}/reject`, {}), "不做了", () => api(`/cards/${c.id}/undo`, {}));
+  const rv = el.querySelector('[data-a="revise"]');
+  if (rv) rv.onclick = () => { el.querySelector('[data-a="fb"]').hidden = false; el.querySelector('[data-a="fbtext"]').focus(); };
+  const fb = el.querySelector('[data-a="fbsend"]');
+  if (fb) fb.onclick = () => act(() => api(`/cards/${c.id}/revise`, { feedback: el.querySelector('[data-a="fbtext"]').value }), "交给 agent 改了，改好会回到这里");
+}
+
+// ---------- 出了问题 ----------
+async function renderProblems(m) {
+  const [cards, jobs] = await Promise.all([api("/cards?view=problems"), api("/jobs")]);
+  const stuck = jobs.filter((j) => j.status === "stuck");
+  let h = "";
+  if (!cards.length && !stuck.length) h = `<div class="empty">没有问题。</div>`;
+  h += cards.map((c) => `<div class="card" data-p="${c.id}"><h3>${esc(c.kol_name || "")}：${esc(c.title)} <span class="chip ${c.status === "unknown" ? "warn" : "bad"}">${STATUS[c.status]}</span></h3>
+    <div class="meta">#${c.id} · ${esc(c.mailbox || "")} → ${esc(c.to_addr || "")}</div><div class="why">${esc(c.result)}</div>
+    ${c.body ? `<details><summary class="meta">看信</summary><div class="in">${esc(c.body)}</div></details>` : ""}
+    <div class="row">${c.status === "unknown" ? `<button class="b primary" data-r="1">确认已经做了</button><button class="b" data-r="0">确认没做成</button>` : `<button class="b" data-x>不做了</button>`}</div></div>`).join("");
+  h += stuck.map((j) => `<div class="card" data-j="${j.id}"><h3>后台任务 #${j.id}（${esc(j.kind)}）卡住了 <span class="chip bad">卡住</span></h3><div class="why">${esc(j.error)}</div>
+    ${j.output ? `<details><summary class="meta">agent 最后说的</summary><div class="in">${esc(j.output)}</div></details>` : ""}
+    <div class="row"><button class="b" data-retry>再试一次</button>${j.session_id ? `<span class="meta">接着聊：<code>${resumeCmd(j)}</code></span>` : ""}</div></div>`).join("");
+  m.innerHTML = h;
+  m.querySelectorAll("[data-p]").forEach((el) => {
+    const id = el.dataset.p;
+    el.querySelectorAll("[data-r]").forEach((b) => (b.onclick = () => act(() => api(`/cards/${id}/resolve`, { happened: b.dataset.r === "1" }), "已记下")));
+    const x = el.querySelector("[data-x]"); if (x) x.onclick = () => act(() => api(`/cards/${id}/reject`, { note: "失败后不做了" }), "已撤掉");
+  });
+  m.querySelectorAll("[data-j]").forEach((el) => (el.querySelector("[data-retry]").onclick = () => act(() => api(`/jobs/${el.dataset.j}/retry`, {}), "重新排队了")));
+}
+function resumeCmd(j) {
+  return j.agent === "codex" ? `cd ~/.kolpick/agent && codex resume ${esc(j.session_id)}` : `cd ~/.kolpick/agent && claude --resume ${esc(j.session_id)}`;
+}
+
+// ---------- KOL ----------
+let kq = { q: "", stage: "" };
+async function renderKols(m) {
+  m.innerHTML = `<div class="row" style="margin:0 0 12px"><input type="text" id="kq" placeholder="搜名字、账号、邮箱" value="${esc(kq.q)}" style="flex:2"><select id="ks" style="flex:1"><option value="">全部阶段</option>${Object.entries(STAGES).map(([k, v]) => `<option value="${k}" ${kq.stage === k ? "selected" : ""}>${v}</option>`).join("")}</select></div><div id="klist" class="card">读取中…</div>`;
+  const load = async () => {
+    const rows = await api(`/kols?q=${encodeURIComponent(kq.q)}&stage=${kq.stage}`);
+    $("#klist").innerHTML = rows.length ? `<table><tr><th>KOL</th><th>阶段</th><th>邮箱</th><th>最近联系</th><th>最近来信</th></tr>${rows.map((k) => `<tr class="click" data-k="${k.id}"><td><b>${esc(k.name)}</b> <span class="meta">${esc(k.platform || "")}${k.followers ? " · " + k.followers.toLocaleString() : ""}</span>${k.never_contact ? ' <span class="chip bad">永不联系</span>' : ""}${k.posts ? ` <span class="chip ok">发了 ${k.posts}</span>` : ""}</td><td>${STAGES[k.stage]}${k.whose_turn === "us" ? ' <span class="chip warn">轮到我们</span>' : ""}</td><td>${esc(k.email || "")}</td><td>${day(k.last_contact_at)}</td><td>${day(k.last_inbound_at)}</td></tr>`).join("")}</table>` : `<div class="empty">没找到</div>`;
+    $("#klist").querySelectorAll("[data-k]").forEach((tr) => (tr.onclick = () => openKol(Number(tr.dataset.k))));
+  };
+  let t; $("#kq").oninput = (e) => { kq.q = e.target.value; clearTimeout(t); t = setTimeout(load, 300); };
+  $("#ks").onchange = (e) => { kq.stage = e.target.value; load(); };
+  await load();
+}
+async function openKol(id) {
+  const d = await api(`/kols/${id}`);
+  const k = d.kol, dr = $("#drawer");
+  const f = (key, label, type = "text") => `<label class="f">${label}<input type="${type}" data-k="${key}" value="${esc(type === "date" && k[key] ? String(k[key]).slice(0, 10) : k[key] ?? "")}"></label>`;
+  dr.innerHTML = `<div class="row" style="margin:0"><h2 style="margin:0;flex:1">${esc(k.name)} ${k.never_contact ? '<span class="chip bad">永不联系</span>' : ""}</h2><button class="b" id="close">关闭</button></div>
+    <div class="meta">${esc(k.platform || "")} · <a href="${esc(k.url || "#")}" target="_blank" rel="noopener">${esc(k.handle || k.url || "")}</a> · 粉丝 ${k.followers?.toLocaleString() ?? "?"} · ${esc(k.market || "")} · 来自 ${esc(k.source_batch || "")}</div>
+    <div class="card" style="margin-top:12px"><div class="grid3">
+      <label class="f">阶段<select data-k="stage">${Object.entries(STAGES).map(([s, v]) => `<option value="${s}" ${k.stage === s ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      ${f("salutation", "称呼")}${f("email", "邮箱")}${f("next_followup_at", "下次跟进", "date")}${f("publish_due_at", "约定发布", "date")}${f("level", "级别")}${f("demand", "对方要求")}${f("invite_angle", "邀约方向")}${f("mailbox", "联系邮箱")}
+    </div>${f("next_step", "下一步")}<label class="f">备注<textarea data-k="notes" style="min-height:70px">${esc(k.notes || "")}</textarea></label>
+    <div class="row"><button class="b primary" id="save">保存</button><select id="reason" style="width:auto">${CLOSE.map((r) => `<option>${r}</option>`).join("")}</select><button class="b" id="closeK">结案</button>
+      <button class="b danger" id="never">${k.never_contact ? "取消永不联系" : "永不联系"}</button></div></div>
+    <h2>写信</h2><div class="card"><input type="text" id="msubj" placeholder="主题（留空=接着最近的来往回复）"><textarea id="mbody" placeholder="正文" style="margin-top:6px;min-height:100px"></textarea><div class="row"><button class="b primary" id="msend">发出</button><span class="meta">发前同样会查额度、暂停、永不联系、退信</span></div></div>
+    <h2>码</h2>${d.codes.length ? `<div class="card"><table><tr><th>码</th><th>用量</th><th>到期</th><th>订单</th></tr>${d.codes.map((c) => `<tr><td>${c.kind === "trial" ? "体验码" : "活动码"} <b>${esc(c.code)}</b>${c.ref_link ? ` <a href="${esc(c.ref_link)}" target="_blank" rel="noopener">连结</a>` : ""}</td><td>${c.used ?? "?"}/${c.max_uses ?? "∞"}</td><td>${day(c.expires_at)}</td><td>${c.paid_orders ?? ""}${c.refunded_orders ? `（退 ${c.refunded_orders}）` : ""}${c.visitors ? ` · 访客 ${c.visitors}` : ""}</td></tr>`).join("")}</table></div>` : `<div class="meta">还没有码</div>`}
+    <h2>发布</h2>${d.posts.length ? `<div class="card"><table><tr><th>帖子</th><th>发布</th><th>第1天</th><th>第3天</th><th>第7天</th><th>第30天</th></tr>${d.posts.map((p) => `<tr><td><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title || p.format || "帖子")}</a></td><td>${day(p.published_at)}</td>${["1", "3", "7", "30"].map((n) => `<td>${p.metrics?.[n] ? `${p.metrics[n].views ?? "-"} 播 / ${p.metrics[n].engagement ?? "-"} 互动` : ""}</td>`).join("")}</tr>`).join("")}</table></div>` : `<div class="meta">还没找到帖子</div>`}
+    <h2>来往</h2>${d.messages.map((x) => `<div class="msg ${x.direction}"><div class="meta">${x.direction === "in" ? "收到" : x.direction === "out" ? "发出" : "记录"} · ${day(x.at)} · ${esc(x.mailbox || "")}${x.bounce ? ' <span class="chip bad">退信</span>' : ""}${x.pending ? ' <span class="chip warn">待处理</span>' : ""}</div><b>${esc(x.subject || x.summary || "")}</b>${x.body ? `<pre>${esc(x.body)}</pre>` : ""}</div>`).join("") || '<div class="meta">没有来往</div>'}`;
+  dr.hidden = false;
+  $("#close").onclick = () => (dr.hidden = true);
+  $("#save").onclick = () => act(async () => {
+    const fields = {};
+    dr.querySelectorAll("[data-k]").forEach((el) => { const v = el.value.trim(); const old = k[el.dataset.k]; const o = el.type === "date" && old ? String(old).slice(0, 10) : old ?? ""; if (v !== String(o)) fields[el.dataset.k] = v || null; });
+    await api(`/kols/${id}`, { fields });
+  }, "已保存");
+  $("#closeK").onclick = () => act(() => api(`/kols/${id}`, { fields: { stage: "closed", close_reason: $("#reason").value, whose_turn: "none", next_followup_at: null } }), "已结案").then(() => openKol(id));
+  $("#never").onclick = () => act(() => api(`/kols/${id}`, { fields: { never_contact: !k.never_contact, never_reason: k.never_contact ? null : "运营标记" } }), "已改").then(() => openKol(id));
+  $("#msend").onclick = () => act(() => api(`/kols/${id}/mail`, { subject: $("#msubj").value || undefined, body: $("#mbody").value }), "排好了，几秒后发出", null).then(() => openKol(id));
+}
+
+// ---------- 找人和邀约 ----------
+function renderFind(m) {
+  m.innerHTML = `<div class="card"><h3>自己找人（找到的直接入库）</h3><div class="grid3">
+    <label class="f">平台<select id="fp"><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="tiktok">TikTok</option></select></label>
+    <label class="f">大概要多少人<input type="number" id="ft" value="50"></label><label class="f">最多花多少美元<input type="number" id="fb" value="5"></label>
+    <label class="f">粉丝至少<input type="number" id="fmin"></label><label class="f">粉丝至多<input type="number" id="fmax"></label><label class="f">YouTube 查隐藏邮箱<select id="fy"><option value="">不查</option><option value="1">查（每个 12 美分）</option></select></label></div>
+    <label class="f">关键词（逗号隔开）<input type="text" id="fk" placeholder="親子教養, 媽媽日常"></label>
+    <label class="f">相似账号（Instagram，逗号隔开）<input type="text" id="fs" placeholder="@someone"></label>
+    <label class="f">直接查这些账号的邮箱（逗号隔开）<input type="text" id="fh"></label>
+    <label class="f">入库批次名<input type="text" id="fbt" placeholder="默认：平台 + 日期"></label>
+    <div class="row"><button class="b primary" id="fgo">开始找</button><span class="meta" id="fres"></span></div></div>
+    <div class="card"><h3>邀约和催信</h3><div class="meta">邀约不挑人：有邮箱、还没联系过的都排进去，按今天各邮箱剩余额度。排好后在「待你决定」里点一下就发。</div>
+    <div class="row"><button class="b primary" id="inv">排一批邀约</button><input type="number" id="invn" placeholder="最多几人（默认额度）" style="width:200px"><button class="b" id="fu">现在扫一次催信</button><button class="b" id="inbox">现在收一次信</button></div><div class="meta" id="invres"></div></div>
+    <div class="card"><h3>交给 agent 一件事</h3><textarea id="ask" style="min-height:70px" placeholder="比如：找 30 个做日本旅行的 YouTube 博主"></textarea><div class="row"><button class="b primary" id="askgo">交给 agent</button><span class="meta">做完的结果会变成卡片回到「待你决定」</span></div></div>`;
+  const list = (id) => $(id).value.split(/[,，\n]/).map((s) => s.trim()).filter(Boolean);
+  $("#fgo").onclick = async (e) => {
+    e.target.disabled = true; $("#fres").textContent = "找人中，可能要几分钟…";
+    try {
+      const r = await api("/find", { platform: $("#fp").value, keywords: list("#fk"), seeds: list("#fs"), handles: list("#fh"), target: Number($("#ft").value) || undefined,
+        minFollowers: Number($("#fmin").value) || undefined, maxFollowers: Number($("#fmax").value) || undefined, youtubeHidden: !!$("#fy").value, budget: Number($("#fb").value) || 5, batch: $("#fbt").value || undefined });
+      $("#fres").textContent = `找到 ${r.found} 人（${r.withEmail} 个有邮箱），入库 ${r.added}，花费约 $${r.spentUsd}${r.stoppedEarly ? "；" + r.stoppedEarly : ""}`;
+    } catch (err) { $("#fres").textContent = "没成功：" + err.message; }
+    e.target.disabled = false;
+  };
+  $("#inv").onclick = () => act(async () => { const r = await api("/tool/invite_prepare", { limit: Number($("#invn").value) || undefined }); $("#invres").textContent = `排了 ${r.items} 人${r.skipped?.length ? `；跳过 ${r.skipped.length}：${r.skipped.slice(0, 5).join("；")}` : ""}`; }, "排好了，去「待你决定」看");
+  $("#fu").onclick = () => act(async () => { const r = await api("/tool/followups_scan", {}); $("#invres").textContent = `催信 ${r.followups}，结案 ${r.closes}${r.skipped?.length ? `；跳过：${r.skipped.slice(0, 5).join("；")}` : ""}`; }, "扫完了");
+  $("#inbox").onclick = () => act(async () => { const r = await api("/inbox", {}); $("#invres").textContent = r.map((x) => `${x.mailbox}：新 ${x.recorded}（回信 ${x.replies}，对不上 ${x.unmatched}，退信 ${x.bounces}）`).join("；"); }, "收完了");
+  $("#askgo").onclick = () => act(() => api("/ask", { text: $("#ask").value }), "交给 agent 了");
+}
+
+// ---------- agent 在做什么 ----------
+async function renderAgent(m) {
+  const [jobs, today] = await Promise.all([api("/jobs"), api("/tool/today", {})]);
+  const st = { queued: "排队", running: "在做", done: "做完", stuck: "卡住" };
+  const cls = { queued: "", running: "warn", done: "ok", stuck: "bad" };
+  const s = state.status || {};
+  m.innerHTML = `<div class="card"><h3>本机</h3><div class="meta">后台 agent：${esc(state.agent?.kind)}${state.agent?.bin ? `（${esc(state.agent.bin)}）` : ""} · 收信监听：${Object.entries(s.watchers || {}).map(([k, v]) => `${esc(k)} ${v.up ? "在听" : "没连上" + (v.error ? `（${esc(v.error)}）` : "")}`).join("，") || "没开"}
+    · 上次补收 ${day(s.lastCatchUp) || "—"}</div><div class="meta">定时：${Object.entries(state.dailyNames || {}).map(([k, v]) => `${v} ${state.daily?.[k] ? `${day(state.daily[k].at)}${state.daily[k].ok ? "" : "（出错）"}` : "还没跑"}`).join("；")}</div></div>
+    <h2>后台任务</h2><div class="card">${jobs.length ? `<table><tr><th>#</th><th>做什么</th><th>状态</th><th>时间</th><th>结果</th></tr>${jobs.map((j) => `<tr><td>${j.id}</td><td>${esc(j.kind)}${j.kol_id ? ` · KOL #${j.kol_id}` : ""}${j.proposal_id ? ` · 卡片 #${j.proposal_id}` : ""}</td><td><span class="chip ${cls[j.status]}">${st[j.status]}</span></td><td class="meta">${day(j.started_at || j.created_at)}</td><td class="meta">${esc(j.error || j.output || "")}${j.session_id ? `<br><code>${resumeCmd(j)}</code>` : ""}</td></tr>`).join("")}</table>` : '<div class="empty">还没有</div>'}</div>
+    <h2>今天做了什么（${esc(today.day)}）</h2><div class="card"><div class="meta">发出 ${today.sent} 封 · 同意 ${today.approved} 次 · 收信相关 ${today.incoming} 条 · 等你决定 ${today.waitingForOperator}</div>
+    <table>${today.log.slice().reverse().map((l) => `<tr><td class="meta" style="white-space:nowrap">${day(l.at)}</td><td class="meta">${esc(l.who)}</td><td>${esc(l.summary)}</td></tr>`).join("")}</table></div>`;
+}
+
+// ---------- 设置 ----------
+async function renderSettings(m) {
+  const [s, local, templates] = await Promise.all([api("/tool/settings_get", {}), api("/local"), api("/tool/templates", {})]);
+  const val = (v) => (Array.isArray(v) ? v.join("、") : v && typeof v === "object" ? Object.entries(v).map(([a, b]) => `${a}=${b}`).join("、") : v ?? "");
+  m.innerHTML = `<div class="card"><h3>自动运行（只在这台电脑开着服务时）</h3><div class="row">
+      <label class="switch"><input type="checkbox" id="aInbox" ${local.auto.inbox ? "checked" : ""}> 收信监听和补收</label>
+      <label class="switch"><input type="checkbox" id="aSched" ${local.auto.schedule ? "checked" : ""}> 定时任务（催信扫描、同步码、码到期、找帖子、抓数据）</label>
+      <label class="switch"><input type="checkbox" id="aAgent" ${local.auto.agent ? "checked" : ""}> 后台 agent 自动干活</label></div>
+    <div class="row">${Object.entries(state.dailyNames || {}).map(([k, v]) => `<button class="b" data-daily="${k}">现在跑：${v}</button>`).join("")}</div></div>
+    <div class="card"><h3>后台 agent 命令</h3><div class="grid3"><label class="f">用哪个<select id="agKind"><option value="claude" ${local.agent.kind === "claude" ? "selected" : ""}>Claude（claude -p）</option><option value="codex" ${local.agent.kind === "codex" ? "selected" : ""}>Codex（codex exec）</option></select></label>
+      <label class="f">命令路径（留空=默认）<input type="text" id="agBin" value="${esc(local.agent.bin || "")}"></label><label class="f">额外参数（空格隔开）<input type="text" id="agArgs" value="${esc((local.agent.args || []).join(" "))}"></label></div>
+      <div class="row"><button class="b primary" id="agSave">保存</button><span class="meta">MCP 地址：<code>${esc(local.mcpUrl)}</code></span></div></div>
+    <div class="card"><h3>规则</h3><div class="grid2">${Object.entries(s.labels).map(([k, label]) => `<label class="f">${esc(label)}<input type="text" data-s="${k}" value="${esc(val(s.settings[k]))}"></label>`).join("")}</div>
+      <div class="row"><button class="b primary" id="sSave">保存改动</button><span class="meta">列表用顿号隔开；市场对应写成 台湾=TW、大陆=CN</span></div></div>
+    <div class="card"><h3>发信邮箱</h3><table><tr><th>邮箱</th><th>启用</th><th>每天上限</th><th>预热开始</th><th>起步</th><th>每天加</th><th></th></tr>${s.mailboxes.map((b) => `<tr data-mb="${esc(b.address)}"><td>${esc(b.address)}</td><td><input type="checkbox" data-m="enabled" ${b.enabled ? "checked" : ""}></td><td><input type="number" data-m="daily_limit" value="${b.daily_limit}"></td><td><input type="date" data-m="warmup_from" value="${b.warmup_from ? String(b.warmup_from).slice(0, 10) : ""}"></td><td><input type="number" data-m="warmup_start" value="${b.warmup_start ?? ""}"></td><td><input type="number" data-m="warmup_step" value="${b.warmup_step ?? ""}"></td><td><button class="b" data-msave>保存</button></td></tr>`).join("")}</table>
+      ${state.env !== "prod" ? '<div class="meta">测试库：只给测试地址发信时才启用邮箱。</div>' : ""}</div>
+    <div class="card"><h3>模板</h3><div class="meta">改在用的模板只存成草稿，在「待你决定」里对比新旧批准后才换；在用的照常发。</div>
+      <table>${templates.map((t) => `<tr class="click" data-t="${t.id}"><td><b>${esc(t.name)}</b></td><td>${esc(t.purpose)}</td><td><span class="chip ${t.status === "active" ? "ok" : t.status === "draft" ? "warn" : ""}">${t.status === "active" ? "在用" : t.status === "draft" ? (t.draft_of ? "新版草稿" : "草稿") : "停用"}</span></td><td class="meta">${esc((t.subject || "").slice(0, 40))}</td></tr>`).join("")}</table>
+      <div class="row"><button class="b" id="tNew">新模板</button></div><div id="tEdit"></div>
+      <h3 style="margin-top:14px">让 agent 改模板</h3><textarea id="tAsk" style="min-height:60px" placeholder="比如：邀约信再短一点，开头先说我们是谁"></textarea><div class="row"><button class="b" id="tAskGo">交给 agent</button></div></div>`;
+  const setLocal = (b) => act(() => api("/local", b), "已保存");
+  $("#aInbox").onchange = (e) => setLocal({ auto: { inbox: e.target.checked } });
+  $("#aSched").onchange = (e) => setLocal({ auto: { schedule: e.target.checked } });
+  $("#aAgent").onchange = (e) => setLocal({ auto: { agent: e.target.checked } });
+  m.querySelectorAll("[data-daily]").forEach((b) => (b.onclick = () => act(async () => { const r = await api(`/daily/${b.dataset.daily}`, {}); toast(r?.ok ? "跑完了" : "出错：" + (r?.note || "")); })));
+  $("#agSave").onclick = () => setLocal({ agent: { kind: $("#agKind").value, bin: $("#agBin").value.trim(), args: $("#agArgs").value.trim() ? $("#agArgs").value.trim().split(/\s+/) : [] } });
+  $("#sSave").onclick = () => act(async () => {
+    for (const el of m.querySelectorAll("[data-s]")) if (el.value !== String(val(s.settings[el.dataset.s]))) await api("/tool/settings_set", { key: el.dataset.s, value: el.value });
+  }, "规则已保存");
+  m.querySelectorAll("[data-msave]").forEach((b) => (b.onclick = () => {
+    const tr = b.closest("tr"), g = (k) => tr.querySelector(`[data-m="${k}"]`);
+    act(() => api("/tool/mailbox_set", { address: tr.dataset.mb, enabled: g("enabled").checked, daily_limit: Number(g("daily_limit").value), warmup_from: g("warmup_from").value || undefined,
+      warmup_start: g("warmup_start").value ? Number(g("warmup_start").value) : undefined, warmup_step: g("warmup_step").value ? Number(g("warmup_step").value) : undefined }), "邮箱已保存");
+  }));
+  const edit = (t) => {
+    $("#tEdit").innerHTML = `<div class="card" style="margin-top:10px"><div class="grid3"><label class="f">名字<input type="text" id="tn" value="${esc(t.name || "")}"></label><label class="f">用途<select id="tp">${["邀约", "催信 1", "催信 2", "发体验码", "体验码延期", "体验跟进", "体验未用", "体验到期", "发活动码", "发布确认", "其他"].map((p) => `<option ${t.purpose === p ? "selected" : ""}>${p}</option>`).join("")}</select></label><label class="f">语言<input type="text" id="tl" value="${esc(t.language || "")}"></label></div>
+      <label class="f">主题<input type="text" id="ts" value="${esc(t.subject || "")}"></label><label class="f">正文<textarea id="tb">${esc(t.body || "")}</textarea></label>
+      <div class="row"><button class="b primary" id="tSave">存成草稿，去批准</button><span class="meta">可用 {稱呼}{體驗碼}{次數}{到期日}{活動碼}{專屬連結}{帳本連結}{粉絲折扣}</span></div></div>`;
+    $("#tSave").onclick = () => act(() => api("/templates", { template_id: t.id, name: $("#tn").value, purpose: $("#tp").value, language: $("#tl").value, subject: $("#ts").value, body: $("#tb").value, why: "运营自己改的" }), "存好了，去「待你决定」批准");
+  };
+  m.querySelectorAll("[data-t]").forEach((tr) => (tr.onclick = () => edit(templates.find((t) => t.id === Number(tr.dataset.t)))));
+  $("#tNew").onclick = () => edit({ purpose: "其他" });
+  $("#tAskGo").onclick = () => act(() => api("/templates/ask", { feedback: $("#tAsk").value }), "交给 agent 了");
+}
+
+refresh();
+setInterval(() => { if (!document.hidden && !document.activeElement?.matches("textarea, input[type=text]")) refresh(); }, 20000);
+window.onhashchange = () => { tab = location.hash.slice(1) || "cards"; render(); };
+</script>
+</body>
+</html>
