@@ -58,6 +58,7 @@ git switch stable && git cherry-pick <修复的提交号> && git push origin sta
 | --- | --- | --- |
 | [docs/design.md](docs/design.md) | 系统设计、规则、找人和查邮箱为什么这样选、已定的事、接下来做什么、改过的方向 | 你和开发 |
 | [docs/behavior.md](docs/behavior.md) | 产品行为规格：状态、事件、闸门、自动规则和优先级、决策台卡片、编号场景（测试按编号写） | 你、开发、Claude 和 GPT 评审 |
+| [docs/ui.md](docs/ui.md) | 决策台界面说明：每个页面、卡片、表单的布局和控件，各种状态怎么显示（按钮引用行为规格的编号） | 你和开发 |
 | [docs/database-design.md](docs/database-design.md) | 数据库设计v1.11定稿：22张关系表、所有发送入口的约束、历史提醒迁移、收信补扫、一次切换与回退；尚未实施 | 产品、开发、测试与数据分析 |
 | [docs/data-api.md](docs/data-api.md) | 项目后台要开的 `kol-data` 接口约定 | 项目后台的开发 |
 | 本文件 | 仓库结构、开发、发布 | 开发 |

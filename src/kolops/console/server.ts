@@ -2,11 +2,16 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Ctx } from "../ctx.js";
 import { today } from "../ops.js";
-import { addEmail, approve, closeFollowup, decideTemplate, drop, todoDone, findOptions, isPaused, Jobs, logPost, mailDone, manualSent, mailLink, mailNever, problemDone, problemRetry, problemSent, revise, sendQueued, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
+import { option } from "../base.js";
+import { addEmail, approve, closeFollowup, decideTemplate, drop, todoDone, findOptions, isPaused, Jobs, logPost, mailDone, manualSent, mailLink, mailNever, problemDone, problemRetry, problemSent, resumeFollowup, revise, setDefaultEmail, updateProfile, sendQueued, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
 import { PAGE } from "./page.js";
+import { notExecutor } from "../executor.js";
+import { loadConfig } from "../config.js";
+import { addOption, changeHistory, checkMailbox, disableMailbox, discardTemplate, mailboxPending, readAccess, readMailboxes, readOptions, readRules, readTemplates, renameOption, saveDataApi, saveMailbox, saveRules, saveTemplate, submitTemplate } from "./settings.js";
+import { CLOSE_REASONS } from "../schema.js";
 import { backup, hasBackupToday } from "../store/db.js";
 import { StoreLark } from "../store/pg.js";
-import { activityLog, cardMails, ConsoleData, decisionCards, newsSince, peopleView, personDetail, runStatus, VIEWS, viewCounts, type MailText, type ViewKey } from "./state.js";
+import { activityLog, cardMails, ConsoleData, decisionCards, newsSince, peopleView, personDetail, runStatus, syncWarning, VIEWS, viewCounts, type MailText, type ViewKey } from "./state.js";
 
 /** How often the console re-reads what changed in the base while it is open. */
 const REFRESH_MS = 5 * 60_000;
@@ -24,6 +29,11 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
   let mails: { at: number; map: Map<string, MailText> } = { at: -1, map: new Map() };
   const refresh = () => (loading ??= data.refresh().finally(() => (loading = null)));
   const refreshSoon = () => void refresh().catch(() => {});
+  // A read already under way may have started before the write: wait for it, then read again.
+  const refreshAfterWrite = async () => {
+    if (loading) await loading.catch(() => {});
+    await refresh();
+  };
   const jobs = new Jobs(ctx, refreshSoon);
   // Decisions write 同意来源 and friends; a base that hasn't been given them yet can be looked at but not changed.
   let setupNeeded: string[] = [];
@@ -71,6 +81,7 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
         const { cards, waitingClaude } = decisionCards(data, ctx.cfg, day, mails.map);
         return send(res, 200, {
           project: ctx.cfg.project, me: ctx.me.name, loadedAt: data.loadedAt, today: day, paused: await isPaused(ctx), setupNeeded,
+          notExecutor: notExecutor(ctx.cfg), closeReasons: CLOSE_REASONS, syncWarning: await syncWarning(ctx).catch(() => []),
           cards, waitingClaude, status: await runStatus(ctx, data), jobs: jobs.list,
           views: Object.entries(VIEWS).map(([key, v]) => ({ key, label: v.label })), counts: viewCounts(data, ctx.cfg, day),
         });
@@ -80,7 +91,9 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
         const view = (url.searchParams.get("view") ?? "wait") as ViewKey;
         if (!(view in VIEWS)) return send(res, 400, { error: `没有这个视图：${view}` });
         const { rows, total } = peopleView(data, ctx.cfg, view, day, url.searchParams.get("q") ?? "");
-        return send(res, 200, { view, ...VIEWS[view], rows, total });
+        // Whether other projects could be read, for the candidate and cross-project views.
+        const elsewhere = { at: data.elsewhereAt, error: data.elsewhereError };
+        return send(res, 200, { view, ...VIEWS[view], rows, total, elsewhere });
       }
       if (url.pathname === "/api/person") {
         const detail = await personDetail(ctx, data, url.searchParams.get("id") ?? "", url.searchParams.get("all") === "1");
@@ -89,6 +102,13 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
       if (url.pathname === "/api/log") return send(res, 200, await activityLog(ctx));
       if (url.pathname === "/api/news") return send(res, 200, await newsSince(ctx, data, Number(url.searchParams.get("since")) || Date.now() - 86_400_000));
       if (url.pathname === "/api/find-options") return send(res, 200, { batches: await findOptions(ctx) });
+      if (url.pathname === "/api/settings/rules") return send(res, 200, await readRules(ctx));
+      if (url.pathname === "/api/settings/mailboxes") return send(res, 200, { list: await readMailboxes(ctx) });
+      if (url.pathname === "/api/settings/mailbox-pending") return send(res, 200, { list: await mailboxPending(ctx, data, url.searchParams.get("id") ?? "") });
+      if (url.pathname === "/api/settings/templates") return send(res, 200, await readTemplates(ctx));
+      if (url.pathname === "/api/settings/options") return send(res, 200, await readOptions(ctx, data));
+      if (url.pathname === "/api/settings/access") return send(res, 200, await readAccess(ctx));
+      if (url.pathname === "/api/settings/history") return send(res, 200, { list: await changeHistory(ctx, url.searchParams.get("about") ?? "") });
       return send(res, 404, { error: "没有这个地址" });
     }
 
@@ -108,25 +128,59 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
       refreshSoon();
       return send(res, 200, { ok: true, ...extra });
     };
+    // A settings change is what the next run uses: the console's own copy of the settings is read again too.
+    const settled = async (extra: Record<string, unknown> = {}) => {
+      Object.assign(ctx.cfg, await loadConfig(ctx.base.lark, ctx.cfg.project, ctx.cfg.baseToken));
+      await refreshAfterWrite();
+      return send(res, 200, { ok: true, ...extra });
+    };
+    // Her page reloads right after these, so they answer once the change has been read back.
+    const fresh = async (extra: Record<string, unknown> = {}) => {
+      await refreshAfterWrite();
+      return send(res, 200, { ok: true, ...extra });
+    };
     switch (url.pathname) {
-      case "/api/approve": return done({ job: await approve(ctx, data, jobs, String(b.id), b.edits ?? {}, b.seen ? String(b.seen) : undefined), paused: await isPaused(ctx) });
+      case "/api/approve": return done({ job: await approve(ctx, data, jobs, String(b.id), b.edits ?? {}, b.seen ? String(b.seen) : undefined, b.shown ? String(b.shown) : undefined, b.shownTemplate != null ? String(b.shownTemplate) : undefined), paused: await isPaused(ctx) });
       case "/api/sent-by-hand": await manualSent(ctx, data, String(b.id), b.edits ?? {}, b.seen ? String(b.seen) : undefined); return done();
       case "/api/problem-sent": await problemSent(ctx, data, String(b.id), String(b.code ?? "")); return done();
       case "/api/problem-retry": await problemRetry(ctx, String(b.id)); return done();
-      case "/api/template": await decideTemplate(ctx, String(b.id), Boolean(b.ok)); return done();
+      case "/api/template": await decideTemplate(ctx, String(b.id), Boolean(b.ok), b.shown ? String(b.shown) : undefined); return done();
       case "/api/revise": await revise(ctx, String(b.id), String(b.note ?? "")); return done();
       case "/api/drop": await drop(ctx, String(b.id), String(b.note ?? "")); return done();
       case "/api/problem-done": await problemDone(ctx, data, String(b.id)); return done();
       case "/api/todo-done": await todoDone(ctx, String(b.id)); return done();
       case "/api/mail-done": await mailDone(ctx, ids(b.id)); return done();
-      case "/api/mail-never": await mailNever(ctx, data, ids(b.id)); return done();
+      case "/api/mail-never": await mailNever(ctx, data, ids(b.id), b.note ? String(b.note) : undefined); return done();
       case "/api/mail-link": await mailLink(ctx, data, ids(b.id), String(b.followup ?? "")); return done();
-      case "/api/post": await logPost(ctx, data, String(b.id), String(b.link ?? "")); return done();
-      case "/api/add-email": await addEmail(ctx, data, String(b.id), String(b.email ?? "")); return done();
-      case "/api/followup": await updateFollowup(ctx, data, String(b.id), b.fields ?? {}); return done();
-      case "/api/close": await closeFollowup(ctx, data, String(b.id), { never: Boolean(b.never), reason: b.reason }); return done();
-      case "/api/write": return done({ job: await writeMail(ctx, data, jobs, String(b.id), String(b.subject ?? ""), String(b.body ?? ""), b.from ? String(b.from) : undefined, { to: b.to ? String(b.to) : undefined, purpose: b.purpose ? String(b.purpose) : undefined }), paused: await isPaused(ctx) });
+      case "/api/post": await logPost(ctx, data, String(b.id), String(b.link ?? "")); return fresh();
+      case "/api/add-email": {
+        // Read again before answering: the page writes to the new address right after (C-12).
+        await addEmail(ctx, data, String(b.id), String(b.email ?? ""));
+        await refreshAfterWrite();
+        return send(res, 200, { ok: true });
+      }
+      case "/api/resume": return fresh({ stage: await resumeFollowup(ctx, data, String(b.id)) });
+      case "/api/followup": await updateFollowup(ctx, data, String(b.id), b.fields ?? {}); return fresh();
+      case "/api/close": await closeFollowup(ctx, data, String(b.id), { never: Boolean(b.never), reason: b.reason, note: b.note ? String(b.note) : undefined }); return fresh();
+      case "/api/write": return done({ job: await writeMail(ctx, data, jobs, String(b.id), String(b.subject ?? ""), String(b.body ?? ""), b.from ? String(b.from) : undefined, { to: b.to ? String(b.to) : undefined, purpose: b.purpose ? String(b.purpose) : undefined, answers: b.answers ? ids(b.answers) : undefined }), paused: await isPaused(ctx) });
       case "/api/find": return done({ job: startFind(jobs, b) });
+      case "/api/profile": await updateProfile(ctx, data, String(b.id), b.fields ?? {}); return fresh();
+      case "/api/default-email": await setDefaultEmail(ctx, data, String(b.id), String(b.email ?? "")); return fresh();
+      case "/api/settings/rules": return settled({ changed: await saveRules(ctx, b.values ?? {}) });
+      case "/api/settings/mailbox": return settled({ id: await saveMailbox(ctx, String(b.id ?? ""), b.fields ?? {}) });
+      case "/api/settings/mailbox-check": return send(res, 200, await checkMailbox(ctx, String(b.address ?? "")));
+      case "/api/settings/mailbox-disable": await disableMailbox(ctx, data, String(b.id), b.plan ?? {}, Boolean(b.on)); return settled();
+      case "/api/settings/template": {
+        const tid = await saveTemplate(ctx, String(b.id ?? ""), b);
+        // The state the save left it in (unchanged text leaves an approved template approved), for the editor.
+        const [row] = await ctx.base.get(ctx.cfg.tables.templates, [tid], ["状态"]);
+        return settled({ id: tid, state: row ? option(row["状态"]) : "" });
+      }
+      case "/api/settings/template-submit": await submitTemplate(ctx, String(b.id)); return settled();
+      case "/api/settings/template-discard": await discardTemplate(ctx, String(b.id)); return settled();
+      case "/api/settings/option-add": await addOption(ctx, String(b.which), String(b.name ?? "")); return settled();
+      case "/api/settings/option-rename": return settled({ changed: await renameOption(ctx, data, String(b.which), String(b.from ?? ""), String(b.to ?? "")) });
+      case "/api/settings/data-api": await saveDataApi(ctx, String(b.url ?? "")); return settled();
       case "/api/pause": {
         const paused = await setPaused(ctx, Boolean(b.on));
         // What was approved while paused waits as approved; resuming sends it.

@@ -35,11 +35,14 @@ interface CacheFile {
 export class RowCache {
   private mem = new Map<string, CacheFile>();
   private checked = new Map<string, number>();
+  /** Bumped by every invalidate: a read begun before a write must not mark the table freshly checked. */
+  private gen = 0;
 
   constructor(private dir: string) {}
 
   /** Forget that tables were just checked, so the next read sees this run's own writes. */
   invalidate(): void {
+    this.gen++;
     this.checked.clear();
   }
 
@@ -48,6 +51,7 @@ export class RowCache {
     const file = join(this.dir, `${tbl.replace(/[^\w一-鿿-]/g, "_")}.json`);
     let cache = this.mem.get(tbl) ?? readCache(file);
     if (cache && !fresh && Date.now() - (this.checked.get(tbl) ?? 0) < FRESH_MS) return cache.rows;
+    const gen = this.gen;
 
     const read = await sql.tx(async (q) => {
       // One snapshot for the check and the changed rows, so a write landing in between can't make them disagree.
@@ -76,6 +80,9 @@ export class RowCache {
         ? { readAt: read.now, fullAt: read.now, rows: read.rows }
         : await this.full(sql, project, tbl);
     }
+    // A write happened while this read was on its way: hand its rows to this caller only, never to the cache, so a
+    // later read can't be answered from data older than that write.
+    if (gen !== this.gen) return next.rows;
     this.mem.set(tbl, next);
     this.checked.set(tbl, Date.now());
     // Only rewrite the file when something came in; an unchanged readAt just makes the next look-back a bit longer.

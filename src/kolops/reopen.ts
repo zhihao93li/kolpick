@@ -44,3 +44,22 @@ export function reopenAfterWriting(f: Row | undefined, today: string, timezone: 
     下一步: `${today} 我们又写信了（之前结案${reason ? `：${reason}` : ""}），${next} 还没回就结案`,
   };
 }
+
+/**
+ * Noted in 下一步 when a followup is paused: 暂缓 replaces its stage in the base, and resuming goes back to the
+ * stage it was paused from, the way a reopen reads 「（结案前：X）」.
+ */
+export function pausedFrom(f: Row | undefined): string {
+  const stage = option(f?.["阶段"]);
+  return stage && stage !== "暂缓" && stage !== "结案" ? `（暂缓前：${stage}）` : "";
+}
+
+/** The 「（暂缓前：X）」 note on a paused followup, to carry over when its 下一步 is rewritten. */
+export function pauseNote(f: Row): string {
+  return String(f["下一步"] ?? "").match(/（暂缓前：[^）]+）/)?.[0] ?? "";
+}
+
+/** The stage a paused followup goes back to: the one its pause noted, or 已回复 when it didn't. */
+export function stageBeforePause(f: Row): string {
+  return String(f["下一步"] ?? "").match(/（暂缓前：([^）]+)）/)?.[1] ?? "已回复";
+}

@@ -5,15 +5,16 @@ import { blockedReason, displayName, profileEmails, profileOf } from "../data.js
 import { notExecutor, ExecutorLock } from "../executor.js";
 import { find } from "../find.js";
 import { closeChanges } from "../inbox.js";
-import { closedFrom, reopenAfterWriting, reopenChanges } from "../reopen.js";
+import { closedFrom, pausedFrom, pauseNote, reopenAfterWriting, reopenChanges, stageBeforePause } from "../reopen.js";
 import type { Row } from "../lark.js";
 import { splitDraft } from "../mail.js";
 import { BOUNCE_MARK, RUN_TITLES, stamp, today } from "../ops.js";
-import { approveInConsole, CHECK_IN_MARK, closeDeclined, executesOnApproval, executing, openMailItems, sendBack } from "../reviews.js";
-import { CLOSE_REASONS } from "../schema.js";
+import { approveInConsole, CHECK_IN_MARK, closeDeclined, executesOnApproval, executing, fingerprint, openMailItems, sendBack } from "../reviews.js";
+import { CLOSE_ACTIONS, CLOSE_REASONS } from "../schema.js";
 import { AUTO_SEND_MARK, sendApproved } from "../send.js";
 import type { Platform } from "../../discovery/models.js";
-import { namedTemplate, type ConsoleData } from "./state.js";
+import { namedTemplate, pinnedDefaults, type ConsoleData } from "./state.js";
+import { approvalFields, discardTemplate, templateVersion } from "./settings.js";
 
 /**
  * What the decision console's buttons do. Decisions and edits are written to the base straight away; anything
@@ -100,16 +101,24 @@ async function pendingMailOf(ctx: Ctx, fid: string): Promise<Row[]> {
  * showed (or `true` when the reviewer wrote from her page, where all of it is shown): mail up to that one is
  * filed as handled; anything newer stops the approval, so a reply never goes out over something she said since.
  */
-async function answerMail(ctx: Ctx, fid: string, seen: string | true | undefined): Promise<void> {
+/** Her unanswered mail, refused when the card didn't show the latest of it. Writes nothing. */
+async function mailAnswered(ctx: Ctx, fid: string, seen: string | true | undefined): Promise<Row[]> {
   const pending = await pendingMailOf(ctx, fid);
-  if (!pending.length) return;
-  if (seen !== true) {
-    const tz = ctx.cfg.timezone;
-    const shown = pending.find((m) => seen && text(m["Message ID"]) === seen);
-    const at = (m: Row) => cellTime(m["日期"], tz) ?? 0;
-    if (!shown || pending.some((m) => at(m) > at(shown))) throw new Error("她又来信了，这张卡片上没有。点「刷新」看完她新说的再决定");
-  }
-  await ctx.base.update(ctx.cfg.tables.contacts, Object.fromEntries(pending.map((m) => [m.record_id, { 待处理: false }])));
+  if (!pending.length || seen === true) return pending;
+  const tz = ctx.cfg.timezone;
+  const shown = pending.find((m) => seen && text(m["Message ID"]) === seen);
+  const at = (m: Row) => cellTime(m["日期"], tz) ?? 0;
+  if (!shown || pending.some((m) => at(m) > at(shown))) throw new Error("她又来信了，这张卡片上没有。点「刷新」看完她新说的再决定");
+  return pending;
+}
+
+async function markAnswered(ctx: Ctx, mails: Row[]): Promise<void> {
+  if (mails.length) await ctx.base.update(ctx.cfg.tables.contacts, Object.fromEntries(mails.map((m) => [m.record_id, { 待处理: false }])));
+}
+
+/** Checks her mail against the card, then marks what the card covered as answered. */
+async function answerMail(ctx: Ctx, fid: string, seen: string | true | undefined): Promise<void> {
+  await markAnswered(ctx, await mailAnswered(ctx, fid, seen));
 }
 
 /**
@@ -117,12 +126,36 @@ async function answerMail(ctx: Ctx, fid: string, seen: string | true | undefined
  * record an answer (a decision) get no job; an approved template is put to use. While sending is paused the
  * approval waits, and resuming sends it.
  */
-export async function approve(ctx: Ctx, data: ConsoleData, jobs: Jobs, id: string, edits: Record<string, unknown>, seen?: string | true): Promise<Job | null> {
+export async function approve(ctx: Ctx, data: ConsoleData, jobs: Jobs, id: string, edits: Record<string, unknown>, seen?: string | true, shown?: string, shownTemplate?: string): Promise<Job | null> {
   const before = await review(ctx, id);
   const fid = linkIds(before["KOL"])[0] ?? "";
-  await answerMail(ctx, fid, seen);
-  const r = await approveInConsole(ctx, id, cleanEdits(edits));
-  if (option(r["类型"]) === "模板审批") await approveNamedTemplate(ctx, r);
+  const f = data.snapshot.followups.get(fid);
+  const p = profileOf(data.snapshot, f);
+  const clean = cleanEdits(edits);
+  // I-4: approve exactly what the card showed. The check runs on the row the approval is written from, so content,
+  // a default or the mailbox changed in the meantime means looking again.
+  const stale = (r: Row) => Boolean(shown) && fingerprint({ ...r, ...pinnedDefaults(ctx.cfg, r, f, p) }) !== shown;
+  if (stale(before)) throw new Error("你看这张卡以后，内容、发信邮箱或默认的码参数变了。点「刷新」再看一遍");
+  // A 模板审批 item also approves the template it names: checked before anything is written.
+  if (shownTemplate !== undefined && option(before["类型"]) === "模板审批") {
+    const pending = await ctx.base.records(ctx.cfg.tables.templates, { filter: { logic: "and", conditions: [["状态", "intersects", ["待审核"]]] } });
+    const tpl = namedTemplate(pending.filter((x) => option(x["状态"]) === "待审核"), before);
+    if (tpl && templateVersion(tpl) !== shownTemplate) throw new Error("你看这张卡以后，它说的模板又被改过了。点「刷新」再看一遍");
+  }
+  // Her mail is checked before anything is written; it counts as answered only once the approval is in.
+  const answered = await mailAnswered(ctx, fid, seen);
+  const r = await approveInConsole(ctx, id, (now) => {
+    if (stale(now)) throw new Error("你看这张卡以后，内容、发信邮箱或默认的码参数变了。点「刷新」再看一遍");
+    return { ...pinnedDefaults(ctx.cfg, { ...now, ...clean }, f, p), ...clean };
+  });
+  // Mail that arrived while the approval was being written was never seen: the approval is taken back.
+  const known = new Set(answered.map((m) => m.record_id));
+  if (seen !== true && (await pendingMailOf(ctx, fid)).some((m) => !known.has(m.record_id))) {
+    await sendBack(ctx, id, "同意的同时她又来信了，先看她新说的");
+    throw new Error("她又来信了，这张卡片上没有。点「刷新」看完她新说的再决定");
+  }
+  await markAnswered(ctx, answered);
+  if (option(r["类型"]) === "模板审批") await approveNamedTemplate(ctx, r, shownTemplate);
   if (!executesOnApproval(r)) {
     // Nothing to carry out: the answer is recorded and the item is done, so it no longer holds her up.
     await ctx.base.update(ctx.cfg.tables.reviews, { [id]: { 状态: ["已执行"], 执行时间: stamp(Date.now(), ctx.cfg.timezone), 执行结果: `${ctx.me.name}在决策台同意了（这件事不用执行）` } });
@@ -170,11 +203,11 @@ export async function manualSent(ctx: Ctx, data: ConsoleData, id: string, edits:
   await ctx.base.update(t.reviews, { [id]: { 状态: ["已执行"], 执行时间: now, 执行结果: `${ctx.me.name} 从「${channel}」手动发给 ${recipient}` } });
 }
 
-const EDITABLE = new Set(["邮件草稿", "体验码", "体验次数", "体验天数", "活动码", "粉丝折扣", "销售市场", "合作页名称"]);
+const EDITABLE = new Set(["邮件草稿", "体验码", "体验次数", "体验天数", "活动码", "粉丝折扣", "销售市场", "合作页名称", "发后动作", "结案原因"]);
 const NUMBERS = new Set(["体验次数", "体验天数", "粉丝折扣"]);
 
 /** Only the fields a reviewer may change from the card, typed the way the base stores them. */
-function cleanEdits(edits: Record<string, unknown>): Record<string, unknown> {
+export function cleanEdits(edits: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(edits ?? {})) {
     if (!EDITABLE.has(k)) continue;
@@ -182,8 +215,16 @@ function cleanEdits(edits: Record<string, unknown>): Record<string, unknown> {
       const n = Number(v);
       if (!Number.isFinite(n) || n <= 0) throw new Error(`「${k}」要填大于 0 的数字`);
       out[k] = n;
+    } else if (k === "发后动作" || k === "结案原因") {
+      // Single selects; an empty value clears them (发后动作「无」).
+      const s = String(v ?? "").trim();
+      const allowed: readonly string[] = k === "发后动作" ? CLOSE_ACTIONS : CLOSE_REASONS;
+      if (s && !allowed.includes(s)) throw new Error(`「${k}」只能是 ${allowed.join("、")}`);
+      out[k] = s ? [s] : null;
     } else out[k] = String(v ?? "");
   }
+  if (out["发后动作"] && !out["结案原因"]) throw new Error("选了发信后结案，要同时选结案原因");
+  if (out["发后动作"] === null) out["结案原因"] = null;
   return out;
 }
 
@@ -318,11 +359,11 @@ export async function mailDone(ctx: Ctx, ids: string[]): Promise<void> {
 }
 
 /** 标成永不联系 from a mail: filed as handled, the followup closed and the profile marked for this project. */
-export async function mailNever(ctx: Ctx, data: ConsoleData, ids: string[]): Promise<void> {
+export async function mailNever(ctx: Ctx, data: ConsoleData, ids: string[], note?: string): Promise<void> {
   const first = await contact(ctx, ids[0]);
   await mailDone(ctx, ids);
   const fid = linkIds(first["KOL"])[0];
-  if (fid) await closeFollowup(ctx, data, fid, { never: true, reason: "拒绝" });
+  if (fid) await closeFollowup(ctx, data, fid, { never: true, reason: "拒绝", note });
 }
 
 /**
@@ -353,15 +394,15 @@ export async function mailLink(ctx: Ctx, data: ConsoleData, ids: string[], fid: 
 }
 
 /** 不再跟进 / 不要再联系她. */
-export async function closeFollowup(ctx: Ctx, data: ConsoleData, fid: string, o: { never: boolean; reason?: string }): Promise<void> {
+export async function closeFollowup(ctx: Ctx, data: ConsoleData, fid: string, o: { never: boolean; reason?: string; note?: string }): Promise<void> {
   const f = data.snapshot.followups.get(fid);
   if (!f) throw new Error("找不到这位 KOL 的跟进记录");
   const reason = o.reason && CLOSE_REASONS.includes(o.reason) ? o.reason : o.never ? "拒绝" : "其他";
   const day = today(ctx.cfg);
   const action = o.never ? "永不联系" : "结案";
-  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { 阶段: ["结案"], 结案原因: [reason], 当前轮到谁: ["无需动作"], 下一步: `${day} ${action}（${reason}，${ctx.me.name}在决策台操作）${closedFrom(f)}` } });
+  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { 阶段: ["结案"], 结案原因: [reason], 当前轮到谁: ["无需动作"], 下一步: `${day} ${action}（${reason}${o.note?.trim() ? `：${o.note.trim()}` : ""}，${ctx.me.name}在决策台操作）${closedFrom(f)}`.slice(0, 500) } });
   const p = profileOf(data.snapshot, f);
-  if (o.never && p) await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { 联系许可: ["永不联系"], 联系许可原因: `${day} ${reason}` } });
+  if (o.never && p) await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { 联系许可: ["永不联系"], 联系许可原因: `${day} ${o.note?.trim() || reason}` } });
   // Whatever was still waiting to be done for her is withdrawn, approved or not: closing means stop.
   const open = await ctx.base.records(ctx.cfg.tables.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] }, fields: ["KOL", "状态", "执行结果"] });
   // One already being carried out may be going out right now: it is left to finish and be checked, not shown as withdrawn.
@@ -386,24 +427,47 @@ const FOLLOWUP_EDITS: Record<string, (v: string, tz: string) => unknown> = {
 };
 
 /** Edits to a followup made on its page. */
-export async function updateFollowup(ctx: Ctx, data: ConsoleData, fid: string, fields: Record<string, string>): Promise<void> {
-  if (!data.snapshot.followups.has(fid)) throw new Error("找不到这位 KOL 的跟进记录");
+export async function updateFollowup(ctx: Ctx, _data: ConsoleData, fid: string, fields: Record<string, string>): Promise<void> {
+  // Read now: whether she is closed, her stage and 下一步 decide what may change, and the page's copy may be old.
+  const [f] = await ctx.base.get(ctx.cfg.tables.followups, [fid], ["阶段", "下一步"]);
+  if (!f) throw new Error("找不到这位 KOL 的跟进记录");
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(fields ?? {})) {
     const to = FOLLOWUP_EDITS[k];
     if (!to) throw new Error(`「${k}」不能在这里改`);
     if ((k === "下次跟进日期" || k === "约定发布日期") && v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Error(`${k}的格式不对`);
     if (k === "阶段" && !EDITABLE_STAGES.includes(String(v))) throw new Error(`阶段只能改成：${EDITABLE_STAGES.join("、")}；要结案请点「不再跟进」`);
-    const closed = option(data.snapshot.followups.get(fid)!["阶段"]) === "结案" && !fields["阶段"];
+    const closed = option(f["阶段"]) === "结案" && !fields["阶段"];
     if (k === "当前轮到谁" && closed && v !== "无需动作") throw new Error("她已经结案了，轮到谁只能是「无需动作」；要继续跟进，先给她写信或改阶段");
     out[k] = to(String(v ?? "").trim(), ctx.cfg.timezone);
   }
   if (!Object.keys(out).length) return;
-  if (out["阶段"]) {
-    const was = option(data.snapshot.followups.get(fid)!["阶段"]);
-    out["下一步"] ??= `${today(ctx.cfg)} 阶段从「${was}」改成「${option(out["阶段"])}」（${ctx.me.name}在决策台操作）`;
-  }
+  const was = option(f["阶段"]);
+  if (option(out["阶段"]) === was) delete out["阶段"];
+  // Pausing keeps what 下一步 said (she is picked up again from there); other stage changes note the change.
+  if (option(out["阶段"]) === "暂缓") out["下一步"] ??= text(f["下一步"]).replace(/（暂缓前：[^）]+）/g, "").trim() || `${today(ctx.cfg)} 暂缓（${ctx.me.name}在决策台操作）`;
+  else if (out["阶段"]) out["下一步"] ??= `${today(ctx.cfg)} 阶段从「${was}」改成「${option(out["阶段"])}」（${ctx.me.name}在决策台操作）`;
+  // The base has no field for the stage before a pause: 下一步 keeps it, so resuming can go back to it. Editing
+  // 下一步 while paused keeps the note too (E-32).
+  const marker = option(out["阶段"]) === "暂缓" ? pausedFrom(f) : was === "暂缓" && !out["阶段"] ? pauseNote(f) : "";
+  if (marker && typeof out["下一步"] === "string" && !String(out["下一步"]).includes(marker)) out["下一步"] = `${out["下一步"]}${marker}`;
+  if (!Object.keys(out).length) return;
   await ctx.base.update(ctx.cfg.tables.followups, { [fid]: out });
+}
+
+/** 恢复跟进: a paused followup goes back to the stage it was paused from (U-3). */
+export async function resumeFollowup(ctx: Ctx, _data: ConsoleData, fid: string): Promise<string> {
+  // Read now: the page's copy may be minutes old (she may have been closed meanwhile).
+  const [f] = await ctx.base.get(ctx.cfg.tables.followups, [fid], ["阶段", "下一步"]);
+  if (!f) throw new Error("找不到这位 KOL 的跟进记录");
+  if (option(f["阶段"]) !== "暂缓") throw new Error(`她现在是「${option(f["阶段"])}」，不是暂缓`);
+  const stage = stageBeforePause(f);
+  // What 下一步 said before the pause comes back as it was; only the pause note goes.
+  const kept = text(f["下一步"]).replace(/（暂缓前：[^）]+）/g, "").trim();
+  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: {
+    阶段: [stage], 下一步: kept || `${today(ctx.cfg)} 恢复跟进，回到「${stage}」（${ctx.me.name}在决策台操作）`,
+  } });
+  return stage;
 }
 
 /** 加新邮箱 after a bounce (C-12): the address joins her profile, so mail can go there. */
@@ -430,9 +494,23 @@ export async function logPost(ctx: Ctx, data: ConsoleData, fid: string, link: st
   await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { 阶段: ["已发布"], 下一步: `${today(ctx.cfg)} 记下发布：${url}`.slice(0, 500) } });
 }
 
+const writing = new Map<string, Promise<unknown>>();
+/** Runs one mail-making step per KOL at a time in this console, so the I-1 check and the new item can't interleave. */
+function oneAtATime<T>(fid: string, fn: () => Promise<T>): Promise<T> {
+  const prev = writing.get(fid) ?? Promise.resolve();
+  const run = prev.catch(() => {}).then(fn);
+  writing.set(fid, run);
+  return run.finally(() => { if (writing.get(fid) === run) writing.delete(fid); });
+}
+
 /** 写信给她: the reviewer's own words, approved as they write them and sent by the executor. */
-export async function writeMail(ctx: Ctx, data: ConsoleData, jobs: Jobs, fid: string, subject: string, body: string, from?: string,
-                                o: { to?: string; purpose?: string } = {}): Promise<Job | null> {
+export function writeMail(ctx: Ctx, data: ConsoleData, jobs: Jobs, fid: string, subject: string, body: string, from?: string,
+                          o: { to?: string; purpose?: string; answers?: string[] } = {}): Promise<Job | null> {
+  return oneAtATime(fid, () => writeMailNow(ctx, data, jobs, fid, subject, body, from, o));
+}
+
+async function writeMailNow(ctx: Ctx, data: ConsoleData, jobs: Jobs, fid: string, subject: string, body: string, from?: string,
+                                o: { to?: string; purpose?: string; answers?: string[] } = {}): Promise<Job | null> {
   const f = data.snapshot.followups.get(fid);
   if (!f) throw new Error("找不到这位 KOL 的跟进记录");
   if (!body.trim()) throw new Error("信是空的");
@@ -454,7 +532,10 @@ export async function writeMail(ctx: Ctx, data: ConsoleData, jobs: Jobs, fid: st
     审核项: `${o.purpose === "发布确认" ? `${CHECK_IN_MARK} ` : ""}${ctx.me.name}在决策台写的信`, 发送渠道: [mb.channel], 收件人: to, 邮件草稿: draft,
   }]);
   // Written from her page, where all her mail is shown, so it answers whatever she sent.
-  return approve(ctx, data, jobs, id, {}, true);
+  const job = await approve(ctx, data, jobs, id, {}, true);
+  // A bounce is handled once the mail to her new address is queued, not when the address is added (C-12).
+  if (o.answers?.length) await mailDone(ctx, o.answers);
+  return job;
 }
 
 /** After 恢复发送: everything approved while sending was paused goes out now. */
@@ -466,19 +547,56 @@ export function sendQueued(jobs: Jobs): Job {
 }
 
 /** 同意 / 不用了 on a template waiting for approval: it is put to use, or set aside. */
-export async function decideTemplate(ctx: Ctx, id: string, ok: boolean): Promise<void> {
+export async function decideTemplate(ctx: Ctx, id: string, ok: boolean, shown?: string): Promise<void> {
   const t = ctx.cfg.tables;
   const [r] = await ctx.base.get(t.templates, [id]);
   if (!r) throw new Error("模板表里已经没有这个模板");
   if (option(r["状态"]) !== "待审核") throw new Error(`这个模板现在是「${option(r["状态"])}」，不是待审核`);
-  await ctx.base.update(t.templates, { [id]: { 状态: [ok ? "已批准" : "停用"], 审核时间: stamp(Date.now(), ctx.cfg.timezone) } });
+  if (shown !== undefined && templateVersion(r) !== shown) throw new Error("你看这个模板以后它又被改过了，或者这张卡没带上模板的版本。点「刷新」再看一遍");
+  // Turning down an edit of a template that was in use puts the old text back rather than retiring it.
+  if (!ok && String(r["备注"] ?? "").includes("【编辑前在用版本】")) return discardTemplate(ctx, id);
+  const at = stamp(Date.now(), ctx.cfg.timezone);
+  await ctx.base.update(t.templates, { [id]: ok ? approvalFields(r, at) : { 状态: ["停用"], 审核时间: at } });
 }
 
-async function approveNamedTemplate(ctx: Ctx, r: Row): Promise<void> {
+const PROFILE_EDITS: Record<string, "text" | "select"> = { 称呼: "text", 主页链接: "text", 市场: "select", 語言: "text", 备注: "text" };
+
+/** 资料 edited in place on her page (U-3). 级别 lives on the followup and goes through updateFollowup. */
+export async function updateProfile(ctx: Ctx, data: ConsoleData, fid: string, fields: Record<string, string>): Promise<void> {
+  const f = data.snapshot.followups.get(fid);
+  const p = profileOf(data.snapshot, f);
+  if (!f || !p) throw new Error("找不到她的档案");
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(fields ?? {})) {
+    const kind = PROFILE_EDITS[k];
+    if (!kind) throw new Error(`「${k}」不能在这里改`);
+    const val = String(v ?? "").trim();
+    if (k === "主页链接" && val && !/^https?:\/\/\S+/.test(val)) throw new Error("主页链接要以 https:// 开头");
+    out[k] = kind === "select" ? (val ? [val] : null) : val;
+  }
+  if (Object.keys(out).length) await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: out });
+}
+
+/** 设为默认: the address becomes 公开邮箱, the one written to first; the old one moves to 其他邮箱. */
+export async function setDefaultEmail(ctx: Ctx, data: ConsoleData, fid: string, address: string): Promise<void> {
+  const cached = profileOf(data.snapshot, data.snapshot.followups.get(fid));
+  if (!cached) throw new Error("找不到她的档案");
+  // Both address fields are rewritten, so they are read now: an address added since must not be lost.
+  const [p] = await ctx.base.get(ctx.cfg.tables.profiles, [cached.record_id], ["公开邮箱", "其他邮箱"]);
+  if (!p) throw new Error("找不到她的档案");
+  const all = profileEmails(p);
+  const a = address.trim().toLowerCase();
+  if (!all.includes(a)) throw new Error(`${a} 不在她的档案里`);
+  if (all[0] === a) return;
+  await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { 公开邮箱: a, 其他邮箱: all.filter((e) => e !== a).join(", ") } });
+}
+
+async function approveNamedTemplate(ctx: Ctx, r: Row, shown?: string): Promise<void> {
   // Read now rather than from the page's copy, which may predate the template.
   const pending = await ctx.base.records(ctx.cfg.tables.templates, { filter: { logic: "and", conditions: [["状态", "intersects", ["待审核"]]] } });
   const tpl = namedTemplate(pending.filter((x) => option(x["状态"]) === "待审核"), r);
-  if (tpl) await decideTemplate(ctx, tpl.record_id, true);
+  // The card showed one version of it; a template changed since then isn't approved with this item.
+  if (tpl) await decideTemplate(ctx, tpl.record_id, true, shown);
 }
 
 /** 暂停所有发送, from the top bar. */

@@ -10,7 +10,7 @@ import { BOUNCE_MARK, bounceStats, bouncePaused, otherSendingRun, stamp, today, 
 import { closeChanges } from "./inbox.js";
 import { reopenAfterWriting } from "./reopen.js";
 import { undeliverable } from "./mx.js";
-import { approvalProblem, CHECK_IN_MARK, closeDeclined, fingerprint, isApproved, sendBack } from "./reviews.js";
+import { approvalProblem, CHECK_IN_MARK, closeDeclined, fingerprint, isApproved, sendBack, uncertain } from "./reviews.js";
 import { machine, machineLabel } from "./executor.js";
 
 export const SENDING_TYPES = ["回复邮件", "协议"];
@@ -473,9 +473,11 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
     const followupId = linkIds(r["KOL"])[0] ?? "";
     const f = s.followups.get(followupId);
     const name = f ? displayName(s, f) : text(r["审核项"]);
+    // A mail that may already have gone out is never put back for review here, whatever else changed (I-5).
+    const unsure = uncertain(r, ctx.journal.get(`review:${r.record_id}`)?.state);
     const problem = approvalProblem(ctx.cfg, r);
     if (problem) {
-      if (problem.changed && !opts.dryRun) await sendBack(ctx, r.record_id, problem.reason);
+      if (problem.changed && !opts.dryRun && !unsure) await sendBack(ctx, r.record_id, problem.reason);
       skipped.push({ key: r.record_id, name, reason: problem.reason });
       continue;
     }
@@ -484,7 +486,7 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
     // never sent over it. Times are kept to the minute, so the same minute counts as after.
     const approvedAt = cellTime(r["同意时间"], tz) ?? cellTime(r["提出时间"], tz);
     const wroteSince = approvedAt != null && (lastMail.get(followupId) ?? -1) >= approvedAt;
-    if (followupId && wroteSince && ctx.journal.get(`review:${r.record_id}`)?.state !== "sent") {
+    if (followupId && wroteSince && !unsure) {
       const why = "同意之后她又来信了，先看她新说的再决定这封还发不发";
       if (!opts.dryRun) await sendBack(ctx, r.record_id, why);
       skipped.push({ key: r.record_id, name, reason: why });
@@ -554,7 +556,16 @@ export async function sendApproved(ctx: Ctx, opts: { dryRun: boolean; only?: str
     }
     const mailbox = mailboxFor(ctx.cfg, channel || option(f?.["联系渠道"]));
     if (!mailbox) {
-      skipped.push({ key: r.record_id, name, reason: `发送渠道「${channel || "未填"}」不是插件能发的飞书邮箱` });
+      // A mailbox switched off after the approval (or one the plugin never could send from): left approved, the
+      // mail would hang and hold her slot forever, so it goes back to the reviewer to change mailbox or withdraw.
+      // Not when an earlier attempt may have gone out (I-5): that stays for someone to check the mailbox first.
+      if (unsure) {
+        skipped.push({ key: r.record_id, name, reason: `发送渠道「${channel || "未填"}」现在发不了，而且上次执行可能已经发出：先到邮箱「已发送」核对，在「出了问题」里处理` });
+        continue;
+      }
+      const why = `发送渠道「${channel || "未填"}」现在不是插件能发的飞书邮箱（可能已停用），这封没发：让 Claude 换一个邮箱，或者撤掉`;
+      if (!opts.dryRun) await sendBack(ctx, r.record_id, why);
+      skipped.push({ key: r.record_id, name, reason: why });
       continue;
     }
     const { subject, body } = splitDraft(text(r["邮件草稿"]));

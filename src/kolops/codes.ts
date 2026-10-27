@@ -56,8 +56,8 @@ export class TrialCodeRefused extends Error {
  */
 export async function writeOnce<T>(ctx: Ctx, key: string, what: string, call: () => Promise<T>, repeatable = false): Promise<T> {
   const check = repeatable
-    ? "重新做不会建出第二个（项目后台会原样返回第一次建的），点「确认没发出，重新审核」再同意就行"
-    : "请先到项目后台看到期日：已经延期了，就点「不做了，撤掉」，再写信告诉她新的到期日（到期日下次同步会更新到跟进上）；没延期，就点「确认没发出，重新审核」";
+    ? "重新做不会建出第二个（项目后台会原样返回第一次建的），点「确认没做成，重新审核」再同意就行"
+    : "请先到项目后台看到期日：已经延期了，就点「不做了，撤掉」，再写信告诉她新的到期日（到期日下次同步会更新到跟进上）；没延期，就点「确认没做成，重新审核」";
   if (ctx.journal.get(key)?.state === "unknown") throw new Error(`上次${what}结果不明，不会自动重做。${check}`);
   try {
     return await call();

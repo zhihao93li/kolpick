@@ -6,7 +6,11 @@ import { ownWords } from "../inbox.js";
 import type { Row } from "../lark.js";
 import { addressOf, splitDraft } from "../mail.js";
 import { BOUNCE_MARK, stamp, today } from "../ops.js";
-import { CHECK_IN_MARK, executesOnApproval, reviewState } from "../reviews.js";
+import { stageBeforePause } from "../reopen.js";
+import { contactedElsewhere } from "../crossproject.js";
+import { CHECK_IN_MARK, executesOnApproval, fingerprint, reviewState } from "../reviews.js";
+import { trialPlan } from "../trial.js";
+import { templateVersion } from "./settings.js";
 import { SENDING_TYPES } from "../send.js";
 import { loadTemplates, MissingValue, pickTemplate, render, type Template } from "../templates.js";
 
@@ -23,7 +27,7 @@ export interface Step {
 
 export interface Card {
   id: string;
-  kind: "problem" | "overdue" | "reply" | "mail" | "unknown" | "batch" | "template" | "todo" | "waiting" | "bounce";
+  kind: "problem" | "overdue" | "reply" | "mail" | "unknown" | "batch" | "template" | "todo" | "waiting" | "bounce" | "expired";
   group: string;
   tag: string;
   headline: string;
@@ -40,12 +44,32 @@ export interface Card {
   seen?: string;
   /** A failed item whose mail may have gone out: the reviewer says which it was. */
   unknownSend?: boolean;
+  /** A failed item whose code request may or may not have gone through (C-04). */
+  unknownCode?: boolean;
   /** The failed item also made a code (发码 / 延期 / 开活动码): confirming it went out may fill in the code's name (C-04). */
   codeAction?: string;
   /** How many check-in mails went out since the agreed date (C-07): from 2 on, the card asks to close, pause or wait. */
   asked?: number;
   /** She is 永不联系: her mail is only filed, never answered (C-06, P-6). */
   blocked?: boolean;
+  /** What happens to the followup once the item is carried out, editable on the card (C-01 发后动作). */
+  after?: { action: string; reason: string };
+  /** Makes or extends a code and sends no mail (C-01 只建码不发信). */
+  codeOnly?: boolean;
+  /** A 决定 that approves a batch of invitations (C-01 邀约批次). */
+  invite?: boolean;
+  /** The invitation template a batch names, to read before approving it. */
+  template?: { name: string; subject: string; body: string; missing?: boolean };
+  /** An expired trial code to extend, replace or let go (C-10). */
+  trial?: { code: string; used: number; max: number; expired: string };
+  /** The bounced address (C-12). */
+  bounced?: string;
+  /** Why an item came back to review (an approval undone by the executor). */
+  returned?: string;
+  /** The version this card shows (content plus the code defaults it displays): approving checks it hasn't changed. */
+  shown?: string;
+  /** For a 模板审批 item: the version of the template it names, as shown. */
+  shownTemplate?: string;
 }
 
 export { CHECK_IN_MARK };
@@ -78,7 +102,9 @@ export const VIEWS = {
   deal: { label: "谈合作", question: "试用过、想合作，但还没约好哪天发。卡在哪一步？", columns: ["现在的情况", "活动码", "上次联系", "接下来"] },
   post: { label: "约好要发布", question: "约好了日期、还没找到帖子的人。谁快该发了？", columns: ["约好哪天", "活动码", "接下来"] },
   posted: { label: "已发布", question: "发了什么、效果怎么样？", columns: ["帖子", "哪天发的", "播放（最新）", "活动码"] },
-  pool: { label: "还没联系过", question: "有能用的邮箱、还没联系过的人。挑谁去邀约？", columns: ["内容", "粉丝", "市场", "哪一批找到的"] },
+  paused: { label: "暂缓", question: "先放着的人。恢复跟进时回到之前那一步。", columns: ["之前在哪一步", "下一步", "下次跟进"] },
+  pool: { label: "还没联系过", question: "有能用的邮箱、还没联系过的人。挑谁去邀约？", columns: ["邮箱", "内容", "粉丝", "市场", "哪一批找到的"] },
+  cross: { label: "跨项目联系过", question: "本项目还没联系、但别的项目最近联系过的人：冷却期内不会给他们发邀约。", columns: ["邮箱", "哪个项目联系过", "粉丝", "哪一批找到的"] },
   all: { label: "全部在跟进的", question: "整体扫一眼。", columns: ["现在的情况", "到哪一步", "下次跟进"] },
 } as const;
 export type ViewKey = keyof typeof VIEWS;
@@ -106,6 +132,12 @@ export class ConsoleData {
   pendingTemplates: Row[] = [];
   /** Check-in mails about a missing post that went out (C-07). */
   checkIns: Row[] = [];
+  /** Addresses other projects on this computer contacted within the cooldown, with who and when (U-2). */
+  elsewhere = new Map<string, string>();
+  /** When that was last read, and why the latest read failed: an unknown answer is never shown as "none". */
+  elsewhereAt = 0;
+  elsewhereError = "";
+  private elsewhereLoading: Promise<void> | null = null;
   loadedAt = 0;
 
   constructor(private ctx: Ctx) {}
@@ -127,6 +159,12 @@ export class ConsoleData {
         fields: ["审核项", "KOL", "执行时间", "状态"] }),
     ]);
     this.checkIns = done.filter((r) => text(r["审核项"]).startsWith(CHECK_IN_MARK));
+    // Other projects are read in the background: this project's page never waits on them, and a failed read keeps
+    // the last good answer (marked as such) rather than turning into "nobody".
+    this.elsewhereLoading ??= contactedElsewhere(this.ctx)
+      .then((m) => { this.elsewhere = m; this.elsewhereAt = Date.now(); this.elsewhereError = ""; })
+      .catch((err) => { this.elsewhereError = String(err?.message ?? err); })
+      .finally(() => { this.elsewhereLoading = null; });
     this.templates = templates;
     this.pendingTemplates = pendingTemplates.filter((r) => option(r["状态"]) === "待审核");
     this.snapshot = snapshot;
@@ -231,9 +269,11 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
       id: r.record_id, kind: "problem", group: "出了问题", tag: "没做成", who: w,
       headline: `${w?.name ?? text(r["审核项"])}：${text(r["审核项"]) || "这件事"}没做成`,
       meta: `${stamp(cellTime(r["执行时间"], tz) ?? Date.now(), tz)} 执行`,
-      suggest: unknownSend(r) ? "到发信邮箱的「已发送」里找一下这封信，再告诉系统发出去了没有" : "看一下原因：要重做就重新审核，不做了就撤掉",
+      suggest: unknownSend(r) ? "到发信邮箱的「已发送」里找一下这封信，再告诉系统发出去了没有"
+        : unknownCode(r) ? "到项目后台核对码的情况，再告诉系统结果" : "看一下原因：要重做就重新审核，不做了就撤掉",
       steps: [], why: text(r["执行结果"]) || "没有写原因",
-      unknownSend: unknownSend(r),
+      unknownSend: unknownSend(r), unknownCode: unknownCode(r),
+      ...(unknownSend(r) || unknownCode(r) ? { tag: "结果不明" } : {}),
       ...(option(r["体验码动作"]) ? { codeAction: option(r["体验码动作"]) } : {}),
     });
   }
@@ -310,22 +350,22 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
     if (state === "approved" && fid && latestMail.has(fid) && !text(r["执行结果"]).startsWith("执行中")) {
       // Approved, not yet carried out, and she has written since: it waits for the reviewer to look again.
       cards.push({
-        ...reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid), data.pendingTemplates), seen: seenOf(fid), tag: "同意后她又来信了",
+        ...reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid), data.pendingTemplates, data.templates), seen: seenOf(fid), tag: "同意后她又来信了",
         suggest: "你同意之后她又来信了。看看她新说的，这封还要不要照发",
       });
       continue;
     }
     if (state !== "pending") continue;
-    cards.push({ ...reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid), data.pendingTemplates), seen: seenOf(fid) });
+    cards.push({ ...reviewCard(r, s, cfg, who(fid), meta(fid), mails.get(fid), data.pendingTemplates, data.templates), seen: seenOf(fid) });
   }
 
   for (const tpl of data.pendingTemplates) {
     cards.push({
-      id: `template:${tpl.record_id}`, kind: "template", group: "模板", tag: "模板",
+      id: `template:${tpl.record_id}`, kind: "template", group: "模板", tag: "模板", shown: templateVersion(tpl),
       headline: `模板「${text(tpl["名称"]) || "没写名称"}」等你批准`,
       meta: [option(tpl["用途"]), text(tpl["语言"]), text(tpl["方向"])].filter(Boolean).join(" · "),
       suggest: "看一遍内容，没问题就同意",
-      steps: [{ text: "同意后这个模板改成「已批准」，之后发邀约、催信就会用它" }],
+      steps: [{ text: `同意后这个模板改成「已批准」，之后${templateUse(option(tpl["用途"]))}就会用它` }],
       why: "模板批准以后，按它发的信不再一封封给你看，所以先过一遍。",
       draft: { label: "模板内容", subject: text(tpl["主旨"]), body: text(tpl["正文"]) },
     });
@@ -351,10 +391,10 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
       const ids = ms.map((m) => m.record_id).join(",");
       const addr = text(ms[ms.length - 1]["摘要"]).slice(BOUNCE_MARK.length).trim();
       cards.push({
-        id: `bounce:${ids}`, kind: "bounce", group: "来信", tag: "退信", who: w,
+        id: `bounce:${ids}`, kind: "bounce", group: "来信", tag: "退信", who: w, bounced: addr,
         headline: `发给 ${w?.name ?? "一位 KOL"} 的信被退回了（${addr}）`, meta: meta(fid),
         suggest: "她回过信，所以没有自动结案。找一个能用的新邮箱，或者结束跟进",
-        steps: [{ text: "加新邮箱：把她的新邮箱加到档案里，之后到她的页面写信时选这个邮箱" }, { text: "结案：原因记成退信或邮箱无效" }],
+        steps: [{ text: "把新邮箱加到她的档案" }, { text: "打开写信面板，收件人选好新邮箱" }, { text: "信排进队列后，这封退信才算处理完；取消写信，这张卡留着" }],
         why: "退信说明这个地址收不到信了。只有还没回过信的人才会自动结案。",
       });
       continue;
@@ -456,6 +496,31 @@ function checkInDraft(templates: Template[], f: Row, p: Row | undefined, due: st
   }
 }
 
+/**
+ * I-4: a code's count, days, discount and market shown on a card as the project's defaults are part of what is
+ * approved, so approving writes them into the item (and its fingerprint). Only fields the item leaves empty.
+ */
+export function pinnedDefaults(cfg: Config, r: Row, f: Row | undefined, p: Row | undefined): Record<string, unknown> {
+  // A mail with no mailbox of its own goes from the one she knows us by: that is the sender the card showed.
+  const channel = SENDING_TYPES.includes(option(r["类型"])) && !option(r["发送渠道"]) && option(f?.["联系渠道"]) ? { 发送渠道: [option(f?.["联系渠道"])] } : {};
+  const plan = trialPlan(cfg, r, f, p);
+  if (!plan || typeof plan === "string") return channel;
+  const want: Record<string, unknown> = plan.action === "开活动码"
+    ? { 活动码: plan.code, 粉丝折扣: plan.percentOff, 销售市场: plan.market }
+    : { 体验码: plan.code, 体验次数: plan.maxUses, 体验天数: plan.days };
+  return { ...channel, ...Object.fromEntries(Object.entries(want).filter(([k]) => r[k] == null || r[k] === "" || r[k] === 0)) };
+}
+
+/** What a template of this purpose is used for once approved, for the approval card. */
+function templateUse(purpose: string): string {
+  if (purpose === "邀约") return "发邀约";
+  if (/^催信/.test(purpose)) return `发${purpose.replace(" ", "")}`;
+  if (purpose === "发布确认") return "问没按时发布的人";
+  if (/^体验/.test(purpose)) return "体验提醒";
+  if (purpose) return `写「${purpose}」的信`;
+  return "用到它的信";
+}
+
 /** The template a 模板审批 item is about: the one waiting for approval whose name its title mentions. */
 export function namedTemplate(pending: Row[], r: Row): Row | null {
   const title = text(r["审核项"]);
@@ -463,13 +528,19 @@ export function namedTemplate(pending: Row[], r: Row): Row | null {
   return hits.length === 1 ? hits[0] : null;
 }
 
+/** A failed item whose code request (create, extend, open) may or may not have gone through; its mail never went (C-04). */
+function unknownCode(r: Row): boolean {
+  const why = text(r["执行结果"]);
+  return Boolean(option(r["体验码动作"])) && why.includes("结果不明") && !why.includes("发送结果不明");
+}
+
 /** A failed item whose mail may or may not have gone out. */
 function unknownSend(r: Row): boolean {
   const why = text(r["执行结果"]);
-  return why.includes("结果不明") || why.includes("中断了");
+  return (why.includes("结果不明") || why.includes("中断了")) && !unknownCode(r);
 }
 
-function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: string, latest?: MailText, pendingTemplates: Row[] = []): Card {
+function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: string, latest?: MailText, pendingTemplates: Row[] = [], templates: Template[] = []): Card {
   const type = option(r["类型"]);
   const fid = linkIds(r["KOL"])[0] ?? "";
   const f = s.followups.get(fid);
@@ -511,20 +582,57 @@ function reviewCard(r: Row, s: Snapshot, cfg: Config, w: Card["who"], meta: stri
   const after = option(r["发后动作"]);
   if (after) steps.push({ text: `${after === "永不联系" ? "标成永不联系，" : ""}结束跟进（原因：${option(r["结案原因"]) || "没写"}）` });
   if (kind === "batch") steps.push({ text: "记下你同意了。真正发出要在 Claude 里说「发这批邀约」，Claude 会按这个决定分批发" });
+  let shownTemplate: string | undefined;
   if (kind === "template") {
     const tpl = namedTemplate(pendingTemplates, r);
+    if (tpl) shownTemplate = templateVersion(tpl);
     steps.push({ text: tpl ? `同意后，模板「${text(tpl["名称"])}」改成「已批准」，之后就会被用` : "记下你同意了。标题里没对上待审核的模板，模板本身不会改；待审核的模板会单独出现在这里" });
   }
 
-  return {
+  const title = text(r["审核项"]);
+  const result = text(r["执行结果"]);
+  const pinned = pinnedDefaults(cfg, r, f, s.profiles.get(linkIds(f?.["档案"])[0] ?? ""));
+  const card: Card = {
+    shown: fingerprint({ ...r, ...pinned }),
     id: r.record_id, kind, group, tag: type || "待办", who: w, meta,
-    headline: text(r["审核项"]) || w?.name || "一件待你决定的事",
+    headline: title || w?.name || "一件待你决定的事",
     mail: latest ? { label: `${w?.name ?? "对方"}说`, text: latest.text, when: latest.when } : undefined,
-    suggest: text(r["要你定什么"]) || text(r["审核项"]),
+    suggest: text(r["要你定什么"]) || title,
     steps, why: text(r["我的判断和建议"]),
     send: sends ? { from: mailboxFor(cfg, channel)?.address ?? channel, to: recipient, byHand: !mailboxFor(cfg, channel) } : undefined,
     draft: body.trim() ? { label: sends ? `要发给 ${recipient || "她"} 的信` : kind === "template" ? "模板内容" : "草稿", subject, body } : undefined,
   };
+  if (option(r["状态"]) === "待你审核" && result && !option(r["处理"])) card.returned = result;
+  if (shownTemplate) {
+    // Show the template as it is in the table, the same record its version comes from (not the item's own copy).
+    const tpl = namedTemplate(pendingTemplates, r)!;
+    card.shownTemplate = shownTemplate;
+    card.draft = { label: `模板「${text(tpl["名称"])}」现在的内容`, subject: text(tpl["主旨"]), body: text(tpl["正文"]) };
+  }
+  if (kind === "batch" && title.startsWith("[体验过期]") && f) {
+    // C-10: the reviewer picks extend, a new code or let go; Claude then drafts the mail that carries it.
+    const exp = day(f["体验码到期"], cfg.timezone);
+    return { ...card, kind: "expired", group: "跟进", tag: "体验码过期", steps: [],
+      headline: `${w?.name ?? displayName(s, f)} 的体验码 ${text(f["体验码"])} ${exp ? `${shortDay(exp)} ` : ""}到期了`,
+      suggest: "定一下：延期、换一个新码，还是不再跟进这个码",
+      trial: { code: text(f["体验码"]), used: Number(f["体验码已用"]) || 0, max: Number(f["体验码上限"]) || 0, expired: day(f["体验码到期"], cfg.timezone) } };
+  }
+  if (kind === "reply" || kind === "batch") card.after = { action: after, reason: option(r["结案原因"]) };
+  if (kind === "reply" && action && !sends) Object.assign(card, { codeOnly: true, tag: "码" });
+  if (kind === "batch" && /邀约/.test(title)) {
+    card.invite = true;
+    const said = `${title}\n${text(r["我的判断和建议"])}\n${text(r["要你定什么"])}`;
+    // The approved one if there is one, else one still waiting for approval (the card then says so).
+    const named = [...templates.map((x) => ({ ...x, waiting: false })),
+      ...pendingTemplates.map((x) => ({ name: text(x["名称"]), subject: text(x["主旨"]), body: text(x["正文"]), waiting: true }))]
+      .filter((x) => x.name && said.includes(x.name)).sort((a, b) => b.name.length - a.name.length || Number(a.waiting) - Number(b.waiting))[0];
+    if (named) card.template = { name: named.name + (named.waiting ? "（还没批准）" : ""), subject: named.subject, body: named.body };
+    else {
+      const asked = said.match(/模板「([^」]+)」/)?.[1];
+      if (asked) card.template = { name: asked, subject: "", body: "", missing: true };
+    }
+  }
+  return card;
 }
 
 // --- Reading mail text for the cards and the detail page ---
@@ -663,8 +771,15 @@ export function peopleView(data: ConsoleData, cfg: Config, view: ViewKey, todayS
         text(f["活动码"]) ? { v: text(f["活动码"]) } : muted(""),
       ]);
     });
-  } else if (view === "pool") {
-    const profiles = [...s.profiles.values()].filter((p) => !linkIds(p["跟进记录"]).length && profileEmails(p).length && option(p["联系许可"]) !== "永不联系");
+  } else if (view === "paused") {
+    pick = [...s.followups.values()].filter((f) => stage(f) === "暂缓");
+    rows = pick.map((f) => followupRow(f, [
+      { v: stageBeforePause(f) }, { v: text(f["下一步"]).replace(/（暂缓前：[^）]+）/g, "") }, { v: ahead(day(f["下次跟进日期"], tz), todayStr) },
+    ]));
+  } else if (view === "pool" || view === "cross") {
+    const away = (p: Row) => profileEmails(p).map((e) => data.elsewhere.get(e)).find(Boolean) ?? "";
+    const profiles = [...s.profiles.values()].filter((p) => !linkIds(p["跟进记录"]).length && profileEmails(p).length && option(p["联系许可"]) !== "永不联系")
+      .filter((p) => (view === "cross") === Boolean(away(p)));
     const term = q.trim().toLowerCase();
     const hit = (p: Row) => !term || [text(p["账号"]), text(p["账号名称"]), text(p["称呼"]), ...profileEmails(p)].some((x) => x.toLowerCase().includes(term));
     const list = profiles.filter(hit);
@@ -674,8 +789,10 @@ export function peopleView(data: ConsoleData, cfg: Config, view: ViewKey, todayS
         id: p.record_id, hasDetail: false,
         handle: text(p["账号"]) ? `@${text(p["账号"]).replace(/^@/, "")}` : text(p["账号名称"]),
         sub: subOf(p, text(p["账号名称"])),
-        cells: [{ v: [option(p["内容类型"])].filter(Boolean).join(" · ") || "（还没补好资料）", tone: option(p["内容类型"]) ? undefined : "muted" },
-          { v: fans(p["粉丝数"]) }, muted(option(p["市场"])), muted(option(p["入库批次"]))],
+        cells: view === "cross"
+          ? [muted(profileEmails(p)[0] ?? ""), { v: away(p) }, { v: fans(p["粉丝数"]) }, muted(option(p["入库批次"]))]
+          : [muted(profileEmails(p)[0] ?? ""), { v: [option(p["内容类型"])].filter(Boolean).join(" · ") || "（还没补好资料）", tone: option(p["内容类型"]) ? undefined : "muted" },
+            { v: fans(p["粉丝数"]) }, muted(option(p["市场"])), muted(option(p["入库批次"]))],
       })),
     };
   } else {
@@ -751,13 +868,21 @@ export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string, all
   });
 
   const pending = data.reviews.filter((r) => linkIds(r["KOL"]).includes(fid) && reviewState(r) === "pending" && option(r["状态"]) !== "执行失败");
-  const emails = profileEmails(p).map((e) => ({ address: e, blocked: s.doNotContact.has(e) }));
+  // I-1: a mail waiting, approved, being sent or failed holds her one slot; 写信 says so up front.
+  const held = data.reviews.find((r) => linkIds(r["KOL"]).includes(fid) && sendsMail(r) && ["待你审核", "待执行", "执行失败"].includes(option(r["状态"])));
+  // Addresses mail to her bounced from (C-12), marked so nobody writes there again by mistake.
+  const bounced = new Set(contacts.filter((c) => text(c["摘要"]).startsWith(BOUNCE_MARK)).map((c) => text(c["摘要"]).slice(BOUNCE_MARK.length).trim().toLowerCase()));
+  const emails = profileEmails(p).map((e) => ({ address: e, blocked: s.doNotContact.has(e), bounced: bounced.has(e) }));
   return {
     id: fid,
     handle: handleOf(s, f),
     name,
     sub: subOf(p, displayName(s, f)),
     stage: option(f["阶段"]),
+    /** A paused followup: the stage 恢复跟进 goes back to. A closed one: the stage it closed from, if noted. */
+    pausedFrom: option(f["阶段"]) === "暂缓" ? stageBeforePause(f) : "",
+    closedFrom: option(f["阶段"]) === "结案" ? (text(f["下一步"]).match(/（结案前：([^）]+)）/)?.[1] ?? "") : "",
+    closeReason: option(f["结案原因"]),
     stageStep: STAGE_STEP[option(f["阶段"])] ?? -1,
     stages: STAGES,
     situation: situationOf(f, cfg, todayStr),
@@ -768,6 +893,7 @@ export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string, all
     nextDateIso: day(f["下次跟进日期"], tz),
     agreedIso: day(f["约定发布日期"], tz),
     pending: pending.map((r) => ({ id: r.record_id, title: text(r["审核项"]), ask: text(r["要你定什么"]) })),
+    heldMail: held ? text(held["审核项"]) || "一封信" : "",
     bubbles,
     olderCount: Math.max(0, contacts.length - recent.length),
     showingAll: all,
@@ -777,6 +903,17 @@ export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string, all
       title: text(x["内容标题"]) || option(x["形式"]) || "帖子", link: text(x["内容链接"]), platform: option(x["平台"]), date: shortDay(day(x["发布日期"], tz)),
       metrics: [1, 3, 7, 30].map((d) => ({ day: d, views: Number(x[`第${d}天播放`]) || null })),
     })),
+    /** Values already used across the project, offered as suggestions when editing 市场 and 重要程度. */
+    choices: {
+      市场: [...new Set([...s.profiles.values()].map((x) => option(x["市场"])).filter(Boolean))].sort(),
+      级别: [...new Set([...s.followups.values()].map((x) => option(x["级别"])).filter(Boolean))].sort(),
+    },
+    /** 资料 that can be changed in place; `field` is the 档案 or 跟进 field behind it. */
+    editable: [
+      { k: "怎么称呼", field: "称呼", v: text(p?.["称呼"]) }, { k: "主页", field: "主页链接", v: text(p?.["主页链接"]) },
+      { k: "市场", field: "市场", v: option(p?.["市场"]) }, { k: "语言", field: "語言", v: text(p?.["語言"]) },
+      { k: "重要程度", field: "级别", v: option(f["级别"]), on: "followup" },
+    ],
     info: [
       ["怎么称呼", text(p?.["称呼"])], ["主页", text(p?.["主页链接"])], ["市场", option(p?.["市场"])], ["内容类型", option(p?.["内容类型"])],
       ["邀约批次", option(f["邀约批次"])], ["用哪个邮箱联系", option(f["联系渠道"])], ["重要程度", option(f["级别"])],
@@ -805,7 +942,7 @@ export async function activityLog(ctx: Ctx) {
   const time = (r: Row, f: string) => cellTime(r[f], tz) ?? 0;
   return {
     runs: runs.sort((a, b) => time(b, "开始时间") - time(a, "开始时间")).slice(0, 30).map((r) => ({
-      title: text(r["运行"]), how: option(r["方式"]), result: option(r["结果"]),
+      id: r.record_id, title: text(r["运行"]), how: option(r["方式"]), result: option(r["结果"]),
       start: stamp(time(r, "开始时间"), tz), end: time(r, "结束时间") ? stamp(time(r, "结束时间"), tz).slice(11) : "",
       counts: [["处理来信", r["处理来信"]], ["发出邮件", r["发出邮件"]], ["新增待审", r["新增待审"]]].filter(([, n]) => Number(n) > 0).map(([k, n]) => `${k} ${n}`).join(" · "),
       notes: text(r["问题与备注"]),
@@ -813,13 +950,31 @@ export async function activityLog(ctx: Ctx) {
     ops: ops.sort((a, b) => time(b, "时间") - time(a, "时间")).slice(0, 300).map((o) => {
       const run = runById.get(linkIds(o["所属运行"])[0] ?? "");
       return {
-        when: stamp(time(o, "时间"), tz), type: option(o["类型"]), result: option(o["结果"]), what: text(o["操作"]),
+        run: run?.record_id ?? "", when: stamp(time(o, "时间"), tz), type: option(o["类型"]), result: option(o["结果"]), what: text(o["操作"]),
         note: text(o["说明"]).split("\n").filter((l) => !l.startsWith("执行人：")).join(" "),
         source: run ? `${option(run["方式"]) === "定时任务" ? "每天例行" : "在 Claude 里跑的"}` : "",
         by: (text(o["说明"]).match(/执行人：(.+)/) ?? [])[1] ?? "",
       };
     }),
   };
+}
+
+/**
+ * G-3 for the banner: when the latest finished read of the mailboxes (收信同步, or the daily run that starts with
+ * one) didn't read everything, which mailboxes and what was said. Empty when the latest one was complete.
+ */
+export async function syncWarning(ctx: Ctx): Promise<string[]> {
+  const tz = ctx.cfg.timezone;
+  const runs = await ctx.base.records(ctx.cfg.tables.runs, { filter: { logic: "and", conditions: [onOrAfter("开始时间", addDays(today(ctx.cfg), -7))] },
+    fields: ["运行", "结果", "开始时间", "问题与备注"] });
+  const reads = runs.filter((r) => /^(收信同步|催信和结案)/.test(text(r["运行"])) && option(r["结果"]) !== "进行中")
+    .sort((a, b) => (cellTime(b["开始时间"], tz) ?? 0) - (cellTime(a["开始时间"], tz) ?? 0));
+  const last = reads[0];
+  if (!last || option(last["结果"]) === "完成") return [];
+  const notes = text(last["问题与备注"]).split("\n").filter(Boolean);
+  const partial = notes.filter((l) => /只读了一部分|没把信收全/.test(l));
+  // A read that failed outright is just as incomplete as one that stopped at 400 mails (G-3).
+  return partial.length ? partial : [`最近一次${text(last["运行"]).replace(/（.*$/, "")}${option(last["结果"]) || "没完成"}${notes[0] ? `（${notes[0].slice(0, 80)}）` : ""}`];
 }
 
 /** The top bar: anything that failed lately, and what is approved or running right now. */

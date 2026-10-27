@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { addEmail, approve, closeFollowup, mailDone, mailLink, problemDone, updateFollowup, writeMail, type Jobs } from "../../src/kolops/console/actions.js";
+import { addEmail, approve, closeFollowup, mailDone, mailLink, problemDone, resumeFollowup, updateFollowup, writeMail, type Jobs } from "../../src/kolops/console/actions.js";
 import { remind } from "../../src/kolops/remind.js";
 import { applyRevisions } from "../../src/kolops/reviews.js";
 import { sendApproved } from "../../src/kolops/send.js";
@@ -208,5 +208,83 @@ describe("评审补的场景", () => {
     expect(r.写入).toBe(1);
     expect(row(T.reviews, item.record_id)).toMatchObject({ 类型: ["回复邮件"], 体验码动作: ["延期"], 体验码: "deer", 体验天数: 7, 状态: ["待你审核"], 收件人: "kol1@example.com" });
     expect(row(T.reviews, item.record_id)["KOL"]).toEqual([{ id: fid }]);
+  });
+});
+
+describe("界面差距表（ui.md 第 6 节）", () => {
+  it("C-01 a 发后动作 changed on the card is part of the approval and is carried out", async () => {
+    const { fid } = kol("小鹿", { 阶段: ["已回复"], 当前轮到谁: ["我们"] });
+    const id = lark.add(T.reviews, { 类型: ["回复邮件"], 状态: ["待你审核"], 发送渠道: ["hello@tafu.me"], 收件人: "kol1@example.com", 邮件草稿: "主题：謝謝\n謝謝您，祝順利", 审核项: "回她", KOL: [{ id: fid }] });
+    await data.refresh();
+    await approve(ctx, data, held(), id, { 发后动作: "结案", 结案原因: "拒绝" });
+    expect(row(T.reviews, id)).toMatchObject({ 发后动作: ["结案"], 结案原因: ["拒绝"], 处理: ["发／同意"] });
+    const rep = await sendApproved(fresh(), { dryRun: false, only: [id] });
+    expect(rep).toMatchObject({ skipped: [] });
+    expect(row(T.followups, fid)).toMatchObject({ 阶段: ["结案"], 结案原因: ["拒绝"] });
+  });
+
+  it("C-01 发后动作 without a reason is refused, and 无 clears both", async () => {
+    const { fid } = kol("小鹿", { 阶段: ["已回复"], 当前轮到谁: ["我们"] });
+    const id = lark.add(T.reviews, { 类型: ["回复邮件"], 状态: ["待你审核"], 发送渠道: ["hello@tafu.me"], 收件人: "kol1@example.com", 邮件草稿: "好的", 审核项: "回她", KOL: [{ id: fid }], 发后动作: ["结案"], 结案原因: ["拒绝"] });
+    await data.refresh();
+    await expect(approve(ctx, data, held(), id, { 发后动作: "结案" })).rejects.toThrow(/结案原因/);
+    await approve(ctx, data, held(), id, { 发后动作: "" });
+    expect(row(T.reviews, id)["发后动作"] ?? null).toBeNull();
+    expect(row(T.reviews, id)["结案原因"] ?? null).toBeNull();
+  });
+
+  it("U-3 pausing notes the stage it paused from, and resuming goes back to it", async () => {
+    const { fid } = kol("小鹿", { 阶段: ["合作中"], 当前轮到谁: ["KOL"] });
+    await data.refresh();
+    await updateFollowup(ctx, data, fid, { 阶段: "暂缓" });
+    expect(row(T.followups, fid)["阶段"]).toEqual(["暂缓"]);
+    expect(String(row(T.followups, fid)["下一步"])).toMatch(/（暂缓前：合作中）/);
+    await data.refresh();
+    expect(await resumeFollowup(ctx, data, fid)).toBe("合作中");
+    expect(row(T.followups, fid)["阶段"]).toEqual(["合作中"]);
+  });
+
+  it("U-3 resuming a pause that noted nothing goes back to 已回复", async () => {
+    const { fid } = kol("小鹿", { 阶段: ["暂缓"], 当前轮到谁: ["KOL"], 下一步: "先放着" });
+    await data.refresh();
+    expect(await resumeFollowup(ctx, data, fid)).toBe("已回复");
+  });
+
+  it("C-12 adding a new address keeps the bounce card; the mail to it being queued clears it", async () => {
+    const { fid } = kol("小鹿", { 阶段: ["合作中"], 当前轮到谁: ["KOL"] });
+    const b = lark.add(T.contacts, { 方向: ["收到"], 渠道: ["hello@tafu.me"], 摘要: "[退信] kol1@example.com", 待处理: true, KOL: [{ id: fid }], 日期: at(0) });
+    await data.refresh();
+    await addEmail(ctx, data, fid, "deer.new@example.com");
+    expect((await cards()).find((c) => c.who?.id === fid)).toMatchObject({ kind: "bounce", bounced: "kol1@example.com" });
+    await writeMail(ctx, data, held(), fid, "", "換這個信箱聯絡您", undefined, { to: "deer.new@example.com", answers: [b] });
+    expect(row(T.contacts, b)["待处理"]).toBe(false);
+    expect((await cards()).find((c) => c.kind === "bounce")).toBeUndefined();
+  });
+
+  it("C-12 a mail refused (I-1) leaves the bounce card in place", async () => {
+    const { fid } = kol("小鹿", { 阶段: ["合作中"], 当前轮到谁: ["KOL"] });
+    const b = lark.add(T.contacts, { 方向: ["收到"], 渠道: ["hello@tafu.me"], 摘要: "[退信] kol1@example.com", 待处理: true, KOL: [{ id: fid }], 日期: at(0) });
+    lark.add(T.reviews, { 类型: ["回复邮件"], 状态: ["执行失败"], 发送渠道: ["hello@tafu.me"], 审核项: "回她", KOL: [{ id: fid }] });
+    await data.refresh();
+    await expect(writeMail(ctx, data, held(), fid, "", "x", undefined, { answers: [b] })).rejects.toThrow(/只能有一封/);
+    expect(row(T.contacts, b)["待处理"]).toBe(true);
+  });
+
+  it("U-5 an approved mail from a mailbox switched off since goes back for review instead of hanging", async () => {
+    const { fid } = kol("小鹿", { 阶段: ["已回复"], 当前轮到谁: ["我们"] });
+    const id = lark.add(T.reviews, { 类型: ["回复邮件"], 状态: ["待你审核"], 发送渠道: ["old@tafu.me"], 收件人: "kol1@example.com", 邮件草稿: "好的", 审核项: "回她", KOL: [{ id: fid }], 处理: ["发／同意"] });
+    const r = await sendApproved(fresh(), { dryRun: false });
+    expect(r.skipped.find((x) => x.key === id)?.reason).toMatch(/已停用/);
+    expect(row(T.reviews, id)).toMatchObject({ 状态: ["待你审核"] });
+    expect(row(T.reviews, id)["处理"] ?? null).toBeNull();
+    const card = (await cards()).find((c) => c.id === id)!;
+    expect(card.returned).toMatch(/已停用/);
+  });
+
+  it("C-10 an expired trial is its own card with the code's usage", async () => {
+    const { fid } = kol("小鹿", { 阶段: ["体验中"], 当前轮到谁: ["KOL"], 体验码: "deer", 体验码已用: 1, 体验码上限: 3, 体验码到期: at(2 * DAY) });
+    await trialFollowup(ctx, { dryRun: false });
+    const card = (await cards()).find((c) => c.who?.id === fid)!;
+    expect(card).toMatchObject({ kind: "expired", tag: "体验码过期", trial: { code: "deer", used: 1, max: 3 } });
   });
 });

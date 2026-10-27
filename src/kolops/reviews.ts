@@ -78,10 +78,12 @@ export async function sendBack(ctx: Ctx, reviewId: string, why: string): Promise
  * Approves an item from the decision console: applies the reviewer's last edits, then records who approved it,
  * when, and the fingerprint of exactly what they saw.
  */
-export async function approveInConsole(ctx: Ctx, reviewId: string, edits: Record<string, unknown> = {}): Promise<Row> {
+export async function approveInConsole(ctx: Ctx, reviewId: string, edits: Record<string, unknown> | ((r: Row) => Record<string, unknown>) = {}): Promise<Row> {
   const t = ctx.cfg.tables;
   const [r] = await ctx.base.get(t.reviews, [reviewId]);
   if (!r) throw new Error("审核队列里已经没有这一条");
+  // Edits may be worked out from the row as read here, so a check on it covers exactly what is approved.
+  if (typeof edits === "function") edits = edits(r);
   const state = option(r["状态"]);
   if (!["待你审核", "待执行"].includes(state)) throw new Error(`这一条现在是「${state}」，不能再同意`);
   const merged = { ...r, ...edits };
@@ -101,6 +103,18 @@ const MAIL_TYPES = ["回复邮件", "协议"];
 /** True while the item is being carried out: claimed by a send that hasn't finished. */
 export function executing(r: Row): boolean {
   return option(r["状态"]) === "待执行" && text(r["执行结果"]).startsWith("执行中");
+}
+
+/**
+ * I-5: an item whose mail or code may already have gone through: being carried out, failed with an unknown result,
+ * or noted on this computer as sending, unknown, prepared or sent. Only checking the mailbox and the 出了问题 card
+ * settle it; nothing else may send it back, move it to another mailbox or withdraw it.
+ */
+export function uncertain(r: Row, journalState?: string): string {
+  if (executing(r)) return "正在执行";
+  if (option(r["状态"]) === "执行失败" && /结果不明|中断/.test(text(r["执行结果"]))) return "结果不明";
+  if (journalState && journalState !== "failed") return journalState === "sent" || journalState === "recorded" ? "已经发出" : "结果不明";
+  return "";
 }
 
 /**

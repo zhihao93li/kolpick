@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KOL 决策台</title>
 <style>
-:root{--bg:#F5F6F8;--card:#FFFFFF;--line:#E3E6EB;--line2:#EEF0F3;--ink:#1A1D23;--ink2:#3B414C;--muted:#5B6270;--blue:#2457D6;--blue2:#1A3FA0;--blue-bg:#E6ECFB;--warn:#8A3D00;--warn-bg:#FDEBD8;--warn-line:#F2C9A0;--bad:#8F1D12;--bad-bg:#FBE1DE;--ok:#155C39;--ok-bg:#DDF1E6;--purple:#4B2A93;--purple-bg:#EEE7FB}
+:root{--bg:#F5F6F8;--card:#FFFFFF;--line:#E3E6EB;--line2:#EEF0F3;--ink:#1A1D23;--ink2:#3B414C;--muted:#5B6270;--blue:#2457D6;--blue2:#1A3FA0;--blue-bg:#E6ECFB;--warn:#8A3D00;--warn-bg:#FDEBD8;--warn-line:#F2C9A0;--bad:#B42318;--bad-bg:#FDE8E7;--bad-line:#E9B4AE;--ok:#1F6B46;--ok-bg:#E6F4EC;--purple:#5B2BA8;--purple-bg:#EFE7FB}
 *{box-sizing:border-box}
 [hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;font-size:14px;line-height:1.55}
@@ -19,45 +19,49 @@ button{font:inherit}
 .cnt{font-size:12px;font-weight:600;background:var(--blue);color:#fff;border-radius:10px;padding:0 7px;line-height:20px}
 .right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .muted{color:var(--muted)}.small{font-size:13px}.tiny{font-size:12px}
-.btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:36px;padding:0 14px;border-radius:7px;border:1px solid #CDD2DA;background:#fff;color:var(--ink);font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none}
+.btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:38px;padding:0 14px;border-radius:7px;border:1px solid #CDD2DA;background:#fff;color:var(--ink);font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none}
 .btn:hover{background:var(--bg);text-decoration:none;color:var(--ink)}
 .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover{background:var(--blue2)}
-.btn.big{min-height:44px;padding:0 18px;font-size:15px}
-.btn.sm{min-height:30px;padding:0 10px;font-size:13px}
+.btn.big{min-height:46px;padding:0 18px;font-size:15px}
+.btn.sm{min-height:32px;padding:0 10px;font-size:13px}
+.btn.text{border-color:transparent;background:transparent}
+.btn.danger{color:var(--bad)}
+.btn.solid-bad{background:var(--bad);border-color:var(--bad);color:#fff}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .kbd{font-size:11px;line-height:18px;padding:0 5px;border-radius:4px;border:1px solid currentColor;opacity:.65;font-family:ui-monospace,Menlo,monospace}
-.pill{display:inline-flex;gap:6px;align-items:center;min-height:30px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-weight:600;font-size:13px;cursor:pointer}
+.pill{display:inline-flex;gap:6px;align-items:center;min-height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-weight:600;font-size:13px;cursor:pointer}
 .pill .dot{width:8px;height:8px;border-radius:50%;background:#1F8A55}
-.pill.bad{background:var(--bad-bg);border-color:#E9B4AE;color:var(--bad)}.pill.bad .dot{background:#B42318}
+.pill.bad{background:var(--bad-bg);border-color:var(--bad-line);color:var(--bad)}.pill.bad .dot{background:var(--bad)}
 .pill.warn{background:#FFF8F1;border-color:var(--warn-line);color:var(--warn)}.pill.warn .dot{background:#C2620C}
 .panel{position:absolute;right:0;top:40px;width:400px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(20,20,30,.14);z-index:30}
 .panel .row{display:flex;gap:10px;padding:10px 14px;border-top:1px solid var(--line2);align-items:flex-start}
+#banners{display:flex;flex-direction:column}
 .banner{background:#FFF8F1;border-bottom:1px solid var(--warn-line);color:var(--warn);padding:8px 24px;font-size:13px}
+.banner.red{background:#FDF2F1;border-color:var(--bad-line);color:var(--bad)}
 main{padding:20px 24px 48px;max-width:1680px;margin:0 auto}
 .narrow{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px}
 .badge{display:inline-block;font-size:12px;line-height:20px;padding:0 8px;border-radius:4px;white-space:nowrap;background:#ECEEF2;color:var(--ink2)}
 .b-blue{background:var(--blue-bg);color:var(--blue2)}.b-warn{background:var(--warn-bg);color:var(--warn)}.b-bad{background:var(--bad-bg);color:var(--bad)}.b-ok{background:var(--ok-bg);color:var(--ok)}.b-purple{background:var(--purple-bg);color:var(--purple)}
-.chip{border:1px solid var(--line);background:#fff;border-radius:16px;padding:3px 12px;font-size:13px;color:var(--ink2);cursor:pointer;min-height:30px}
+.chip{border:1px solid #CDD2DA;background:#fff;border-radius:16px;padding:5px 12px;font-size:13px;color:var(--ink2);cursor:pointer}
 .chip.on{border-color:var(--blue);color:var(--blue2);background:#EEF2FD;font-weight:600}
-.bar{height:6px;background:var(--line);border-radius:3px}.bar>div{height:6px;border-radius:3px;background:#1F8A55}
-.lbl{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:6px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar>div{height:6px;border-radius:3px;background:var(--blue)}
+.lbl{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.02em;margin-bottom:4px}
 .quote{background:var(--bg);border-radius:8px;padding:12px 16px;white-space:pre-wrap;font-size:15px}
-.suggest{border:2px solid #C9D6F6;background:#F7F9FE;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
-.step{display:flex;gap:12px;align-items:flex-start}
-.num{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:1px}
-.param{display:inline-flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);margin:6px 10px 0 0}
-.param span{font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 10px;background:#fff;min-width:80px}
-.draft{border:1px solid #CDD2DA;border-radius:8px;padding:12px 14px;white-space:pre-wrap;font-size:15px;line-height:1.75;background:#fff}
-.actions{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);border-radius:0 0 12px 12px;padding:14px 28px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.suggest{background:#EEF3FD;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.input{font:inherit;font-size:14px;color:var(--ink);border:1px solid #CDD2DA;border-radius:7px;padding:8px 10px;background:#fff;width:100%;min-height:38px}
+.input.bad{border-color:var(--bad)}
+textarea.input{resize:vertical;line-height:1.7}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink)}
+.field>span:first-child{font-size:12px;color:var(--muted);font-weight:600}
+.hint{font-size:12px;color:var(--muted)}.hint.bad{color:var(--bad)}.hint.ok{color:var(--ok)}
 details summary{cursor:pointer;color:var(--muted);font-size:13px}
 .views{display:flex;gap:4px;flex-wrap:wrap;background:#ECEEF2;padding:4px;border-radius:8px;align-self:flex-start;max-width:100%}
 .view{padding:7px 12px;border-radius:6px;color:var(--ink2);white-space:nowrap}
 .view:hover{background:var(--line);text-decoration:none;color:var(--ink)}
 .view.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--line)}
-.input{font:inherit;font-size:14px;color:var(--ink);border:1px solid #CDD2DA;border-radius:6px;padding:7px 10px;background:#fff}
 table{width:100%;border-collapse:collapse}
-th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFBFC}
+th{font-size:12px;color:var(--muted);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFBFC}
 td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 .tone-warn{color:var(--warn);font-weight:600}.tone-bad{color:var(--bad);font-weight:600}.tone-ok{color:var(--ok)}.tone-muted{color:var(--muted)}
 .two{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
@@ -70,14 +74,22 @@ td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
 .stepper{list-style:none;margin:0;padding:0;display:flex;gap:4px;flex-wrap:wrap}
 .stepper li{flex:1 1 80px;display:flex;flex-direction:column;gap:6px;font-size:13px}
 .stepper .seg{height:6px;border-radius:3px;background:var(--line)}
+.stepper.grey .seg{filter:grayscale(1);opacity:.5}
 .err{background:var(--bad-bg);color:var(--bad);border-radius:8px;padding:12px 14px}
 .loading{padding:40px;text-align:center;color:var(--muted)}
-.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
-.field .input{font-size:14px}
-.modal{position:fixed;inset:0;background:rgba(20,20,30,.35);display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:40;overflow:auto}
+.modal{position:fixed;inset:0;background:rgba(20,22,28,.3);display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:40;overflow:auto}
 .modal>div{background:#fff;border-radius:12px;padding:20px 22px;width:100%;max-width:620px;display:flex;flex-direction:column;gap:12px}
+.scrim{position:fixed;inset:0;background:rgba(20,22,28,.3);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100%;background:#fff;box-shadow:-10px 0 30px rgba(20,20,30,.18);display:flex;flex-direction:column;z-index:41}
+.drawer-head{padding:18px 22px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:10px}
+.drawer-head h2{margin:0;font-size:18px}
+.drawer-body{flex:1;overflow:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.drawer-foot{padding:14px 22px;border-top:1px solid var(--line2);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+.confirm{border:1px solid var(--bad-line);background:#FDF2F1;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.confirm b{color:var(--bad);font-size:13px}
+.confirm.blue{border-color:#C9D6F5;background:#F2F5FD}.confirm.blue b{color:var(--blue2)}
 main.wide{max-width:none}
-.dgrid{display:grid;grid-template-columns:minmax(300px,22%) minmax(0,1fr) minmax(380px,26%);gap:16px;align-items:start}
+.dgrid{display:grid;grid-template-columns:minmax(280px,20%) minmax(0,1fr) minmax(380px,28%);gap:16px;align-items:start}
 .dlist{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto;padding:6px 0}
 .dgroup{font-size:12px;font-weight:600;color:var(--muted);padding:10px 14px 4px;display:flex;justify-content:space-between}
 .ditem{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;text-align:left;padding:9px 14px;border:0;border-left:3px solid transparent;background:transparent;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
@@ -87,17 +99,27 @@ main.wide{max-width:none}
 .dtitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
 .dinfo{padding:20px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
 .dact{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
-.seg{display:flex;gap:0;border:1px solid #CDD2DA;border-radius:8px;overflow:hidden}
-.seg button{flex:1;border:0;background:#fff;font:inherit;font-size:13px;padding:9px 8px;cursor:pointer;color:var(--ink2);display:flex;gap:6px;align-items:center;justify-content:center}
-.seg button+button{border-left:1px solid #CDD2DA}
-.seg button.on{background:#EEF2FD;color:var(--blue2);font-weight:600}
-.dbuttons{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--line2)}
-.dbuttons{flex-direction:column}
-.drow{display:flex;flex-wrap:wrap;gap:8px}
-@media (max-width:1180px){.dgrid{grid-template-columns:minmax(240px,30%) minmax(0,1fr)}.dact{grid-column:2;position:static;max-height:none}}
-@media (max-width:760px){.dgrid{grid-template-columns:minmax(0,1fr)}.dact{grid-column:1}.dlist{position:static;max-height:240px}}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:8px;padding:10px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px)}
-@media (max-width:640px){.top,main{padding-left:16px;padding-right:16px}.actions{padding:12px 16px}}
+.segs{display:flex;gap:0;border:1px solid #CDD2DA;border-radius:8px;overflow:hidden}
+.segs button{flex:1;border:0;background:#fff;font:inherit;font-size:13px;padding:9px 8px;cursor:pointer;color:var(--ink2);display:flex;gap:6px;align-items:center;justify-content:center}
+.segs button+button{border-left:1px solid #CDD2DA}
+.segs button.on{background:#EEF2FD;color:var(--blue2);font-weight:600}
+.choice{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.choice.on{border-color:var(--blue);background:#F7F9FE}
+.choice input{margin-top:4px}
+.drow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.steps{margin:0;padding-left:20px;font-size:13px;display:flex;flex-direction:column;gap:4px}
+.params{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.timeline{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.timeline div{display:flex;gap:12px}.timeline div span:first-child{flex:0 0 90px;color:var(--muted)}
+.dpick{display:none}
+@media (max-width:1279px){.dgrid{grid-template-columns:minmax(0,1fr)}.dlist{display:none}.dpick{display:flex}.dact{position:static;max-height:none}}
+@media (max-width:760px){.params{grid-template-columns:1fr}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 14px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14px;max-width:calc(100% - 32px);display:flex;gap:12px;align-items:center;z-index:50}
+.toast.bad{background:var(--bad)}
+.toast .tbar{width:70px;height:4px;border-radius:2px;background:#3B414C;display:inline-block;overflow:hidden}
+.toast .tbar span{display:block;height:4px;background:#8FB0FF;width:100%;transition:width linear}
+.toast .btn{min-height:30px;font-size:13px;background:transparent;color:#fff;border-color:#5B6270}
+@media (max-width:640px){.top,main{padding-left:16px;padding-right:16px}.banner{padding-left:16px;padding-right:16px}}
 </style>
 </head>
 <body>
@@ -105,119 +127,283 @@ main.wide{max-width:none}
   <span class="brand">KOL 决策台</span>
   <span class="muted small" id="project"></span>
   <nav aria-label="主导航" style="display:flex;gap:4px;flex-wrap:wrap">
-    <a class="tab" data-tab="decide" href="#/">待你决定 <span class="cnt" id="n-decide">·</span></a>
+    <a class="tab" data-tab="decide" href="#/">待你决定 <span class="cnt" id="n-decide" hidden></span></a>
     <a class="tab" data-tab="people" href="#/people/wait">KOL</a>
     <a class="tab" data-tab="log" href="#/log">执行记录</a>
+    <a class="tab" data-tab="settings" href="#/settings">设置</a>
   </nav>
   <div class="right">
     <div style="position:relative">
       <button class="pill" id="status" aria-expanded="false"><span class="dot"></span><span id="status-text">…</span></button>
       <div class="panel" id="status-panel" hidden></div>
     </div>
-    <span class="muted small" id="synced"></span>
+    <span class="small" id="synced"></span>
     <button class="btn sm" id="refresh">刷新</button>
-    <button class="btn sm" id="pause" style="border-color:#E9B4AE;color:var(--bad)">暂停所有发送</button>
+    <div style="position:relative">
+      <button class="btn sm" id="pause" style="border-color:var(--bad-line);color:var(--bad)">暂停所有发送</button>
+      <div class="panel" id="pause-panel" style="width:320px;padding:12px 14px" hidden></div>
+    </div>
   </div>
 </header>
-<div class="banner" id="paused-banner" style="background:var(--bad-bg);color:var(--bad);border-color:#E9B4AE" hidden>已暂停所有发送：你同意的事会先排着，点「恢复发送」后才执行。</div>
-<div class="banner" id="setup-banner" hidden></div>
-<main id="app"><div class="loading">正在从飞书读数据…第一次打开或者很久没开时要一两分钟，读完会自动显示。</div></main>
-<div class="toast" id="toast" hidden><span id="toast-text"></span> <button class="btn sm" id="toast-undo" style="margin-left:10px;background:transparent;color:#fff;border-color:#5B6270" hidden>撤销</button></div>
+<div id="banners"></div>
+<main id="app"><div class="loading">正在读数据…第一次打开要一两分钟，读完会自动显示。</div></main>
+<div id="notes" style="position:fixed;left:50%;bottom:76px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;z-index:50;max-width:calc(100% - 32px)"></div>
+<div class="toast" id="toast" hidden role="status"><span id="toast-text"></span><span class="tbar" id="toast-bar" hidden><span></span></span><button class="btn" id="toast-btn" hidden></button></div>
 <div class="modal" id="modal" hidden><div id="modal-body"></div></div>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" hidden></aside>
 <script>
 "use strict";
-var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {}, posted: {}, drafts: {} };
+var state = { overview: null, idx: 0, handled: {}, changing: false, jobsSeen: {}, convo: {}, posted: {}, drafts: {}, pick: {}, focus: "", logFilter: "all" };
+var UNDO_MS = 5000;
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
 }
 function $(id) { return document.getElementById(id); }
+function all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
 function api(path, opts) {
   return fetch(path, opts).then(function (r) {
     return r.json().then(function (body) { if (!r.ok) throw new Error(body.error || ("出错了（" + r.status + "）")); return body; });
   });
 }
 function post(path, body) {
-  return api(path, { method: "POST", headers: { "content-type": "application/json", "x-kol-console": "1" }, body: JSON.stringify(body || {}) });
+  return api(path, { method: "POST", headers: { "content-type": "application/json", "x-kol-console": "1" }, body: JSON.stringify(body || {}) }).then(function (r) {
+    // These answer once the change has been read back: the queue, counts and banners follow it at once.
+    if (/^\/api\/(settings\/|followup|close|resume|post|profile|default-email|add-email|find)/.test(path)) setTimeout(refreshOverview, 0);
+    return r;
+  });
 }
-function toast(text, undo) {
-  $("toast-text").textContent = text; $("toast").hidden = false;
-  var u = $("toast-undo"); u.hidden = !undo; u.onclick = function () { $("toast").hidden = true; if (undo) undo(); };
-  clearTimeout(toast.t); toast.t = setTimeout(function () { $("toast").hidden = true; }, undo ? 5200 : 4000);
+function refreshOverview() {
+  return loadOverview().then(function () { renderBanners(); if (!location.hash || location.hash === "#/" || location.hash.indexOf("#/?") === 0) { if ($("drawer").hidden) renderDecide(); } }).catch(function () {});
 }
-/** Hides a card at once and does the action after five seconds unless 撤销 is pressed. */
-function later(id, text, action) {
-  state.handled[id] = true;
-  var undone = false;
-  toast(text, function () { undone = true; delete state.handled[id]; renderDecide(); });
+/** Only web links become links; anything else (javascript:, data:) is shown as text. */
+function safeUrl(u) { return /^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : ""; }
+function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim()); }
+function isoAdd(days) { var d = new Date(Date.now() + days * 86400000); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+/** 「11 月 10 日（周二）」 and how far from today, for date pickers (2.7). */
+function dayText(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) return "";
+  var p = iso.split("-").map(Number), d = new Date(p[0], p[1] - 1, p[2]);
+  var n = Math.round((d - new Date(new Date().toDateString())) / 86400000);
+  var rel = n === 0 ? "今天" : n === 1 ? "明天" : n > 1 ? (n % 7 === 0 && n <= 28 ? (n === 7 ? "一周后" : n / 7 + " 周后") : n + " 天后") : (-n) + " 天前";
+  return p[1] + " 月 " + p[2] + " 日（周" + "日一二三四五六".charAt(d.getDay()) + "）· " + rel;
+}
+
+/** Example values for previewing a template: placeholders it can fill show as blue chips, unknown ones as red. */
+var SAMPLE = { 稱呼: "小鹿", 称呼: "小鹿", 账号名称: "deer_lu", 體驗碼: "deer_lu", 体验码: "deer_lu", 已用: "1", 剩餘: "2", 剩余: "2", 次數: "3", 次数: "3", 到期日: "11 月 10 日", "已於 / 將於": "將於", "M 月 D 日": "11 月 10 日",
+  約定日期: "11 月 15 日", 约定日期: "11 月 15 日", 活動碼: "deer_tafu", 活动码: "deer_tafu", 專屬連結: "https://tafu.me/p/deer", 专属连结: "https://tafu.me/p/deer", 帳本連結: "https://tafu.me/l/deer", 账本连结: "https://tafu.me/l/deer", 粉絲折扣: "85 折", 粉丝折扣: "85 折" };
+function fillSample(s) {
+  return esc(s || "").replace(/\{([^{}\n]+)\}/g, function (whole, k) {
+    var v = SAMPLE[k.trim()];
+    return v ? '<span style="background:var(--blue-bg);color:var(--blue2);padding:0 3px;border-radius:3px">' + esc(v) + "</span>" : '<span style="background:var(--bad-bg);color:var(--bad);padding:0 3px;border-radius:3px">' + whole + "</span>";
+  });
+}
+
+// --- 提示条和撤销（2.3）---
+var toastState = { timer: null, undo: null };
+function toast(text, o) {
+  o = o || {};
+  // While an action can still be undone, other messages stack above it instead of taking its undo away.
+  if (!o.undo && toastState.undo) return note(text, o.bad);
+  var t = $("toast");
+  clearTimeout(toastState.timer);
+  t.className = "toast" + (o.bad ? " bad" : "");
+  $("toast-text").textContent = text;
+  var b = $("toast-btn"), bar = $("toast-bar");
+  toastState.undo = o.undo || null;
+  bar.hidden = !o.undo;
+  b.hidden = !(o.undo || o.bad);
+  b.innerHTML = o.undo ? '撤销 <span class="kbd">Z</span>' : "知道了";
+  b.onclick = function () { var u = toastState.undo; hideToast(); if (u) u(); };
+  if (o.undo) {
+    var fill = bar.firstChild;
+    fill.style.transition = "none"; fill.style.width = "100%";
+    requestAnimationFrame(function () { requestAnimationFrame(function () { fill.style.transition = "width " + UNDO_MS + "ms linear"; fill.style.width = "0%"; }); });
+  }
+  t.hidden = false;
+  // A red one stays until it is dismissed.
+  if (!o.bad) toastState.timer = setTimeout(hideToast, o.undo ? UNDO_MS + 200 : 4000);
+}
+function hideToast() { $("toast").hidden = true; toastState.undo = null; toastState.owner = null; }
+function note(text, bad) {
+  var n = document.createElement("div");
+  n.className = "toast" + (bad ? " bad" : "");
+  n.style.cssText = "position:static;transform:none";
+  n.textContent = text;
+  if (bad) { var b = document.createElement("button"); b.className = "btn"; b.textContent = "知道了"; b.onclick = function () { n.remove(); }; n.appendChild(b); }
+  $("notes").appendChild(n);
+  if (!bad) setTimeout(function () { n.remove(); }, 4000);
+}
+function failToast(prefix, e) { toast(prefix + e.message, { bad: true }); }
+
+/** Hides a card at once and does the action after five seconds unless 撤销 is pressed (E-22). */
+function onDecide() { var h = location.hash || "#/"; return h === "#/" || h === "#" || h.indexOf("#/?") === 0; }
+function redrawDecide() { if (onDecide() && $("drawer").hidden) renderDecide(); else renderCount(); }
+function later(id, text, action, after) {
+  // Until it is carried out the card stays in the queue greyed, 「5 秒后执行」 (4.1.1).
+  state.handled[id] = "pending";
+  var undone = false, token = {};
+  toast(text, { undo: function () { undone = true; delete state.handled[id]; toast("已撤销"); redrawDecide(); } });
+  toastState.owner = token;
   renderDecide();
   setTimeout(function () {
     if (undone) return;
+    // Its undo ends the moment it is carried out, whatever the bar shows.
+    if (toastState.owner === token) hideToast();
+    state.handled[id] = true;
+    redrawDecide();
     action().then(function (r) {
       delete state.drafts[id];
       if (r && r.job) watchJobs();
       if (r && r.paused && !r.job) toast("现在暂停着：已经记下你同意了，恢复发送后会发出");
-    }).catch(function (e) { delete state.handled[id]; toast("没做成：" + e.message); renderDecide(); });
-  }, 5000);
+      if (after) after(r);
+    }).catch(function (e) { delete state.handled[id]; failToast("没做成：", e); redrawDecide(); });
+  }, UNDO_MS);
 }
-// Edits made on a card are kept per card, so moving to another card or a refresh of the list never loses them.
-function keepEdits(c) {
-  var saved = state.drafts[c.id];
-  if (saved && c.draft && saved.base !== c.draft.body && $("draft-body")) {
-    var note = document.createElement("div");
-    note.className = "muted tiny";
-    note.style.color = "var(--warn)";
-    note.textContent = "这封草稿在别处被改过；下面是你改的版本，同意时会用它。";
-    $("draft-body").parentNode.insertBefore(note, $("draft-body"));
+/** The same five seconds for an action that hides no card (写信 from her page). */
+function delayed(text, action, after) {
+  var undone = false, token = {};
+  toast(text, { undo: function () { undone = true; toast("已撤销"); } });
+  toastState.owner = token;
+  setTimeout(function () {
+    if (undone) return;
+    if (toastState.owner === token) hideToast();
+    action().then(function (r) { if (r && r.job) watchJobs(); if (after) after(r); }).catch(function (e) { failToast("没做成：", e); });
+  }, UNDO_MS);
+}
+
+// --- 侧滑面板（2.4）---
+var drawerState = { dirty: false, onClose: null };
+function drawer(title, body, foot, o) {
+  o = o || {};
+  var d = $("drawer");
+  d.setAttribute("aria-label", title);
+  d.innerHTML = '<div class="drawer-head"><h2>' + esc(title) + '</h2><button class="btn sm" id="dr-x" aria-label="关闭" style="margin-left:auto">×</button></div>' +
+    '<div class="drawer-body">' + body + '</div><div class="drawer-foot" id="dr-foot">' + foot + '</div>';
+  d.hidden = false; $("scrim").hidden = false;
+  drawerState = { dirty: false, onClose: o.onClose || null, ask: o.ask || "" };
+  all("input,textarea,select", d).forEach(function (el) { el.addEventListener("input", function () { drawerState.dirty = true; }); });
+  $("dr-x").onclick = function () { closeDrawer(); };
+  var first = d.querySelector("[autofocus]") || d.querySelector("textarea,input");
+  if (first) first.focus();
+}
+/** Closing a form with something typed in it asks first (2.4). */
+function closeDrawer(force) {
+  if (!force && drawerState.dirty && drawerState.ask) {
+    var foot = $("dr-foot");
+    if ($("dr-ask")) return;
+    var keep = foot.innerHTML;
+    foot.innerHTML = '<span id="dr-ask" style="margin-right:auto;color:var(--bad);font-weight:600">' + esc(drawerState.ask) + '</span><button class="btn solid-bad" id="dr-drop">放弃</button><button class="btn" id="dr-keep">继续写</button>';
+    $("dr-drop").onclick = function () { closeDrawer(true); };
+    $("dr-keep").onclick = function () { foot.innerHTML = keep; if (drawerState.rewire) drawerState.rewire(); };
+    return;
   }
-  Array.prototype.forEach.call(document.querySelectorAll("#draft-body, #draft-subject, [data-field]"), function (el) {
-    var key = el.id || "f:" + el.getAttribute("data-field");
-    if (saved && saved[key] != null) el.value = saved[key];
-    el.addEventListener("input", function () {
-      var d = state.drafts[c.id] || (state.drafts[c.id] = { base: c.draft ? c.draft.body : "" });
-      d[key] = el.value;
-    });
-  });
+  $("drawer").hidden = true; $("scrim").hidden = true;
+  var cb = drawerState.onClose; drawerState = { dirty: false };
+  if (cb) cb();
 }
-window.addEventListener("beforeunload", function (e) {
-  if (Object.keys(state.drafts).length) { e.preventDefault(); e.returnValue = ""; }
-});
+$("scrim").addEventListener("click", function () { closeDrawer(); });
+
 function modal(html) { $("modal-body").innerHTML = html; $("modal").hidden = false; }
 function closeModal() { $("modal").hidden = true; }
 $("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
-function fail(err) { $("app").innerHTML = '<div class="narrow"><div class="err">' + esc(err.message || err) + '</div></div>'; }
+
+/** Irreversible steps open a box right under their button instead of a browser dialog (2.4). */
+function inlineConfirm(box, o) {
+  box.innerHTML = '<div class="confirm' + (o.blue ? " blue" : "") + '"><b>' + esc(o.title) + '</b>' + (o.body || "") +
+    '<div class="drow"><button class="btn sm ' + (o.blue ? "primary" : "solid-bad") + '" data-ok>' + esc(o.ok) + '</button><button class="btn sm" data-no>取消</button></div></div>';
+  box.hidden = false;
+  box.querySelector("[data-no]").onclick = function () { box.innerHTML = ""; box.hidden = true; };
+  box.querySelector("[data-ok]").onclick = function () {
+    var v = o.check ? o.check(box) : true;
+    if (v === false) return;
+    box.innerHTML = ""; box.hidden = true;
+    o.run(v);
+  };
+  var f = box.querySelector("input,textarea,select");
+  if (f) f.focus();
+}
+function reasonSelect(id, preset) {
+  var list = (state.overview && state.overview.closeReasons) || [];
+  return '<label class="field"><span>结案原因</span><select class="input" id="' + id + '">' + list.map(function (r) { return "<option" + (r === preset ? " selected" : "") + ">" + esc(r) + "</option>"; }).join("") + "</select></label>";
+}
+
+window.addEventListener("beforeunload", function (e) {
+  if (Object.keys(state.drafts).length) { e.preventDefault(); e.returnValue = ""; }
+});
+function fail(err) { $("app").innerHTML = '<div class="narrow"><div class="err"><b>读不到项目的数据</b><div class="small">' + esc(err.message || err) + '。数据没丢，稍后再试。</div><button class="btn sm" style="margin-top:10px" onclick="location.reload()">重试</button></div></div>'; }
 function timeOf(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 
+// --- 顶栏和横幅（2.1、2.2）---
 function loadOverview() {
   return api("/api/overview").then(function (o) {
     state.overview = o;
     $("project").textContent = o.project;
-    $("n-decide").textContent = o.cards.length;
-    $("synced").textContent = "飞书 " + timeOf(o.loadedAt) + " 已同步";
+    renderCount();
+    renderSynced();
     renderStatus(o.status, o.jobs);
     renderPause(o.paused);
-    $("setup-banner").hidden = !(o.setupNeeded && o.setupNeeded.length);
-    if (o.setupNeeded && o.setupNeeded.length) $("setup-banner").textContent = "这个项目的飞书表还缺 " + o.setupNeeded.join("、") + "，决策台现在只能看。请在执行电脑上运行 kol setup-base，然后重新打开决策台。";
     o.jobs.forEach(function (j) { state.jobsSeen[j.id] = j.state; });
     if (o.jobs.some(function (j) { return j.state === "排队中" || j.state === "进行中"; })) watchJobs();
     return o;
   });
 }
+function renderCount() {
+  var n = state.overview ? visibleCards().length : 0;
+  $("n-decide").textContent = n; $("n-decide").hidden = !n;
+}
+function renderSynced() {
+  var o = state.overview;
+  if (!o) return;
+  var old = Date.now() - o.loadedAt > 30 * 60 * 1000;
+  $("synced").textContent = timeOf(o.loadedAt) + " 已同步";
+  $("synced").style.color = old ? "var(--warn)" : "var(--muted)";
+  $("synced").style.fontWeight = old ? "600" : "400";
+}
+setInterval(renderSynced, 60 * 1000);
+function renderBanners() {
+  var o = state.overview, list = [];
+  if (!o) return;
+  if (state.paused) list.push({ red: true, html: "已暂停所有发送：你同意的事会先排着，点「恢复发送」后才执行。" });
+  if (o.notExecutor) list.push({ html: esc(o.notExecutor) });
+  if (o.syncWarning && o.syncWarning.length) list.push({ html: esc(o.syncWarning[0].replace(/。.*$/, "")) + "：这次没把信收全，今天先不催信、不结案。<a href=\"#/log\">看执行记录</a>" });
+  var unknown = o.cards.filter(function (c) { return c.kind === "unknown" && !state.handled[c.id]; });
+  if (unknown.length) list.push({ html: "有 " + unknown.length + " 封来信还对不上 KOL，今天先不自动催信和结案。<a href=\"#/?card=" + encodeURIComponent(unknown[0].id) + "\">去处理</a>" });
+  if (o.setupNeeded && o.setupNeeded.length) list.push({ html: "这个项目的飞书表还缺 " + esc(o.setupNeeded.join("、")) + "，决策台现在只能看。请在执行电脑上运行 kol setup-base，然后重新打开决策台。" });
+  $("banners").innerHTML = list.slice(0, 2).map(function (b) { return '<div class="banner' + (b.red ? " red" : "") + '">' + b.html + "</div>"; }).join("");
+}
 
+function queuedCount() {
+  var s = state.overview && state.overview.status;
+  return s ? s.items.filter(function (i) { return i.st === "等发出"; }).length : 0;
+}
 function renderPause(on) {
   state.paused = on;
-  $("pause").textContent = on ? "恢复发送" : "暂停所有发送";
-  $("paused-banner").hidden = !on;
+  var b = $("pause");
+  b.textContent = on ? "恢复发送" : "暂停所有发送";
+  b.className = "btn sm" + (on ? " solid-bad" : "");
+  b.style.cssText = on ? "" : "border-color:var(--bad-line);color:var(--bad)";
+  renderBanners();
 }
-$("pause").addEventListener("click", function () {
-  var on = !state.paused;
-  if (on && !confirm("暂停后，所有发信都会停下，已同意的事先排着。确定暂停吗？")) return;
+function setPause(on) {
   post("/api/pause", { on: on }).then(function (r) {
     renderPause(r.paused);
     toast(r.paused ? "已暂停所有发送" : "已恢复发送，排着的信现在发出");
     if (r.job) watchJobs();
-  }).catch(function (e) { toast("没做成：" + e.message); });
+  }).catch(function (e) { failToast("没做成：", e); });
+}
+$("pause").addEventListener("click", function () {
+  // Pausing works at once (E-50); resuming sends what waits, so it is confirmed in place.
+  if (!state.paused) return setPause(true);
+  var p = $("pause-panel");
+  if (!p.hidden) { p.hidden = true; return; }
+  var n = queuedCount();
+  p.hidden = false;
+  inlineConfirm(p, { title: n ? "恢复后会发出排着的 " + n + " 件，确定？" : "恢复发送？", blue: true, ok: "恢复发送", run: function () { p.hidden = true; setPause(false); } });
+  p.querySelector("[data-no]").addEventListener("click", function () { p.hidden = true; });
 });
+
 var jobTimer = null;
 function watchJobs() {
   if (jobTimer) return;
@@ -226,7 +412,7 @@ function watchJobs() {
       var busy = false;
       r.jobs.forEach(function (j) {
         var was = state.jobsSeen[j.id];
-        if ((j.state === "做完了" || j.state === "没做成") && was && was !== j.state) toast((j.state === "做完了" ? "做完了：" : "没做成：") + j.what + (j.note ? "（" + j.note + "）" : ""));
+        if ((j.state === "做完了" || j.state === "没做成") && was && was !== j.state) toast((j.state === "做完了" ? "做完了：" : "没做成：") + j.what + (j.note ? "（" + j.note + "）" : ""), { bad: j.state === "没做成" });
         state.jobsSeen[j.id] = j.state;
         if (j.state === "排队中" || j.state === "进行中") busy = true;
       });
@@ -243,16 +429,19 @@ function renderStatus(s, jobs) {
   var failed = s.failed + failedJobs, running = s.running + busy;
   var pill = $("status");
   pill.className = "pill" + (failed ? " bad" : running ? " warn" : "");
-  $("status-text").textContent = state.paused && running ? ("已暂停 · " + running + " 件排着") : failed ? (failed + " 件没做成" + (running ? " · 执行中 " + running : "")) : running ? ("执行中 " + running) : "都做完了";
+  $("status-text").textContent = state.paused && running ? ("暂停中 · " + running + " 件排着") : failed ? ("有 " + failed + " 件没做成" + (running ? " · 执行中 " + running : "")) : running ? ("执行中 " + running) : "空闲";
   var jobRows = recent.map(function (j) {
     var cls = j.state === "没做成" ? "b-bad" : j.state === "做完了" ? "b-ok" : "b-warn";
     return '<div class="row"><span class="badge ' + cls + '">' + esc(j.state) + '</span><div style="flex:1;min-width:0"><div style="font-weight:500">' + esc(j.what) + '</div>' +
       (j.note ? '<div class="muted tiny">' + esc(j.note) + '</div>' : "") + '</div>' + (j.person ? '<a class="tiny" href="#/person/' + esc(j.person) + '">看</a>' : "") + '</div>';
   }).join("");
+  var problems = state.overview ? state.overview.cards.filter(function (c) { return c.kind === "problem"; }) : [];
   var rows = jobRows + s.items.map(function (i) {
     var cls = i.st === "没做成" ? "b-bad" : i.st === "进行中" ? "b-warn" : "b-blue";
+    var card = i.st === "没做成" ? problems.find(function (c) { return c.who && c.who.id === i.person; }) : null;
+    var link = card ? '<a class="tiny" href="#/?card=' + encodeURIComponent(card.id) + '">去处理</a>' : i.person ? '<a class="tiny" href="#/person/' + esc(i.person) + '">看</a>' : "";
     return '<div class="row"><span class="badge ' + cls + '">' + esc(i.st) + '</span><div style="flex:1;min-width:0"><div style="font-weight:500">' + esc(i.text) + '</div>' +
-      (i.note ? '<div class="muted tiny">' + esc(i.note) + '</div>' : "") + '</div>' + (i.person ? '<a class="tiny" href="#/person/' + esc(i.person) + '">看</a>' : "") + '</div>';
+      (i.note ? '<div class="muted tiny">' + esc(i.note) + '</div>' : "") + '</div>' + (link || (i.st === "进行中" ? '<a class="tiny" href="#/log">看</a>' : "")) + '</div>';
   }).join("");
   $("status-panel").innerHTML = '<div style="display:flex;justify-content:space-between;padding:12px 14px 8px"><b>后台在做的事</b><a href="#/log" class="small">全部执行记录</a></div>' +
     (rows || '<div class="row muted">没有在做的事</div>');
@@ -261,171 +450,345 @@ $("status").addEventListener("click", function () {
   var p = $("status-panel"); p.hidden = !p.hidden; $("status").setAttribute("aria-expanded", String(!p.hidden));
 });
 document.addEventListener("click", function (e) {
-  if (!e.target.closest || e.target.closest("#status") || e.target.closest("#status-panel")) return;
-  $("status-panel").hidden = true;
+  if (!e.target.closest) return;
+  if (!e.target.closest("#status") && !e.target.closest("#status-panel")) $("status-panel").hidden = true;
+  if (!e.target.closest("#pause") && !e.target.closest("#pause-panel")) $("pause-panel").hidden = true;
 });
 $("refresh").addEventListener("click", function () {
   var b = $("refresh"); b.disabled = true; b.textContent = "刷新中…";
   post("/api/refresh").then(loadOverview).then(route).catch(fail).then(function () { b.disabled = false; b.textContent = "刷新"; });
 });
 
-// --- 待你决定 ---
-var GROUPS = ["出了问题", "发布", "回信", "来信", "邀约和决定", "模板", "其他"];
-var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", unknown: "b-purple", bounce: "b-bad", waiting: "b-warn", batch: "b-warn", template: "", todo: "" };
+// --- U-1 待你决定 ---
+var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", unknown: "b-purple", bounce: "b-bad", waiting: "b-warn", batch: "b-warn", expired: "b-warn", template: "", todo: "" };
+function tagClass(c) {
+  if (c.tag === "同意后她又来信了") return "b-warn";
+  if (c.kind === "reply" && c.send && c.send.byHand) return "b-blue";
+  return TAG[c.kind] || "";
+}
 
 function visibleCards() {
   return state.overview.cards.filter(function (c) { return !state.handled[c.id]; });
 }
-function draftText(c) {
-  var ta = $("draft-body");
-  if (!ta) return null;
-  var body = ta.value.trim();
-  return c.draft.subject ? "主题：" + c.draft.subject + "\n" + body : body;
+function who(c) { return c.who ? c.who.name : c.headline; }
+function her(c) { return c.who ? c.who.name.split(" ").slice(-1)[0] : "她"; }
+
+// Edits made on a card are kept per card, so moving to another card or a refresh of the list never loses them.
+function keepEdits(c) {
+  var saved = state.drafts[c.id];
+  if (saved && c.draft && saved.base !== c.draft.body && $("draft-body")) {
+    var note = document.createElement("div");
+    note.className = "hint"; note.style.color = "var(--warn)";
+    note.textContent = "这封草稿在别处被改过；下面是你改的版本，同意时会用它。";
+    $("draft-body").parentNode.insertBefore(note, $("draft-body"));
+  }
+  all("#draft-body, #draft-subject, [data-field], [data-keep]").forEach(function (el) {
+    var key = el.id || "f:" + (el.getAttribute("data-field") || el.getAttribute("data-keep"));
+    if (saved && saved[key] != null) el.value = saved[key];
+    el.addEventListener("input", function () {
+      var d = state.drafts[c.id] || (state.drafts[c.id] = { base: c.draft ? c.draft.body : "" });
+      d[key] = el.value;
+    });
+  });
 }
+function draftText(c) {
+  var body = $("draft-body").value.trim(), subj = $("draft-subject") ? $("draft-subject").value.trim() : c.draft.subject;
+  return subj ? "主题：" + subj + "\n" + body : body;
+}
+var LIMITS = { 体验次数: [1, 10], 体验天数: [1, 60], 粉丝折扣: [10, 20] };
+/** What the reviewer changed on the card; throws when a number is out of range or a close has no reason. */
 function cardEdits(c) {
   var edits = {};
-  if (c.draft && $("draft-body") && $("draft-body").value.trim() !== c.draft.body.trim()) edits["邮件草稿"] = draftText(c);
-  Array.prototype.forEach.call(document.querySelectorAll("[data-field]"), function (el) {
-    var orig = el.getAttribute("data-orig"), v = el.value.trim();
-    if (v && v !== orig && v.charAt(0) !== "（") edits[el.getAttribute("data-field")] = v;
+  if (c.draft && $("draft-body") && ($("draft-body").value.trim() !== c.draft.body.trim() || ($("draft-subject") && $("draft-subject").value.trim() !== (c.draft.subject || "").trim()))) edits["邮件草稿"] = draftText(c);
+  all("[data-field]").forEach(function (el) {
+    var k = el.getAttribute("data-field"), orig = el.getAttribute("data-orig") || "", v = el.value.trim();
+    if (LIMITS[k] && v && (Number(v) < LIMITS[k][0] || Number(v) > LIMITS[k][1])) throw new Error("「" + el.getAttribute("data-label") + "」要在 " + LIMITS[k][0] + " 到 " + LIMITS[k][1] + " 之间");
+    if (el.hasAttribute("data-clearable")) { if (v !== orig) edits[k] = v; return; }
+    if (v && v !== orig) edits[k] = v;
   });
+  if (edits["发后动作"] && !$("after-reason").value) throw new Error("选了发信后结案，要同时选结案原因");
+  if ("发后动作" in edits || "结案原因" in edits) { edits["发后动作"] = $("after-action").value; edits["结案原因"] = $("after-action").value ? $("after-reason").value : ""; }
   return edits;
-}
-function who(c) { return c.who ? c.who.name : c.headline; }
-
-function actionsFor(c) {
-  if (c.kind === "mail" && c.blocked) return [
-    { label: "不用回", key: "D", primary: true, run: function () { later(c.id, "已标成不用回：" + who(c), function () { return post("/api/mail-done", { id: c.id.slice(5) }); }); } },
-  ];
-  if (c.kind === "bounce") return [
-    { label: "加新邮箱", key: "A", primary: true, run: function () {
-      var email = prompt("她的新邮箱是？加到档案以后，到她的页面写信时选这个邮箱。", "");
-      if (!email) return;
-      later(c.id, "已把 " + email + " 加到 " + who(c) + " 的档案", function () {
-        return post("/api/add-email", { id: c.who.id, email: email.trim() }).then(function () { return post("/api/mail-done", { id: c.id.slice(7) }); });
-      });
-    } },
-    { label: "结案", key: "C", run: function () {
-      if (!confirm("结束对 " + who(c) + " 的跟进？原因记成退信或邮箱无效。")) return;
-      later(c.id, "已结案：" + who(c), function () {
-        return post("/api/close", { id: c.who.id, never: false, reason: "退信或邮箱无效" }).then(function () { return post("/api/mail-done", { id: c.id.slice(7) }); });
-      });
-    } },
-    { label: "不用管", key: "D", run: function () { later(c.id, "已放下：" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(7) }); }); } },
-  ];
-  if (c.kind === "waiting") return [
-    { label: "发信问她", key: "A", primary: true, run: function () {
-      var subject = ($("draft-subject") || {}).value || "", body = ($("draft-body") || {}).value || "";
-      if (!body.trim()) { toast("先把信写好"); return; }
-      later(c.id, "已排队发信给 " + who(c), function () { return post("/api/write", { id: c.who.id, subject: subject, body: body }); });
-    } },
-    { label: "定下次跟进", key: "F", run: function () {
-      var d = prompt("下次什么时候跟进？（格式 2026-11-05）", "");
-      if (!d) return;
-      later(c.id, who(c) + " 下次跟进改到 " + d, function () { return post("/api/followup", { id: c.who.id, fields: { 下次跟进日期: d.trim() } }); });
-    } },
-    { label: "暂缓", key: "P", run: function () { later(c.id, "已暂缓：" + who(c), function () { return post("/api/followup", { id: c.who.id, fields: { 阶段: "暂缓" } }); }); } },
-    { label: "结案", key: "C", run: function () {
-      if (!confirm("结束对 " + who(c) + " 的跟进？原因记成回复后失联。")) return;
-      later(c.id, "已结案：" + who(c), function () { return post("/api/close", { id: c.who.id, never: false, reason: "回复后失联" }); });
-    } },
-  ];
-  if (c.kind === "overdue" && (c.asked || 0) >= 2 && !state.posted[c.id]) return [
-    { label: "结案", key: "C", primary: true, run: function () {
-      if (!confirm("结束对 " + who(c) + " 的跟进？原因记成回复后失联。")) return;
-      later(c.id, "已结案：" + who(c), function () { return post("/api/close", { id: c.who.id, never: false, reason: "回复后失联" }); });
-    } },
-    { label: "暂缓", key: "P", run: function () { later(c.id, "已暂缓：" + who(c), function () { return post("/api/followup", { id: c.who.id, fields: { 阶段: "暂缓" } }); }); } },
-    { label: "再等", key: "W", run: function () {
-      var d = prompt("等到哪天？填新的约定发布日期（格式 2026-11-20）", "");
-      if (!d) return;
-      later(c.id, who(c) + " 的约定发布日期改到 " + d, function () { return post("/api/followup", { id: c.who.id, fields: { 约定发布日期: d.trim() } }); });
-    } },
-    { label: "已经发了", key: "L", run: function () { state.posted[c.id] = true; renderDecide(); } },
-  ];
-  if (c.kind === "mail") return [
-    { label: "不用回", key: "D", primary: true, run: function () { later(c.id, "已标成不用回：" + who(c), function () { return post("/api/mail-done", { id: c.id.slice(5) }); }); } },
-    { label: "标成永不联系", key: "N", danger: true, run: function () { if (confirm("以后这个项目不再联系 " + who(c) + "，确定吗？")) later(c.id, "已标成永不联系：" + who(c), function () { return post("/api/mail-never", { id: c.id.slice(5) }); }); } },
-  ];
-  if (c.kind === "unknown") return [
-    { label: "关联到 KOL", key: "L", primary: true, run: function () { linkMail(c); } },
-    { label: "跟 KOL 无关", key: "D", run: function () { later(c.id, "已归档：" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(8) }); }); } },
-  ];
-  if (c.kind === "overdue" && state.posted[c.id]) return [
-    { label: "记下这条发布", key: "A", primary: true, run: function () {
-      var link = ($("post-link") || {}).value || "";
-      if (!/^https?:\/\//.test(link.trim())) { toast("先把帖子链接贴在上面的框里"); return; }
-      later(c.id, "已记下发布：" + who(c), function () { return post("/api/post", { id: c.who.id, link: link.trim() }); });
-    } },
-  ];
-  if (c.kind === "overdue") return [
-    { label: "发信问她", key: "A", primary: true, run: function () {
-      var subject = ($("draft-subject") || {}).value || "", body = ($("draft-body") || {}).value || "";
-      if (!body.trim()) { toast("先把信写好"); return; }
-      if (body.indexOf("{") >= 0) { toast("信里还有 { } 占位符，换成实际的字再发"); return; }
-      later(c.id, "已排队发信给 " + who(c), function () {
-        // The next follow-up date moves only once the mail has actually gone out (C-07, S-E4).
-        return post("/api/write", { id: c.who.id, subject: subject, body: body, purpose: "发布确认" });
-      });
-    } },
-  ];
-  if (c.kind === "todo") return [
-    { label: "做完了", key: "A", primary: true, run: function () { later(c.id, "已标成做完了：" + c.headline, function () { return post("/api/todo-done", { id: c.id }); }); } },
-    { label: "不用做了", key: "D", run: function () { later(c.id, "这件事不做了：" + c.headline, function () { return post("/api/drop", { id: c.id, note: "" }); }); } },
-  ];
-  var withdraw = { label: "不做了，撤掉", key: "D", run: function () { later(c.id, "已撤掉：" + c.headline, function () { return post("/api/problem-done", { id: c.id }); }); } };
-  var redo = { label: c.unknownSend ? "确认没发出，重新审核" : "重新审核", key: "R", primary: !c.unknownSend, run: function () {
-    later(c.id, "已退回重新审核：" + c.headline, function () { return post("/api/problem-retry", { id: c.id }); });
-  } };
-  if (c.kind === "problem" && c.unknownSend) return [
-    { label: "确认已经发出", key: "A", primary: true, run: function () {
-      if (!confirm("在发信邮箱的「已发送」里找到这封信了吗？确认后会记成已发出，不会再发。")) return;
-      var code = "";
-      if (c.codeAction) {
-        code = prompt("这一条还要" + c.codeAction + "。到项目后台看一下：码已经建好的话填上码名，记到她的跟进上；没建好就留空。", "");
-        if (code === null) return;
-      }
-      later(c.id, "已记成发出：" + c.headline, function () { return post("/api/problem-sent", { id: c.id, code: code }); });
-    } },
-    redo, withdraw,
-  ];
-  if (c.kind === "problem") return [redo, withdraw];
-  if (c.kind === "template" && c.id.indexOf("template:") === 0) return [
-    { label: "同意这个模板", key: "A", primary: true, run: function () { later(c.id, "模板已批准：" + c.headline, function () { return post("/api/template", { id: c.id.slice(9), ok: true }); }); } },
-    { label: "不用这个模板", key: "D", run: function () { later(c.id, "模板已停用：" + c.headline, function () { return post("/api/template", { id: c.id.slice(9), ok: false }); }); } },
-  ];
-  var dropIt = { label: "不做了", key: "D", run: function () {
-    if (!confirm("这件事不做了，会从队列里撤掉。确定吗？")) return;
-    later(c.id, "这件事不做了：" + who(c), function () { return post("/api/drop", { id: c.id, note: "" }); });
-  } };
-  var toClaude = { label: "让 Claude 改", key: "E", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } };
-  if (c.send && c.send.byHand) return [
-    { label: "我发出去了", key: "A", primary: true, run: function () {
-      var edits = cardEdits(c);
-      later(c.id, "已记下：你手动发给了 " + who(c), function () { return post("/api/sent-by-hand", { id: c.id, edits: edits, seen: c.seen }); });
-    } },
-    { label: "复制信", key: "C", run: function () { copyDraft(c); } },
-    toClaude, dropIt,
-  ];
-  return [
-    { label: c.send ? "同意，发出去" : "同意", key: "A", primary: true, run: function () {
-      var edits = cardEdits(c);
-      later(c.id, c.send ? "已同意：" + who(c) + "，5 秒后开始发" : "已同意：" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits, seen: c.seen }); });
-    } },
-    toClaude, dropIt,
-  ];
 }
 
 function copyDraft(c) {
-  var body = ($("draft-body") || {}).value || c.draft.body;
-  var all = "收件人：" + (c.send.to || "") + "\n" + (c.draft.subject ? "主旨：" + c.draft.subject + "\n" : "") + "\n" + body;
-  navigator.clipboard.writeText(all).then(function () { toast("已复制收件人、主旨和正文"); }, function () { toast("复制不了，请在信里全选后手动复制"); });
+  var body = ($("draft-body") || {}).value || c.draft.body, subj = $("draft-subject") ? $("draft-subject").value.trim() : c.draft.subject;
+  var text = "收件人：" + (c.send.to || "") + "\n" + (subj ? "主旨：" + subj + "\n" : "") + "\n" + body;
+  navigator.clipboard.writeText(text).then(function () { toast("已复制收件人、主旨和正文"); }, function () { toast("复制不了，请在信里全选后手动复制", { bad: true }); });
+}
+
+/**
+ * One card's right-hand pane: the question, what pressing the main button does, its controls and buttons.
+ * `acts[0]` is the main button; `wire` hooks up the controls once the pane is on the page.
+ */
+function pane(c) {
+  var acts = [], body = "", ask = c.suggest, steps = [], stepsLabel = "", wire = null;
+  var drop = { label: "不做了", key: "D", run: function () { later(c.id, "这件事不做了：" + who(c), function () { return post("/api/drop", { id: c.id, note: "" }); }); } };
+  var toClaude = { label: "让 Claude 改", key: "R", run: function () { state.changing = true; renderDecide(); var n = $("change-note"); if (n) n.focus(); } };
+  var confirmBox = '<div id="confirm-box" hidden></div>';
+
+  if (c.kind === "reply" || c.kind === "batch" || c.kind === "todo" || c.kind === "template") {
+    var label = c.kind === "template" ? "同意这个模板" : c.kind === "todo" ? "做完了" : c.invite ? "同意这一批" : c.codeOnly ? "同意（只办码，不发信）" : c.send && !c.send.byHand ? "同意并发出" : c.send ? "我发出去了" : "同意";
+    ask = c.kind === "template" ? "这个模板可以用吗？" : c.suggest;
+    stepsLabel = c.send && c.send.byHand ? "这封要你自己发：" : "点「" + label + "」后会";
+    steps = c.steps;
+    var params = [];
+    c.steps.forEach(function (s) { (s.params || []).forEach(function (p) { if (p.field) params.push(p); }); });
+    if (params.length) {
+      body += '<div class="params">' + params.map(function (p) {
+        var shown = p.value.charAt(0) === "（" ? "" : p.value, lim = LIMITS[p.field];
+        return '<label class="field"><span>' + esc(p.label) + '</span><input class="input"' + (lim ? ' type="number" min="' + lim[0] + '" max="' + lim[1] + '"' : "") +
+          ' data-field="' + esc(p.field) + '" data-label="' + esc(p.label) + '" data-orig="' + esc(shown) + '" value="' + esc(shown) + '" placeholder="' + esc(p.value.charAt(0) === "（" ? p.value.replace(/[（）]/g, "") : "") + '"></label>';
+      }).join("") + "</div>";
+    }
+    if (c.draft) {
+      var editable = c.kind === "reply";
+      body += (editable ? '<label class="field"><span>主旨</span><input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '" placeholder="回复她的信时可以不填"></label>'
+        : c.draft.subject ? '<div class="field"><span>主旨</span><div>' + esc(c.draft.subject) + '</div></div>' : "") +
+        '<label class="field"><span>' + esc(editable ? "正文（可以直接改）" : c.draft.label) + '</span>' +
+        (editable ? '<textarea class="input" id="draft-body" rows="9">' + esc(c.draft.body) + '</textarea>' : '<div class="quote" style="font-size:14px;max-height:360px;overflow:auto">' + esc(c.draft.body) + "</div>") + "</label>" +
+        (/\{[^}]+\}/.test(c.draft.body) && c.kind === "reply" ? '<div class="hint">{ } 里的码名、次数、到期日会在建好码后自动填上</div>' : "");
+    }
+    if (c.after && !c.invite) {
+      var reasons = (state.overview.closeReasons || []);
+      body += '<div class="params" style="grid-template-columns:repeat(2,minmax(0,1fr))"><label class="field"><span>发后动作</span><select class="input" id="after-action" data-field="发后动作" data-clearable data-orig="' + esc(c.after.action) + '">' +
+        ["", "结案", "永不联系"].map(function (a) { return '<option value="' + a + '"' + (a === c.after.action ? " selected" : "") + ">" + (a || "无") + "</option>"; }).join("") + "</select></label>" +
+        '<label class="field" id="after-reason-wrap"' + (c.after.action ? "" : " hidden") + '><span>结案原因</span><select class="input" id="after-reason" data-field="结案原因" data-clearable data-orig="' + esc(c.after.reason) + '"><option value="">请选择</option>' +
+        reasons.map(function (r) { return "<option" + (r === c.after.reason ? " selected" : "") + ">" + esc(r) + "</option>"; }).join("") + "</select></label></div>";
+    }
+    if (c.kind === "template" && c.id.indexOf("template:") === 0) acts = [
+      { label: "同意这个模板", key: "A", run: function () { later(c.id, "模板已批准：" + c.headline, function () { return post("/api/template", { id: c.id.slice(9), ok: true, shown: c.shown }); }); } },
+      { label: "不用这个模板", key: "D", run: function () { later(c.id, "模板已停用：" + c.headline, function () { return post("/api/template", { id: c.id.slice(9), ok: false }); }); } },
+    ];
+    else if (c.kind === "todo") acts = [
+      { label: "做完了", key: "A", run: function () { later(c.id, "已标成做完了：" + c.headline, function () { return post("/api/todo-done", { id: c.id }); }); } },
+      { label: "不用做了", key: "D", run: function () { later(c.id, "这件事不做了：" + c.headline, function () { return post("/api/drop", { id: c.id, note: "" }); }); } },
+    ];
+    else if (c.send && c.send.byHand) acts = [
+      { label: "我发出去了", key: "A", run: function () {
+        var edits; try { edits = cardEdits(c); } catch (e) { return failToast("", e); }
+        later(c.id, "已记下：你手动发给了 " + who(c), function () { return post("/api/sent-by-hand", { id: c.id, edits: edits, seen: c.seen }); });
+      } },
+      { label: "复制信", key: "C", run: function () { copyDraft(c); } }, toClaude, drop,
+    ];
+    else acts = [
+      { label: label, key: "A", run: function () {
+        var edits; try { edits = cardEdits(c); } catch (e) { return failToast("", e); }
+        later(c.id, c.send ? (state.paused ? "已同意：现在暂停着，恢复发送后发给 " + her(c) : "已同意：5 秒后发给 " + her(c)) : "已同意：" + who(c), function () { return post("/api/approve", { id: c.id, edits: edits, seen: c.seen, shown: c.shown, shownTemplate: c.kind === "template" ? (c.shownTemplate || "") : undefined }); });
+      } },
+      toClaude, drop,
+    ];
+    wire = function () {
+      if (!$("after-action")) return;
+      // Shown in 「按了会怎样」 too, and set up again from what was restored after an undo.
+      var sync = function () {
+        var a = $("after-action").value;
+        $("after-reason-wrap").hidden = !a;
+        var li = $("after-step");
+        if (!li && a) { var ol = document.querySelector(".dact ol.steps"); if (ol) { li = document.createElement("li"); li.id = "after-step"; ol.appendChild(li); } }
+        if (li) { li.hidden = !a; li.textContent = (a === "永不联系" ? "标成永不联系，" : "") + "结束跟进（原因：" + ($("after-reason").value || "还没选") + "）"; }
+      };
+      $("after-action").addEventListener("change", sync);
+      $("after-reason").addEventListener("change", sync);
+      sync();
+    };
+  } else if (c.kind === "problem") {
+    var withdraw = { label: "不做了，撤掉", key: "D", run: function () { later(c.id, "已撤掉：" + c.headline, function () { return post("/api/problem-done", { id: c.id }); }); } };
+    if (c.unknownSend) {
+      ask = "到发信邮箱的「已发送」里找过了吗？告诉系统结果";
+      acts = [
+        { label: "确认已经发出", key: "A", run: function () {
+          inlineConfirm($("confirm-box"), {
+            title: "在发信邮箱的「已发送」里找到这封信了吗？", ok: "找到了，记成已发出", blue: true,
+            body: '<div class="small">确认后记成已发出，不会再发。</div>' + (c.codeAction ? '<label class="field"><span>码名（这一条还要' + esc(c.codeAction) + '；后台建好了才填，没建好留空）</span><input class="input" id="sent-code" placeholder="例如 deer_lu"></label>' : ""),
+            check: function (box) { var el = box.querySelector("#sent-code"); return { code: el ? el.value.trim() : "" }; },
+            run: function (v) { later(c.id, "已记成发出：" + c.headline, function () { return post("/api/problem-sent", { id: c.id, code: v.code }); }); },
+          });
+        } },
+        { label: "确认没发出，重新审核", key: "R", run: function () { later(c.id, "已退回重新审核：" + c.headline, function () { return post("/api/problem-retry", { id: c.id }); }); } },
+        withdraw,
+      ];
+    } else {
+      ask = c.unknownCode ? "核对后告诉系统结果" : "重做还是撤掉？";
+      acts = [
+        { label: c.unknownCode ? "确认没做成，重新审核" : "重新审核", key: "A", run: function () { later(c.id, "已退回重新审核：" + c.headline, function () { return post("/api/problem-retry", { id: c.id }); }); } },
+        withdraw,
+      ];
+    }
+  } else if (c.kind === "overdue") {
+    var posted = !!state.posted[c.id];
+    ask = "她发了吗？";
+    body += '<div class="segs" role="radiogroup" aria-label="她发了吗">' +
+      '<button role="radio" aria-checked="' + !posted + '" class="' + (posted ? "" : "on") + '" data-path="notyet">还没发' + ((c.asked || 0) >= 2 ? "" : "：写信问她") + ' <span class="kbd">1</span></button>' +
+      '<button role="radio" aria-checked="' + posted + '" class="' + (posted ? "on" : "") + '" data-path="posted">已经发了：记下链接 <span class="kbd">2</span></button></div>';
+    if (posted) {
+      body += '<label class="field"><span>帖子链接</span><input class="input" id="post-link" placeholder="https://"><span class="hint" id="post-hint">记下后她会移到「已发布」，之后自动记播放和互动</span></label>';
+      acts = [{ label: "记下这条发布", key: "A", run: function () {
+        var link = $("post-link").value.trim();
+        if (!/^https:\/\/\S+$/.test(link)) { $("post-link").classList.add("bad"); $("post-hint").className = "hint bad"; $("post-hint").textContent = "要贴完整的帖子链接，https:// 开头"; $("post-link").focus(); return; }
+        later(c.id, "已记下发布：" + who(c), function () { return post("/api/post", { id: c.who.id, link: link }); });
+      } }];
+    } else if ((c.asked || 0) >= 2) {
+      var pick = state.pick[c.id] || { what: "wait", date: isoAdd(14) };
+      state.pick[c.id] = pick;
+      var line = function (key, title, sub) { return '<label class="choice' + (pick.what === key ? " on" : "") + '"><input type="radio" name="next" aria-label="' + title + '" value="' + key + '"' + (pick.what === key ? " checked" : "") + '><span><b>' + title + '</b><br><span class="hint">' + sub + "</span></span></label>"; };
+      body += '<div class="lbl" style="margin:0">接下来</div>' + line("wait", "再等", "改一个新的约定日期，到时候还没发会再出这张卡") +
+        (pick.what === "wait" ? '<label class="field" style="padding-left:28px"><span>新的约定发布日期</span><input class="input" type="date" id="wait-date" value="' + esc(pick.date) + '" min="' + isoAdd(1) + '"><span class="hint" id="wait-hint">' + esc(dayText(pick.date)) + "</span></label>" : "") +
+        line("pause", "暂缓", "先放着，不再自动出卡片，阶段记下，恢复跟进时回到已约发布") + line("close", "结案", "她还没执行的事都会撤掉");
+      var main = pick.what === "wait" ? "改到 " + (dayText(pick.date).split("（")[0] || "新日期") : pick.what === "pause" ? "暂缓" : "结案";
+      acts = [{ label: main, key: "A", run: function () {
+        if (pick.what === "wait") {
+          var d = $("wait-date").value;
+          if (!d) { toast("先选一个日期", { bad: true }); return; }
+          later(c.id, her(c) + " 的约定发布日期改到 " + dayText(d).split("（")[0], function () { return post("/api/followup", { id: c.who.id, fields: { 约定发布日期: d } }); });
+        } else if (pick.what === "pause") {
+          later(c.id, "已暂缓：" + who(c), function () { return post("/api/followup", { id: c.who.id, fields: { 阶段: "暂缓" } }); });
+        } else {
+          inlineConfirm($("confirm-box"), { title: "确定结束对 " + her(c) + " 的跟进？", ok: "确定结案", body: reasonSelect("close-reason", "无回应") + '<div class="small">她还没执行的事都会撤掉。</div>',
+            check: function (box) { return box.querySelector("#close-reason").value; },
+            run: function (reason) { later(c.id, "已结案：" + who(c), function () { return post("/api/close", { id: c.who.id, never: false, reason: reason }); }); } });
+        }
+      } }];
+      wire = function () {
+        all("input[name=next]").forEach(function (r) { r.addEventListener("change", function () { pick.what = r.value; renderDecide(); }); });
+        if ($("wait-date")) $("wait-date").addEventListener("change", function () { pick.date = $("wait-date").value; renderDecide(); });
+      };
+    } else {
+      body += mailFields(c);
+      acts = [{ label: "发信问她", key: "A", run: function () {
+        var m = readMail(); if (!m) return;
+        later(c.id, "已排队发信给 " + her(c), function () {
+          // The next follow-up date moves only once the mail has actually gone out (C-07, S-E4).
+          return post("/api/write", { id: c.who.id, subject: m.subject, body: m.body, purpose: "发布确认" });
+        });
+      } }];
+    }
+    wire = wire || function () {};
+    var w0 = wire;
+    wire = function () {
+      w0();
+      all("[data-path]").forEach(function (b) { b.addEventListener("click", function () { state.posted[c.id] = b.getAttribute("data-path") === "posted"; renderDecide(); if ($("post-link")) $("post-link").focus(); }); });
+    };
+  } else if (c.kind === "waiting") {
+    ask = "写信问她，还是定个下次跟进的日子？";
+    body += mailFields(c);
+    confirmBox = '<div id="next-box" hidden></div>' + confirmBox;
+    acts = [
+      { label: "发信问她", key: "A", run: function () {
+        var m = readMail(); if (!m) return;
+        later(c.id, "已排队发信给 " + her(c), function () { return post("/api/write", { id: c.who.id, subject: m.subject, body: m.body }); });
+      } },
+      { label: "定下次跟进", key: "F", run: function () {
+        var box = $("next-box"), d0 = isoAdd(7);
+        inlineConfirm(box, { title: "下次什么时候跟进？", ok: "定下", blue: true,
+          body: '<label class="field"><span>下次跟进</span><input class="input" type="date" id="next-date" value="' + d0 + '" min="' + isoAdd(1) + '"><span class="hint" id="next-hint">' + esc(dayText(d0)) + "</span></label>",
+          check: function (b) { var v = b.querySelector("#next-date").value; if (!v) { toast("先选一个日期", { bad: true }); return false; } return v; },
+          run: function (d) { later(c.id, her(c) + " 下次跟进改到 " + dayText(d).split("（")[0], function () { return post("/api/followup", { id: c.who.id, fields: { 下次跟进日期: d } }); }); } });
+        $("next-date").addEventListener("input", function () { $("next-hint").textContent = dayText($("next-date").value); });
+      } },
+      { label: "暂缓", key: "P", run: function () { later(c.id, "已暂缓：" + who(c), function () { return post("/api/followup", { id: c.who.id, fields: { 阶段: "暂缓" } }); }); } },
+      { label: "结案", key: "C", danger: true, run: function () {
+        inlineConfirm($("confirm-box"), { title: "确定结束对 " + her(c) + " 的跟进？", ok: "确定结案", body: reasonSelect("close-reason", "回复后失联") + '<div class="small">她还没执行的事都会撤掉。</div>',
+          check: function (box) { return box.querySelector("#close-reason").value; },
+          run: function (reason) { later(c.id, "已结案：" + who(c), function () { return post("/api/close", { id: c.who.id, never: false, reason: reason }); }); } });
+      } },
+    ];
+  } else if (c.kind === "mail") {
+    ask = c.blocked ? "看一眼就行" : "要不要回？";
+    if (!c.blocked) body += '<div class="hint">要回信的话：在 Claude 里说「处理来信」，写好的草稿会排进这里。</div>';
+    acts = [{ label: "不用回", key: "D", run: function () { later(c.id, "已标成不用回：" + who(c), function () { return post("/api/mail-done", { id: c.id.slice(5) }); }); } }];
+    if (!c.blocked) acts.push({ label: "标成永不联系", key: "N", danger: true, run: function () {
+      inlineConfirm($("confirm-box"), { title: "这个项目以后不会再给 " + her(c) + " 发任何信", ok: "确定永不联系",
+        body: '<label class="field"><span>原因（必填）</span><input class="input" id="never-why" placeholder="例如：明确说不要再联系"></label>',
+        check: function (box) { var v = box.querySelector("#never-why").value.trim(); if (!v) { box.querySelector("#never-why").classList.add("bad"); return false; } return v; },
+        run: function (why) { later(c.id, "已标成永不联系：" + who(c), function () { return post("/api/mail-never", { id: c.id.slice(5), note: why }); }); } });
+    } });
+  } else if (c.kind === "unknown") {
+    ask = "这是哪位 KOL 的？";
+    acts = [
+      { label: "关联到 KOL", key: "A", run: function () { linkMail(c); } },
+      { label: "跟 KOL 无关", key: "D", run: function () { later(c.id, "已归档：" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(8) }); }); } },
+    ];
+  } else if (c.kind === "expired") {
+    var tp = state.pick[c.id] || { what: "extend", days: 7 };
+    state.pick[c.id] = tp;
+    ask = "延期、换一个新码，还是不再跟进？";
+    var opt = function (key, title, sub) { return '<label class="choice' + (tp.what === key ? " on" : "") + '"><input type="radio" name="trial" aria-label="' + title + '" value="' + key + '"' + (tp.what === key ? " checked" : "") + '><span><b>' + title + '</b><br><span class="hint">' + sub + "</span></span></label>"; };
+    var left = c.trial && c.trial.max ? Math.max(0, c.trial.max - c.trial.used) : 0;
+    body += '<div class="lbl" style="margin:0">选一个</div>' + opt("extend", "延期", left ? "还剩 " + left + " 次，延长有效期" : "延长有效期") +
+      (tp.what === "extend" ? '<label class="field" style="padding-left:28px"><span>延几天</span><input class="input" type="number" id="ext-days" min="1" max="60" value="' + tp.days + '"><span class="hint" id="ext-hint">1–60 天 · 从今天算，延到 ' + esc(dayText(isoAdd(tp.days)).split("（")[0]) + " 左右</span></label>" : "") +
+      opt("new", "换新码", "重新发一个码（次数和天数按设置的默认值）") + opt("stop", "不再跟进这个码", "这个码不再提醒，她的跟进不变");
+    if (tp.what !== "stop") {
+      stepsLabel = "点「交给 Claude 写信」后会";
+      steps = [{ text: "Claude 写一封回信，带上「" + (tp.what === "extend" ? "延期 " + tp.days + " 天" : "换新码") + "」（在 Claude 里说「改退回的草稿」）" }, { text: "写好排回这里，你看过再同意，同意后才" + (tp.what === "extend" ? "延期" : "建新码") + "并发信" }];
+    }
+    acts = [tp.what === "stop"
+      ? { label: "不再跟进这个码", key: "A", run: function () { later(c.id, "这个码不再跟进：" + who(c), function () { return post("/api/drop", { id: c.id, note: "不再跟进这个码" }); }); } }
+      : { label: "交给 Claude 写信", key: "A", run: function () {
+        var days = Number(($("ext-days") || {}).value || tp.days);
+        if (tp.what === "extend" && !(days >= 1 && days <= 60)) { toast("延期天数要在 1 到 60 之间", { bad: true }); return; }
+        var note = tp.what === "extend" ? "延期 " + days + " 天" : "换新码（次数和天数按默认值）";
+        later(c.id, "已交给 Claude 写信：" + note, function () { return post("/api/revise", { id: c.id, note: note }); });
+      } }];
+    if (tp.what !== "stop") acts.push(drop);
+    wire = function () {
+      all("input[name=trial]").forEach(function (r) { r.addEventListener("change", function () { tp.what = r.value; renderDecide(); }); });
+      if ($("ext-days")) $("ext-days").addEventListener("input", function () {
+        var n = Number($("ext-days").value);
+        tp.days = n;
+        $("ext-hint").textContent = n >= 1 && n <= 60 ? "1–60 天 · 从今天算，延到 " + dayText(isoAdd(n)).split("（")[0] + " 左右" : "要在 1 到 60 之间";
+        $("ext-hint").className = n >= 1 && n <= 60 ? "hint" : "hint bad";
+      });
+    };
+  } else if (c.kind === "bounce") {
+    ask = "换一个邮箱继续联系，还是结束跟进？";
+    stepsLabel = "点「加新邮箱并写信」后会";
+    steps = c.steps;
+    body += '<label class="field"><span>新邮箱</span><input class="input" id="new-email" data-keep="new-email" placeholder="例如 biz.anan@example.com"><span class="hint" id="email-hint">加到她的档案，之后可以往这个地址写信</span></label>';
+    acts = [
+      { label: "加新邮箱并写信", key: "A", run: function () {
+        var email = $("new-email").value.trim().toLowerCase();
+        if (!isEmail(email) || email === (c.bounced || "").toLowerCase()) { $("new-email").focus(); checkEmail(); return; }
+        post("/api/add-email", { id: c.who.id, email: email }).then(function () {
+          delete state.convo[c.who.id];
+          openWrite(c.who.id, { to: email, card: c });
+        }).catch(function (e) { failToast("没加上：", e); });
+      } },
+      { label: "不用管", key: "D", run: function () { later(c.id, "已放下：" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(7) }); }); } },
+      { label: "结案", key: "C", danger: true, run: function () {
+        inlineConfirm($("confirm-box"), { title: "确定结束对 " + her(c) + " 的跟进？", ok: "确定结案", body: '<div class="small">原因：退信或邮箱无效 · 她还没执行的事都会撤掉</div>',
+          run: function () { later(c.id, "已结案：" + who(c), function () { return post("/api/close", { id: c.who.id, never: false, reason: "退信或邮箱无效" }).then(function () { return post("/api/mail-done", { id: c.id.slice(7) }); }); }); } });
+      } },
+    ];
+    var checkEmail = function () {
+      var v = $("new-email").value.trim(), h = $("email-hint");
+      if (!v) { h.className = "hint"; h.textContent = "加到她的档案，之后可以往这个地址写信"; $("new-email").classList.remove("bad"); return; }
+      var bad = !isEmail(v) ? "邮箱格式不对" : v.toLowerCase() === (c.bounced || "").toLowerCase() ? "这就是退信的地址，换一个" : "";
+      h.className = bad ? "hint bad" : "hint ok"; h.textContent = bad || "格式正确";
+      $("new-email").classList.toggle("bad", !!bad);
+    };
+    wire = function () { $("new-email").addEventListener("input", checkEmail); checkEmail(); };
+  }
+  return { ask: ask, body: body, after: confirmBox, acts: acts, steps: steps, stepsLabel: stepsLabel, wire: wire };
+}
+
+function mailFields(c) {
+  var d = c.draft || { subject: "", body: "" };
+  return '<label class="field"><span>主旨</span><input class="input" id="draft-subject" value="' + esc(d.subject) + '" placeholder="她回过我们的信就可以不填"></label>' +
+    '<label class="field"><span>' + esc(d.label || "写给她的信") + '</span><textarea class="input" id="draft-body" rows="9" placeholder="写给她的信">' + esc(d.body) + "</textarea></label>" +
+    (d.note ? '<div class="hint">' + esc(d.note) + "</div>" : "");
+}
+function readMail() {
+  var subject = $("draft-subject").value || "", body = $("draft-body").value || "";
+  if (!body.trim()) { toast("先把信写好", { bad: true }); $("draft-body").focus(); return null; }
+  if (/\{[^}]*\}/.test(body)) { toast("信里还有 { } 占位符，换成实际的字再发", { bad: true }); return null; }
+  return { subject: subject, body: body };
 }
 
 function linkMail(c) {
   modal('<h2 style="margin:0;font-size:18px">这是哪位 KOL 的？</h2><div class="muted small">' + esc(c.headline) + '</div>' +
     '<input class="input" id="l-q" placeholder="搜名字、账号、邮箱"><div id="l-list" class="small"></div>' +
-    '<div style="display:flex;justify-content:flex-end"><button class="btn" id="l-cancel">取消</button></div>');
+    '<div class="hint">选中后，发件地址会加到她的档案，以后的来信会自动对上。</div><div style="display:flex;justify-content:flex-end"><button class="btn" id="l-cancel">取消</button></div>');
   $("l-cancel").onclick = closeModal;
   var t = null;
   $("l-q").oninput = function () {
@@ -435,9 +798,9 @@ function linkMail(c) {
       if (!q) { $("l-list").innerHTML = ""; return; }
       api("/api/people?view=all&q=" + encodeURIComponent(q)).then(function (r) {
         $("l-list").innerHTML = r.rows.slice(0, 8).map(function (x) {
-          return '<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line2)"><span><b>' + esc(x.handle) + '</b> <span class="muted">' + esc(x.sub) + '</span></span><button class="btn sm" data-pick="' + esc(x.id) + '">就是她</button></div>';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line2)"><span><b>' + esc(x.handle) + '</b> <span class="muted">' + esc(x.sub) + '</span><div class="hint">' + esc((x.cells[0] || {}).v || "") + '</div></span><button class="btn sm" data-pick="' + esc(x.id) + '">就是她</button></div>';
         }).join("") || '<div class="muted" style="padding:8px 0">没找到，换个关键词</div>';
-        Array.prototype.forEach.call(document.querySelectorAll("[data-pick]"), function (b) {
+        all("[data-pick]").forEach(function (b) {
           b.onclick = function () {
             closeModal();
             later(c.id, "已关联，这封信会排回她的卡片", function () { return post("/api/mail-link", { id: c.id.slice(8), followup: b.getAttribute("data-pick") }); });
@@ -455,15 +818,15 @@ function newsBlock() {
   var chips = n.chips.map(function (c) { return '<span class="badge ' + (c.tone === "ok" ? "b-ok" : "") + '">' + esc(c.label) + " " + c.n + "</span>"; }).join(" ");
   var items = n.items.map(function (i) {
     return '<div style="display:flex;gap:12px;padding:6px 0;border-top:1px solid var(--line2)"><span class="muted tiny" style="width:120px;flex:0 0 auto">' + esc(i.when) + '</span><span style="flex:1">' + esc(i.text) + '</span>' +
-      (i.link ? '<a class="tiny" href="' + esc(i.link) + '" target="_blank" rel="noopener">帖子 ↗</a>' : "") + (i.person ? '<a class="tiny" href="#/person/' + esc(i.person) + '">看</a>' : "") + '</div>';
+      (safeUrl(i.link) ? '<a class="tiny" href="' + esc(safeUrl(i.link)) + '" target="_blank" rel="noopener">帖子 ↗</a>' : "") + (i.person ? '<a class="tiny" href="#/person/' + esc(i.person) + '">看</a>' : "") + '</div>';
   }).join("");
   return '<details class="card" style="padding:10px 16px"' + (visibleCards().length ? "" : " open") + '><summary style="font-size:14px;color:var(--ink)"><b>你不在时发生的</b> <span class="muted small">' + esc(n.since) + ' 以后 · 不用你处理</span> ' + chips + '</summary>' + items + '</details>';
 }
 
-function convoHtml(p) {
-  var list = p.bubbles.slice(-4).map(function (b) {
+function convoHtml(p, full) {
+  var list = (full ? p.bubbles : p.bubbles.slice(-6)).map(function (b) {
     if (b.side === "event") return '<div class="event">' + esc(b.when.slice(0, 10) + " · " + b.text) + "</div>";
-    return '<div class="' + b.side + '"><div class="who">' + esc(b.who + " · " + b.when) + "</div>" + esc(b.text.length > 220 ? b.text.slice(0, 220) + "…" : b.text) + "</div>";
+    return '<div class="' + b.side + '"><div class="who">' + esc(b.who + " · " + b.when) + "</div>" + esc(!full && b.text.length > 220 ? b.text.slice(0, 220) + "…" : b.text) + "</div>";
   }).join("");
   return list ? '<div style="display:flex;flex-direction:column;gap:8px">' + list + "</div>" : '<div class="muted small">还没有来往</div>';
 }
@@ -480,112 +843,147 @@ function loadConvo(fid) {
   }).catch(function () { var now = $("convo"); if (now) now.innerHTML = '<div class="muted small">读不到来往记录</div>'; });
 }
 
+/** The middle column: what happened, in the card's own terms (4.1.2, 4.1.3). */
+function infoHtml(c) {
+  var head = '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="badge ' + tagClass(c) + '">' + esc(c.tag) + '</span>' +
+    (c.send && c.send.byHand ? '<span class="badge">要你自己发</span>' : "") +
+    (c.who ? '<a href="#/person/' + esc(c.who.id) + '" style="margin-left:auto;font-size:13px">去她的页面 →</a>' : "") + '</div>' +
+    '<h1 style="margin:0;font-size:21px;line-height:1.4">' + esc(c.headline) + '</h1>' +
+    '<div class="muted small">' + esc([c.meta, c.send ? "收件 " + c.send.to + " · 从 " + c.send.from : ""].filter(Boolean).join(" · ")) + '</div>';
+  var parts = [head];
+  if (c.returned) parts.push('<div class="confirm" style="gap:2px"><b>退回来重新看的原因</b><div class="small">' + esc(c.returned) + "</div></div>");
+  if (c.kind === "problem") {
+    parts.push('<div><div class="lbl">发生了什么</div><div style="white-space:pre-wrap">' + esc(c.why) + "</div></div>");
+    if (c.unknownSend) parts.push('<div><div class="lbl">去哪里核对</div><ol class="steps"><li>打开发信邮箱的「已发送」，搜这封信的主旨</li><li>找到了：点「确认已经发出」' + (c.codeAction ? "，顺便填上后台看到的码名" : "") + '</li><li>没找到：点「确认没发出，重新审核」，你再同意一次才会发</li></ol></div>');
+    else if (c.unknownCode && c.codeAction === "延期") parts.push('<div><div class="lbl">去哪里核对</div><ol class="steps"><li>打开项目后台的体验码列表，搜这个码</li><li>看到期日变没变</li></ol></div>' +
+      '<div class="two"><div class="card" style="flex:1 1 200px;padding:12px 14px"><div class="lbl">已经延期了</div><div class="small">点「不做了，撤掉」，再到她的页面写信告诉她新的到期日。到期日下次同步会更新到跟进上。</div></div>' +
+      '<div class="card" style="flex:1 1 200px;padding:12px 14px"><div class="lbl">没延期</div><div class="small">点「确认没做成，重新审核」，这件事回到待你决定，你再同意一次才会延期并发信。</div></div></div>');
+    else if (c.unknownCode) parts.push('<div class="suggest"><div class="lbl" style="color:var(--blue2)">怎么处理</div><div>' + esc(c.codeAction) + '的请求重复发不会建出第二个（后台会原样返回第一次建的），直接点「确认没做成，重新审核」，再同意一次就行。信还没发出去。</div></div>');
+  } else {
+    if (c.kind === "expired" && c.trial) {
+      var pct = c.trial.max ? Math.min(100, Math.round(c.trial.used / c.trial.max * 100)) : 0;
+      parts.push('<div class="card" style="padding:14px 16px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><b>体验码 ' + esc(c.trial.code) + '</b><span class="hint">' + esc(c.trial.expired ? c.trial.expired + " 到期" : "") + '</span></div>' +
+        (c.trial.max ? '<div class="bar" role="img" aria-label="已用 ' + c.trial.used + " / " + c.trial.max + '"><div style="width:' + pct + '%"></div></div><div class="small">已用 ' + c.trial.used + " / " + c.trial.max + "</div>" : '<div class="small muted">用量不知道</div>') +
+        '<div class="hint">' + esc(c.why) + "</div></div>");
+    } else {
+      parts.push('<div class="suggest"><div class="lbl" style="color:var(--blue2)">' + (c.kind === "bounce" ? "为什么没有自动结案" : "建议") + '</div><div style="font-weight:600">' + esc(c.kind === "bounce" ? c.why : c.suggest) + '</div>' +
+        (c.why && c.kind !== "bounce" ? '<div class="small muted" style="white-space:pre-wrap">' + esc(c.why) + "</div>" : "") + "</div>");
+    }
+    if (c.kind === "bounce") parts.push('<div><div class="lbl">退回的地址</div><div style="font-family:ui-monospace,Menlo,monospace">' + esc(c.bounced || "") + "</div></div>");
+    if (c.kind === "overdue") parts.push('<div class="timeline">' + (c.asked ? "<div><span>问过</span><span>从约定日期起发出 " + c.asked + " 封问发布的信，她都没发</span></div>" : "") + "<div><span>每天</span><span>系统看她最近的帖子，找提到项目识别词或活动码的</span></div></div>");
+    if (c.template && c.template.missing) parts.push('<div class="confirm" style="gap:2px"><b>模板表里找不到「' + esc(c.template.name) + '」</b><div class="small">这一批说要用的模板不存在或改过名字。先在设置的模板里确认，再同意这一批。</div></div>');
+    else if (c.template) parts.push('<div><div class="lbl">用的模板「' + esc(c.template.name) + '」，填进一位 KOL 的样子</div><div class="quote" style="font-size:14px"><b>' + fillSample(c.template.subject) + "</b>\n\n" + fillSample(c.template.body) + "</div></div>");
+    if (c.invite) parts.push('<div class="confirm blue" style="gap:2px"><b>现在同意只记下同意</b><div class="small">还要在 Claude 里说「发这批邀约」才会真正发出（切换到新数据库后，同意即排队）。</div></div>');
+    if (c.kind === "template" && c.draft) parts.push('<div><div class="lbl">填进一位 KOL 的样子（示例值）</div><div class="quote" style="font-size:14px"><b>' + fillSample(c.draft.subject) + "</b>\n\n" + fillSample(c.draft.body) + "</div></div>");
+    if (c.mail) parts.push('<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " · " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + "</div></div>");
+  }
+  if (c.who) parts.push('<div><div style="display:flex;justify-content:space-between;gap:8px"><span class="lbl">最近的来往</span><a class="small" href="#" id="convo-all">看全部</a></div><div id="convo" data-fid="' + esc(c.who.id) + '"></div></div>');
+  return parts.join("");
+}
+
 function renderDecide() {
   var o = state.overview, cards = visibleCards();
+  if (state.focus) {
+    var at = cards.findIndex(function (x) { return x.id === state.focus; });
+    if (at >= 0) state.idx = at;
+    state.focus = "";
+  }
   if (state.idx >= cards.length) state.idx = Math.max(0, cards.length - 1);
   var c = cards[state.idx];
-  $("n-decide").textContent = cards.length;
+  renderCount();
+  renderBanners();
   var oldList = document.querySelector(".dlist");
   var listScroll = oldList ? oldList.scrollTop : 0;
-  var top = '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><b style="font-size:16px">' + (cards.length ? "有 " + cards.length + " 件要你决定" : "没有要你决定的事") + '</b>' +
-    '<span class="muted small">J / K 上一件 · 下一件</span></div>' +
-    (o.waitingClaude ? '<div class="muted small">另有 ' + o.waitingClaude + ' 件在等 Claude 按你的意见重写（在 Claude 里说「改退回的草稿」），写好会排进来。</div>' : "") + '<div id="news">' + newsBlock() + '</div>';
+  var top = '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><div style="display:flex;gap:12px;align-items:baseline;flex-wrap:wrap"><h1 style="margin:0;font-size:20px">' + (cards.length ? "有 " + cards.length + " 件要你决定" : "今天的事都处理完了") + '</h1>' +
+    (o.waitingClaude ? '<span class="muted small">另有 ' + o.waitingClaude + ' 件在等 Claude 按你的意见重写（在 Claude 里说「改退回的草稿」）</span>' : "") + '</div>' +
+    '<span class="muted tiny">J / K 上下一件 · A 主按钮 · R 让 Claude 改 · D 不做了 · S 跳过 · Z 撤销</span></div><div id="news">' + newsBlock() + '</div>';
   if (!c) {
-    $("app").innerHTML = '<div class="narrow">' + top + '<section class="card" style="padding:48px 24px;text-align:center"><div style="font-size:22px;font-weight:700">现在没有要你决定的事</div><div class="muted">同意的事在后台执行，结果看右上角。新来信和 Claude 准备好的草稿会自动排进来。</div></section></div>';
+    $("app").innerHTML = '<div class="narrow">' + top + '<section class="card" style="padding:40px 24px;text-align:center;border-style:dashed"><div style="font-size:20px;font-weight:700">今天的事都处理完了</div><div class="muted small" style="margin-top:4px">同意的事在后台执行，结果看右上角。新来信和 Claude 准备好的草稿会自动排进来。</div><a href="#/people/wait" class="small">去 KOL 列表</a></section></div>';
     return;
   }
 
-  // --- 左：列表 ---
   var list = "", lastGroup = "";
+  var waiting = o.cards.filter(function (x) { return state.handled[x.id] === "pending"; });
+  var collapsed = state.collapsed || (state.collapsed = {});
   cards.forEach(function (x, i) {
     if (x.group !== lastGroup) {
       var n = cards.filter(function (y) { return y.group === x.group; }).length;
-      list += '<div class="dgroup">' + esc(x.group) + ' <span>' + n + '</span></div>';
+      list += '<button class="dgroup" data-group="' + esc(x.group) + '" aria-expanded="' + !collapsed[x.group] + '" style="width:100%;border:0;background:transparent;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:var(--muted)">' + (collapsed[x.group] ? "▸ " : "▾ ") + esc(x.group) + ' <span>' + n + '</span></button>';
       lastGroup = x.group;
+      waiting.filter(function (w) { return w.group === x.group; }).forEach(function (w) {
+        list += '<div class="ditem" style="opacity:.5;cursor:default"><span class="badge">' + esc(w.tag) + '</span><span class="dtitle">' + esc(w.headline) + '</span><span class="dmeta">5 秒后执行 · 按 Z 撤销</span></div>';
+      });
     }
-    list += '<button class="ditem' + (i === state.idx ? " on" : "") + '" data-i="' + i + '"><span class="badge ' + (TAG[x.kind] || "") + '">' + esc(x.tag) + '</span><span class="dtitle">' + esc(x.headline) + '</span>' + (x.meta ? '<span class="dmeta">' + esc(x.meta) + '</span>' : "") + '</button>';
+    if (collapsed[x.group] && i !== state.idx) return;
+    list += '<button class="ditem' + (i === state.idx ? " on" : "") + '" data-i="' + i + '"><span class="badge ' + tagClass(x) + '">' + esc(x.tag) + '</span><span class="dtitle">' + esc(x.headline) + '</span>' + (x.meta ? '<span class="dmeta">' + esc(x.meta) + '</span>' : "") + '</button>';
   });
 
-  // --- 中：信息 ---
-  var info = '<div><div class="small" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge ' + (TAG[c.kind] || "") + '">' + esc(c.tag) + '</span>' +
-      (c.who ? '<a href="#/person/' + esc(c.who.id) + '">' + esc(c.who.name) + '</a>' : "") + '<span class="muted">' + esc(c.meta) + '</span></div>' +
-      '<h1 style="margin:6px 0 0;font-size:22px;line-height:1.4">' + esc(c.headline) + '</h1></div>' +
-    (c.mail ? '<div><div class="lbl">' + esc(c.mail.label) + (c.mail.when ? " · " + esc(c.mail.when) : "") + '</div><div class="quote">' + esc(c.mail.text) + '</div></div>' : "") +
-    '<div class="suggest"><div class="lbl" style="color:var(--blue2);margin:0">建议</div><div style="font-size:17px;font-weight:600">' + esc(c.suggest) + '</div>' +
-      (c.why ? '<div class="muted small" style="white-space:pre-wrap">' + esc(c.why) + '</div>' : "") + '</div>' +
-    (c.who ? '<div><div style="display:flex;justify-content:space-between;gap:8px"><span class="lbl">最近的来往</span><a class="small" href="#/person/' + esc(c.who.id) + '">看全部</a></div><div id="convo" data-fid="' + esc(c.who.id) + '"></div></div>' : "");
-
-  // --- 右：操作 ---
-  var steps = c.steps.map(function (s, i) {
-    var params = (s.params || []).map(function (p) {
-      var editable = c.kind === "reply" && p.field;
-      return '<label class="param">' + esc(p.label) + (editable ? '<input class="input" style="width:120px;padding:4px 8px" data-field="' + esc(p.field) + '" data-orig="' + esc(p.value) + '" value="' + esc(p.value) + '">' : '<span>' + esc(p.value) + '</span>') + '</label>';
-    }).join("");
-    return '<div class="step"><span class="num">' + (i + 1) + '</span><div style="flex:1;min-width:0"><div>' + esc(s.text) + '</div>' + (params ? "<div>" + params + "</div>" : "") + '</div></div>';
-  }).join("");
-  var acts = actionsFor(c);
-  var moreActs = acts.slice(1);
-  var buttons = '<button class="btn big primary" data-act="0">' + esc(acts[0].label) + ' <span class="kbd">' + acts[0].key + '</span></button>' +
-    '<div class="drow">' + moreActs.map(function (a, i) {
-      return '<button class="btn"' + (a.danger ? ' style="border-color:#E9B4AE;color:var(--bad)"' : "") + ' data-act="' + (i + 1) + '">' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
-    }).join("") + '<button class="btn" id="skip" title="先放着，看下一件">跳过 <span class="kbd">S</span></button></div>';
-  var posted = c.kind === "overdue" && state.posted[c.id];
-  var choice = c.kind === "overdue" ? '<div class="field" style="color:var(--ink);font-weight:500">她发了吗？<div class="seg" role="radiogroup">' +
-      '<button role="radio" aria-checked="' + !posted + '" class="' + (posted ? "" : "on") + '" data-path="notyet">还没发：写信问她 <span class="kbd">1</span></button>' +
-      '<button role="radio" aria-checked="' + !!posted + '" class="' + (posted ? "on" : "") + '" data-path="posted">已经发了：记下链接 <span class="kbd">2</span></button></div></div>' : "";
-  var linkBox = posted ? '<label class="field">帖子链接<input class="input" id="post-link" placeholder="https://"><span class="tiny">记下后她会移到「已发布」，之后自动记播放和互动</span></label>' : "";
-  var draft = c.draft && !posted ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">可以直接改字</span>' : "") + '</div>' +
-      (c.kind === "overdue" || c.kind === "waiting" ? '<label class="field">主旨（她回过我们的信就可以不填）<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
-        : c.draft.subject ? '<div class="muted small">主旨：' + esc(c.draft.subject) + '</div>' : "") +
-      (c.kind === "reply" || c.kind === "overdue" || c.kind === "waiting" ? '<textarea class="input draft" id="draft-body" rows="10" style="resize:vertical;font-size:14px" placeholder="写给她的信">' + esc(c.draft.body) + '</textarea>' : '<div class="draft" style="font-size:14px">' + esc(c.draft.body) + '</div>') +
-      (c.draft.note ? '<div class="muted tiny">' + esc(c.draft.note) + '</div>' : "") + '</div>' : "";
-  var mailHint = c.kind === "mail" && !c.blocked ? '<div class="muted small">要回信的话：在 Claude 里说「处理来信」，写好的草稿会排进这里。</div>' : "";
-  var changing = state.changing && ["reply", "batch", "template"].indexOf(c.kind) >= 0;
+  var changing = state.changing && ["reply", "batch", "template", "todo"].indexOf(c.kind) >= 0 && c.kind !== "template";
+  var pn = pane(c);
   var next = cards[state.idx + 1];
-  if (c.kind === "overdue") steps = "";
-  var after = c.send && c.send.byHand ? "这封要你自己发：" : c.kind === "reply" || c.kind === "batch" || c.kind === "template" ? "点「" + acts[0].label + "」后会：" : "可以这样处理：";
-  var actionPane = changing
-    ? '<div style="display:flex;flex-direction:column;gap:12px"><b style="font-size:16px">让 Claude 改</b>' +
-      '<label class="field" style="color:var(--ink)">哪里要改？<textarea class="input" id="change-note" rows="4" placeholder="比如：语气轻一点，不要提分润比例；或者：不要结案，改成下个月再问"></textarea></label>' +
-      '<button class="btn big primary" id="to-claude">交给 Claude 重写</button><button class="btn" id="cancel-change">返回</button>' +
-      '<div class="muted tiny">交给 Claude 后，这件先离开队列。在 Claude 里说「改退回的草稿」，改好的会排回这里，你再看一遍。</div>' +
-      (c.draft ? '<div><div class="lbl">现在的草稿</div><div class="draft" style="font-size:13px;max-height:320px;overflow:auto">' + esc(c.draft.body) + '</div></div>' : "") + '</div>'
-    : choice + (steps ? '<div style="display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">' + esc(after) + '</div>' + steps + '</div>' : "") +
-      linkBox + draft + mailHint +
-      '<div class="dbuttons">' + buttons + '</div>' +
-      (c.kind === "reply" ? '<div class="muted tiny">小改动直接在信里改，再点「' + esc(acts[0].label) + '」；要大改就「让 Claude 改」。</div>' : "") +
-      '<div class="muted tiny">' + (next ? "下一件：" + esc(next.headline) : "这是最后一件") + '</div>';
+  var actionPane;
+  if (changing) {
+    actionPane = '<div style="display:flex;flex-direction:column;gap:12px"><b style="font-size:16px">让 Claude 改</b>' +
+      '<label class="field"><span>哪里要改？</span><textarea class="input" id="change-note" rows="4" placeholder="比如：语气轻一点，不要提分润比例；或者：不要结案，改成下个月再问"></textarea></label>' +
+      '<button class="btn big primary" id="to-claude">交给 Claude 重写</button><button class="btn" id="cancel-change">返回 <span class="kbd">Esc</span></button>' +
+      '<div class="hint">交给 Claude 后，这件先离开队列。在 Claude 里说「改退回的草稿」，改好的会排回这里，你再看一遍。</div>' +
+      (c.draft ? '<div><div class="lbl">现在的草稿</div><div class="quote" style="font-size:13px;max-height:320px;overflow:auto">' + esc(c.draft.body) + '</div></div>' : "") + '</div>';
+  } else {
+    var acts = pn.acts, more = acts.slice(1);
+    var steps = pn.steps && pn.steps.length ? '<div><div class="lbl">' + esc(pn.stepsLabel || "可以这样处理") + '</div><ol class="steps">' + pn.steps.map(function (s) { return "<li" + (/^(标成永不联系，)?结束跟进（原因/.test(s.text) ? ' id="after-step"' : "") + ">" + esc(s.text) + "</li>"; }).join("") + "</ol></div>" : "";
+    actionPane = '<div><div class="lbl">要你定什么</div><div style="font-weight:600">' + esc(pn.ask) + '</div></div>' + steps + pn.body +
+      (acts.length ? '<button class="btn big primary" data-act="0">' + esc(acts[0].label) + ' <span class="kbd">' + acts[0].key + '</span></button>' : "") +
+      '<div class="drow">' + more.map(function (a, i) {
+        return '<button class="btn' + (a.danger ? " text danger" : "") + '"' + (a.danger ? ' style="margin-left:auto"' : "") + ' data-act="' + (i + 1) + '">' + esc(a.label) + ' <span class="kbd">' + a.key + '</span></button>';
+      }).join("") + '<button class="btn" id="skip" title="先放着，看下一件">跳过 <span class="kbd">S</span></button></div>' + pn.after +
+      '<div class="hint">' + (next ? "下一件：" + esc(next.headline) : "这是最后一件") + '</div>';
+  }
 
-  $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' + top +
+  // Narrow screens: the queue folds into a 「第 3 / 90 件」 picker above the card (4.1.1).
+  var pick = '<div class="dpick card" style="padding:8px 12px;gap:8px;align-items:center"><button class="btn sm" data-move="-1" aria-label="上一件">‹</button><select class="input" id="dpick" style="flex:1;min-width:0">' +
+    cards.map(function (x, i) { return '<option value="' + i + '"' + (i === state.idx ? " selected" : "") + ">第 " + (i + 1) + " / " + cards.length + " 件 · " + esc(x.group) + " · " + esc(x.headline.slice(0, 40)) + "</option>"; }).join("") +
+    '</select><button class="btn sm" data-move="1" aria-label="下一件">›</button></div>';
+  $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' + top + pick +
     '<div class="dgrid">' +
       '<nav class="card dlist" aria-label="待你决定的事">' + list + '</nav>' +
-      '<section class="card dinfo" aria-label="这件事">' + info + '</section>' +
+      '<section class="card dinfo" aria-label="这件事">' + infoHtml(c) + '</section>' +
       '<section class="card dact" aria-label="怎么处理">' + actionPane + '</section>' +
     '</div></div>';
 
-  if (!changing) keepEdits(c);
+  if (!changing) { keepEdits(c); if (pn.wire) pn.wire(); }
   var newList = document.querySelector(".dlist");
   if (newList) newList.scrollTop = listScroll;
   var on = document.querySelector(".ditem.on");
   if (on && newList && (on.offsetTop < newList.scrollTop || on.offsetTop > newList.scrollTop + newList.clientHeight - 60)) newList.scrollTop = on.offsetTop - 80;
-  Array.prototype.forEach.call(document.querySelectorAll("[data-i]"), function (b) {
+  all("[data-i]").forEach(function (b) {
     b.addEventListener("click", function () { state.idx = Number(b.getAttribute("data-i")); state.changing = false; renderDecide(); });
   });
-  Array.prototype.forEach.call(document.querySelectorAll("[data-act]"), function (b) { b.addEventListener("click", function () { acts[Number(b.getAttribute("data-act"))].run(); }); });
+  all("[data-group]").forEach(function (b) { b.addEventListener("click", function () { var g = b.getAttribute("data-group"); state.collapsed[g] = !state.collapsed[g]; renderDecide(); }); });
+  all("[data-act]").forEach(function (b) { b.addEventListener("click", function () { pn.acts[Number(b.getAttribute("data-act"))].run(); }); });
   if ($("skip")) $("skip").addEventListener("click", function () { move(1); });
+  if ($("dpick")) $("dpick").addEventListener("change", function () { state.idx = Number($("dpick").value); state.changing = false; renderDecide(); });
+  all("[data-move]").forEach(function (b) { b.addEventListener("click", function () { move(Number(b.getAttribute("data-move"))); }); });
   if (changing) {
     $("cancel-change").addEventListener("click", function () { state.changing = false; renderDecide(); });
     $("to-claude").addEventListener("click", function () {
       var note = $("change-note").value.trim();
-      if (!note) { toast("写一句哪里要改，Claude 才知道怎么改"); return; }
+      if (!note) { toast("写一句哪里要改，Claude 才知道怎么改", { bad: true }); return; }
       state.changing = false;
       later(c.id, "已交给 Claude 重写：" + who(c), function () { return post("/api/revise", { id: c.id, note: note }); });
     });
   }
-  Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (b) {
-    b.addEventListener("click", function () { state.posted[c.id] = b.getAttribute("data-path") === "posted"; renderDecide(); if ($("post-link")) $("post-link").focus(); });
-  });
   if (c.who) loadConvo(c.who.id);
+  // 看全部 opens every message in place instead of leaving the card (4.1.2).
+  if ($("convo-all")) $("convo-all").addEventListener("click", function (e) {
+    e.preventDefault();
+    $("convo").innerHTML = '<div class="muted small">读取全部来往…</div>';
+    api("/api/person?id=" + encodeURIComponent(c.who.id) + "&all=1").then(function (p) {
+      // Only into the card it was asked for: another card may be open by now.
+      var box = $("convo");
+      if (box && box.getAttribute("data-fid") === c.who.id) { box.innerHTML = convoHtml(p, true); if ($("convo-all")) $("convo-all").hidden = true; }
+    }).catch(function () {});
+  });
+  state.current = { card: c, acts: changing ? [] : pn.acts };
 }
 function move(d) {
   var n = visibleCards().length;
@@ -596,25 +994,74 @@ function move(d) {
   window.scrollTo(0, 0);
 }
 document.addEventListener("keydown", function (e) {
-  if (location.hash && location.hash !== "#/" && location.hash !== "#") return;
-  if (!$("modal").hidden) return;
+  if (e.key === "Escape") {
+    if (!$("drawer").hidden) return closeDrawer();
+    if (!$("modal").hidden) return closeModal();
+  }
+  if (!$("drawer").hidden || !$("modal").hidden) return;
+  if (location.hash && location.hash.indexOf("#/?") !== 0 && location.hash !== "#/" && location.hash !== "#") return;
   // While writing what Claude should change, only Esc (back) works.
   if (state.changing) { if (e.key === "Escape") { state.changing = false; renderDecide(); } return; }
   if (e.target.closest && e.target.closest("input,textarea,select")) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   var k = e.key.toLowerCase();
-  var cur = visibleCards()[state.idx];
+  if (k === "z" && toastState.undo) { e.preventDefault(); var u = toastState.undo; hideToast(); u(); return; }
+  var cur = state.current && state.current.card;
   if (cur && cur.kind === "overdue" && (k === "1" || k === "2")) { state.posted[cur.id] = k === "2"; renderDecide(); return; }
   if (k === "j" || k === "s") return move(1);
   if (k === "k") return move(-1);
-  var c = visibleCards()[state.idx];
-  if (!c) return;
-  var acts = actionsFor(c);
-  var hit = acts.find(function (a) { return a.key.toLowerCase() === k; });
+  if (!state.current) return;
+  var hit = state.current.acts.find(function (a) { return a.key.toLowerCase() === k; });
   if (hit) { e.preventDefault(); hit.run(); }
 });
 
-// --- KOL ---
+// --- F-01 写信给她 ---
+/** The write panel; from a bounce card (`o.card`) the bounce is handled only once the mail is queued (C-12). */
+function openWrite(fid, o) {
+  o = o || {};
+  api("/api/person?id=" + encodeURIComponent(fid)).then(function (p) {
+    var sf = p.sendFrom || { channel: "", usual: "", mailboxes: [] };
+    var fromBox = '<label class="field"><span>从哪个邮箱发</span><select class="input" id="w-from">' + (sf.usual ? "" : '<option value="">请选择</option>') +
+      sf.mailboxes.map(function (m) { return '<option value="' + esc(m) + '"' + (m === sf.usual ? " selected" : "") + ">" + esc(m) + (m === sf.usual ? "（她一直跟这个邮箱联系）" : "") + "</option>"; }).join("") + "</select>" +
+      '<span class="hint" id="w-from-hint">' + (sf.usual ? "" : "她一直是跟「" + esc(sf.channel || "未填") + "」联系的，这个邮箱系统发不了。换一个邮箱发，她看到的发件人会变。") + "</span></label>";
+    var usable = p.emails.filter(function (e) { return !e.blocked && !e.bounced; }), blocked = p.emails.filter(function (e) { return e.blocked || e.bounced; });
+    var toBox = '<label class="field"><span>发到哪个邮箱</span><select class="input" id="w-to">' + usable.map(function (e, i) {
+      var sel = o.to ? e.address === o.to : i === 0;
+      return '<option value="' + esc(e.address) + '"' + (sel ? " selected" : "") + ">" + esc(e.address) + (e.address === (p.emails[0] || {}).address ? "（默认）" : "") + "</option>";
+    }).join("") + "</select>" + (blocked.length ? '<span class="hint">' + esc(blocked.map(function (e) { return e.address + (e.bounced ? "（退过信）" : "（永不联系）"); }).join("、")) + " 不在列表里</span>" : "") + "</label>";
+    var held = p.heldMail ? '<div class="confirm" style="gap:2px"><b>她已经有一封待发或没发成的信「' + esc(p.heldMail) + '」</b><div class="small">同一时间只能有一封。先在「待你决定」或「出了问题」里处理那一封。</div></div>' : "";
+    drawer("写信给 " + p.name, (o.card ? '<div class="hint">新邮箱已加到她的档案。信排进队列后，退信卡才算处理完；取消写信，退信卡留着。</div>' : "") +
+      '<div class="hint">点「发出」就算你同意了，按额度排队发出，5 秒内可以撤销。</div>' + held + fromBox + toBox +
+      '<label class="field"><span>主旨</span><input class="input" id="w-subject" placeholder="回复她上一封信时可以不填"></label>' +
+      '<label class="field"><span>正文</span><textarea class="input" id="w-body" rows="12" autofocus></textarea></label>',
+      '<button class="btn" id="w-cancel">取消</button><button class="btn primary" id="w-send"' + (held ? " disabled" : "") + '>发出</button>',
+      { ask: "放弃这封信？" });
+    var wire = function () {
+      $("w-cancel").onclick = function () { closeDrawer(); };
+      $("w-send").onclick = function () {
+        var from = $("w-from").value, to = ($("w-to") || {}).value || "", subject = $("w-subject").value, body = $("w-body").value;
+        if (!from) { toast("先选从哪个邮箱发", { bad: true }); return; }
+        if (!to) { toast("她的档案里没有能用的邮箱", { bad: true }); return; }
+        if (!body.trim()) { toast("信是空的", { bad: true }); $("w-body").focus(); return; }
+        closeDrawer(true);
+        var req = { id: fid, subject: subject, body: body, from: from, to: to };
+        var then = function (r) { toast(r.job ? "已排队从 " + from + " 发给 " + to + "，结果看右上角" : "现在暂停着：已经记下，恢复发送后从 " + from + " 发出"); if (o.after) o.after(); };
+        if (o.card) {
+          req.answers = o.card.id.slice(7);
+          later(o.card.id, "5 秒后发给 " + to, function () { return post("/api/write", req); }, then);
+        } else delayed("5 秒后发给 " + to, function () { return post("/api/write", req); }, then);
+      };
+      $("w-from").onchange = function () {
+        $("w-from-hint").textContent = sf.usual && $("w-from").value !== sf.usual ? "换邮箱的话，她看到的发件人会变" : "";
+        $("w-from-hint").style.color = "var(--warn)";
+      };
+    };
+    drawerState.rewire = wire;
+    wire();
+  }).catch(function (e) { failToast("打不开写信：", e); });
+}
+
+// --- U-2 KOL ---
 var searchTimer = null;
 function renderPeople(view, q) {
   var o = state.overview;
@@ -623,10 +1070,12 @@ function renderPeople(view, q) {
   }).join("");
   $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' +
     '<div style="display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline"><h1 style="margin:0;font-size:22px">KOL</h1>' +
-      '<span class="muted">正在跟进 ' + (o.counts.all || 0) + ' 位 · 还没联系过 ' + (o.counts.pool || 0) + ' 位</span>' +
+      '<span class="muted">正在跟进 ' + (o.counts.all || 0) + ' 位 · 还没联系 ' + (o.counts.pool || 0) + ' 位</span>' +
       '<button class="btn primary" style="margin-left:auto" id="find">找新人</button></div>' +
     '<div class="views" role="tablist">' + tabs + '</div>' +
     '<div class="muted small" id="question"></div>' +
+    (view === "pool" ? '<div class="hint">勾选要邀约的人，复制一句话交给 Claude；Claude 会提交一批邀约到「待你决定」（批量邀约在 Claude 里发起）。</div>' +
+      '<div id="pool-bar" class="card" hidden style="position:sticky;top:64px;z-index:5;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-color:var(--blue)"><b id="pool-n"></b><span class="hint" id="pool-names" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn sm" id="pool-clear">清空</button><button class="btn sm primary" id="pool-copy">复制给 Claude 的话</button></div>' : "") +
     '<input class="input" id="q" placeholder="搜名字、账号、邮箱" value="' + esc(q) + '" style="max-width:360px">' +
     '<section class="card" style="overflow-x:auto" id="table"><div class="loading">读取中…</div></section></div>';
   $("find").addEventListener("click", openFind);
@@ -642,59 +1091,111 @@ function cell(c) {
   var body = esc(c.v);
   if (c.badge) body = '<span class="badge ' + (c.tone === "bad" ? "b-bad" : c.tone === "warn" ? "b-warn" : "") + '">' + body + "</span>";
   if (c.link === "decide") body = '<a href="#/" style="text-decoration:none">' + body + "</a>";
-  else if (c.link) body = '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">' + body + " ↗</a>";
+  else if (safeUrl(c.link)) body = '<a href="' + esc(safeUrl(c.link)) + '" target="_blank" rel="noopener">' + body + " ↗</a>";
   return '<td class="' + cls + '">' + body + "</td>";
+}
+var poolPicked = {};
+function poolBar() {
+  var names = Object.keys(poolPicked).map(function (k) { return poolPicked[k]; });
+  if (!$("pool-bar")) return;
+  $("pool-bar").hidden = !names.length;
+  $("pool-n").textContent = "已选 " + names.length + " 位";
+  $("pool-names").textContent = names.join("、");
 }
 function loadPeople(view, q) {
   api("/api/people?view=" + encodeURIComponent(view) + "&q=" + encodeURIComponent(q || "")).then(function (r) {
-    $("question").textContent = r.question;
-    var head = "<tr><th>KOL</th>" + r.columns.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>";
+    $("question").textContent = r.question + ((view === "pool" || view === "cross") && r.elsewhere && (r.elsewhere.error || !r.elsewhere.at)
+      ? (r.elsewhere.error ? "（别的项目这次没读到，下面按上次读到的算：" + r.elsewhere.error.slice(0, 60) + "）" : "（别的项目还在读，跨项目联系过的人可能还混在这里）") : "");
+    var pool = view === "pool";
+    var head = "<tr>" + (pool ? '<th style="width:32px"><input type="checkbox" id="pool-all" aria-label="全选这一页"></th>' : "") + "<th>KOL</th>" + r.columns.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>";
     var rows = r.rows.map(function (x) {
-      var who = x.hasDetail ? '<a href="#/person/' + esc(x.id) + '" style="font-weight:500">' + esc(x.handle) + "</a>" : '<span style="font-weight:500">' + esc(x.handle) + "</span>";
-      return '<tr><td style="white-space:nowrap">' + who + '<div class="muted tiny">' + esc(x.sub) + "</div></td>" + x.cells.map(cell).join("") + "</tr>";
+      var w = x.hasDetail ? '<a href="#/person/' + esc(x.id) + '" style="font-weight:500">' + esc(x.handle) + "</a>" : '<span style="font-weight:500">' + esc(x.handle) + "</span>";
+      return "<tr>" + (pool ? '<td><input type="checkbox" data-pick-row="' + esc(x.id) + '" data-handle="' + esc(x.handle) + '"' + (poolPicked[x.id] ? " checked" : "") + ' aria-label="选 ' + esc(x.handle) + '"></td>' : "") +
+        '<td style="white-space:nowrap">' + w + '<div class="muted tiny">' + esc(x.sub) + "</div></td>" + x.cells.map(cell).join("") + "</tr>";
     }).join("");
-    $("table").innerHTML = '<table style="min-width:760px"><thead>' + head + "</thead><tbody>" + (rows || '<tr><td colspan="9" class="muted">这里没有人</td></tr>') + "</tbody></table>" +
+    $("table").innerHTML = '<table style="min-width:760px"><thead>' + head + "</thead><tbody>" + (rows || '<tr><td colspan="9" class="muted">这个视图现在没有人</td></tr>') + "</tbody></table>" +
       '<div class="muted small" style="padding:10px 12px">' + (r.total > r.rows.length ? "一共 " + r.total + " 位，只显示前 " + r.rows.length + " 位，可以用上面的搜索。" : "一共 " + r.total + " 位") + "</div>";
+    if (!pool) return;
+    all("[data-pick-row]").forEach(function (cb) { cb.onchange = function () { if (cb.checked) poolPicked[cb.getAttribute("data-pick-row")] = cb.getAttribute("data-handle"); else delete poolPicked[cb.getAttribute("data-pick-row")]; poolBar(); }; });
+    $("pool-all").onchange = function () { all("[data-pick-row]").forEach(function (cb) { cb.checked = $("pool-all").checked; cb.onchange(); }); };
+    $("pool-clear").onclick = function () { poolPicked = {}; all("[data-pick-row]").forEach(function (cb) { cb.checked = false; }); poolBar(); };
+    $("pool-copy").onclick = function () {
+      var names = Object.keys(poolPicked).map(function (k) { return poolPicked[k]; });
+      var line = "给这 " + names.length + " 位发邀约：" + names.join("、");
+      navigator.clipboard.writeText(line).then(function () { toast("已复制，贴到 Claude 里发出去"); }, function () { toast("复制不了：" + line, { bad: true }); });
+    };
+    poolBar();
   }).catch(function (e) { $("table").innerHTML = '<div class="err">' + esc(e.message) + "</div>"; });
 }
 
+// --- F-02 找新人 ---
 function openFind() {
-  modal('<div class="loading">读取入库批次…</div>');
   api("/api/find-options").then(function (r) {
     var opts = r.batches.slice().reverse().map(function (b) { return '<option value="' + esc(b) + '"></option>'; }).join("");
-    modal('<h2 style="margin:0;font-size:18px">找一批新的 KOL</h2><div class="muted small">去 Instagram / YouTube 上搜，查他们公开的邮箱，到你设的上限就停。找到的人进「还没联系过」，已经在库里的会跳过。</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">' +
-      '<label class="field">在哪个平台找<select class="input" id="f-platform"><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="tiktok">TikTok（只能查已知账号）</option></select></label>' +
-      '<label class="field">找什么样的人（关键词，逗号隔开）<input class="input" id="f-keywords" placeholder="伴侶, 感情, 兩性"></label>' +
-      '<label class="field">或者：找像这几位的人<input class="input" id="f-seeds" placeholder="@love.notes.tw, @couple.daily"></label>' +
-      '<label class="field">粉丝数<span style="display:flex;gap:6px;align-items:center"><input class="input" id="f-min" style="width:100px" value="5000"> 到 <input class="input" id="f-max" style="width:100px" value="50000"></span></label>' +
-      '<label class="field">大约搜多少个账号<input class="input" id="f-target" value="100"><span class="tiny">有公开邮箱的通常是其中三到四成</span></label>' +
-      '<label class="field">最多花多少（美元）<input class="input" id="f-budget" value="5"><span class="tiny">到上限就停，已经找到的照样入库</span></label>' +
-      '<label class="field">放进哪个入库批次<input class="input" id="f-batch" list="f-batches" placeholder="选一个，或者写个新名字"><datalist id="f-batches">' + opts + '</datalist><span class="tiny">写新名字的话，会在飞书「入库批次」里加上这个选项</span></label></div>' +
-      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="f-cancel">取消</button><button class="btn primary" id="f-go">开始找</button></div>');
-    $("f-cancel").onclick = closeModal;
-    $("f-go").onclick = function () {
-      var req = { platform: $("f-platform").value, keywords: $("f-keywords").value, seeds: $("f-seeds").value, minFollowers: $("f-min").value, maxFollowers: $("f-max").value, budget: $("f-budget").value, batch: $("f-batch").value.trim(), target: $("f-target").value };
-      if (!req.batch) { toast("写一个入库批次"); return; }
-      var isNew = r.batches.indexOf(req.batch) < 0;
-      if (!confirm((isNew ? "「" + req.batch + "」是新批次，会在飞书「入库批次」里加上这个选项。\n" : "") + "大约搜 " + req.target + " 个账号，最多花 $" + req.budget + "。开始找吗？")) return;
-      post("/api/find", req).then(function () { closeModal(); toast("开始找了，进度看右上角；找完会出现在「还没联系过」"); watchJobs(); }).catch(function (e) { toast("没开始：" + e.message); });
+    drawer("找一批新的 KOL", '<div class="hint">去 Instagram / YouTube 上搜，查他们公开的邮箱，到你设的上限就停。找到的人进「还没联系」，已经在库里的会跳过。</div>' +
+      '<label class="field"><span>在哪个平台找</span><select class="input" id="f-platform"><option value="instagram">Instagram</option><option value="youtube">YouTube</option><option value="tiktok">TikTok（只能查已知账号）</option></select></label>' +
+      '<label class="field"><span>找什么样的人（关键词，逗号隔开）</span><input class="input" id="f-keywords" placeholder="伴侶, 感情, 兩性" autofocus></label>' +
+      '<label class="field"><span>或者：找像这几位的人</span><input class="input" id="f-seeds" placeholder="@love.notes.tw, @couple.daily"></label>' +
+      '<div class="field"><span>粉丝数</span><div class="drow"><input class="input" id="f-min" type="number" style="width:120px" value="5000"> 到 <input class="input" id="f-max" type="number" style="width:120px" value="50000"></div></div>' +
+      '<label class="field"><span>大约搜多少个账号</span><input class="input" id="f-target" type="number" min="10" max="2000" value="100"><span class="hint">有公开邮箱的通常是其中三到四成</span></label>' +
+      '<label class="field"><span>最多花多少（美元，必填）</span><input class="input" id="f-budget" type="number" min="1" max="50" value="5"><span class="hint">到上限就停，已经找到的照样入库</span></label>' +
+      '<label class="field"><span>放进哪个入库批次（必填）</span><input class="input" id="f-batch" list="f-batches" placeholder="选一个，或者写个新名字"><datalist id="f-batches">' + opts + '</datalist><span class="hint" id="f-batch-hint">选已有的，或写个新名字</span></label>',
+      '<span class="hint" id="f-sum" style="margin-right:auto"></span><button class="btn" id="f-cancel">取消</button><button class="btn primary" id="f-go">开始找</button>', { ask: "放弃这次找人的设置？" });
+    var problems = function () {
+      var out = [], budget = Number($("f-budget").value), lo = Number($("f-min").value), hi = Number($("f-max").value), target = Number($("f-target").value);
+      if (!(budget > 0 && budget <= 50)) out.push("最多花多少要在 1 到 50 美元之间");
+      if ($("f-min").value && $("f-max").value && lo > hi) out.push("粉丝数下限比上限大");
+      if (!(target >= 10 && target <= 2000)) out.push("搜多少个账号要在 10 到 2000 之间");
+      if (!$("f-keywords").value.trim() && !$("f-seeds").value.trim()) out.push("关键词和相似账号至少填一样");
+      return out;
     };
-  }).catch(function (e) { modal('<div class="err">' + esc(e.message) + '</div><button class="btn" onclick="closeModal()">关闭</button>'); });
+    var sum = function () {
+      var bad = problems();
+      ["f-budget", "f-min", "f-max", "f-target"].forEach(function (id) { $(id).classList.remove("bad"); });
+      if (bad.some(function (x) { return /美元/.test(x); })) $("f-budget").classList.add("bad");
+      if (bad.some(function (x) { return /下限/.test(x); })) { $("f-min").classList.add("bad"); $("f-max").classList.add("bad"); }
+      if (bad.some(function (x) { return /账号要在/.test(x); })) $("f-target").classList.add("bad");
+      $("f-go").disabled = bad.length > 0;
+      var b = $("f-batch").value.trim(), isNew = b && r.batches.indexOf(b) < 0;
+      $("f-batch-hint").textContent = !b ? "选已有的，或写个新名字" : isNew ? "「" + b + "」是新批次，会加到飞书「入库批次」的选项里" : "已有的批次";
+      $("f-batch-hint").className = !b ? "hint" : isNew ? "hint" : "hint ok";
+      $("f-sum").textContent = bad.length ? bad[0] : "大约搜 " + ($("f-target").value || "?") + " 个，最多花 $" + ($("f-budget").value || "?");
+      $("f-sum").className = bad.length ? "hint bad" : "hint";
+    };
+    ["f-batch", "f-target", "f-budget", "f-min", "f-max", "f-keywords", "f-seeds"].forEach(function (id) { $(id).addEventListener("input", sum); });
+    sum();
+    var wire = function () {
+      $("f-cancel").onclick = function () { closeDrawer(); };
+      $("f-go").onclick = function () {
+        var req = { platform: $("f-platform").value, keywords: $("f-keywords").value, seeds: $("f-seeds").value, minFollowers: $("f-min").value, maxFollowers: $("f-max").value, budget: $("f-budget").value, batch: $("f-batch").value.trim(), target: $("f-target").value };
+        if (!req.batch) { $("f-batch").classList.add("bad"); $("f-batch-hint").className = "hint bad"; $("f-batch-hint").textContent = "要写一个入库批次"; $("f-batch").focus(); return; }
+        if (!(Number(req.budget) > 0)) { $("f-budget").classList.add("bad"); $("f-budget").focus(); return; }
+        post("/api/find", req).then(function () { closeDrawer(true); toast("开始找了，进度看右上角；找完会出现在「还没联系」"); watchJobs(); }).catch(function (e) { failToast("没开始：", e); });
+      };
+    };
+    drawerState.rewire = wire;
+    wire();
+  }).catch(function (e) { failToast("打不开找人：", e); });
 }
 
-// --- 一位 KOL ---
-function renderPerson(id, all) {
+// --- U-3 一位 KOL ---
+function onPage(prefix) { return (location.hash || "#/").indexOf(prefix) === 0; }
+function renderPerson(id, showAll) {
   $("app").innerHTML = '<div class="loading">读取她的来往记录…</div>';
-  api("/api/person?id=" + encodeURIComponent(id) + (all ? "&all=1" : "")).then(function (p) {
-    var stepper = p.stageStep >= 0 ? '<ol class="stepper" aria-label="合作进度">' + p.stages.map(function (s, i) {
-      var color = i < p.stageStep ? "#1F8A55" : i === p.stageStep ? "var(--blue)" : "var(--line)";
-      return '<li><div class="seg" style="background:' + color + '"></div><span style="' + (i === p.stageStep ? "font-weight:600" : i > p.stageStep ? "color:var(--muted)" : "") + '">' + esc(s) + (i === p.stageStep ? "（现在）" : "") + "</span></li>";
-    }).join("") + "</ol>" : '<div><span class="badge">' + esc(p.stage) + "</span></div>";
-    var pending = p.pending.map(function (r) {
-      return '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#FFF8F1;border:1px solid var(--warn-line);border-radius:10px;padding:12px 14px">' +
-        '<div style="flex:1 1 240px"><div style="font-weight:600">有 1 件事等你决定：' + esc(r.title) + '</div><div class="muted small">' + esc(r.ask) + '</div></div><a class="btn primary" href="#/">去看</a></div>';
-    }).join("");
+  api("/api/person?id=" + encodeURIComponent(id) + (showAll ? "&all=1" : "")).then(function (p) {
+    // The reader may have gone elsewhere while this loaded.
+    if (!onPage("#/person/" + id)) return;
+    // Paused or closed: the bar stays at the stage she was at, greyed, with a tag (4.3).
+    var held = p.stage === "暂缓" ? p.pausedFrom : p.stage === "结案" ? p.closedFrom : "";
+    var STEP = { 已邀约: 0, 已回复: 1, 体验中: 2, 已看报告: 3, 合作中: 3, 已约发布: 4, 已发布: 5 };
+    var step = p.stageStep >= 0 ? p.stageStep : held && STEP[held] != null ? STEP[held] : -1;
+    var tag = p.stage === "暂缓" ? '<span class="badge b-warn">暂缓' + (held ? "（之前在" + esc(held) + "）" : "") + "</span>" : p.stage === "结案" ? '<span class="badge">已结案' + (p.closeReason ? "：" + esc(p.closeReason) : "") + "</span>" : "";
+    var stepper = (step >= 0 ? '<ol class="stepper' + (tag ? " grey" : "") + '" aria-label="合作进度">' + p.stages.map(function (s, i) {
+      var color = i < step ? "#1F8A55" : i === step ? "var(--blue)" : "var(--line)";
+      return '<li><div class="seg" style="background:' + color + '"></div><span style="' + (i === step ? "font-weight:600" : i > step ? "color:var(--muted)" : "") + '">' + esc(s) + (i === step && !tag ? "（现在）" : "") + "</span></li>";
+    }).join("") + "</ol>" : "") + (tag ? '<div>' + tag + "</div>" : step < 0 ? '<div><span class="badge">' + esc(p.stage) + "</span></div>" : "");
+    var pending = p.pending.length ? '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#FFF8F1;border:1px solid var(--warn-line);border-radius:10px;padding:10px 14px">' +
+      '<div style="flex:1 1 240px"><b>有 ' + p.pending.length + ' 件待你决定</b><div class="muted small">' + esc(p.pending.map(function (r) { return r.title; }).join("；")) + '</div></div><a class="btn sm primary" href="#/?card=' + encodeURIComponent(p.pending[0].id) + '">去看</a></div>' : "";
     var bubbles = p.bubbles.map(function (b) {
       if (b.side === "event") {
         return b.full ? '<details class="event" style="max-width:90%;text-align:left"><summary>' + esc(b.when.slice(0, 10) + " · " + b.text) + '（点开看全文）</summary><div style="white-space:pre-wrap;font-size:13px;color:var(--ink);margin-top:6px">' + esc(b.full) + "</div></details>"
@@ -703,123 +1204,652 @@ function renderPerson(id, all) {
       return '<div class="' + b.side + '"><div class="who">' + esc(b.who + " · " + b.when) + "</div>" + esc(b.text) +
         (b.summaryOnly ? '<div class="who" style="margin-top:4px">只有摘要，原文在邮箱里</div>' : "") + "</div>";
     }).join("");
-    var trial = p.trial ? '<div style="display:flex;justify-content:space-between"><b>体验码 ' + esc(p.trial.code) + '</b><span class="muted small">' + esc(p.trial.expires) + ' 到期</span></div>' +
-      (p.trial.max ? '<div class="bar" role="img" aria-label="用了 ' + p.trial.used + ' 次，共 ' + p.trial.max + ' 次"><div style="width:' + Math.min(100, Math.round(p.trial.used / p.trial.max * 100)) + '%;background:var(--blue)"></div></div><div class="muted small">用了 ' + p.trial.used + ' 次，共 ' + p.trial.max + ' 次</div>' : "") : '<div class="muted small">还没有体验码</div>';
-    var partner = p.partner ? '<div class="kv"><span>活动码</span><span>' + esc(p.partner.code) + "</span></div>" + (p.partner.link ? '<div class="kv"><span>专属连结</span><span><a href="' + esc(p.partner.link) + '" target="_blank" rel="noopener">打开 ↗</a></span></div>' : "") +
-      (p.partner.ledger ? '<div class="kv"><span>账本</span><span><a href="' + esc(p.partner.ledger) + '" target="_blank" rel="noopener">打开 ↗</a></span></div>' : "") : '<div class="muted small" style="padding-top:8px">还没有活动码</div>';
+    var trial = p.trial ? '<div style="display:flex;justify-content:space-between;gap:8px"><b>体验码 ' + esc(p.trial.code) + '</b><span class="muted small">' + esc(p.trial.expires) + ' 到期</span></div>' +
+      (p.trial.max ? '<div class="bar" role="img" aria-label="用了 ' + p.trial.used + ' 次，共 ' + p.trial.max + ' 次"><div style="width:' + Math.min(100, Math.round(p.trial.used / p.trial.max * 100)) + '%"></div></div><div class="muted small">用了 ' + p.trial.used + ' 次，共 ' + p.trial.max + ' 次</div>' : '<div class="muted small">用量不知道</div>') : '<div class="muted small">还没有体验码</div>';
+    var partner = p.partner ? '<div class="kv"><span>活动码</span><span>' + esc(p.partner.code) + "</span></div>" + (safeUrl(p.partner.link) ? '<div class="kv"><span>专属连结</span><span><a href="' + esc(safeUrl(p.partner.link)) + '" target="_blank" rel="noopener">打开 ↗</a> <button class="btn sm text" data-copy="' + esc(p.partner.link) + '">复制</button></span></div>' : "") +
+      (safeUrl(p.partner.ledger) ? '<div class="kv"><span>账本</span><span><a href="' + esc(safeUrl(p.partner.ledger)) + '" target="_blank" rel="noopener">打开 ↗</a></span></div>' : "") : '<div class="muted small" style="padding-top:8px">还没有活动码</div>';
     var posts = p.posts.length ? p.posts.map(function (x) {
-      return '<div style="padding:8px 0;border-top:1px solid var(--line2)"><div>' + (x.link ? '<a href="' + esc(x.link) + '" target="_blank" rel="noopener">' + esc(x.title) + " ↗</a>" : esc(x.title)) + '</div><div class="muted small">' + esc([x.platform, x.date].filter(Boolean).join(" · ")) + '</div>' +
+      return '<div style="padding:8px 0;border-top:1px solid var(--line2)"><div>' + (safeUrl(x.link) ? '<a href="' + esc(safeUrl(x.link)) + '" target="_blank" rel="noopener">' + esc(x.title) + " ↗</a>" : esc(x.title)) + '</div><div class="muted small">' + esc([x.platform, x.date].filter(Boolean).join(" · ")) + '</div>' +
         '<div class="small">' + x.metrics.map(function (m) { return "第 " + m.day + " 天 " + (m.views == null ? "—" : m.views.toLocaleString()); }).join(" · ") + "</div></div>";
     }).join("") : '<div class="muted small">还没有记下的发布。</div>';
-    var info = p.info.map(function (x) {
+    var editKeys = p.editable.map(function (x) { return x.k; });
+    var info = p.editable.map(function (x, i) {
       var link = /^https?:\/\//.test(x.v) ? x.v.split(/[\s,，]+|(?=https?:\/\/)/).filter(Boolean)[0] : "";
-      return '<div class="kv"><span class="muted">' + esc(x.k) + "</span><span>" + (link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">打开 ↗</a>' : esc(x.v)) + "</span></div>";
-    }).join("") +
-      p.emails.map(function (e) { return '<div class="kv"><span class="muted">邮箱</span><span>' + esc(e.address) + (e.blocked ? ' <span class="badge b-bad">永不联系</span>' : "") + "</span></div>"; }).join("");
+      return '<div class="kv"><span class="muted">' + esc(x.k) + '</span><span>' + (link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">打开 ↗</a>' : x.v ? esc(x.v) : '<span class="muted">没填</span>') +
+        ' <button class="btn sm text" style="color:var(--blue);min-height:24px;padding:0 4px" data-edit-info="' + i + '">改</button></span></div><div data-info-box="' + i + '" hidden></div>';
+    }).join("") + p.info.filter(function (x) { return editKeys.indexOf(x.k) < 0 && x.k !== "主页"; }).map(function (x) {
+      return '<div class="kv"><span class="muted">' + esc(x.k) + "</span><span>" + esc(x.v) + "</span></div>";
+    }).join("");
+    var emails = p.emails.map(function (e, i) {
+      return '<div class="kv"><span>' + esc(e.address) + "</span><span>" + (i === 0 ? '<span class="badge">默认</span> ' : "") + (e.blocked ? '<span class="badge b-bad">永不联系</span> ' : "") + (e.bounced ? '<span class="badge b-bad">退过信</span> ' : "") +
+        (i > 0 && !e.blocked && !e.bounced ? '<button class="btn sm text" style="color:var(--blue);min-height:24px;padding:0 4px" data-default="' + esc(e.address) + '">设为默认</button>' : "") + "</span></div>";
+    }).join("") || '<div class="muted small">档案里没有邮箱</div>';
+    var paused = p.stage === "暂缓", closed = p.stage === "结案";
     $("app").innerHTML = '<div style="max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px">' +
       '<a href="#/people/wait" class="small">← KOL</a>' +
       '<div><h1 style="margin:0;font-size:24px">' + esc(p.name) + ' <span class="muted" style="font-weight:400;font-size:16px">' + esc(p.handle) + '</span></h1><div class="muted">' + esc(p.sub) + (p.doNotContact ? ' · <span class="badge b-bad">永不联系</span>' : "") + '</div></div>' +
+      pending +
       '<div class="two"><div style="flex:2 1 560px;min-width:0;display:flex;flex-direction:column;gap:16px">' +
         '<section class="card" style="padding:22px 24px;display:flex;flex-direction:column;gap:16px"><div><div class="lbl">现在的情况</div><div style="font-size:19px;font-weight:600">' + esc(p.situation) + '</div>' +
           (p.lastContact ? '<div class="muted small">最近一次联系：' + esc(p.lastContact) + "</div>" : "") + "</div>" + stepper +
-          '<div style="border-top:1px solid var(--line2);padding-top:14px;display:flex;flex-direction:column;gap:10px"><div class="lbl" style="margin:0">接下来</div>' + pending +
-            '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1 1 260px">' + (p.next ? esc(p.next) : '<span class="muted">没写下一步</span>') + (p.nextDate ? ' <span class="muted small">（下次跟进：' + esc(p.nextDate) + "）</span>" : "") + '</div><button class="btn sm" id="p-edit">改</button></div></div>' +
-          '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-top:14px"><button class="btn primary" id="p-write"' + (p.doNotContact ? " disabled" : "") + '>写信给她</button>' +
-          (p.stage !== "结案" ? '<button class="btn" id="p-close" style="border-color:transparent;color:var(--muted)">不再跟进</button>' : "") +
-          (p.doNotContact ? "" : '<button class="btn" id="p-never" style="border-color:transparent;color:var(--bad)">不要再联系她</button>') + '</div></section>' +
-        '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>来往记录</b><span class="muted small">左边是她，右边是我们' + (p.olderCount ? ' · 更早还有 ' + p.olderCount + ' 条，<a href="#" id="p-all">全部显示</a>' : "") + "</span></div>" +
+          '<div style="border-top:1px solid var(--line2);padding-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1 1 260px"><div class="lbl">下一步</div>' + (p.next ? esc(p.next) : '<span class="muted">没写下一步</span>') + (p.nextDate ? ' <span class="muted small">（下次跟进：' + esc(p.nextDate) + "）</span>" : "") + '</div><button class="btn sm" id="p-edit">改</button></div>' +
+          '<div class="drow" style="border-top:1px solid var(--line2);padding-top:14px"><button class="btn primary" id="p-write"' + (p.doNotContact ? " disabled" : "") + '>写信给她</button>' +
+          (closed ? "" : paused ? '<button class="btn" id="p-resume">恢复跟进' + (held ? "（回到" + esc(held) + "）" : "") + '</button>' : '<button class="btn" id="p-pause">暂缓</button>') +
+          (closed ? "" : '<button class="btn text" id="p-close" style="color:var(--muted)">不再跟进</button>') +
+          (p.doNotContact ? "" : '<button class="btn text danger" id="p-never" style="margin-left:auto">永不联系</button>') + '</div><div id="p-confirm" hidden></div></section>' +
+        '<section class="card" style="padding:18px 24px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap"><b>来往记录</b><span class="muted small">左边是她，右边是我们' + (p.olderCount ? ' · 更早还有 ' + p.olderCount + ' 条，<a href="#" id="p-all">看全部</a>' : "") + "</span></div>" +
           (bubbles || '<div class="muted">还没有来往</div>') + "</section></div>" +
         '<aside style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px">' +
-          '<section class="card" style="padding:16px 18px;display:flex;flex-direction:column;gap:8px">' + trial + partner + "</section>" +
+          '<section class="card" style="padding:16px 18px;display:flex;flex-direction:column;gap:8px"><b>码</b>' + trial + partner + "</section>" +
           '<section class="card" style="padding:16px 18px"><b>资料</b>' + info + "</section>" +
-          '<section class="card" style="padding:16px 18px"><b>发布</b>' + posts + '<button class="btn sm" id="p-post" style="margin-top:10px">记下一条发布</button></section></aside></div></div>';
+          '<section class="card" style="padding:16px 18px"><div style="display:flex;justify-content:space-between"><b>邮箱</b><button class="btn sm text" id="p-add-email" style="color:var(--blue)">加邮箱</button></div>' + emails + '<div id="p-email-box" hidden></div></section>' +
+          '<section class="card" style="padding:16px 18px"><b>发布</b>' + posts + '<button class="btn sm" id="p-post" style="margin-top:10px">记下一条发布</button><div id="p-post-box" hidden style="margin-top:10px"></div></section></aside></div></div>';
     wirePerson(p);
   }).catch(fail);
 }
 
 function wirePerson(p) {
-  var reload = function () { renderPerson(p.id); };
+  var reload = function () { delete state.convo[p.id]; if (onPage("#/person/" + p.id)) renderPerson(p.id); };
   if ($("p-all")) $("p-all").onclick = function (e) { e.preventDefault(); renderPerson(p.id, true); };
+  all("[data-copy]").forEach(function (b) { b.onclick = function () { navigator.clipboard.writeText(b.getAttribute("data-copy")).then(function () { toast("已复制"); }); }; });
+  // F-05 改跟进
   $("p-edit").onclick = function () {
-    modal('<h2 style="margin:0;font-size:18px">接下来</h2>' +
-      '<label class="field">下一步要做什么<input class="input" id="e-next" value="' + esc(p.next) + '"></label>' +
-      '<label class="field">下次跟进<input class="input" type="date" id="e-date" value="' + esc(p.nextDateIso || "") + '"></label>' +
-      '<label class="field">等谁<select class="input" id="e-turn"><option' + (p.turn === "我们" ? " selected" : "") + '>我们</option><option' + (p.turn === "KOL" ? " selected" : "") + '>KOL</option><option' + (p.turn === "无需动作" ? " selected" : "") + '>无需动作</option></select></label>' +
-      (p.stage === "结案" ? "" : '<label class="field">阶段<select class="input" id="e-stage">' + ["已邀约", "已回复", "体验中", "已看报告", "合作中", "已约发布", "已发布", "暂缓"].map(function (x) { return "<option" + (x === p.stage ? " selected" : "") + ">" + x + "</option>"; }).join("") + "</select></label>") +
-      '<label class="field">约定发布日期<input class="input" type="date" id="e-agreed" value="' + esc(p.agreedIso || "") + '"></label>' +
-      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="e-cancel">取消</button><button class="btn primary" id="e-save">保存</button></div>');
-    $("e-cancel").onclick = closeModal;
-    $("e-save").onclick = function () {
-      var fields = { 下一步: $("e-next").value, 下次跟进日期: $("e-date").value, 当前轮到谁: $("e-turn").value, 约定发布日期: $("e-agreed").value };
-      if ($("e-stage") && $("e-stage").value !== p.stage) fields.阶段 = $("e-stage").value;
-      post("/api/followup", { id: p.id, fields: fields })
-        .then(function () { closeModal(); toast("已保存"); reload(); }).catch(function (e) { toast("没保存：" + e.message); });
+    var stages = ["已邀约", "已回复", "体验中", "已看报告", "合作中", "已约发布", "已发布", "暂缓"];
+    drawer("改跟进：" + p.name,
+      '<label class="field"><span>下一步要做什么</span><input class="input" id="e-next" value="' + esc(p.next) + '" autofocus></label>' +
+      '<label class="field"><span>下次跟进</span><input class="input" type="date" id="e-date" value="' + esc(p.nextDateIso || "") + '"><span class="hint" id="e-date-hint">' + esc(dayText(p.nextDateIso)) + '</span></label>' +
+      '<label class="field"><span>等谁</span><select class="input" id="e-turn">' + (p.stage === "结案" ? ["无需动作"] : ["我们", "KOL", "无需动作"]).map(function (x) { return "<option" + (x === p.turn ? " selected" : "") + ">" + x + "</option>"; }).join("") + "</select>" +
+        (p.stage === "结案" ? '<span class="hint">她已经结案，等谁只能是「无需动作」；要继续跟进，先写信给她</span>' : "") + "</label>" +
+      (p.stage === "结案" ? "" : '<label class="field"><span>阶段</span><select class="input" id="e-stage">' + stages.map(function (x) { return "<option" + (x === p.stage ? " selected" : "") + ">" + x + "</option>"; }).join("") + '</select><span class="hint">结案请用「不再跟进」，要选原因</span></label>') +
+      '<label class="field"><span>约定发布日期</span><input class="input" type="date" id="e-agreed" value="' + esc(p.agreedIso || "") + '"><span class="hint" id="e-agreed-hint">' + esc(dayText(p.agreedIso)) + "</span></label>",
+      '<button class="btn" id="e-cancel">取消</button><button class="btn primary" id="e-save">保存</button>', { ask: "放弃这些修改？" });
+    $("e-date").addEventListener("input", function () { $("e-date-hint").textContent = dayText($("e-date").value); });
+    $("e-agreed").addEventListener("input", function () { $("e-agreed-hint").textContent = dayText($("e-agreed").value); });
+    var wire = function () {
+      $("e-cancel").onclick = function () { closeDrawer(); };
+      $("e-save").onclick = function () {
+        var fields = { 下一步: $("e-next").value, 下次跟进日期: $("e-date").value, 当前轮到谁: $("e-turn").value, 约定发布日期: $("e-agreed").value };
+        if ($("e-stage") && $("e-stage").value !== p.stage) fields.阶段 = $("e-stage").value;
+        post("/api/followup", { id: p.id, fields: fields }).then(function () { closeDrawer(true); toast("已保存"); reload(); }).catch(function (e) { failToast("没保存：", e); });
+      };
     };
+    drawerState.rewire = wire;
+    wire();
   };
-  if ($("p-write")) $("p-write").onclick = function () {
-    var sf = p.sendFrom || { channel: "", usual: "", mailboxes: [] };
-    var fromBox = '<label class="field">从哪个邮箱发<select class="input" id="w-from">' + (sf.usual ? "" : '<option value="">请选择</option>') +
-      sf.mailboxes.map(function (m) { return '<option' + (m === sf.usual ? " selected" : "") + ">" + esc(m) + "</option>"; }).join("") + "</select>" +
-      (sf.usual ? "" : '<span class="tiny" style="color:var(--warn)">她一直是跟「' + esc(sf.channel || "未填") + '」联系的，这个邮箱系统发不了。换一个邮箱发，她看到的发件人会变。</span>') + "</label>";
-    var toBox = '<label class="field">发到哪个邮箱<select class="input" id="w-to">' + p.emails.filter(function (e) { return !e.blocked; }).map(function (e) { return "<option>" + esc(e.address) + "</option>"; }).join("") + "</select></label>";
-    modal('<h2 style="margin:0;font-size:18px">写信给 ' + esc(p.name) + '</h2><div class="muted small">点「发出」就算你同意了，会按额度排队发出；在「执行记录」里能看到结果。</div>' + fromBox + toBox +
-      '<label class="field">主旨（回复她上一封信时可以不填）<input class="input" id="w-subject"></label>' +
-      '<label class="field">正文<textarea class="input" id="w-body" rows="10"></textarea></label>' +
-      '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="w-cancel">取消</button><button class="btn primary" id="w-send">发出</button></div>');
-    $("w-cancel").onclick = closeModal;
-    $("w-send").onclick = function () {
-      var from = $("w-from").value;
-      if (!from) { toast("先选从哪个邮箱发"); return; }
-      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value, from: from, to: ($("w-to") || {}).value || "" })
-        .then(function (r) { closeModal(); toast(r.job ? "已排队从 " + from + " 发出，结果看右上角" : "现在暂停着：已经记下，恢复发送后从 " + from + " 发出"); if (r.job) watchJobs(); })
-        .catch(function (e) { toast("没发出：" + e.message); });
+  if ($("p-write")) $("p-write").onclick = function () { openWrite(p.id, { after: function () { setTimeout(reload, 1500); } }); };
+  if ($("p-pause")) $("p-pause").onclick = function () {
+    post("/api/followup", { id: p.id, fields: { 阶段: "暂缓" } }).then(function () { toast("已暂缓，恢复跟进时回到「" + p.stage + "」"); reload(); }).catch(function (e) { failToast("没做成：", e); });
+  };
+  if ($("p-resume")) $("p-resume").onclick = function () {
+    post("/api/resume", { id: p.id }).then(function (r) { toast("已恢复跟进，回到「" + r.stage + "」"); reload(); }).catch(function (e) { failToast("没做成：", e); });
+  };
+  // F-06 不再跟进
+  if ($("p-close")) $("p-close").onclick = function () {
+    inlineConfirm($("p-confirm"), { title: "确定结束对 " + p.name + " 的跟进？以后不会再自动催信。", ok: "确定结案",
+      body: reasonSelect("c-reason", "无回应") + '<label class="field" id="c-note-wrap" hidden><span>说明</span><input class="input" id="c-note" placeholder="写一句，之后翻记录时看得懂"></label>',
+      check: function (box) { return { reason: box.querySelector("#c-reason").value, note: box.querySelector("#c-note").value.trim() }; },
+      run: function (v) { post("/api/close", { id: p.id, never: false, reason: v.reason, note: v.note }).then(function () { toast("已结束跟进"); reload(); }).catch(function (e) { failToast("没做成：", e); }); } });
+    var toggle = function () { $("c-note-wrap").hidden = ["其他", "拒绝"].indexOf($("c-reason").value) < 0; };
+    $("c-reason").addEventListener("change", toggle); toggle();
+  };
+  // F-07 永不联系
+  if ($("p-never")) $("p-never").onclick = function () {
+    inlineConfirm($("p-confirm"), { title: "这个项目以后不会再给 " + p.name + " 发任何信", ok: "确定永不联系",
+      body: '<label class="field"><span>原因（必填）</span><input class="input" id="n-why" placeholder="例如：明确说不要再联系"></label>',
+      check: function (box) { var v = box.querySelector("#n-why").value.trim(); if (!v) { box.querySelector("#n-why").classList.add("bad"); return false; } return v; },
+      run: function (why) { post("/api/close", { id: p.id, never: true, reason: "拒绝", note: why }).then(function () { toast("已标成永不联系"); reload(); }).catch(function (e) { failToast("没做成：", e); }); } });
+  };
+  // 资料: changed in place, one field at a time (4.3).
+  all("[data-edit-info]").forEach(function (b) { b.onclick = function () {
+    var x = p.editable[Number(b.getAttribute("data-edit-info"))], box = document.querySelector('[data-info-box="' + b.getAttribute("data-edit-info") + '"]');
+    var opts = (p.choices[x.field] || []).map(function (o) { return '<option value="' + esc(o) + '"></option>'; }).join("");
+    inlineConfirm(box, { title: "改" + x.k, ok: "保存", blue: true,
+      body: '<input class="input" id="info-v" value="' + esc(x.v) + '"' + (opts ? ' list="info-opts"' : "") + '>' + (opts ? '<datalist id="info-opts">' + opts + "</datalist>" : "") + (x.field === "主页链接" ? '<span class="hint">https:// 开头</span>' : ""),
+      check: function (bx) { return bx.querySelector("#info-v").value.trim(); },
+      run: function (v) {
+        var call = x.on === "followup" ? post("/api/followup", { id: p.id, fields: { 级别: v } }) : post("/api/profile", { id: p.id, fields: (function () { var f = {}; f[x.field] = v; return f; })() });
+        call.then(function () { toast("已保存" + x.k); reload(); }).catch(function (e) { failToast("没保存：", e); });
+      } });
+  }; });
+  all("[data-default]").forEach(function (b) { b.onclick = function () {
+    post("/api/default-email", { id: p.id, email: b.getAttribute("data-default") }).then(function () { toast("已设为默认：以后写信先发到这个邮箱"); reload(); }).catch(function (e) { failToast("没做成：", e); });
+  }; });
+  // F-04 加邮箱
+  $("p-add-email").onclick = function () {
+    var have = p.emails.map(function (e) { return e.address; });
+    drawer("给 " + p.name + " 加邮箱", '<label class="field"><span>邮箱地址</span><input class="input" id="a-email" autofocus><span class="hint" id="a-hint">加到她的档案，以后写信可以选它</span></label>' +
+      '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a-default"><span class="small">设为默认（以后写信先发到这个邮箱）</span></label>',
+      '<button class="btn" id="a-cancel">取消</button><button class="btn primary" id="a-save" disabled>加上</button>', { ask: "放弃这个邮箱？" });
+    var check = function () {
+      var v = $("a-email").value.trim().toLowerCase(), bad = !v ? "" : !isEmail(v) ? "邮箱格式不对" : have.indexOf(v) >= 0 ? "她的档案里已经有这个邮箱" : "";
+      $("a-hint").className = bad ? "hint bad" : v ? "hint ok" : "hint"; $("a-hint").textContent = bad || (v ? "格式正确" : "加到她的档案，以后写信可以选它");
+      $("a-email").classList.toggle("bad", !!bad); $("a-save").disabled = !v || !!bad;
     };
+    $("a-email").addEventListener("input", check);
+    var wire = function () {
+      $("a-cancel").onclick = function () { closeDrawer(); };
+      $("a-save").onclick = function () {
+        var email = $("a-email").value.trim().toLowerCase(), dflt = $("a-default").checked;
+        post("/api/add-email", { id: p.id, email: email }).then(function () { return dflt ? post("/api/default-email", { id: p.id, email: email }) : null; })
+          .then(function () { closeDrawer(true); toast("已加上 " + email + (dflt ? "，设为默认" : "")); reload(); }).catch(function (e) { failToast("没加上：", e); });
+      };
+    };
+    drawerState.rewire = wire; wire();
   };
-  var close = function (never) {
-    var q = never ? "以后这个项目不再联系 " + p.name + "，并结束跟进。确定吗？" : "结束对 " + p.name + " 的跟进？以后不会再自动催信。";
-    if (!confirm(q)) return;
-    post("/api/close", { id: p.id, never: never }).then(function () { toast(never ? "已标成永不联系" : "已结束跟进"); reload(); }).catch(function (e) { toast("没做成：" + e.message); });
-  };
-  if ($("p-close")) $("p-close").onclick = function () { close(false); };
-  if ($("p-never")) $("p-never").onclick = function () { close(true); };
+  // F-08 记下发布
   $("p-post").onclick = function () {
-    var link = prompt("把帖子链接贴在这里（https:// 开头）");
-    if (!link) return;
-    post("/api/post", { id: p.id, link: link }).then(function () { toast("已记下发布"); reload(); }).catch(function (e) { toast("没记下：" + e.message); });
+    inlineConfirm($("p-post-box"), { title: "记下一条发布", ok: "记下", blue: true,
+      body: '<label class="field"><span>帖子链接</span><input class="input" id="pp-link" placeholder="https://"><span class="hint" id="pp-hint"></span></label>',
+      check: function (box) { var v = box.querySelector("#pp-link").value.trim(); if (!/^https:\/\/\S+$/.test(v)) { box.querySelector("#pp-hint").className = "hint bad"; box.querySelector("#pp-hint").textContent = "要贴完整的帖子链接，https:// 开头"; return false; } return v; },
+      run: function (link) { post("/api/post", { id: p.id, link: link }).then(function () { toast("已记下发布"); reload(); }).catch(function (e) { failToast("没记下：", e); }); } });
+    $("pp-link").addEventListener("input", function () {
+      var v = $("pp-link").value, pf = /instagram\.com/.test(v) ? "Instagram" : /youtu\.?be/.test(v) ? "YouTube" : /tiktok\.com/.test(v) ? "TikTok" : /threads\.(net|com)/.test(v) ? "Threads" : "";
+      $("pp-hint").className = "hint"; $("pp-hint").textContent = pf ? "认出来是 " + pf : "";
+    });
   };
 }
 
-// --- 执行记录 ---
+// --- U-4 执行记录 ---
 function renderLog() {
   $("app").innerHTML = '<div class="loading">读取执行记录…</div>';
   api("/api/log").then(function (l) {
-    var runs = l.runs.map(function (r) {
-      var cls = r.result === "完成" ? "b-ok" : r.result === "进行中" ? "b-warn" : r.result === "失败" ? "b-bad" : "";
-      return '<div style="display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line2);flex-wrap:wrap"><span class="badge ' + cls + '">' + esc(r.result) + '</span><span style="flex:1 1 260px">' + esc(r.title) +
-        (r.counts ? ' <span class="muted small">· ' + esc(r.counts) + "</span>" : "") + (r.notes ? '<div class="tone-bad small">' + esc(r.notes) + "</div>" : "") + '</span><span class="muted small">' + esc(r.start + (r.end ? "–" + r.end : "")) + " · " + esc(r.how === "定时任务" ? "每天例行" : "在 Claude 里跑的") + "</span></div>";
+    if (!onPage("#/log")) return;
+    var o = state.overview, f = state.logFilter, today = new Date();
+    var todayKey = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+    var jobs = (o.jobs || []).filter(function (j) { return j.state === "排队中" || j.state === "进行中"; });
+    var runningRuns = l.runs.filter(function (r) { return r.result === "进行中"; });
+    var mins = function (ms) { var n = Math.max(0, Math.round((Date.now() - ms) / 60000)); return n < 1 ? "刚开始" : "已进行 " + n + " 分钟"; };
+    var running = jobs.map(function (j) { return '<div class="small"><span class="badge b-warn">' + esc(j.state) + "</span> " + esc(j.what) + ' <span class="hint">· ' + mins(j.at) + (j.note ? " · " + esc(j.note) : "") + "</span></div>"; }).join("") +
+      runningRuns.map(function (r) { return '<div class="small"><span class="badge b-warn">进行中</span> ' + esc(r.title) + " · " + esc(r.start.slice(11)) + " 开始</div>"; }).join("") +
+      o.status.items.filter(function (i) { return i.st === "等发出"; }).map(function (i) { return '<div class="small"><span class="badge b-blue">' + (state.paused ? "暂停中，排着" : "等发出") + "</span> " + esc(i.text) + "</div>"; }).join("");
+    var problems = o.cards.filter(function (c) { return c.kind === "problem"; });
+    var bad = problems.map(function (c) { return '<a href="#/?card=' + encodeURIComponent(c.id) + '" class="small" style="display:flex;gap:8px;align-items:center"><span class="badge b-bad">' + esc(c.tag) + "</span>" + esc(c.headline) + ' <span style="margin-left:auto">去处理 →</span></a>'; }).join("");
+    var opsOf = {};
+    l.ops.forEach(function (x) { (opsOf[x.run || ""] = opsOf[x.run || ""] || []).push(x); });
+    // Runs that send mail, and log lines that record a sent mail.
+    var isMail = function (t) { return /^(发出已批准的信|发邀约|催信和结案)/.test(t); };
+    var isMailOp = function (x) { return x.type === "发出邮件" || /^(发出|已发|回复|邀约|催信)/.test(x.what); };
+    var runs = l.runs.filter(function (r) {
+      if (f === "failed") return r.result !== "完成" && r.result !== "进行中";
+      if (f === "mail") return isMail(r.title);
+      if (f === "today") return r.start.slice(0, 10) === todayKey;
+      return true;
+    }).map(function (r) {
+      var cls = r.result === "完成" ? "b-ok" : r.result === "进行中" ? "b-warn" : r.result === "失败" ? "b-bad" : "b-warn";
+      var ops = (opsOf[r.id] || []).filter(function (x) { return (f !== "failed" || /失败|退信|不明/.test(x.result)) && (f !== "mail" || isMailOp(x)); });
+      var detail = ops.length ? '<details><summary>' + ops.length + " 条操作明细</summary>" + ops.map(function (x) {
+        return '<div class="small" style="padding:3px 0;display:flex;gap:8px"><span class="muted" style="flex:0 0 44px">' + esc(x.when.slice(11)) + "</span><span>" + esc(x.what) + (x.note ? ' <span class="muted">· ' + esc(x.note) + "</span>" : "") + '</span><span class="badge ' + (/完成|送达/.test(x.result) ? "b-ok" : /失败|退信/.test(x.result) ? "b-bad" : "") + '" style="margin-left:auto">' + esc(x.result) + "</span></div>";
+      }).join("") + "</details>" : "";
+      return "<tr><td class=\"muted\" style=\"white-space:nowrap\">" + esc(r.start.slice(5)) + (r.end ? "–" + esc(r.end) : "") + "</td><td><b>" + esc(r.title) + "</b>" + (r.counts ? ' <span class="muted small">· ' + esc(r.counts) + "</span>" : "") +
+        (r.notes ? '<div class="tone-bad small">' + esc(r.notes) + "</div>" : "") + detail + '</td><td class="muted small">' + esc(r.how === "定时任务" ? "每天例行" : "在 Claude 或决策台里跑的") + '</td><td><span class="badge ' + cls + '">' + esc(r.result) + "</span></td></tr>";
     }).join("");
-    var ops = l.ops.map(function (o) {
-      var cls = /完成|送达/.test(o.result) ? "b-ok" : /失败|退信/.test(o.result) ? "b-bad" : "";
-      return '<tr><td class="muted" style="white-space:nowrap">' + esc(o.when) + "</td><td>" + esc(o.what) + (o.note ? '<div class="muted tiny">' + esc(o.note) + "</div>" : "") + '</td><td class="muted">' + esc([o.source, o.by].filter(Boolean).join(" · ")) + '</td><td><span class="badge ' + cls + '">' + esc(o.result) + "</span></td></tr>";
-    }).join("");
-    $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:14px"><div><h1 style="margin:0;font-size:22px">执行记录</h1><div class="muted">最近 3 天系统做过的事，最新的在最上面</div></div>' +
-      '<section class="card" style="padding:14px 16px"><b>运行</b>' + (runs || '<div class="muted">最近 3 天没有运行记录</div>') + "</section>" +
-      '<section class="card" style="overflow-x:auto"><table style="min-width:760px"><thead><tr><th>时间</th><th>做了什么</th><th>谁让做的</th><th>结果</th></tr></thead><tbody>' + (ops || '<tr><td colspan="4" class="muted">没有记录</td></tr>') + "</tbody></table></section></div>";
+    var loose = (opsOf[""] || []).filter(function (x) { return f === "all" || (f === "today" && x.when.slice(0, 10) === todayKey) || (f === "failed" && /失败|退信|不明/.test(x.result)) || (f === "mail" && isMailOp(x)); });
+    var chips = [["all", "全部"], ["failed", "只看没做成的"], ["mail", "只看发信"], ["today", "只看今天"]].map(function (x) { return '<button class="chip' + (f === x[0] ? " on" : "") + '" data-f="' + x[0] + '">' + x[1] + "</button>"; }).join("");
+    $("app").innerHTML = '<div style="display:flex;flex-direction:column;gap:14px;max-width:1280px;margin:0 auto"><div><h1 style="margin:0;font-size:22px">执行记录</h1><div class="muted">最近 3 天系统做过的事，最新的在最上面</div></div>' +
+      '<div class="two"><section class="card" style="flex:1 1 360px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><b>正在执行</b>' + (running || '<div class="muted small">现在没有在执行的事</div>') + "</section>" +
+      '<section class="card" style="flex:1 1 360px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><b' + (problems.length ? ' style="color:var(--bad)"' : "") + ">没做成和结果不明 · " + problems.length + "</b>" + (bad || '<div class="muted small">没有</div>') + "</section></div>" +
+      '<div class="drow">' + chips + "</div>" +
+      '<section class="card" style="overflow-x:auto"><table style="min-width:760px"><thead><tr><th>时间</th><th>做了什么</th><th>谁让做的</th><th>结果</th></tr></thead><tbody>' + (runs || '<tr><td colspan="4" class="muted">这个筛选下没有运行记录</td></tr>') + "</tbody></table></section>" +
+      (loose.length ? '<section class="card" style="padding:14px 16px"><b>不属于哪次运行的操作</b>' + loose.slice(0, 100).map(function (x) {
+        return '<div class="small" style="padding:4px 0;border-top:1px solid var(--line2);display:flex;gap:8px"><span class="muted" style="flex:0 0 90px">' + esc(x.when.slice(5)) + "</span><span>" + esc(x.what) + (x.note ? ' <span class="muted">· ' + esc(x.note) + "</span>" : "") + '</span><span class="badge" style="margin-left:auto">' + esc(x.result) + "</span></div>";
+      }).join("") + "</section>" : "") + "</div>";
+    all("[data-f]").forEach(function (b) { b.onclick = function () { state.logFilter = b.getAttribute("data-f"); renderLog(); }; });
   }).catch(fail);
+}
+
+// --- U-5 设置 ---
+var SET_NAV = [["rules", "发信规则"], ["mailboxes", "发信邮箱"], ["templates", "模板"], ["options", "选项"], ["access", "接入和执行电脑"]];
+/** Unsaved changes on the settings page: leaving asks first (4.5). */
+var setState = { dirty: 0, leave: null };
+function setDirty(n) {
+  setState.dirty = n;
+  all('[data-set-nav="' + (state.setSection || "") + '"] .dot').forEach(function (d) { d.hidden = !n; });
+}
+document.addEventListener("click", function (e) {
+  if (!setState.dirty || !e.target.closest) return;
+  var a = e.target.closest('a[href^="#"]');
+  if (!a || a.getAttribute("href") === location.hash) return;
+  e.preventDefault();
+  toast("有 " + setState.dirty + " 处修改没保存：先保存，或点「放弃修改」", { bad: true });
+  var bar = $("set-foot"); if (bar) { bar.style.outline = "2px solid var(--bad)"; setTimeout(function () { bar.style.outline = ""; }, 1200); }
+}, true);
+window.addEventListener("beforeunload", function (e) { if (setState.dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+function renderSettings(section, sub) {
+  section = section || "rules";
+  state.setSection = section;
+  setState.dirty = 0;
+  var nav = SET_NAV.map(function (x) {
+    return '<a href="#/settings/' + x[0] + '" data-set-nav="' + x[0] + '" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:7px;' + (x[0] === section ? "background:var(--blue-bg);color:var(--blue2);font-weight:600" : "color:var(--ink2)") + '">' + x[1] + '<span class="dot" hidden style="width:7px;height:7px;border-radius:50%;background:var(--warn)"></span></a>';
+  }).join("");
+  $("app").innerHTML = '<div style="max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">' +
+    '<nav aria-label="设置" style="flex:0 1 200px;min-width:180px;display:flex;flex-direction:column;gap:2px">' + nav + '</nav>' +
+    '<div id="set-body" style="flex:999 1 640px;min-width:0;display:flex;flex-direction:column;gap:14px"><div class="loading">读取中…</div></div></div>';
+  var go = { rules: setRules, mailboxes: setMailboxes, templates: sub ? function () { setTemplate(sub); } : setTemplates, options: setOptions, access: setAccess }[section] || setRules;
+  go();
+}
+function setHead(title, hint, about) {
+  return '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h1 style="margin:0;font-size:22px">' + esc(title) + '</h1>' + (hint ? '<span class="hint">' + esc(hint) + "</span>" : "") +
+    (about != null ? '<a href="#" id="set-history" style="margin-left:auto;font-size:13px">修改记录</a>' : "") + "</div>";
+}
+function wireHistory(filter) {
+  if (!$("set-history")) return;
+  $("set-history").onclick = function (e) {
+    e.preventDefault();
+    api("/api/settings/history?about=").then(function (r) {
+      var list = r.list.filter(filter);
+      drawer("修改记录", list.length ? list.map(function (x) { return '<div class="small" style="padding:6px 0;border-top:1px solid var(--line2)"><div class="hint">' + esc(x.when) + " · " + esc(x.who) + "</div>" + esc(x.what) + "</div>"; }).join("") : '<div class="muted small">还没有修改记录</div>',
+        '<button class="btn" id="h-close">关闭</button>');
+      $("h-close").onclick = function () { closeDrawer(true); };
+    }).catch(function (e) { failToast("读不到修改记录：", e); });
+  };
+}
+function setOn(section) { return onPage("#/settings/" + section) || (section === "rules" && (location.hash === "#/settings" || location.hash === "#/settings/")); }
+function setFail(e) { $("set-body").innerHTML = '<div class="err"><b>读不到设置</b><div class="small">' + esc(e.message) + "</div></div>"; }
+
+// 发信规则
+function setRules() {
+  api("/api/settings/rules").then(function (r) {
+    if (!setOn("rules")) return;
+    var groups = [];
+    r.fields.forEach(function (f) { var g = groups.find(function (x) { return x.name === f.group; }); if (!g) groups.push(g = { name: f.group, fields: [] }); g.fields.push(f); });
+    var input = function (f) {
+      if (f.readOnly) return '<div class="field"><span>' + esc(f.label) + '</span><div style="padding:8px 0">' + esc(f.value || f.default) + '</div><span class="hint">' + esc(f.hint || "") + "</span></div>";
+      var type = f.kind === "number" ? ' type="number"' + (f.min != null ? ' min="' + f.min + '"' : "") + (f.max != null ? ' max="' + f.max + '"' : "") : f.kind === "date" ? ' type="date"' : "";
+      var range = f.min != null && f.max != null ? f.min + "–" + f.max : "";
+      return '<label class="field"><span>' + esc(f.label) + '</span><input class="input" data-rule="' + esc(f.key) + '"' + type + ' value="' + esc(f.value) + '" data-was="' + esc(f.value) + '" placeholder="' + esc(f.default ? "空着用默认 " + f.default : "") + '">' +
+        '<span class="hint" data-hint="' + esc(f.key) + '">' + esc([f.hint, range].filter(Boolean).join(" · ")) + "</span></label>";
+    };
+    var html = setHead("发信规则", "改了以后，下一批执行就按新规则；已经同意的信不受影响", "") + groups.map(function (g) {
+      return '<section class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:12px"><h2 style="margin:0;font-size:15px">' + esc(g.name) + ' <span class="hint" data-group-dirty="' + esc(g.name) + '" hidden>· 已修改，未保存</span></h2>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">' + g.fields.map(input).join("") + "</div>" +
+        (g.name === "催信和结案" ? '<div class="small" id="remind-sentence" style="background:#EEF3FD;border-radius:8px;padding:10px 14px"></div>' : "") + "</section>";
+    }).join("") +
+      '<div id="set-foot" class="card" style="position:sticky;bottom:12px;padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="hint" id="rule-sum">没有修改</span>' +
+      '<button class="btn" id="rule-reset" style="margin-left:auto">放弃修改</button><button class="btn primary" id="rule-save" disabled>保存</button></div>';
+    $("set-body").innerHTML = html;
+    var val = function (k) { var el = document.querySelector('[data-rule="' + k + '"]'); return el ? el.value : ""; };
+    var sentence = function () {
+      var s = $("remind-sentence"); if (!s) return;
+      var start = val("自动催信起始日");
+      s.innerHTML = "邀约 <b>" + esc(val("第一次催信天数") || "5") + "</b> 天没回催第一次，再过 <b>" + esc(val("第二次催信天数") || "7") + "</b> 天催第二次，再过 <b>" + esc(val("结案天数") || "7") + "</b> 天还没回就结案。" +
+        (start ? "只催 " + esc(dayText(start).split("（")[0]) + " 及以后邀约的人。" : "<b>起始日空着：现在不自动催。</b>");
+    };
+    var check = function () {
+      var changed = 0, bad = [], dirtyGroups = {};
+      r.fields.forEach(function (f) {
+        var el = document.querySelector('[data-rule="' + f.key + '"]'); if (!el) return;
+        var v = el.value.trim(), err = "";
+        if (f.kind === "number" && v !== "") {
+          var n = Number(v);
+          if (!isFinite(n)) err = "要填数字"; else if (f.min != null && n < f.min) err = "不能小于 " + f.min; else if (f.max != null && n > f.max) err = "不能大于 " + f.max;
+        }
+        if (f.key === "活动码市场" && v && v.split(/[,，、]/).some(function (p) { return p.trim() && !/^[^=＝]+[=＝][^=＝]+$/.test(p.trim()); })) err = "每项写成 资料市场=销售市场";
+        el.classList.toggle("bad", !!err);
+        var h = document.querySelector('[data-hint="' + f.key + '"]');
+        if (h) { h.className = err ? "hint bad" : "hint"; h.textContent = err || [f.hint, f.min != null && f.max != null ? f.min + "–" + f.max : ""].filter(Boolean).join(" · "); }
+        if (err) bad.push(f.label);
+        if (v !== el.getAttribute("data-was")) { changed++; dirtyGroups[f.group] = true; }
+      });
+      all("[data-group-dirty]").forEach(function (x) { x.hidden = !dirtyGroups[x.getAttribute("data-group-dirty")]; });
+      $("rule-sum").textContent = changed ? changed + " 处修改未保存" + (bad.length ? " · " + bad.length + " 处要改正（" + bad.join("、") + "）" : "") : "没有修改";
+      $("rule-sum").className = bad.length ? "hint bad" : "hint";
+      $("rule-save").disabled = !changed || bad.length > 0;
+      setDirty(changed);
+      sentence();
+    };
+    all("[data-rule]").forEach(function (el) { el.addEventListener("input", check); });
+    check();
+    $("rule-reset").onclick = function () { setDirty(0); setRules(); };
+    $("rule-save").onclick = function () {
+      var values = {};
+      all("[data-rule]").forEach(function (el) { if (el.value.trim() !== el.getAttribute("data-was")) values[el.getAttribute("data-rule")] = el.value.trim(); });
+      // Nothing can be typed while saving, so what is saved is what is on screen.
+      var inputs = all("[data-rule]");
+      inputs.forEach(function (el) { el.readOnly = true; });
+      $("rule-save").disabled = true; $("rule-reset").disabled = true;
+      post("/api/settings/rules", { values: values }).then(function (x) { setDirty(0); toast("已保存 " + x.changed + " 处，下一批执行就按新规则"); setRules(); })
+        .catch(function (e) { failToast("没保存：", e); inputs.forEach(function (el) { el.readOnly = false; }); $("rule-save").disabled = false; $("rule-reset").disabled = false; });
+    };
+    wireHistory(function (x) { return !/^(发信邮箱|模板|选项|停用|业务数据接口)/.test(x.what); });
+  }).catch(setFail);
+}
+
+// 发信邮箱
+function setMailboxes() {
+  api("/api/settings/mailboxes").then(function (r) {
+    if (!setOn("mailboxes")) return;
+    var rows = r.list.map(function (m) {
+      var stateBadge = !m.enabled ? '<span class="badge">停用</span>' : m.warmup ? '<span class="badge b-blue">预热中 · 今天上限 ' + m.today + "</span>" : '<span class="badge b-ok">启用</span>';
+      var rate = m.sent >= 20 ? (m.bounced / m.sent * 100).toFixed(1) + "%（发 " + m.sent + "，退 " + m.bounced + "）" : "—（才发 " + m.sent + " 封，不到 20 封不算）";
+      return "<tr><td><b>" + esc(m.address) + '</b><div class="hint">渠道 ' + esc(m.channel) + "</div></td><td>" + stateBadge + "</td><td>" + m.daily + "</td><td>" + esc(rate) + "</td><td>" + (m.noRemind ? "不催" : "会催") + "</td>" +
+        '<td style="white-space:nowrap"><button class="btn sm text" style="color:var(--blue)" data-mb-edit="' + esc(m.id) + '">改</button>' +
+        (m.enabled ? '<button class="btn sm text danger" data-mb-off="' + esc(m.id) + '">停用</button>' : '<button class="btn sm text" style="color:var(--blue)" data-mb-on="' + esc(m.id) + '">启用</button>') + "</td></tr>" +
+        '<tr hidden data-mb-box="' + esc(m.id) + '"><td colspan="6"></td></tr>';
+    }).join("");
+    $("set-body").innerHTML = setHead("发信邮箱", "", "") + '<div style="display:flex"><button class="btn primary" id="mb-add" style="margin-left:auto">加邮箱</button></div>' +
+      '<div class="card" style="overflow-x:auto"><table style="min-width:760px"><thead><tr><th>邮箱</th><th>状态</th><th>每天上限</th><th>近 14 天退信</th><th>自动催</th><th></th></tr></thead><tbody>' + (rows || '<tr><td colspan="6" class="muted">还没有发信邮箱</td></tr>') + "</tbody></table></div>" +
+      '<div class="hint">已经有往来的邮箱不能改地址：停用后加一个新的，旧的往来记录保留。只改每天上限不用处理挂着的信，超出的会顺延。</div>';
+    $("mb-add").onclick = function () { mailboxDrawer(null); };
+    all("[data-mb-edit]").forEach(function (b) { b.onclick = function () { mailboxDrawer(r.list.find(function (m) { return m.id === b.getAttribute("data-mb-edit"); })); }; });
+    all("[data-mb-on]").forEach(function (b) { b.onclick = function () { post("/api/settings/mailbox-disable", { id: b.getAttribute("data-mb-on"), on: true }).then(function () { toast("已启用"); setMailboxes(); }).catch(function (e) { failToast("没做成：", e); }); }; });
+    all("[data-mb-off]").forEach(function (b) { b.onclick = function () { disablePanel(r.list, r.list.find(function (m) { return m.id === b.getAttribute("data-mb-off"); })); }; });
+    wireHistory(function (x) { return /^(发信邮箱|停用)/.test(x.what); });
+  }).catch(setFail);
+}
+/** 停用 first lists the mail still meant to go from this mailbox; each is moved or withdrawn before it can be turned off. */
+function disablePanel(list, m) {
+  var row = document.querySelector('[data-mb-box="' + m.id + '"]'), cell = row.firstChild;
+  row.hidden = false; cell.innerHTML = '<div class="muted small">查有没有要从这个邮箱发的信…</div>';
+  api("/api/settings/mailbox-pending?id=" + encodeURIComponent(m.id)).then(function (r) {
+    var others = list.filter(function (x) { return x.enabled && x.id !== m.id; });
+    var items = r.list.map(function (p) {
+      return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line2)"><span style="flex:1 1 260px"><b>' + esc(p.who || "—") + "</b> · " + esc(p.title) + ' <span class="badge">' + esc(p.state) + "</span></span>" +
+        (p.stuck ? '<span class="hint bad">不能在这里处理</span>' : '<select class="input" style="width:auto" data-plan="' + esc(p.id) + '"><option value="">选一个</option>' + others.map(function (o) { return '<option value="move:' + esc(o.address) + '">改从 ' + esc(o.address) + " 发</option>"; }).join("") + '<option value="drop">撤掉</option></select>') + "</div>";
+    }).join("");
+    cell.innerHTML = '<div class="confirm"><b>停用 ' + esc(m.address) + "？以后不再从它发信</b>" +
+      (r.list.length ? '<div class="small">还有 ' + r.list.length + " 封信要从它发。逐件选换邮箱还是撤掉，处理完才能停用；不处理的话这些信会一直挂着，这几位也不会再被催或结案。已同意的信换邮箱后仍算同意；同意后内容改过或她又来信的，会退回重新审核。</div>" + items : '<div class="small">没有要从它发的信。</div>') +
+      '<div class="drow"><button class="btn sm solid-bad" id="mb-off-ok"' + (r.list.length ? " disabled" : "") + '>确定停用</button><button class="btn sm" id="mb-off-no">取消</button></div></div>';
+    var plan = {};
+    var ready = function () { $("mb-off-ok").disabled = r.list.some(function (p) { return p.stuck || !plan[p.id]; }); };
+    all("[data-plan]").forEach(function (s) { s.onchange = function () {
+      var v = s.value; if (!v) delete plan[s.getAttribute("data-plan")]; else plan[s.getAttribute("data-plan")] = v === "drop" ? { action: "drop" } : { action: "move", to: v.slice(5) };
+      ready();
+    }; });
+    $("mb-off-no").onclick = function () { row.hidden = true; cell.innerHTML = ""; };
+    $("mb-off-ok").onclick = function () {
+      $("mb-off-ok").disabled = true;
+      post("/api/settings/mailbox-disable", { id: m.id, plan: plan }).then(function () { toast("已停用 " + m.address); setMailboxes(); }).catch(function (e) { failToast("没停用：", e); ready(); });
+    };
+  }).catch(function (e) { cell.innerHTML = '<div class="err">' + esc(e.message) + "</div>"; });
+}
+function mailboxDrawer(m) {
+  var isNew = !m; m = m || { address: "", channel: "", daily: 150, bouncePause: "", start: "", startCap: "", perDay: "", noRemind: false };
+  var warm = Boolean(m.startCap || m.start);
+  drawer(isNew ? "加邮箱" : "改 " + m.address,
+    '<label class="field"><span>邮箱地址</span><input class="input" id="mb-address" value="' + esc(m.address) + '"' + (isNew ? " autofocus" : "") + '><span class="hint" id="mb-address-hint">' + (isNew ? "" : "已经有往来的邮箱不能改地址") + "</span></label>" +
+    '<label class="field"><span>渠道名</span><input class="input" id="mb-channel" value="' + esc(m.channel) + '" placeholder="空着就用邮箱地址"><span class="hint">在往来记录和跟进上显示的名字</span></label>' +
+    '<label class="field"><span>每天最多联系几位</span><input class="input" type="number" min="1" id="mb-daily" value="' + esc(m.daily) + '"></label>' +
+    '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mb-warm"' + (warm ? " checked" : "") + '><b class="small">新域名，先预热</b></label>' +
+    '<div id="mb-warm-box" style="padding-left:24px;display:flex;flex-direction:column;gap:10px"' + (warm ? "" : " hidden") + '><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">' +
+      '<label class="field"><span>启用日期</span><input class="input" type="date" id="mb-start" value="' + esc(m.start || isoAdd(1)) + '"></label>' +
+      '<label class="field"><span>起步上限</span><input class="input" type="number" min="1" id="mb-cap" value="' + esc(m.startCap || 20) + '"></label>' +
+      '<label class="field"><span>每天增加</span><input class="input" type="number" min="1" id="mb-step" value="' + esc(m.perDay || 10) + '"></label></div>' +
+      '<div><div class="hint" style="margin-bottom:6px">两周额度预览</div><div id="mb-bars" style="display:flex;align-items:flex-end;gap:4px;height:70px"></div><div class="hint" style="display:flex;justify-content:space-between"><span id="mb-bar-a"></span><span id="mb-bar-b"></span></div></div></div>' +
+    '<label class="field"><span>退信率暂停线（%）</span><input class="input" type="number" min="0" max="100" id="mb-pause" value="' + esc(m.bouncePause) + '" placeholder="空着就跟项目一样"></label>' +
+    '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mb-noremind"' + (m.noRemind ? " checked" : "") + '><span class="small">这个邮箱联系的人不自动催</span></label>' +
+    '<div style="border:1px solid #CDD2DA;border-radius:8px;padding:12px 14px;display:flex;gap:10px;align-items:center"><span id="mb-dot" style="width:10px;height:10px;border-radius:50%;background:#CDD2DA"></span><div style="flex:1"><b id="mb-check-title">' + (isNew ? "还没检查连接" : "连接") + '</b><div class="hint" id="mb-check-note">' + (isNew ? "检查通过才能启用" : "改了地址要重新检查") + '</div></div><button class="btn sm" id="mb-check">检查连接</button></div>',
+    '<button class="btn" id="mb-cancel">取消</button><button class="btn primary" id="mb-save"' + (isNew ? " disabled" : "") + ">" + (isNew ? "加上并启用" : "保存") + "</button>", { ask: "放弃这些修改？" });
+  // The address the last passing check was for: saving needs it to be the one in the box.
+  var checkedFor = isNew ? "" : m.address;
+  // 保存 is open when the address in the box is the one last checked (an existing mailbox starts checked).
+  var canSave = function () { $("mb-save").disabled = $("mb-address").value.trim().toLowerCase() !== checkedFor; };
+  var bars = function () {
+    var start = Number($("mb-cap").value) || 0, step = Number($("mb-step").value) || 0, max = Number($("mb-daily").value) || 0, out = "";
+    for (var i = 0; i < 14; i++) { var v = Math.min(max, start + step * i); out += '<span style="flex:1;height:' + (max ? Math.max(3, Math.round(v / max * 70)) : 3) + 'px;background:' + (v >= max ? "var(--blue)" : "#C9D6F5") + ';border-radius:2px" title="' + v + '"></span>'; }
+    $("mb-bars").innerHTML = out;
+    var d0 = $("mb-start").value;
+    $("mb-bar-a").textContent = (d0 ? dayText(d0).split("（")[0] : "") + " · " + Math.min(max, start) + " 位";
+    $("mb-bar-b").textContent = "第 14 天 · " + Math.min(max, start + step * 13) + " 位";
+  };
+  ["mb-cap", "mb-step", "mb-daily", "mb-start"].forEach(function (id) { $(id).addEventListener("input", bars); });
+  bars();
+  $("mb-warm").onchange = function () { $("mb-warm-box").hidden = !$("mb-warm").checked; };
+  $("mb-address").addEventListener("input", function () {
+    var v = $("mb-address").value.trim(), ok = isEmail(v);
+    $("mb-address-hint").className = v && !ok ? "hint bad" : "hint"; $("mb-address-hint").textContent = v && !ok ? "邮箱格式不对" : v ? "格式正确" : "";
+    canSave();
+    if (isNew || v !== m.address) { $("mb-dot").style.background = "#CDD2DA"; $("mb-check-title").textContent = "还没检查连接"; }
+  });
+  $("mb-check").onclick = function () {
+    $("mb-check").disabled = true; $("mb-check-title").textContent = "检查中…";
+    var asked = $("mb-address").value.trim().toLowerCase();
+    post("/api/settings/mailbox-check", { address: asked }).then(function (r) {
+      // The box may hold another address by now: this answer is only about the one asked.
+      if ($("mb-address").value.trim().toLowerCase() !== asked) return;
+      checkedFor = r.ok ? asked : "";
+      $("mb-dot").style.background = r.ok ? "#1F8A55" : "var(--bad)";
+      $("mb-check-title").textContent = r.ok ? "连接检查通过" : "连接检查没通过"; $("mb-check-note").textContent = r.note;
+      canSave();
+    }).catch(function (e) { failToast("检查不了：", e); }).then(function () { $("mb-check").disabled = false; });
+  };
+  var wire = function () {
+    $("mb-cancel").onclick = function () { closeDrawer(); };
+    $("mb-save").onclick = function () {
+      var now = $("mb-address").value.trim().toLowerCase();
+      if (now !== checkedFor) { toast(isNew ? "先检查这个地址的连接" : "改了地址，先检查连接", { bad: true }); return; }
+      var warmOn = $("mb-warm").checked;
+      var fields = { 邮箱: $("mb-address").value.trim(), 渠道名: $("mb-channel").value.trim(), 每日上限: $("mb-daily").value, 退信率暂停线: $("mb-pause").value,
+        启用日期: warmOn ? $("mb-start").value : "", 起步上限: warmOn ? $("mb-cap").value : "", 每天增加: warmOn ? $("mb-step").value : "", 不自动催: $("mb-noremind").checked };
+      post("/api/settings/mailbox", { id: isNew ? "" : m.id, fields: fields }).then(function () { closeDrawer(true); toast(isNew ? "已加上并启用 " + fields.邮箱 : "已保存"); setMailboxes(); })
+        .catch(function (e) { failToast("没保存：", e); });
+    };
+  };
+  drawerState.rewire = wire; wire();
+}
+
+// 模板
+var TPL_STATE = { 已批准: "b-ok", 草稿: "b-warn", 待审核: "b-blue", 停用: "" };
+function setTemplates() {
+  api("/api/settings/templates").then(function (r) {
+    if (!setOn("templates")) return;
+    state.templates = r;
+    var rows = r.list.map(function (t) {
+      return '<tr style="cursor:pointer" data-tpl="' + esc(t.id) + '"><td><a href="#/settings/templates/' + esc(t.id) + '"><b>' + esc(t.name || "（没写名称）") + "</b></a>" + (t.stops ? '<div class="hint" style="color:var(--warn)">有草稿：' + esc(t.stops) + "</div>" : "") + "</td><td>" + esc(t.purpose) + "</td><td>" + esc(t.language || "通用") + "</td><td>" + esc(t.direction || "通用") + '</td><td><span class="badge ' + (TPL_STATE[t.state] || "") + '">' + esc(t.state === "已批准" ? "在用" : t.state === "待审核" ? "草稿待审" : t.state) + '</span></td><td class="hint">' + esc(t.updated) + "</td></tr>";
+    }).join("");
+    $("set-body").innerHTML = setHead("模板", "审核在「待你决定」的模板卡里做，这里不能直接批准", "") + '<div style="display:flex"><a class="btn primary" href="#/settings/templates/new" style="margin-left:auto">新建模板</a></div>' +
+      '<div class="card" style="overflow-x:auto"><table style="min-width:720px"><thead><tr><th>名称</th><th>用途</th><th>语言</th><th>方向</th><th>状态</th><th>最近修改</th></tr></thead><tbody>' + (rows || '<tr><td colspan="6" class="muted">还没有模板</td></tr>') + "</tbody></table></div>";
+    all("[data-tpl]").forEach(function (tr) { tr.onclick = function (e) { if (!e.target.closest("a")) location.hash = "#/settings/templates/" + tr.getAttribute("data-tpl"); }; });
+    wireHistory(function (x) { return /^模板/.test(x.what); });
+  }).catch(setFail);
+}
+function setTemplate(id) {
+  Promise.all([api("/api/settings/templates"), api("/api/people?view=all&q=")]).then(function (res) {
+    if (!onPage("#/settings/templates/" + id)) return;
+    var r = res[0], people = res[1].rows.slice(0, 30);
+    var isNew = id === "new";  // becomes false once the first save has created it
+    var t = isNew ? { id: "", name: "", purpose: "邀约", language: "", direction: "", state: "草稿", subject: "", body: "", holders: ["稱呼", "称呼", "账号名称"], active: null, stops: "" } : r.list.find(function (x) { return x.id === id; });
+    if (!t) { $("set-body").innerHTML = '<div class="err">模板表里已经没有这个模板</div>'; return; }
+    var holdersFor = function (purpose) { return r.holders[purpose] || t.holders; };
+    var head = '<a href="#/settings/templates" style="font-size:13px">← 模板</a>' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0;font-size:22px" id="tpl-title">' + esc(isNew ? "新建模板" : t.name) + '</h1>' +
+      (isNew ? "" : '<span class="badge ' + (TPL_STATE[t.state] || "") + '">' + esc(t.state) + "</span>") + '<span class="hint">' + esc(isNew ? "" : "用途 " + t.purpose + " · 语言 " + (t.language || "通用") + " · 方向 " + (t.direction || "通用")) + "</span></div>" +
+      '<div class="banner" style="border:1px solid var(--warn-line);border-radius:8px" id="tpl-rule">' +
+      (t.broken ? '<b style="color:var(--bad)">' + esc(t.broken) + "</b><br>" : "") + (t.state === "已批准" ? "这个模板在用。存草稿后到新版本批准前都不用于新的信：" + esc(t.stops || "") : t.stops ? "现在有草稿，到新版本批准前都不用于新的信：" + esc(t.stops) + "。批准在「待你决定」里做；放弃草稿就恢复用编辑前的版本。" : "新模板批准后才会被用。批准在「待你决定」里做。") + "</div>";
+    var meta = isNew ? '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label class="field"><span>名称</span><input class="input" id="tpl-name" autofocus></label>' +
+      '<label class="field"><span>用途</span><select class="input" id="tpl-purpose">' + r.purposes.map(function (p) { return "<option>" + esc(p) + "</option>"; }).join("") + '</select></label>' +
+      '<label class="field"><span>语言</span><input class="input" id="tpl-lang" placeholder="空着就是通用，例如 繁体"></label><label class="field"><span>方向</span><input class="input" id="tpl-dir" placeholder="空着就是通用"></label></div>' : "";
+    $("set-body").innerHTML = head + '<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">' +
+      '<section class="card" style="flex:1 1 420px;min-width:0;padding:18px 20px;display:flex;flex-direction:column;gap:12px"><b>编辑</b>' + meta +
+        '<label class="field"><span>主旨</span><input class="input" id="tpl-subject" value="' + esc(t.subject) + '"></label>' +
+        '<label class="field"><span>正文</span><textarea class="input" id="tpl-body" rows="12">' + esc(t.body) + "</textarea></label>" +
+        '<div id="tpl-bad" class="small" style="color:var(--bad)"></div>' +
+        '<div><div class="hint" style="margin-bottom:6px">可以用的占位符，点一下插入</div><div class="drow" id="tpl-tokens"></div></div>' +
+        '<label class="field"><span>这次改了什么</span><input class="input" id="tpl-why" placeholder="例如：语气更轻一点"></label></section>' +
+      '<section class="card" style="flex:1 1 380px;min-width:0;padding:18px 20px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>预览</b><label style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap">填进<select class="input" id="tpl-who" style="width:160px;min-height:32px;padding:4px 8px">' +
+        people.map(function (p) { return '<option value="' + esc((p.sub.split(" · ")[0] || p.handle).replace(/^@/, "")) + '">' + esc(p.handle) + "</option>"; }).join("") + "</select>看看</label></div>" +
+        '<div style="border:1px solid var(--line2);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><div class="hint">主旨</div><div style="font-weight:600" id="pv-subject"></div><div class="hint" style="margin-top:6px">正文</div><div style="white-space:pre-wrap" id="pv-body"></div></div>' +
+        (t.active ? '<details><summary>和在用的版本比较</summary><div class="hint" style="margin-top:6px">主旨：' + esc(t.active.subject) + '</div><div class="quote" style="font-size:13px;margin-top:6px">' + esc(t.active.body) + "</div></details>" : t.state === "已批准" ? '<div class="hint">现在显示的就是在用的版本</div>' : "") + "</section></div>" +
+      '<div id="set-foot" class="card" style="position:sticky;bottom:12px;padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="hint" id="tpl-saved">' + (isNew ? "还没保存" : "") + "</span>" +
+        (["草稿", "待审核"].indexOf(t.state) >= 0 && !isNew ? '<button class="btn" id="tpl-discard" style="margin-left:auto">放弃草稿</button>' : '<span style="margin-left:auto"></span>') +
+        '<button class="btn" id="tpl-save">存草稿</button><button class="btn primary" id="tpl-submit">提交审核</button></div><div id="tpl-confirm" hidden></div>';
+    var sample = { 账号名称: "deer_lu", 體驗碼: "deer_lu", 体验码: "deer_lu", 已用: "1", 剩餘: "2", 剩余: "2", 次數: "3", 次数: "3", 到期日: "11 月 10 日", "已於 / 將於": "將於", "M 月 D 日": "11 月 10 日", 約定日期: "11 月 15 日", 约定日期: "11 月 15 日", 活動碼: "deer_tafu", 活动码: "deer_tafu", 專屬連結: "https://tafu.me/p/deer", 专属连结: "https://tafu.me/p/deer" };
+    var purpose = function () { return isNew ? $("tpl-purpose").value : t.purpose; };
+    var paint = function () {
+      var hs = holdersFor(purpose()), name = $("tpl-who").value || "小鹿";
+      $("tpl-tokens").innerHTML = hs.filter(function (h, i) { return hs.indexOf(h) === i; }).map(function (h) { return '<button class="chip" data-tok="' + esc(h) + '">{' + esc(h) + "}</button>"; }).join("");
+      all("[data-tok]").forEach(function (b) { b.disabled = locked; b.onclick = function () { if (locked) return; var ta = $("tpl-body"), at = ta.selectionStart || ta.value.length; ta.value = ta.value.slice(0, at) + "{" + b.getAttribute("data-tok") + "}" + ta.value.slice(at); ta.focus(); ta.dispatchEvent(new Event("input")); }; });
+      var bad = [];
+      var fill = function (s) {
+        return esc(s).replace(/\{([^{}\n]+)\}/g, function (whole, k) {
+          k = k.trim();
+          if (hs.indexOf(k) < 0) { if (bad.indexOf(whole) < 0) bad.push(whole); return '<span style="background:var(--bad-bg);color:var(--bad);padding:0 3px;border-radius:3px">' + whole + "</span>"; }
+          return '<span style="background:var(--blue-bg);color:var(--blue2);padding:0 3px;border-radius:3px">' + esc(k === "稱呼" || k === "称呼" ? name : sample[k] || k) + "</span>";
+        });
+      };
+      $("pv-subject").innerHTML = fill($("tpl-subject").value);
+      $("pv-body").innerHTML = fill($("tpl-body").value);
+      $("tpl-bad").textContent = bad.length ? "正文里的 " + bad.join("、") + " 系统不认识，发信时会填不上。改掉或删掉才能提交。" : "";
+      $("tpl-submit").disabled = locked || bad.length > 0 || !$("tpl-body").value.trim();
+    };
+    // Everything below works on this editor's own elements: another template opened later has its own.
+    var subjEl = $("tpl-subject"), bodyEl = $("tpl-body"), whyEl = $("tpl-why");
+    var dirty = false, edits = 0, inflight = Promise.resolve(), closed = false, locked = false;
+    var touched = function () { dirty = true; edits++; setDirty(1); $("tpl-saved").textContent = "有修改没保存"; paint(); };
+    ["tpl-subject", "tpl-body"].forEach(function (x) { $(x).addEventListener("input", touched); });
+    if (isNew) ["tpl-name", "tpl-lang", "tpl-dir"].forEach(function (x) { $(x).addEventListener("input", touched); });
+    if (isNew) $("tpl-purpose").addEventListener("change", touched);
+    $("tpl-who").addEventListener("change", paint);
+    paint();
+    // Saves go one after another; each clears 「没保存」 only if nothing was typed while it was on its way.
+    var save = function () { var run = inflight.then(saveNow, saveNow); inflight = run.catch(function () {}); return run; };
+    var saveNow = function () {
+      if (closed) return Promise.resolve(t.id);
+      var at = edits;
+      var body = { id: t.id, subject: subjEl.value, body: bodyEl.value, why: whyEl.value };
+      if (isNew) { body.name = $("tpl-name").value; body.purpose = $("tpl-purpose").value; body.language = $("tpl-lang").value; body.direction = $("tpl-dir").value; }
+      return post("/api/settings/template", body).then(function (x) {
+        // A new template exists from its first save: later saves update it instead of making another.
+        // Whatever happens next, the editor knows the state the server left it in.
+        if (x.state) t.state = x.state;
+        if (x.id && !t.id) {
+          t.id = x.id; isNew = false;
+          // Name, purpose, language and direction are set by the first save; the editor shows that they are now fixed.
+          t.name = body.name; t.purpose = body.purpose;
+          ["tpl-name", "tpl-purpose", "tpl-lang", "tpl-dir"].forEach(function (k) { if ($(k)) $(k).disabled = true; });
+          if ($("tpl-title")) $("tpl-title").textContent = t.name;
+        }
+        if (edits !== at) return x.id;
+        dirty = false; setDirty(0);
+        $("tpl-saved").textContent = "草稿已保存 " + timeOf(Date.now());
+        // The address follows the template without reloading the editor; an approved one is a draft from now on.
+        if (location.hash !== "#/settings/templates/" + x.id) history.replaceState(null, "", "#/settings/templates/" + x.id);
+        // (t.state was set from the answer above: a save with no change leaves an approved template approved.)
+        return x.id;
+      });
+    };
+    // Autosave applies to a template already in draft; an approved one only becomes a draft when 存草稿 is pressed.
+    var timer = 0;
+    var startTimer = function () {
+      clearInterval(timer);
+      timer = setInterval(function () {
+        if (!document.body.contains(bodyEl)) { dirty = false; return clearInterval(timer); }
+        if (dirty && !isNew && t.state === "草稿") save().catch(function () {});
+      }, 15000);
+    };
+    startTimer();
+    var lock = function (on) {
+      locked = on;
+      [subjEl, bodyEl, whyEl].forEach(function (el) { el.readOnly = on; });
+      ["tpl-save", "tpl-submit", "tpl-discard"].forEach(function (k) { if ($(k)) $(k).disabled = on; });
+      all("[data-tok]").forEach(function (b) { b.disabled = on; });
+    };
+    $("tpl-save").onclick = function () {
+      if (t.state === "已批准" && dirty) {
+        inlineConfirm($("tpl-confirm"), { title: "存草稿后，在用的版本会暂停到新版本批准为止", ok: "存草稿", body: '<div class="small">会停的事：' + esc(t.stops || "") + "</div>",
+          run: function () { save().then(function () { toast("草稿已保存"); }).catch(function (e) { failToast("没保存：", e); }); } });
+        return;
+      }
+      save().then(function () { toast("草稿已保存"); }).catch(function (e) { failToast("没保存：", e); });
+    };
+    $("tpl-submit").onclick = function () {
+      // Save until what is on screen is what is stored, then submit; a failure leaves the editor working.
+      var settle = function () { return (dirty || !t.id ? save() : inflight).then(function () { return dirty ? settle() : t.id; }); };
+      // Nothing can be typed while it is being submitted, so what is submitted is what is on screen.
+      lock(true);
+      settle().then(function (nid) {
+        closed = true; clearInterval(timer);
+        return post("/api/settings/template-submit", { id: nid });
+      }).then(function () { dirty = false; toast("已提交审核，到「待你决定」里批准"); setDirty(0); location.hash = "#/settings/templates"; })
+        .catch(function (e) { closed = false; lock(false); startTimer(); paint(); failToast("没提交：", e); });
+    };
+    if ($("tpl-discard")) $("tpl-discard").onclick = function () {
+      inlineConfirm($("tpl-confirm"), { title: t.active ? "放弃草稿，恢复用编辑前的版本？" : "放弃草稿？这个模板没有在用的版本，会停用", ok: "放弃草稿",
+        run: function () { closed = true; lock(true); inflight.then(function () { return post("/api/settings/template-discard", { id: t.id }); }).then(function (x) { dirty = false; clearInterval(timer); return x; }, function (e) { closed = false; lock(false); startTimer(); throw e; }).then(function () { setDirty(0); toast("已放弃草稿"); location.hash = "#/settings/templates"; }).catch(function (e) { failToast("没做成：", e); }); } });
+    };
+  }).catch(setFail);
+}
+
+// 选项
+function setOptions() {
+  api("/api/settings/options").then(function (r) {
+    if (!setOn("options")) return;
+    var block = function (key, hint, canAdd) {
+      var list = r[key] || [];
+      return '<section class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:baseline;gap:8px"><h2 style="margin:0;font-size:15px">' + esc(key) + '</h2><span class="hint">' + esc(hint) + "</span></div>" +
+        list.map(function (o) {
+          return '<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line2)"><span style="flex:1">' + esc(o.name) + ' <span class="hint">' + o.n + " 条</span></span>" +
+            '<button class="btn sm text" style="color:var(--blue)" data-ren="' + esc(key) + '" data-name="' + esc(o.name) + '" data-n="' + o.n + '">改名或合并</button></div><div data-ren-box="' + esc(key + "|" + o.name) + '" hidden></div>';
+        }).join("") +
+        (canAdd ? '<div class="drow" style="padding-top:8px"><input class="input" style="max-width:280px" data-add-input="' + esc(key) + '" placeholder="新的' + esc(key) + '名字"><button class="btn sm" data-add="' + esc(key) + '">新增</button></div>' : "") + "</section>";
+    };
+    $("set-body").innerHTML = setHead("选项", "批次名不能重复；改名会把用到它的记录一起改掉", "") +
+      block("入库批次", "找新人时放进哪一批", true) + block("邀约批次", "发邀约时记在跟进上", true) + block("内容类型", "全项目用到的标签和次数", false);
+    all("[data-add]").forEach(function (b) { b.onclick = function () {
+      var key = b.getAttribute("data-add"), v = document.querySelector('[data-add-input="' + key + '"]').value.trim();
+      if (!v) { toast("先写名字", { bad: true }); return; }
+      if ((r[key] || []).some(function (o) { return o.name === v; })) { toast("「" + v + "」已经有了", { bad: true }); return; }
+      post("/api/settings/option-add", { which: key, name: v }).then(function () { toast("已加上「" + v + "」"); setOptions(); }).catch(function (e) { failToast("没加上：", e); });
+    }; });
+    all("[data-ren]").forEach(function (b) { b.onclick = function () {
+      var key = b.getAttribute("data-ren"), name = b.getAttribute("data-name"), n = b.getAttribute("data-n");
+      var box = document.querySelector('[data-ren-box="' + key + "|" + name + '"]');
+      inlineConfirm(box, { title: "把「" + name + "」改成", ok: "确定", blue: true,
+        body: '<input class="input" id="ren-to" value="' + esc(name) + '"><div class="hint" id="ren-hint">用到它的 ' + n + " 条会一起改</div>",
+        check: function (bx) { var v = bx.querySelector("#ren-to").value.trim(); if (!v || v === name) return false; return v; },
+        run: function (to) { post("/api/settings/option-rename", { which: key, from: name, to: to }).then(function (x) { toast("已改，动了 " + x.changed + " 条"); setOptions(); }).catch(function (e) { failToast("没改成：", e); }); } });
+      $("ren-to").addEventListener("input", function () {
+        var v = $("ren-to").value.trim(), hit = (r[key] || []).some(function (o) { return o.name === v && v !== name; });
+        $("ren-hint").textContent = hit ? "「" + v + "」已经有了：会合并进去，" + n + " 条改成「" + v + "」" : "用到它的 " + n + " 条会一起改";
+        $("ren-hint").style.color = hit ? "var(--bad)" : "";
+        // A merge moves records into another option and can't be split back: shown as a red, irreversible step.
+        box.querySelector(".confirm").classList.toggle("blue", !hit);
+        box.querySelector("[data-ok]").className = "btn sm " + (hit ? "solid-bad" : "primary");
+        box.querySelector("[data-ok]").textContent = hit ? "确定合并" : "确定";
+      });
+    }; });
+    wireHistory(function (x) { return /^选项/.test(x.what); });
+  }).catch(setFail);
+}
+
+// 接入和执行电脑
+function setAccess() {
+  api("/api/settings/access").then(function (a) {
+    if (!setOn("access")) return;
+    var kv = function (k, v) { return '<div class="kv"><span class="muted">' + esc(k) + "</span><span>" + v + "</span></div>"; };
+    var yes = function (b) { return b ? '<span class="badge b-ok">这台电脑已保存</span>' : '<span class="badge b-warn">这台电脑没有</span>'; };
+    $("set-body").innerHTML = setHead("接入和执行电脑", "", "") +
+      '<section class="card" style="padding:18px 20px"><h2 style="margin:0 0 6px;font-size:15px">执行电脑</h2>' + kv("设置里的执行电脑", esc(a.executor || "没填：哪台电脑都能执行")) + kv("这台电脑", esc(a.thisMachine) + (a.isExecutor ? ' <span class="badge b-ok">能执行</span>' : ' <span class="badge b-warn">不能执行</span>')) +
+        '<div class="hint" style="margin-top:8px">换执行电脑：在那台电脑上运行 kol executor claim</div></section>' +
+      '<section class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:10px"><h2 style="margin:0;font-size:15px">业务数据接口</h2>' +
+        '<div class="drow"><input class="input" id="api-url" value="' + esc(a.dataApi) + '" placeholder="https://" style="flex:1 1 320px"><button class="btn" id="api-save">保存</button></div>' +
+        kv("接口密钥", yes(a.hasKey)) + kv("体验码写密钥", yes(a.hasTrialKey)) + kv("活动码写密钥", yes(a.hasPartnerKey)) +
+        '<div class="hint">密钥不在页面上显示，也不在这里改：用 kol project set-key / set-trial-key / set-partner-key</div></section>' +
+      '<section class="card" style="padding:18px 20px"><h2 style="margin:0 0 6px;font-size:15px">通知和数据</h2>' + kv("飞书群机器人", a.webhook ? "已配置" : "没配置") + kv("数据库", esc(a.database || "飞书多维表格")) +
+        '<div class="hint" style="margin-top:8px">只显示连接到哪里，不显示连接串</div></section>';
+    wireHistory(function (x) { return /^业务数据接口/.test(x.what); });
+    $("api-save").onclick = function () {
+      post("/api/settings/data-api", { url: $("api-url").value }).then(function () { toast("已保存业务数据接口"); setAccess(); }).catch(function (e) { failToast("没保存：", e); });
+    };
+  }).catch(setFail);
 }
 
 // --- 路由 ---
 function route() {
   var h = location.hash.replace(/^#/, "") || "/";
+  var query = h.split("?")[1] || "";
   var parts = h.split("?")[0].split("/").filter(Boolean);
-  var tab = parts[0] === "people" || parts[0] === "person" ? "people" : parts[0] === "log" ? "log" : "decide";
-  Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"), function (a) { a.classList.toggle("on", a.getAttribute("data-tab") === tab); });
-  // The decision page uses the whole width: list, case and action side by side.
+  var tab = parts[0] === "people" || parts[0] === "person" ? "people" : parts[0] === "log" ? "log" : parts[0] === "settings" ? "settings" : "decide";
+  all("[data-tab]").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-tab") === tab); });
   $("app").classList.toggle("wide", tab === "decide");
   if (!state.overview) return;
+  renderBanners();
+  var m = query.match(/(?:^|&)card=([^&]+)/);
+  if (m) state.focus = decodeURIComponent(m[1]);
   if (parts[0] === "people") renderPeople(parts[1] || "wait", "");
   else if (parts[0] === "person" && parts[1]) renderPerson(decodeURIComponent(parts[1]));
   else if (parts[0] === "log") renderLog();
+  else if (parts[0] === "settings") renderSettings(parts[1], parts[2] && decodeURIComponent(parts[2]));
   else renderDecide();
 }
 window.addEventListener("hashchange", function () { route(); window.scrollTo(0, 0); });
@@ -838,7 +1868,7 @@ function loadNews() {
 function markSeen() { try { localStorage.setItem(SEEN_KEY, String(Date.now())); } catch (e) {} }
 window.addEventListener("pagehide", markSeen);
 loadOverview().then(function () { route(); loadNews(); }).catch(fail);
-setInterval(function () { loadOverview().then(function () { if (!location.hash || location.hash === "#/") renderDecide(); }).catch(function () {}); }, 5 * 60 * 1000);
+setInterval(function () { loadOverview().then(function () { if ((!location.hash || location.hash === "#/") && $("drawer").hidden) renderDecide(); }).catch(function () {}); }, 5 * 60 * 1000);
 </script>
 </body>
 </html>
