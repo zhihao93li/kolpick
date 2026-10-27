@@ -243,4 +243,32 @@ describe("console API", () => {
     expect(await call("GET", "/local")).toMatchObject({ env: "test" });
     await expect(call("GET", "/nope")).rejects.toThrow(/没有这个接口/);
   });
+
+  it("lists KOLs with what each row needs, the record and today's usage", async () => {
+    const { App } = await import("../../src/kolpick/server.js");
+    const w = await world();
+    const app = new App(w.ctx);
+    const call = (method: string, path: string, body?: unknown) => app.api(method, new URL(`http://127.0.0.1/api${path}`), body);
+    const late = await addKol(w, { name: "星星", email: "star@gmail.com", stage: "publish_agreed", publish_due_at: "2020-01-01" });
+    const posted = await addKol(w, { name: "小鹿", email: "deer@gmail.com", stage: "partner", whose_turn: "us" });
+    await w.ctx.db.query("insert into posts (project_id, kol_id, url, format, published_at, metrics) values ($1, $2, 'https://x/p1', 'Reels', now(), $3)",
+      [w.p.id, posted, JSON.stringify({ "1": { views: 28000 } })]);
+    await w.ctx.db.query("insert into messages (project_id, kol_id, direction, body, at) values ($1, $2, 'in', '我們預計 11/3 發', now())", [w.p.id, posted]);
+    await call("POST", `/kols/${posted}`, { fields: { next_step: "11/3 发 Reels" } });
+
+    const rows = (await call("GET", "/kols")) as any[];
+    const deer = rows.find((r) => r.id === posted);
+    expect(deer).toMatchObject({ next_step: "11/3 发 Reels", last_message: { direction: "in", text: "我們預計 11/3 發" }, posts: [{ format: "Reels" }] });
+    expect(rows.find((r) => r.id === late)).toMatchObject({ flag_late: true, posts: null });
+    expect(((await call("GET", "/kols?flag=late")) as any[]).map((r) => r.id)).toEqual([late]);
+    expect(((await call("GET", "/kols?flag=posted")) as any[]).map((r) => r.id)).toEqual([posted]);
+    expect(((await call("GET", "/kols?flag=us")) as any[]).map((r) => r.id)).toEqual([posted]);
+    expect(await call("GET", "/kols/counts")).toMatchObject({ stages: { partner: 1, publish_agreed: 1 }, flags: { late: 1, posted: 1, us: 1 } });
+
+    const log = (await call("GET", "/log")) as any[];
+    expect(log[0]).toMatchObject({ kol_id: posted, kol_name: "小鹿", bad: false });
+    expect(((await call("GET", `/log?kol=${late}`)) as any[]).length).toBe(0);
+    expect(((await call("GET", "/log?bad=1")) as any[]).length).toBe(0);
+    expect(await call("GET", "/usage")).toMatchObject({ contacted: 0, dailyLimit: 450, incoming: 1, errors: 0 });
+  });
 });

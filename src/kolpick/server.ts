@@ -8,9 +8,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { continueJob, runJobs } from "./agent.js";
 import { saveConfig } from "./config.js";
-import { dayOf, project, type Ctx, type Project } from "./ctx.js";
+import { addLog, dayOf, project, type Ctx, type Project } from "./ctx.js";
 import { one } from "./db/db.js";
 import { findPeople } from "./discover.js";
+import { ownWords } from "./mail.js";
 import { recoverAfterCrash, resolveUnknown, runApproved } from "./execute.js";
 import { GUIDE } from "./guide.js";
 import { catchUp, recordOne, Watcher } from "./inbox.js";
@@ -19,6 +20,7 @@ import { findPosts, postMetrics, syncCodes } from "./posts.js";
 import { approve, editProposal, groupHash, proposeMail, reject, requestRevision, Stale, undo } from "./proposals.js";
 import { draftTemplate } from "./templates.js";
 import { callTool, kolDetail, TOOLS } from "./tools.js";
+import { kolCounts, kolList, logList, usage } from "./views.js";
 import PAGE from "./console.html";
 
 export interface Status {
@@ -70,6 +72,7 @@ const DAILY: Record<string, (ctx: Ctx, p: Project) => Promise<unknown>> = {
   metrics: (ctx, p) => postMetrics(ctx, p),
 };
 export const DAILY_NAMES: Record<string, string> = { followups: "催信扫描", codes: "同步码用量", expiry: "码到期和约好没发", posts: "找帖子", metrics: "抓帖子数据" };
+const TASK_NAMES: Record<string, string> = { ...DAILY_NAMES, boot: "启动", tick: "定时检查", inbox: "收信", send: "发送", agent: "后台 agent" };
 
 export class App {
   status: Status = { startedAt: new Date().toISOString(), watchers: {}, lastCatchUp: "", tasks: {}, busy: "" };
@@ -101,8 +104,11 @@ export class App {
 
   /** Nothing that goes wrong in the background may stop the process: it is noted and shown in the console. */
   private note(task: string, err: unknown): void {
-    this.status.tasks[task] = { at: new Date().toISOString(), ok: false, note: String((err as any)?.message ?? err) };
+    const note = String((err as any)?.message ?? err);
+    this.status.tasks[task] = { at: new Date().toISOString(), ok: false, note };
     console.error(`[${task}]`, err);
+    // Errors go into the record too, so the console shows what failed and why.
+    void project(this.ctx).then((p) => addLog(this.ctx, p, { kind: "error", who: "tool", summary: `${TASK_NAMES[task] ?? task}出错：${note}` })).catch(() => {});
   }
 
   private ticking = false;
@@ -282,15 +288,16 @@ export class App {
         return this.state(p);
       case "GET /cards":
         return this.cards(p, url.searchParams.get("view") ?? "pending");
-      case "GET /kols": {
-        const q = url.searchParams.get("q") || null, stage = url.searchParams.get("stage") || null, page = Number(url.searchParams.get("page") ?? 0);
-        return ctx.db.query(
-          `select id, name, handle, platform, email, stage, whose_turn, mailbox, followers, last_contact_at, last_inbound_at, next_followup_at, never_contact,
-             (select count(*)::int from posts po where po.kol_id = k.id) as posts
-           from kols k where project_id = $1 and ($2::text is null or name ilike '%'||$2||'%' or handle ilike '%'||$2||'%' or email ilike '%'||$2||'%')
-             and ($3::text is null or stage = $3)
-           order by coalesce(last_inbound_at, last_contact_at, created_at) desc limit 100 offset $4`, [p.id, q, stage, page * 100]);
-      }
+      case "GET /kols":
+        return kolList(ctx, p, { q: url.searchParams.get("q"), stage: url.searchParams.get("stage"), flag: url.searchParams.get("flag"),
+          sort: url.searchParams.get("sort"), page: Number(url.searchParams.get("page") ?? 0) });
+      case "GET /kols/counts":
+        return kolCounts(ctx, p);
+      case "GET /log":
+        return logList(ctx, p, { q: url.searchParams.get("q"), bad: url.searchParams.get("bad") === "1",
+          days: Number(url.searchParams.get("days") ?? 2), before: Number(url.searchParams.get("before")) || null, kol: Number(url.searchParams.get("kol")) || null });
+      case "GET /usage":
+        return usage(ctx, p);
       case "GET /kols/:id":
         return kolDetail(ctx, p, id);
       case "POST /kols/:id":
@@ -406,7 +413,7 @@ export class App {
       : view === "done" ? "status in ('done','rejected','superseded','dropped') and done_at > now() - interval '3 days'"
       : "status = 'pending' and parent_id is null";
     const rows = await db.query<any>(
-      `select pr.*, k.name as kol_name, k.stage as kol_stage, m.subject as in_subject, m.body as in_body, m.from_addr as in_from, m.at as in_at
+      `select pr.*, k.name as kol_name, k.stage as kol_stage, k.handle as kol_handle, k.platform as kol_platform, k.followers as kol_followers, m.subject as in_subject, m.body as in_body, m.from_addr as in_from, m.at as in_at
        from proposals pr left join kols k on k.id = pr.kol_id left join messages m on m.id = pr.in_reply_to
        where pr.project_id = $1 and pr.${where} order by pr.id ${view === "done" ? "desc" : "asc"} limit 200`, [p.id]);
     for (const r of rows) {
@@ -418,7 +425,10 @@ export class App {
         r.draft = await one(db, "select * from templates where id = $1", [r.action.template_id]);
         r.current = r.draft?.draft_of ? await one(db, "select * from templates where id = $1", [r.draft.draft_of]) : null;
       }
-      if (r.in_body) r.in_body = String(r.in_body).slice(0, 4000);
+      if (r.in_body) {
+        r.in_own = ownWords(String(r.in_body), 4000);
+        r.in_body = String(r.in_body).slice(0, 4000);
+      }
     }
     return rows;
   }
