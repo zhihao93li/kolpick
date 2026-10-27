@@ -15,6 +15,8 @@ export interface Settings {
   bounceMinSent: number;
   followup1Days: number;
   followup2Days: number;
+  /** Only people first invited on or after this day get follow-ups (YYYY-MM-DD; empty = everyone). */
+  followupFrom: string;
   /** Days after the last follow-up with no answer before proposing to close. */
   closeDays: number;
   /** No auto follow-up for these levels / demands / channels. */
@@ -52,6 +54,7 @@ export const DEFAULTS: Settings = {
   followup1Days: 5,
   followup2Days: 7,
   closeDays: 7,
+  followupFrom: "",
   noFollowupLevels: [],
   noFollowupDemands: [],
   noFollowupChannels: [],
@@ -82,6 +85,7 @@ export const LABELS: Record<keyof Settings, string> = {
   followup1Days: "第一次催信天数",
   followup2Days: "第二次催信天数",
   closeDays: "无回应结案天数",
+  followupFrom: "从哪天邀约的人开始催信",
   noFollowupLevels: "不催的级别",
   noFollowupDemands: "不催的对方要求",
   noFollowupChannels: "不催的渠道",

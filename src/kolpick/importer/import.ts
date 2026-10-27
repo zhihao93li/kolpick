@@ -101,6 +101,7 @@ export async function importSnapshot(db: Db, dir: string, opts: ImportOptions): 
       followup1Days: num(s["第一次催信天数"]) ?? DEFAULTS.followup1Days,
       followup2Days: num(s["第二次催信天数"]) ?? DEFAULTS.followup2Days,
       closeDays: num(s["结案天数"]) ?? DEFAULTS.closeDays,
+      followupFrom: text(s["自动催信起始日"])?.slice(0, 10) ?? "",
       noFollowupLevels: list(text(s["不催级别"])?.split(/[、,，]/)).map((x) => x.trim()).filter(Boolean),
       noFollowupDemands: list(text(s["不催的对方要求"])?.split(/[、,，]/)).map((x) => x.trim()).filter(Boolean),
       noFollowupChannels: list(text(s["不催渠道"])?.split(/[、,，]/)).map((x) => x.trim()).filter(Boolean),

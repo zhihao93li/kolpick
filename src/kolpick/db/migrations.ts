@@ -118,6 +118,8 @@ export const MIGRATIONS: string[] = [
     pending      boolean not null default false,
     bounce       boolean not null default false,
     resolved_at  timestamptz,
+    -- the proposal whose approval sent this mail
+    proposal_id  int,
     legacy_id    text unique,
     created_at   timestamptz not null default now()
   );
@@ -200,6 +202,9 @@ export const MIGRATIONS: string[] = [
   create unique index proposals_one_pending_mail on proposals (project_id, kol_id)
     where kol_id is not null and to_addr is not null and status in ('drafting', 'pending', 'approved', 'running', 'unknown');
   create index proposals_open on proposals (project_id, status);
+  create index proposals_parent on proposals (parent_id);
+  alter table messages add constraint messages_proposal foreign key (proposal_id) references proposals(id);
+  create unique index messages_one_send on messages (proposal_id) where proposal_id is not null and direction = 'out';
 
   -- External actions, one at a time. 'started' rows left behind by a crash become 'unknown' and wait for the operator.
   create table actions (

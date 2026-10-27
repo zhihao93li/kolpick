@@ -1,0 +1,146 @@
+/**
+ * Feishu mail through lark-cli, always as the signed-in user, always from a named mailbox. The send and reply
+ * shapes are the ones verified live on 2026-10-24: a reply with subject "Re: <original>" stays in its thread.
+ */
+import type { Lark } from "./lark.js";
+
+export interface MailSummary {
+  message_id: string;
+  thread_id: string;
+  subject: string;
+  from: string;
+  date: string;
+}
+
+export interface FullMail {
+  messageId: string;
+  threadId: string;
+  subject: string;
+  from: string;
+  fromName: string;
+  to: string[];
+  at: string;
+  body: string;
+  folder: string;
+}
+
+/** A mailbox setting stopped automated sending; the mail stayed a draft, so nothing went out. */
+export class MailBlocked extends Error {}
+
+export class Mail {
+  constructor(private lark: Lark) {}
+
+  /** Mail in one folder since a moment ("YYYY-MM-DDTHH:mm:ss+08:00" is the only form Feishu takes), newest first. */
+  async since(mailbox: string, folder: "INBOX" | "SENT", startTime: string, max = 400): Promise<MailSummary[]> {
+    const data = await this.lark.json(["mail", "+triage", "--mailbox", mailbox, "--filter",
+      JSON.stringify({ folder_id: folder, time_range: { start_time: startTime } }), "--max", String(max), "--format", "json", "--as", "user"]);
+    return (data?.messages ?? []).filter((m: any) => m.message_id && !m.error);
+  }
+
+  /** The newest message this address sent to the mailbox, to reply in the same thread. */
+  async latestFrom(mailbox: string, address: string): Promise<MailSummary | undefined> {
+    const data = await this.lark.json(["mail", "+triage", "--mailbox", mailbox, "--filter", JSON.stringify({ from: [address] }),
+      "--max", "5", "--format", "json", "--as", "user"]);
+    const list: MailSummary[] = (data?.messages ?? []).filter((m: any) => m.message_id);
+    return list.sort((a, b) => Date.parse(b.date) - Date.parse(a.date))[0];
+  }
+
+  /** Full plain-text mails, 20 per call as lark-cli batches them. */
+  async read(mailbox: string, ids: string[]): Promise<FullMail[]> {
+    const out: FullMail[] = [];
+    for (let i = 0; i < ids.length; i += 20) {
+      const data = await this.lark.json(["mail", "+messages", "--mailbox", mailbox, "--message-ids", ids.slice(i, i + 20).join(","),
+        "--html=false", "--format", "json", "--as", "user"]);
+      for (const m of data?.messages ?? []) {
+        out.push({
+          messageId: String(m.message_id),
+          threadId: String(m.thread_id ?? ""),
+          subject: String(m.subject ?? ""),
+          from: String(m.head_from?.mail_address ?? "").toLowerCase(),
+          fromName: String(m.head_from?.name ?? ""),
+          to: (m.to ?? []).map((t: any) => String(t.mail_address ?? "").toLowerCase()),
+          at: m.internal_date ? new Date(Number(m.internal_date)).toISOString() : new Date().toISOString(),
+          body: String(m.body_plain_text ?? ""),
+          folder: String(m.folder_id ?? ""),
+        });
+      }
+    }
+    return out;
+  }
+
+  async send(o: { mailbox: string; to: string; subject: string; body: string; replyTo?: string }): Promise<{ messageId: string; threadId: string }> {
+    const args = o.replyTo
+      ? ["mail", "+reply", "--message-id", o.replyTo]
+      : ["mail", "+send", "--to", o.to, "--subject", o.subject];
+    args.push("--mailbox", o.mailbox, "--body", toHtml(o.body), "--confirm-send", "--as", "user");
+    if (o.replyTo && o.subject) args.push("--subject", o.subject);
+    const data = await this.lark.json(args);
+    if (data?.automation_send_disable_reason) {
+      throw new MailBlocked(`邮箱设置拦截了自动发信：${data.automation_send_disable_reason} ${data.automation_send_disable_reference ?? ""}`.trim());
+    }
+    if (!data?.message_id) throw new Error(`发信没有返回 message_id：${JSON.stringify(data).slice(0, 300)}`);
+    return { messageId: String(data.message_id), threadId: String(data.thread_id ?? "") };
+  }
+}
+
+export function addressOf(from: string): string {
+  const m = from.match(/<([^>]+)>/);
+  return (m ? m[1] : from).trim().toLowerCase();
+}
+
+/** Plain text drafts become simple HTML paragraphs so line breaks survive. */
+export function toHtml(body: string): string {
+  if (/<(p|div|br|ul|ol|table)\b/i.test(body)) return body;
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const links = (s: string) => s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
+  return body.trim().split(/\n{2,}/).map((para) => `<p>${links(esc(para)).replace(/\n/g, "<br>")}</p>`).join("\n");
+}
+
+/** "Re: " plus the subject with any reply prefixes taken off; Feishu keeps such a reply in the thread. */
+export function replySubject(subject: string): string {
+  const prefix = /^\s*(re|aw|sv|回复|回覆|答复)\s*[:：]\s*/i;
+  let s = subject;
+  while (prefix.test(s)) s = s.replace(prefix, "");
+  return `Re: ${s.trim()}`;
+}
+
+/** Feishu's mail filters only take this form: YYYY-MM-DDTHH:mm:ss+08:00. */
+export function feishuTime(ms: number, tz = "+08:00"): string {
+  const sign = tz.startsWith("-") ? -1 : 1;
+  const [h, m] = tz.slice(1).split(":").map(Number);
+  const local = new Date(ms + sign * (h * 60 + m) * 60_000).toISOString().slice(0, 19);
+  return `${local}${tz}`;
+}
+
+const QUOTE_MARKERS = [
+  /(<[^>\s]+>\s*)?於\s*\d{4}\s*年.{0,40}?(寫道|写道)\s*[:：]/,
+  /(<[^>\s]+>\s*)?在\s*\d{4}\s*年.{0,40}?(写道|寫道)\s*[:：]/,
+  /On .{5,120}? wrote:/,
+  /(^|\s)(发件人|寄件者|From)\s*[:：]/,
+  /-{2,}\s*(原始邮件|原始郵件|Original Message)/i,
+  /\n\s*>/,
+];
+
+/** The sender's own words: the mail cut at its first quoted-history marker. */
+export function ownWords(body: string, max = 4000): string {
+  let cut = body.length;
+  for (const re of QUOTE_MARKERS) {
+    const m = re.exec(body);
+    if (!m || m.index >= cut) continue;
+    const line = body.lastIndexOf("\n", m.index);
+    const lead = line >= 0 ? body.slice(line, m.index) : "";
+    cut = line >= 0 && lead.length <= 40 && !/[。！？!?，,]/.test(lead) ? line : m.index;
+  }
+  return body.slice(0, cut).trim().slice(0, max);
+}
+
+/** Mail the mail system sends back when delivery failed. */
+export function isBounce(from: string, subject: string): boolean {
+  return /mailer-daemon|postmaster|mail delivery (sub)?system/i.test(from)
+    || /undeliver|delivery status notification|returned mail|delivery failure|退信|未能送达|無法傳遞|无法投递/i.test(subject);
+}
+
+/** Senders whose mail never needs an answer: reports, notifications, our own mailboxes. */
+export function isAutomated(from: string): boolean {
+  return /^(no-?reply|noreply|notifications?|dmarcreport|dmarc|postmaster|mailer-daemon)@/i.test(from) || /@(tafu\.me)$/i.test(from);
+}

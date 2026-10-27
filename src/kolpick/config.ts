@@ -33,19 +33,21 @@ export interface LocalConfig {
   agent: AgentCommand;
   /** Port of the console and the MCP server (same process). */
   port: number;
+  /** What runs by itself while the console is open; switched on in the console (off until the operator says). */
+  auto: { inbox: boolean; schedule: boolean; agent: boolean };
 }
 
 export function home(): string {
   return process.env.KOLPICK_HOME || join(homedir(), ".kolpick");
 }
 
-const DEFAULT: LocalConfig = { env: "test", databases: {}, project: "tafu", keys: {}, agent: { kind: "claude" }, port: 4791 };
+const DEFAULT: LocalConfig = { env: "test", databases: {}, project: "tafu", keys: {}, agent: { kind: "claude" }, port: 4791, auto: { inbox: false, schedule: false, agent: true } };
 
 export function loadConfig(): LocalConfig {
   const file = join(home(), "config.json");
   if (!existsSync(file)) return structuredClone(DEFAULT);
   const stored = JSON.parse(readFileSync(file, "utf8"));
-  return { ...structuredClone(DEFAULT), ...stored, agent: { ...DEFAULT.agent, ...(stored.agent ?? {}) } };
+  return { ...structuredClone(DEFAULT), ...stored, agent: { ...DEFAULT.agent, ...(stored.agent ?? {}) }, auto: { ...DEFAULT.auto, ...(stored.auto ?? {}) } };
 }
 
 export function saveConfig(c: LocalConfig): void {
