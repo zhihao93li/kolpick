@@ -63,8 +63,15 @@ export const STAGE_NAMES: Record<string, string> = {
 };
 export const CLOSE_REASONS = ["无回应", "题材不符", "只接固定费", "宗教信仰", "隐私", "档期", "拒绝", "回复后失联", "退信或邮箱无效", "作废", "其他"];
 
+/** JSON with object keys sorted, so a value read back from jsonb (which reorders keys) hashes the same. */
+export function canonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonical).join(",")}]`;
+  if (v && typeof v === "object") return `{${Object.keys(v).filter((k) => (v as any)[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${canonical((v as any)[k])}`).join(",")}}`;
+  return JSON.stringify(v ?? null);
+}
+
 export function contentHash(p: { to_addr?: string | null; mailbox?: string | null; subject?: string | null; body?: string | null; action?: unknown }): string {
-  return createHash("sha256").update(JSON.stringify([p.to_addr ?? null, p.mailbox ?? null, p.subject ?? null, p.body ?? null, p.action ?? {}])).digest("hex").slice(0, 16);
+  return createHash("sha256").update(canonical([p.to_addr ?? null, p.mailbox ?? null, p.subject ?? null, p.body ?? null, p.action ?? {}])).digest("hex").slice(0, 16);
 }
 
 /** Placeholders a code action fills; the draft must use the ones that carry what it promises. */
@@ -144,6 +151,7 @@ export async function proposeMail(ctx: Ctx, p: Project, d: MailDraft): Promise<{
   }
   if (!subject) throw new Error("新邮件要写主题");
   const action = d.action ?? {};
+  subject = fillName(subject, kol);
   const body = fillName(d.body, kol);
   const problem = codeProblem(action.code) || placeholderProblem(action.code, body);
   if (problem) throw new Error(problem);
