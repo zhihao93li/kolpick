@@ -28,7 +28,7 @@ beforeEach(() => {
   ctx = makeCtx(cfg, lark, { id: "ou_me", name: "测试" }, "收信同步", false, async () => {});
 });
 
-it("files a known KOL's reply and hands the followup to us, once", async () => {
+it("S-R18 files a known KOL's reply and hands the followup to us, once", async () => {
   const r = await syncInbox(ctx, { days: 3, dryRun: false });
   expect(r.newReplies).toHaveLength(1);
   expect(r.unknownSenders.map((u) => u.from)).toEqual(["news@shop.com"]);

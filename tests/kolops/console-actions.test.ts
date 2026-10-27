@@ -88,7 +88,7 @@ describe("writes from the console", () => {
     expect(o.cards.map((c: any) => c.id)).not.toContain(decision);
   });
 
-  it("sends an item back to Claude, or drops it", async () => {
+  it("S-R22 sends an item back to Claude, or drops it", async () => {
     const a = lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["回复邮件"], KOL: [{ id: fid }] });
     const b = lark.add(T.reviews, { 状态: ["待你审核"], 类型: ["回复邮件"], KOL: [{ id: fid }] });
     await call("/api/revise", { id: a, note: "语气轻一点" });
@@ -107,10 +107,20 @@ describe("writes from the console", () => {
     expect(row(T.profiles, pid)["联系许可"]).toEqual(["永不联系"]);
   });
 
+  it("S-E6 the stage and agreed publish date are set by hand, with the change noted", async () => {
+    await call("/api/followup", { id: fid, fields: { 阶段: "已约发布", 约定发布日期: "2026-11-10" } });
+    expect(row(T.followups, fid)).toMatchObject({ 阶段: ["已约发布"], 约定发布日期: "2026-11-10 00:00" });
+    expect(String(row(T.followups, fid)["下一步"])).toMatch(/阶段从「已回复」改成「已约发布」/);
+    await call("/api/followup", { id: fid, fields: { 阶段: "暂缓" } });
+    expect(row(T.followups, fid)["阶段"]).toEqual(["暂缓"]);
+  });
+
   it("edits a followup, records a post, and refuses fields it doesn't own", async () => {
     await call("/api/followup", { id: fid, fields: { 下一步: "等她用完", 下次跟进日期: "2026-11-02", 当前轮到谁: "KOL" } });
     expect(row(T.followups, fid)).toMatchObject({ 下一步: "等她用完", 下次跟进日期: "2026-11-02 00:00", 当前轮到谁: ["KOL"] });
-    expect((await call("/api/followup", { id: fid, fields: { 阶段: "已发布" } })).status).toBe(500);
+    // 结案 needs a reason, so it goes through 不再跟进, not here; fields the page doesn't own are refused.
+    expect((await call("/api/followup", { id: fid, fields: { 阶段: "结案" } })).status).toBe(500);
+    expect((await call("/api/followup", { id: fid, fields: { 结案原因: "拒绝" } })).status).toBe(500);
     await call("/api/post", { id: fid, link: "https://www.instagram.com/p/abc/" });
     expect(lark.table(T.posts)[0]).toMatchObject({ 平台: ["Instagram"], 内容链接: "https://www.instagram.com/p/abc/" });
     expect(row(T.followups, fid)["阶段"]).toEqual(["已发布"]);

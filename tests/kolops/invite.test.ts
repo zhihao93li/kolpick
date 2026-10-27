@@ -57,7 +57,7 @@ it("refuses without an approval naming the batch, or with a batch the select doe
   await expect(invite(ctx, { ...opts(), batch: "第四十批·新版" })).rejects.toThrow(/选项|批次/);
 });
 
-it("skips an address that already has a followup under another profile, or appears twice in the batch", async () => {
+it("S-C5 skips an address that already has a followup under another profile, or appears twice in the batch", async () => {
   const earlier = lark.add(T.profiles, { 账号名称: "77夫妻 YouTube", 公开邮箱: "77@example.com", 联系许可: ["可联系"] });
   lark.add(T.followups, { 账号名称: "77夫妻 YouTube", 档案: [{ id: earlier }], 阶段: ["结案"] });
   const twinA = lark.add(T.profiles, { 账号名称: "雙胞胎 IG", 称呼: "雙胞胎", 公开邮箱: "twins@example.com", 联系许可: ["可联系"] });
@@ -69,7 +69,7 @@ it("skips an address that already has a followup under another profile, or appea
   expect(reasons).toMatch(/雙胞胎 TikTok：这一批里已经有人用同一个邮箱/);
 });
 
-it("only sends a template approved in the 模板 table", async () => {
+it("S-R15 only sends a template approved in the 模板 table", async () => {
   await expect(invite(ctx, { ...opts(), template: "邀约-草稿" })).rejects.toThrow(/已批准的邀约模板：邀约-新版-伴侶/);
 });
 

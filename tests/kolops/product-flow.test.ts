@@ -50,7 +50,7 @@ beforeEach(async () => {
 afterEach(() => vi.useRealTimers());
 
 describe("P1", () => {
-  it("1 不再跟进 withdraws what was approved for her, so nothing goes out after", async () => {
+  it("S-R14 1 不再跟进 withdraws what was approved for her, so nothing goes out after", async () => {
     const rid = review();
     await approveInConsole(ctx, rid);
     await closeFollowup(ctx, data, fid, { never: false, reason: "其他" });
@@ -60,7 +60,7 @@ describe("P1", () => {
     expect(row(T.followups, fid)).toMatchObject({ 阶段: ["结案"], 当前轮到谁: ["无需动作"] });
   });
 
-  it("2 mail she sends after an approval holds it and puts it back in front of the reviewer with her new words", async () => {
+  it("S-R9 2 mail she sends after an approval holds it and puts it back in front of the reviewer with her new words", async () => {
     const rid = review();
     await approveInConsole(ctx, rid);
     lark.inbox["hello@tafu.me"] = [{ message_id: "new-refusal", from: "audit@example.com", subject: "先不要发体验码，我们暂不合作", date: new Date().toISOString() }];
@@ -119,7 +119,7 @@ describe("P1", () => {
 });
 
 describe("P2", () => {
-  it("6 what is approved while paused waits, and resuming sends it", async () => {
+  it("S-R24 6 what is approved while paused waits, and resuming sends it", async () => {
     const rid = review();
     const jobs = new Jobs(ctx);
     await setPaused(ctx, true);
@@ -183,7 +183,7 @@ describe("P2", () => {
     expect(row(T.templates, tid)["状态"]).toEqual(["已批准"]);
   });
 
-  it("9 a late post already asked about waits for the follow-up date", async () => {
+  it("S-E2 9 a late post already asked about waits for the follow-up date", async () => {
     await ctx.base.update(T.followups, { [fid]: { 阶段: ["已约发布"], 约定发布日期: `${addDays(today(ctx.cfg), -3)} 10:00` } });
     await data.refresh();
     expect(cards().some((c) => c.kind === "overdue")).toBe(true);
@@ -210,15 +210,17 @@ describe("P2", () => {
     expect(row(T.followups, fid)["当前轮到谁"]).toEqual(["我们"]);
   });
 
-  it("11 a reply to a closed KOL opens her followup again", async () => {
-    await ctx.base.update(T.followups, { [fid]: { 阶段: ["结案"], 结案原因: ["无回应"], 当前轮到谁: ["无需动作"] } });
+  it("11 R-05 writing first to a closed KOL who had answered before opens her followup at 已回复", async () => {
+    const before = stamp(Date.now() - 20 * 86_400_000, ctx.cfg.timezone);
+    await ctx.base.update(T.followups, { [fid]: { 阶段: ["结案"], 结案原因: ["无回应"], 当前轮到谁: ["无需动作"], 最后来信日期: before } });
     const rid = review();
     await approveInConsole(ctx, rid);
     expect((await sendApproved(fresh(), { dryRun: false })).sent).toHaveLength(1);
     await data.refresh();
     expect(row(T.followups, fid)).toMatchObject({ 阶段: ["已回复"], 当前轮到谁: ["KOL"] });
     expect(row(T.followups, fid)["结案原因"] ?? null).toBeNull();
-    expect(String(row(T.followups, fid)["下一步"])).toMatch(/重新联系（之前结案：无回应）/);
+    expect(String(row(T.followups, fid)["下一步"])).toMatch(/我们又写信了（之前结案：无回应）/);
+    expect(row(T.followups, fid)["下次跟进日期"]).toBeTruthy();
     expect(peopleView(data, ctx.cfg, "all", today(ctx.cfg)).rows.map((r) => r.id)).toContain(fid);
   });
 });

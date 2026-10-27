@@ -283,6 +283,8 @@ function print(result: unknown): number {
 }
 
 function hasFailures(result: any): boolean {
+  // A mailbox read only in part is a partial run too: the next sync must not start after it (G-3).
+  if (result?.complete === false || result?.sync?.complete === false) return true;
   return [result?.failed, result?.send?.failed].some((f) => Array.isArray(f) && f.length > 0);
 }
 

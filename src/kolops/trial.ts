@@ -1,5 +1,5 @@
 import { option, text } from "./base.js";
-import { createTrialCodeRemote, extendTrialCodeRemote, TrialCodeRefused } from "./codes.js";
+import { createTrialCodeRemote, extendTrialCodeRemote, TrialCodeRefused, writeOnce } from "./codes.js";
 import type { Config } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import type { Row } from "./lark.js";
@@ -97,9 +97,9 @@ export function prepareTrial(ctx: Ctx, plan: TrialPlan, review: Row, kolName: st
       if (!ctx.cfg.dataApi) throw new TrialCodeRefused("NO_API", "「设置」里没填业务数据接口，没法建体验码");
       if (!project?.trialKey) throw new TrialCodeRefused("NO_KEY", `这台电脑没有项目「${ctx.cfg.project}」的体验码写密钥，请运行 kol project set-trial-key`);
       const operator = ctx.me.name || ctx.me.id;
-      const r = plan.action === "发码"
-        ? await createTrialCodeRemote(ctx.cfg.dataApi, project.trialKey, { code: plan.code, maxUses: plan.maxUses, days: plan.days, kolName, followupId, operator })
-        : await extendTrialCodeRemote(ctx.cfg.dataApi, project.trialKey, plan.code, { days: plan.days, operator });
+      const r = await writeOnce(ctx, key, plan.action === "发码" ? `建体验码 ${plan.code}` : `体验码 ${plan.code} 延期`, () => plan.action === "发码"
+        ? createTrialCodeRemote(ctx.cfg.dataApi, project.trialKey!, { code: plan.code, maxUses: plan.maxUses, days: plan.days, kolName, followupId, operator })
+        : extendTrialCodeRemote(ctx.cfg.dataApi, project.trialKey!, plan.code, { days: plan.days, operator }), plan.action === "发码");
       done = { code: r.code.code, maxUses: r.code.maxUses ?? plan.maxUses, used: r.code.used ?? 0, expiresAt: String(r.code.expiresAt) };
       ctx.journal.mark(key, "prepared", undefined, done);
     }

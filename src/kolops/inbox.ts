@@ -8,26 +8,12 @@ import type { Row } from "./lark.js";
 import { addressOf } from "./mail.js";
 import { stamp } from "./ops.js";
 import { listProjects } from "./projects.js";
+import { openMailItems, replaceable } from "./reviews.js";
+import { closedFrom } from "./reopen.js";
 import { CLOSE_ACTIONS, CLOSE_REASONS } from "./schema.js";
 import { missingPlaceholder, suggestTrialCode, trialPlan } from "./trial.js";
 
 /** 审核队列 types that send a mail once approved. */
-const MAIL_TYPES = ["回复邮件", "协议"];
-
-/** Open items that will send a mail, by KOL: a KOL gets at most one at a time, so a new reply replaces the old one. */
-async function openMailItems(ctx: Ctx): Promise<Map<string, Row[]>> {
-  const rows = await ctx.base.records(ctx.cfg.tables.reviews, {
-    filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] },
-    fields: ["审核项", "类型", "状态", "处理", "审核结果", "KOL", "邮件草稿", "发送渠道", "执行结果"],
-  });
-  const out = new Map<string, Row[]>();
-  for (const r of rows) {
-    if (!MAIL_TYPES.includes(option(r["类型"])) || option(r["发送渠道"]) === "不发邮件" || ["不发"].includes(option(r["处理"]))) continue;
-    if (text(r["执行结果"]).startsWith("执行中")) continue;
-    for (const fid of linkIds(r["KOL"])) out.set(fid, [...(out.get(fid) ?? []), r]);
-  }
-  return out;
-}
 
 /** How Claude sorts a mail from a KOL; each becomes one 审核队列 item, except 不用回. */
 export const INBOX_CATEGORIES = ["想体验", "要回复", "拒绝", "不用回"] as const;
@@ -160,16 +146,16 @@ export async function listInbox(ctx: Ctx, o: { limit: number }) {
  * What an approved item's 发后动作 changes: the followup closes with the item's 结案原因, and 永不联系 also marks
  * the profile so nothing is ever sent to it again. Null when the item has no 发后动作; a string when it can't be done.
  */
-export function closeChanges(review: Row, profile: Row | undefined, day: string): { followup: Record<string, unknown>; profile?: [string, Record<string, unknown>] } | string | null {
+export function closeChanges(review: Row, profile: Row | undefined, day: string, followup?: Row): { followup: Record<string, unknown>; profile?: [string, Record<string, unknown>] } | string | null {
   const action = option(review["发后动作"]);
   if (!action) return null;
   if (!CLOSE_ACTIONS.includes(action as any)) return `发后动作「${action}」看不懂，只能是 ${CLOSE_ACTIONS.join(" 或 ")}`;
   const reason = option(review["结案原因"]);
   if (!reason) return "选了发后动作但没选结案原因";
-  const followup = { 阶段: ["结案"], 结案原因: [reason], 当前轮到谁: ["无需动作"], 下一步: `${day} ${action}（${reason}）` };
-  if (action !== "永不联系") return { followup };
+  const changes = { 阶段: ["结案"], 结案原因: [reason], 当前轮到谁: ["无需动作"], 下一步: `${day} ${action}（${reason}）${closedFrom(followup)}` };
+  if (action !== "永不联系") return { followup: changes };
   if (!profile) return "要标永不联系，但找不到这位 KOL 的档案";
-  return { followup, profile: [profile.record_id, { 联系许可: ["永不联系"], 联系许可原因: `${day} ${reason}` }] };
+  return { followup: changes, profile: [profile.record_id, { 联系许可: ["永不联系"], 联系许可原因: `${day} ${reason}` }] };
 }
 
 export interface InboxDecision {
@@ -194,7 +180,8 @@ export interface InboxDecision {
 
 /**
  * `kol inbox --apply file.json`: turns Claude's decisions into 审核队列 items in one go, unticks the mails it
- * covered and hands their followups to 等你审核. Every decision is checked first; if any is wrong nothing is written.
+ * covered. 「等你审核」 is shown from the open item, not written to the followup. Every decision is checked first; if
+ * any is wrong nothing is written.
  */
 export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean }) {
   const cfg = ctx.cfg;
@@ -212,7 +199,6 @@ export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean })
   const errors: string[] = [];
   const reviews: Record<string, unknown>[] = [];
   const untick: Record<string, Record<string, unknown>> = {};
-  const handOver: Record<string, Record<string, unknown>> = {};
   const now = stamp(Date.now(), cfg.timezone);
   for (const d of decisions) {
     const c = pending.get(d.contact);
@@ -244,6 +230,12 @@ export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean })
       }
       replyingTo.add(fid);
       const old = waiting.get(fid) ?? [];
+      const tried = old.find((w) => !replaceable(w));
+      if (tried) {
+        errors.push(`${where}（${name}）：她有一封正在发或没发成的信「${text(tried["审核项"])}」（${tried.record_id}），`
+          + "那一封可能已经发出，不能合并撤回。先请同事在决策台「出了问题」里处理它，这封来信先选「不用回」或等处理完再写");
+        continue;
+      }
       const unknown = old.filter((w) => w.record_id !== d.replaces);
       if (unknown.length) {
         errors.push(`${where}（${name}）：她已经有一封待发的信「${text(unknown[0]["审核项"])}」（${unknown[0].record_id}）。`
@@ -298,7 +290,6 @@ export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean })
       }
     }
     reviews.push({ ...review, _contact: d.contact, _from: c });
-    handOver[fid] = { 当前轮到谁: ["等你审核"] };
   }
   if (errors.length) return { 写入: 0, 问题: errors, 说明: "有问题的决定改好之前，一条都没写" };
 
@@ -328,7 +319,6 @@ export async function applyInbox(ctx: Ctx, o: { file: string; dryRun: boolean })
   if (Object.keys(withdraw).length) await ctx.base.update(t.reviews, withdraw);
   if (rows.length) await ctx.base.create(t.reviews, rows);
   await ctx.base.update(t.contacts, untick);
-  if (Object.keys(handOver).length) await ctx.base.update(t.followups, handOver);
   ctx.run.counts.新增待审 += rows.length;
   ctx.run.op({ type: "来信处理", result: "完成", action: `批量处理来信 ${decisions.length} 封，提交审核 ${rows.length} 条` });
   return report;

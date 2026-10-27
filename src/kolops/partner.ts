@@ -1,5 +1,5 @@
 import { emailsIn, option, text } from "./base.js";
-import { TrialCodeRefused, type CodeInfo } from "./codes.js";
+import { TrialCodeRefused, writeOnce, type CodeInfo } from "./codes.js";
 import type { Config } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import type { Row } from "./lark.js";
@@ -72,6 +72,8 @@ export async function createPartnerCodeRemote(url: string, key: string, body: Om
   const data: any = await res.json().catch(() => ({}));
   if (res.status === 401) throw new TrialCodeRefused("UNAUTHORIZED", "业务数据接口拒绝了活动码写密钥（401）。请向项目负责人确认后用 kol project set-partner-key 重新保存");
   if (res.status === 503) throw new TrialCodeRefused("NOT_CONFIGURED", "项目后台还没有开通开活动码（503）");
+  // A server error may come after the campaign was opened: not a refusal (I-5).
+  if (res.status >= 500) throw new Error(`业务数据接口出错（${res.status}）`);
   if (!res.ok) throw new TrialCodeRefused(String(data.error ?? res.status), String(data.message ?? `业务数据接口出错（${res.status}）`));
   return data;
 }
@@ -89,7 +91,8 @@ export function preparePartner(ctx: Ctx, plan: PartnerPlan, review: Row, followu
       if (!ctx.cfg.dataApi) throw new TrialCodeRefused("NO_API", "「设置」里没填业务数据接口，没法开活动码");
       if (!project?.partnerKey) throw new TrialCodeRefused("NO_KEY", `这台电脑没有项目「${ctx.cfg.project}」的活动码写密钥，请运行 kol project set-partner-key`);
       const { action, ...body } = plan;
-      const r = await createPartnerCodeRemote(ctx.cfg.dataApi, project.partnerKey, { ...body, followupId, operator: ctx.me.name || ctx.me.id });
+      const r = await writeOnce(ctx, key, `开活动码 ${plan.code}`,
+        () => createPartnerCodeRemote(ctx.cfg.dataApi, project.partnerKey!, { ...body, followupId, operator: ctx.me.name || ctx.me.id }), true);
       if (!r.code?.refLink) throw new TrialCodeRefused("NO_LINK", "活动码开好了，但接口没给专属连结，这封信先不发；请到项目后台看这个活动");
       done = { code: r.code.code, refLink: r.code.refLink, ledgerLink: r.code.ledgerLink ?? "", percentOff: r.code.percentOff ?? plan.percentOff };
       ctx.journal.mark(key, "prepared", undefined, done);

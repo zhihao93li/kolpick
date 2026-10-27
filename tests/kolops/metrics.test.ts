@@ -14,7 +14,7 @@ const DAY = 86_400_000;
 
 describe("duePosts", () => {
   const now = Date.parse("2026-10-24T12:00:00+08:00");
-  it("asks for each checkpoint once it has come, gives up two days later, and skips platforms it can't read", () => {
+  it("S-R23 asks for each checkpoint once it has come, gives up two days later, and skips platforms it can't read", () => {
     const rows = [
       { record_id: "a", 平台: ["Instagram"], 内容链接: "https://www.instagram.com/p/AbC123/", 发布日期: now - 3.5 * DAY, 第1天播放: 900 },
       { record_id: "b", 平台: ["YouTube"], 内容链接: "https://youtu.be/dQw4w9WgXcQ", 发布日期: now - 6 * DAY },

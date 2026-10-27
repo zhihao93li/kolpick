@@ -51,7 +51,7 @@ describe("approving in the console", () => {
 });
 
 describe("carrying out only what was approved", () => {
-  it("sends back an item edited after approval instead of sending the new text", async () => {
+  it("S-R10 sends back an item edited after approval instead of sending the new text", async () => {
     const id = review();
     await approveInConsole(ctxWith(), id);
     row(id)["邮件草稿"] = "主题：合作\n有人在飞书里改了这句";
@@ -62,7 +62,7 @@ describe("carrying out only what was approved", () => {
     expect(row(id)["执行结果"]).toContain("同意之后内容被改过");
   });
 
-  it("once only console approvals count, ignores an item approved in Feishu", async () => {
+  it("S-R19 once only console approvals count, ignores an item approved in Feishu", async () => {
     const feishu = review({ 处理: ["发／同意"], 审核项: "飞书里批的" });
     const consoleId = review({ 审核项: "决策台批的" });
     await approveInConsole(ctxWith(), consoleId);

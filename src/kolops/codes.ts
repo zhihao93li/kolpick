@@ -1,7 +1,7 @@
 import { cellTime, option, text } from "./base.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, loadSnapshot } from "./data.js";
-import { stamp } from "./ops.js";
+import { stamp, today } from "./ops.js";
 import { listProjects } from "./projects.js";
 
 /** One code as the project's business data API reports it (docs/data-api.md). */
@@ -47,6 +47,27 @@ export class TrialCodeRefused extends Error {
   }
 }
 
+/**
+ * Runs one code write (create, extend, open a campaign) under I-5. The API answering no (4xx) is definite: nothing
+ * changed. Anything else (a timeout, a dropped connection, a 5xx) may have gone through, so the write is noted as
+ * unknown and is never tried again on its own; only someone who approves it again retries it. Creating a code or
+ * a campaign may simply be approved again: the API hands back the one made the first time (data-api.md). An
+ * extension is not like that, so the reviewer looks first.
+ */
+export async function writeOnce<T>(ctx: Ctx, key: string, what: string, call: () => Promise<T>, repeatable = false): Promise<T> {
+  const check = repeatable
+    ? "重新做不会建出第二个（项目后台会原样返回第一次建的），点「确认没发出，重新审核」再同意就行"
+    : "请先到项目后台看到期日：已经延期了，就点「不做了，撤掉」，再写信告诉她新的到期日（到期日下次同步会更新到跟进上）；没延期，就点「确认没发出，重新审核」";
+  if (ctx.journal.get(key)?.state === "unknown") throw new Error(`上次${what}结果不明，不会自动重做。${check}`);
+  try {
+    return await call();
+  } catch (err: any) {
+    if (err instanceof TrialCodeRefused) throw err;
+    ctx.journal.mark(key, "unknown");
+    throw new Error(`${what}结果不明（${err?.message ?? err}），不会自动重做。${check}`);
+  }
+}
+
 async function writeTrial(url: string, key: string, path: string, body: object, fetchImpl: typeof fetch): Promise<{ created?: boolean; code: CodeInfo }> {
   const res = await fetchImpl(`${url.replace(/\/+$/, "")}${path}`, {
     method: "POST",
@@ -56,6 +77,8 @@ async function writeTrial(url: string, key: string, path: string, body: object, 
   const data: any = await res.json().catch(() => ({}));
   if (res.status === 401) throw new TrialCodeRefused("UNAUTHORIZED", "业务数据接口拒绝了体验码写密钥（401）。请向项目负责人确认后用 kol project set-trial-key 重新保存");
   if (res.status === 503) throw new TrialCodeRefused("NOT_CONFIGURED", "项目后台还没有开通建体验码（503）");
+  // A server error may come after the write went through: not a refusal (I-5).
+  if (res.status >= 500) throw new Error(`业务数据接口出错（${res.status}）`);
   if (!res.ok) throw new TrialCodeRefused(String(data.error ?? res.status), String(data.message ?? `业务数据接口出错（${res.status}）`));
   return data;
 }
@@ -106,6 +129,7 @@ export async function syncCodes(ctx: Ctx, o: { dryRun: boolean; fetchImpl?: type
     体验码用了一部分: [] as { name: string; 体验码: string; 已用: number; 上限: number }[],
     体验码三天内到期: [] as { name: string; 体验码: string; 到期: string; 已用: number }[],
     活动码: [] as { name: string; 活动码: string; 付款订单: number; 退款订单: number; 访客: number }[],
+    后台已停用: [] as string[],
     试跑: o.dryRun || undefined,
   };
   const changes: Record<string, Record<string, unknown>> = {};
@@ -138,6 +162,14 @@ export async function syncCodes(ctx: Ctx, o: { dryRun: boolean; fetchImpl?: type
     if (partner && !p?.found) report.找不到的码.push(`${name}：${partner}`);
     if (p?.found) {
       report.活动码.push({ name, 活动码: partner, 付款订单: p.paidOrders ?? 0, 退款订单: p.refundedOrders ?? 0, 访客: p.visitors ?? 0 });
+    }
+    // A code switched off in the back office is noted on the followup once, when it is first seen off (E-43).
+    for (const [label, c, got] of [["体验码", trial, t], ["活动码", partner, p]] as const) {
+      if (!c || got?.found !== true || got.active !== false) continue;
+      const note = `${label} ${c} 在项目后台已停用`;
+      if (text(f["下一步"]).includes(note)) continue;
+      changes[f.record_id] = { ...changes[f.record_id], 下一步: `${today(cfg)} ${note}` };
+      report.后台已停用.push(`${name}：${note}`);
     }
   }
   report.更新 = Object.keys(changes).length;

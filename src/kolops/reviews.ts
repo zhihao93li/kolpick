@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { cellTime, linkIds, option, text } from "./base.js";
-import type { Config } from "./config.js";
+import { mailboxFor, type Config } from "./config.js";
 import type { Ctx } from "./ctx.js";
-import { displayName, loadSnapshot, profileOf } from "./data.js";
+import { displayName, followupEmails, loadSnapshot, profileOf } from "./data.js";
 import type { Row } from "./lark.js";
 import { stamp, today } from "./ops.js";
 import { missingPlaceholder, trialPlan } from "./trial.js";
@@ -94,6 +94,36 @@ export async function approveInConsole(ctx: Ctx, reviewId: string, edits: Record
 }
 
 const OPEN = ["待你审核", "待执行"];
+/** Marks a mail asking an overdue KOL about her post; the ones that went out are counted (C-07). */
+export const CHECK_IN_MARK = "[发布确认]";
+const MAIL_TYPES = ["回复邮件", "协议"];
+
+/** True while the item is being carried out: claimed by a send that hasn't finished. */
+export function executing(r: Row): boolean {
+  return option(r["状态"]) === "待执行" && text(r["执行结果"]).startsWith("执行中");
+}
+
+/**
+ * The items holding each KOL's one place for a mail (I-1): mail items still to be decided, approved, being sent, or
+ * failed and not yet dealt with. An item that sends nothing (only a code) doesn't hold it.
+ */
+export async function openMailItems(ctx: Ctx): Promise<Map<string, Row[]>> {
+  const rows = await ctx.base.records(ctx.cfg.tables.reviews, {
+    filter: { logic: "and", conditions: [["状态", "intersects", [...OPEN, "执行失败"]]] },
+    fields: ["审核项", "类型", "状态", "处理", "审核结果", "KOL", "邮件草稿", "发送渠道", "执行结果"],
+  });
+  const out = new Map<string, Row[]>();
+  for (const r of rows) {
+    if (!MAIL_TYPES.includes(option(r["类型"])) || option(r["发送渠道"]) === "不发邮件" || option(r["处理"]) === "不发") continue;
+    for (const fid of linkIds(r["KOL"])) out.set(fid, [...(out.get(fid) ?? []), r]);
+  }
+  return out;
+}
+
+/** A newer draft may take the place of this one only while nothing of it has been tried (E-20). */
+export function replaceable(r: Row): boolean {
+  return OPEN.includes(option(r["状态"])) && !executing(r);
+}
 const REVIEW_FIELDS = ["审核项", "类型", "状态", "处理", "审核结果", "KOL", "你的意见", "我的判断和建议", "邮件草稿", "发送渠道", "体验码动作", "体验码", "体验次数", "体验天数", "活动码", "粉丝折扣", "销售市场", "合作页名称"];
 
 export async function openReviews(ctx: Ctx): Promise<Row[]> {
@@ -160,7 +190,12 @@ export async function toRevise(ctx: Ctx) {
  * Every entry is checked first; if any is wrong nothing is written.
  */
 export async function applyRevisions(ctx: Ctx, o: { file: string; dryRun: boolean }) {
-  const list: { review: string; draft: string; note?: string }[] = JSON.parse(readFileSync(o.file, "utf8"));
+  /**
+   * `trial` turns the item into a code action with its mail, e.g. an expired trial the reviewer asked to extend or
+   * replace (C-10): 延期 the KOL's current code by `days`, or 发码 a new `code`.
+   */
+  const list: { review: string; draft: string; note?: string; trial?: { action: "发码" | "延期"; days?: number; uses?: number; code?: string } }[] =
+    JSON.parse(readFileSync(o.file, "utf8"));
   const s = await loadSnapshot(ctx.base, ctx.cfg);
   const open = new Map((await openReviews(ctx)).map((r) => [r.record_id, r]));
   const errors: string[] = [];
@@ -177,14 +212,32 @@ export async function applyRevisions(ctx: Ctx, o: { file: string; dryRun: boolea
       continue;
     }
     const f = s.followups.get(linkIds(r["KOL"])[0] ?? "");
-    const plan = trialPlan(ctx.cfg, r, f, profileOf(s, f));
+    let turned: Record<string, unknown> = {};
+    if (x.trial) {
+      if (!["发码", "延期"].includes(x.trial.action)) {
+        errors.push(`${x.review}：trial.action 只能是「发码」或「延期」`);
+        continue;
+      }
+      const mb = f ? mailboxFor(ctx.cfg, option(f["联系渠道"])) : undefined;
+      const to = f ? followupEmails(s, f)[0] : "";
+      if (!mb || !to) {
+        errors.push(`${x.review}：她的联系渠道插件发不了，或档案里没有邮箱，没法改成发信`);
+        continue;
+      }
+      turned = {
+        类型: ["回复邮件"], 发送渠道: [mb.channel], 收件人: to, 体验码动作: [x.trial.action],
+        体验码: x.trial.code ?? (x.trial.action === "延期" ? text(f?.["体验码"]) : ""),
+        ...(x.trial.days ? { 体验天数: x.trial.days } : {}), ...(x.trial.uses ? { 体验次数: x.trial.uses } : {}),
+      };
+    }
+    const plan = trialPlan(ctx.cfg, { ...r, ...turned }, f, profileOf(s, f));
     const problem = typeof plan === "string" ? plan : plan ? missingPlaceholder(plan, draft) : "";
     if (problem) {
       errors.push(`${x.review}：${problem}`);
       continue;
     }
     const history = [text(r["我的判断和建议"]), `${today(ctx.cfg)} 按意见改：${text(r["你的意见"]) || "（没写）"}${x.note ? ` → ${x.note}` : ""}`].filter(Boolean).join("\n");
-    changes[x.review] = { 邮件草稿: draft, 处理: null, 审核结果: null, 你的意见: "", 我的判断和建议: history.slice(0, 5000), 状态: ["待你审核"] };
+    changes[x.review] = { ...turned, 邮件草稿: draft, 处理: null, 审核结果: null, 你的意见: "", 我的判断和建议: history.slice(0, 5000), 状态: ["待你审核"] };
   }
   if (errors.length) return { 写入: 0, 问题: errors, 说明: "有问题的改好之前，一条都没写" };
   if (!o.dryRun && list.length) {

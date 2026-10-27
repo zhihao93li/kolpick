@@ -1,12 +1,12 @@
 import { addDays, cellTime, day, daysBetween, emailsIn, linkIds, onOrAfter, option, text } from "../base.js";
 import { mailboxFor, type Config } from "../config.js";
 import type { Ctx } from "../ctx.js";
-import { displayName, loadSnapshot, profileEmails, profileOf, type Snapshot } from "../data.js";
+import { blockedReason, displayName, loadSnapshot, profileEmails, profileOf, type Snapshot } from "../data.js";
 import { ownWords } from "../inbox.js";
 import type { Row } from "../lark.js";
 import { addressOf, splitDraft } from "../mail.js";
-import { stamp, today } from "../ops.js";
-import { executesOnApproval, reviewState } from "../reviews.js";
+import { BOUNCE_MARK, stamp, today } from "../ops.js";
+import { CHECK_IN_MARK, executesOnApproval, reviewState } from "../reviews.js";
 import { SENDING_TYPES } from "../send.js";
 import { loadTemplates, MissingValue, pickTemplate, render, type Template } from "../templates.js";
 
@@ -23,7 +23,7 @@ export interface Step {
 
 export interface Card {
   id: string;
-  kind: "problem" | "overdue" | "reply" | "mail" | "unknown" | "batch" | "template" | "todo";
+  kind: "problem" | "overdue" | "reply" | "mail" | "unknown" | "batch" | "template" | "todo" | "waiting" | "bounce";
   group: string;
   tag: string;
   headline: string;
@@ -40,7 +40,19 @@ export interface Card {
   seen?: string;
   /** A failed item whose mail may have gone out: the reviewer says which it was. */
   unknownSend?: boolean;
+  /** The failed item also made a code (发码 / 延期 / 开活动码): confirming it went out may fill in the code's name (C-04). */
+  codeAction?: string;
+  /** How many check-in mails went out since the agreed date (C-07): from 2 on, the card asks to close, pause or wait. */
+  asked?: number;
+  /** She is 永不联系: her mail is only filed, never answered (C-06, P-6). */
+  blocked?: boolean;
 }
+
+export { CHECK_IN_MARK };
+/** After this many check-ins without a post, the card stops offering another one (C-07). */
+const CHECK_INS_BEFORE_DECIDING = 2;
+/** Days since the last contact before a KOL we wait on, with no follow-up date, comes up (R-11). */
+const WAITING_TOO_LONG_DAYS = 7;
 
 export interface Cell {
   v: string;
@@ -92,6 +104,8 @@ export class ConsoleData {
   templates: Template[] = [];
   /** Templates waiting for someone to approve them. */
   pendingTemplates: Row[] = [];
+  /** Check-in mails about a missing post that went out (C-07). */
+  checkIns: Row[] = [];
   loadedAt = 0;
 
   constructor(private ctx: Ctx) {}
@@ -100,7 +114,7 @@ export class ConsoleData {
     const { base, cfg } = this.ctx;
     const t = cfg.tables;
     const since = addDays(today(cfg), -PROBLEM_DAYS);
-    const [snapshot, open, failed, pendingMail, posts, templates, pendingTemplates] = await Promise.all([
+    const [snapshot, open, failed, pendingMail, posts, templates, pendingTemplates, done] = await Promise.all([
       loadSnapshot(base, cfg),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] }, fields: REVIEW_FIELDS }),
       base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["执行失败"]], onOrAfter("执行时间", since)] }, fields: REVIEW_FIELDS }),
@@ -109,7 +123,10 @@ export class ConsoleData {
       base.records(t.posts, { fields: POST_FIELDS }).catch(() => [] as Row[]),
       loadTemplates(base, cfg).catch(() => [] as Template[]),
       base.records(t.templates, { filter: { logic: "and", conditions: [["状态", "intersects", ["待审核"]]] } }).catch(() => [] as Row[]),
+      base.records(t.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["已执行"]], onOrAfter("执行时间", addDays(today(cfg), -90))] },
+        fields: ["审核项", "KOL", "执行时间", "状态"] }),
     ]);
+    this.checkIns = done.filter((r) => text(r["审核项"]).startsWith(CHECK_IN_MARK));
     this.templates = templates;
     this.pendingTemplates = pendingTemplates.filter((r) => option(r["状态"]) === "待审核");
     this.snapshot = snapshot;
@@ -190,7 +207,7 @@ export function situationOf(f: Row, cfg: Config, todayStr: string): string {
 
 // --- The decision queue ---
 
-const GROUP_ORDER = ["出了问题", "发布", "回信", "来信", "邀约和决定", "模板", "其他"];
+const GROUP_ORDER = ["出了问题", "发布", "回信", "来信", "跟进", "邀约和决定", "模板", "其他"];
 
 export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, mails: Map<string, MailText> = new Map()): { cards: Card[]; waitingClaude: number } {
   const s = data.snapshot;
@@ -217,6 +234,7 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
       suggest: unknownSend(r) ? "到发信邮箱的「已发送」里找一下这封信，再告诉系统发出去了没有" : "看一下原因：要重做就重新审核，不做了就撤掉",
       steps: [], why: text(r["执行结果"]) || "没有写原因",
       unknownSend: unknownSend(r),
+      ...(option(r["体验码动作"]) ? { codeAction: option(r["体验码动作"]) } : {}),
     });
   }
 
@@ -231,8 +249,20 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
     const late = daysBetween(due, todayStr);
     const w = who(f.record_id);
     const code = text(f["活动码"]);
+    // Check-ins that actually went out since the agreed date; one that didn't go out doesn't count (S-E4).
+    const asked = data.checkIns.filter((r) => linkIds(r["KOL"]).includes(f.record_id) && (day(r["执行时间"], tz) ?? "") >= due).length;
+    if (asked >= CHECK_INS_BEFORE_DECIDING) {
+      cards.push({
+        id: `overdue:${f.record_id}`, kind: "overdue", group: "发布", tag: "问过还没发", who: w, asked,
+        headline: `${w?.name ?? displayName(s, f)} 约好 ${shortDay(due)} 发布，问过 ${asked} 次，过了 ${late} 天还没发`, meta: meta(f.record_id),
+        suggest: "已经问过两次了，定一下：结束跟进、先暂缓，还是再等到一个新日期",
+        steps: [{ text: "已经发了：把帖子链接贴在下面，点「记下这条发布」" }, { text: "结案：原因记成回复后失联" }, { text: "暂缓：先放着，不再自动出这张卡" }, { text: "再等：填一个新的约定发布日期" }],
+        why: `从约定日期起已经发出 ${asked} 封问发布的信，她都没发。`,
+      });
+      continue;
+    }
     cards.push({
-      id: `overdue:${f.record_id}`, kind: "overdue", group: "发布", tag: "没按时发布", who: w,
+      id: `overdue:${f.record_id}`, kind: "overdue", group: "发布", tag: "没按时发布", who: w, asked,
       headline: `${w?.name ?? displayName(s, f)} 约好 ${shortDay(due)} 发布，过了 ${late} 天还没找到帖子`, meta: meta(f.record_id),
       suggest: "先去她的主页看一眼；还没发的话，写信问她一下",
       steps: [{ text: "已经发了：把帖子链接贴在下面，点「记下这条发布」，之后会自动记播放和互动" },
@@ -242,9 +272,27 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
     });
   }
 
+  // R-11: past 已回复, waiting on her, no follow-up date, and quiet for a week.
+  const holding = new Set(data.reviews.flatMap((r) => (sendsMail(r) ? linkIds(r["KOL"]) : [])));
+  for (const f of s.followups.values()) {
+    if (!["已回复", "体验中", "已看报告", "合作中"].includes(option(f["阶段"]))) continue;
+    if (option(f["当前轮到谁"]) !== "KOL" || text(f["下次跟进日期"]) || holding.has(f.record_id)) continue;
+    const last = day(f["最近联系日期"], tz);
+    if (!last || daysBetween(last, todayStr) < WAITING_TOO_LONG_DAYS) continue;
+    const w = who(f.record_id);
+    cards.push({
+      id: `waiting:${f.record_id}`, kind: "waiting", group: "跟进", tag: "等对方太久", who: w,
+      headline: `${w?.name ?? displayName(s, f)} ${daysBetween(last, todayStr)} 天没消息，也没定下次跟进的日子`, meta: meta(f.record_id),
+      suggest: "写信问她一下，或者定个下次跟进的日子；不想继续就结案或暂缓",
+      steps: [], why: "她回过信，现在在等她；没有下次跟进日期，系统不会自己催。",
+      draft: { label: "写给她的信", subject: "", body: "" },
+    });
+  }
+
   // Each KOL's latest unanswered mail: a card approving an answer to her says which mail it answers.
   const latestMail = new Map<string, Row>();
   for (const m of data.pendingMail) {
+    if (text(m["摘要"]).startsWith(BOUNCE_MARK)) continue;
     for (const fid of linkIds(m["KOL"])) {
       const had = latestMail.get(fid);
       if (!had || (cellTime(m["日期"], tz) ?? 0) >= (cellTime(had["日期"], tz) ?? 0)) latestMail.set(fid, m);
@@ -257,7 +305,7 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
   for (const r of data.reviews.filter((r) => option(r["状态"]) !== "执行失败")) {
     const state = reviewState(r);
     const fid = linkIds(r["KOL"])[0] ?? "";
-    if (fid) openByKol.add(fid);
+    if (fid && sendsMail(r)) openByKol.add(fid);
     if (state === "revise") waitingClaude++;
     if (state === "approved" && fid && latestMail.has(fid) && !text(r["执行结果"]).startsWith("执行中")) {
       // Approved, not yet carried out, and she has written since: it waits for the reviewer to look again.
@@ -287,11 +335,30 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
   const byKol = new Map<string, Row[]>();
   for (const m of data.pendingMail) {
     const fid = linkIds(m["KOL"])[0] ?? "";
+    // A bounce for a KOL further along than 已邀约 waits for a new address (R-04, C-12): its own card.
+    if (fid && text(m["摘要"]).startsWith(BOUNCE_MARK)) {
+      byKol.set(`bounce:${fid}`, [...(byKol.get(`bounce:${fid}`) ?? []), m]);
+      continue;
+    }
     if (fid && openByKol.has(fid)) continue;
     const key = fid || `contact:${m.record_id}`;
     byKol.set(key, [...(byKol.get(key) ?? []), m]);
   }
   for (const [key, ms] of byKol) {
+    if (key.startsWith("bounce:")) {
+      const fid = key.slice(7);
+      const w = who(fid);
+      const ids = ms.map((m) => m.record_id).join(",");
+      const addr = text(ms[ms.length - 1]["摘要"]).slice(BOUNCE_MARK.length).trim();
+      cards.push({
+        id: `bounce:${ids}`, kind: "bounce", group: "来信", tag: "退信", who: w,
+        headline: `发给 ${w?.name ?? "一位 KOL"} 的信被退回了（${addr}）`, meta: meta(fid),
+        suggest: "她回过信，所以没有自动结案。找一个能用的新邮箱，或者结束跟进",
+        steps: [{ text: "加新邮箱：把她的新邮箱加到档案里，之后到她的页面写信时选这个邮箱" }, { text: "结案：原因记成退信或邮箱无效" }],
+        why: "退信说明这个地址收不到信了。只有还没回过信的人才会自动结案。",
+      });
+      continue;
+    }
     const fid = key.startsWith("contact:") ? "" : key;
     ms.sort((a, b) => (cellTime(a["日期"], tz) ?? 0) - (cellTime(b["日期"], tz) ?? 0));
     const first = cellTime(ms[0]["日期"], tz);
@@ -313,7 +380,19 @@ export function decisionCards(data: ConsoleData, cfg: Config, todayStr: string, 
       });
       continue;
     }
-    const closed = option(data.snapshot.followups.get(fid)?.["阶段"]) === "结案";
+    const kf = data.snapshot.followups.get(fid);
+    const closed = option(kf?.["阶段"]) === "结案";
+    if (closed && kf && blockedReason(data.snapshot, kf, "")) {
+      cards.push({
+        id: `mail:${ids}`, kind: "mail", group: "来信", tag: "永不联系", who: w, blocked: true,
+        headline: `${w?.name ?? "一位 KOL"} 来信了（这个项目已标成永不联系）`,
+        meta: [meta(fid), option(latest["渠道"]) ? `收件 ${option(latest["渠道"])}` : ""].filter(Boolean).join(" · "),
+        mail: { label: `${w?.name ?? "对方"}说 · ${text(latest["摘要"])}`, text: body?.text ?? "（正文没读到，可以去邮箱里看）", when: when ? stamp(when, tz) : "" },
+        suggest: "看一眼就行，这个项目不会再给她发信",
+        steps: [], why: "她在这个项目里是永不联系，来信只记下来，不回复，也不会重新打开跟进。",
+      });
+      continue;
+    }
     if (closed) {
       const reason = option(data.snapshot.followups.get(fid)?.["结案原因"]);
       cards.push({
@@ -687,6 +766,7 @@ export async function personDetail(ctx: Ctx, data: ConsoleData, fid: string, all
     next: text(f["下一步"]),
     nextDate: ahead(day(f["下次跟进日期"], tz), todayStr),
     nextDateIso: day(f["下次跟进日期"], tz),
+    agreedIso: day(f["约定发布日期"], tz),
     pending: pending.map((r) => ({ id: r.record_id, title: text(r["审核项"]), ask: text(r["要你定什么"]) })),
     bubbles,
     olderCount: Math.max(0, contacts.length - recent.length),
@@ -798,4 +878,9 @@ export async function newsSince(ctx: Ctx, data: ConsoleData, since: number) {
     ...fresh.slice(0, 40).map((o) => ({ when: stamp(at(o, "时间"), tz), text: text(o["操作"]) + (option(o["结果"]) && option(o["结果"]) !== "完成" ? `（${option(o["结果"])}）` : ""), person: linkIds(o["KOL"])[0] ?? "", link: "" })),
   ].sort((a, b) => b.when.localeCompare(a.when)).slice(0, 40);
   return { since: stamp(since, tz), chips, items };
+}
+
+/** An item that sends a mail, as opposed to one that only makes a code or records a decision (I-1). */
+function sendsMail(r: Row): boolean {
+  return SENDING_TYPES.includes(option(r["类型"])) && option(r["发送渠道"]) !== "不发邮件";
 }

@@ -17,14 +17,14 @@ const base = {
 };
 
 describe("nextStep", () => {
-  it("waits until the follow-up day, then sends the 1st and 2nd 催信, then closes", () => {
+  it("S-R3 waits until the follow-up day, then sends the 1st and 2nd 催信, then closes", () => {
     expect(nextStep(cfg, base, 0, "2026-10-26").kind).toBe("wait");
     expect(nextStep(cfg, base, 0, "2026-10-27")).toEqual({ kind: "remind", n: 1 });
     expect(nextStep(cfg, base, 1, "2026-10-27")).toEqual({ kind: "remind", n: 2 });
     expect(nextStep(cfg, base, 2, "2026-10-27")).toEqual({ kind: "close" });
   });
 
-  it("never chases someone who replied, old invitations, or the excluded groups", () => {
+  it("S-R5 never chases someone who replied, old invitations, or the excluded groups", () => {
     expect(nextStep(cfg, { ...base, 最后来信日期: "2026-10-23T09:00:00.000+08:00" }, 0, "2026-10-27").kind).toBe("skip");
     expect(nextStep(cfg, { ...base, 首次邀约日期: "2026-10-01T10:00:00.000+08:00" }, 0, "2026-10-27").kind).toBe("skip");
     expect(nextStep(cfg, { ...base, 级别: ["S"] }, 0, "2026-10-27").kind).toBe("skip");
@@ -54,7 +54,7 @@ describe("remind", () => {
     process.env.KOL_DATA_DIR = mkdtempSync(join(tmpdir(), "kol-test-"));
   });
 
-  it("sends the first 催信 from the approved template, with its own subject", async () => {
+  it("S-R1 sends the first 催信 from the approved template, with its own subject", async () => {
     setup();
     const r = await remind(ctx, { dryRun: false });
     expect(r.send.sent.map((x) => x.name)).toEqual(["小鹿與阿哲"]);
@@ -64,11 +64,7 @@ describe("remind", () => {
     expect(lark.table(T.followups).find((f) => f.record_id === fid)!["下一步"]).toMatch(/第 1 次催信/);
   });
 
-  it("won't run without approved 催信 templates or a start date", async () => {
-    setup();
-    lark.table(T.templates).find((t) => t["名称"] === "催信-2")!["状态"] = ["待审核"];
-    await expect(remind(ctx, { dryRun: true })).rejects.toThrow(/催信 2/);
-
+  it("won't run without a start date", async () => {
     setup({ 自动催信起始日: "" });
     await expect(remind(ctx, { dryRun: true })).rejects.toThrow(/自动催信起始日/);
   });

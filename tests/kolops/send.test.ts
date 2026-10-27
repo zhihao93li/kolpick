@@ -113,7 +113,7 @@ describe("sendApproved", () => {
     expect(lark.sent).toHaveLength(0);
   });
 
-  it("respects the mailbox's daily limit", async () => {
+  it("S-R20 respects the mailbox's daily limit", async () => {
     const mb = cfg.mailboxes[0];
     for (let i = 0; i < mb.dailyExternal; i++) {
       lark.add(T.contacts, { 方向: ["发出"], 渠道: [mb.channel], 日期: `${new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10)} 09:00`, KOL: [{ id: `other${i}` }] });
@@ -164,7 +164,7 @@ describe("bounce-rate gate", () => {
     for (let i = 0; i < bounced; i++) lark.add(T.contacts, { 方向: ["收到"], 渠道: ["hello@tafu.me"], 日期: today(), 摘要: `[退信] x${i}@example.com` });
   }
 
-  it("stops a mailbox whose recent bounces reach its line", async () => {
+  it("S-R21 stops a mailbox whose recent bounces reach its line", async () => {
     history(20, 2); // 10% against the 6% line
     review();
     const r = await sendApproved(ctx, { dryRun: false });

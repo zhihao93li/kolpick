@@ -95,7 +95,7 @@ describe("decision queue", () => {
     expect(cards[1].headline).toContain("又来信了（之前已结案：无回应）");
   });
 
-  it("raises an agreed post that is two days late", async () => {
+  it("S-E1 raises an agreed post that is two days late", async () => {
     kol("moon.notes", { 阶段: ["已约发布"], 约定发布日期: at(addDays(day, -3)), 活动码: "moonnotes" });
     kol("workday.wen", { 阶段: ["已约发布"], 约定发布日期: at(addDays(day, -1)) });
     const { cards } = decisionCards(await loaded(), ctx.cfg, day);

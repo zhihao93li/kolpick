@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { Base, cellTime, day, dayOf, linkIds, onOrAfter, option, type Fields } from "./base.js";
+import { Base, cellTime, day, dayOf, linkIds, onOrAfter, option, text, type Fields } from "./base.js";
 import type { Config } from "./config.js";
 import { authHint, REQUIRED_SCOPES, type Lark } from "./lark.js";
 
@@ -141,20 +141,25 @@ export class Journal {
 export interface SendCounts {
   byChannel: Map<string, Set<string>>;
   all: Set<string>;
+  /** Followups that got an invitation or a reminder today. */
+  auto: Set<string>;
+  /** Addresses an invitation or a reminder went to today: at most one such mail per address a day (G-7). */
+  autoTo: Set<string>;
 }
 
 export async function todaysSends(base: Base, cfg: Config): Promise<SendCounts> {
   const rows = await base.records(cfg.tables.contacts, {
     filter: { logic: "and", conditions: [["方向", "intersects", ["发出"]], ["日期", "==", `ExactDate(${today(cfg)})`]] },
-    fields: ["渠道", "KOL", "方向", "日期"],
+    fields: ["渠道", "KOL", "方向", "日期", "摘要"],
   });
-  const counts: SendCounts = { byChannel: new Map(), all: new Set() };
+  const counts: SendCounts = { byChannel: new Map(), all: new Set(), auto: new Set(), autoTo: new Set() };
   for (const r of rows) {
     const who = linkIds(r["KOL"])[0] ?? r.record_id;
     const ch = option(r["渠道"]);
     if (!counts.byChannel.has(ch)) counts.byChannel.set(ch, new Set());
     counts.byChannel.get(ch)!.add(who);
     counts.all.add(who);
+    if (/^\[(邀约|催信)\]/.test(text(r["摘要"]))) counts.auto.add(who);
   }
   return counts;
 }

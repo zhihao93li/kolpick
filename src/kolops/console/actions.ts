@@ -1,17 +1,17 @@
-import { cellTime, emailsIn, linkIds, option, text } from "../base.js";
+import { addDays, cellTime, emailsIn, linkIds, option, text } from "../base.js";
 import { loadConfig, mailboxFor, sendingPaused } from "../config.js";
 import { makeCtx, type Ctx } from "../ctx.js";
-import { displayName, profileEmails, profileOf } from "../data.js";
+import { blockedReason, displayName, profileEmails, profileOf } from "../data.js";
 import { notExecutor, ExecutorLock } from "../executor.js";
 import { find } from "../find.js";
 import { closeChanges } from "../inbox.js";
-import { reopenChanges } from "../reopen.js";
+import { closedFrom, reopenAfterWriting, reopenChanges } from "../reopen.js";
 import type { Row } from "../lark.js";
 import { splitDraft } from "../mail.js";
-import { RUN_TITLES, stamp, today } from "../ops.js";
-import { approveInConsole, closeDeclined, executesOnApproval, sendBack } from "../reviews.js";
+import { BOUNCE_MARK, RUN_TITLES, stamp, today } from "../ops.js";
+import { approveInConsole, CHECK_IN_MARK, closeDeclined, executesOnApproval, executing, openMailItems, sendBack } from "../reviews.js";
 import { CLOSE_REASONS } from "../schema.js";
-import { sendApproved } from "../send.js";
+import { AUTO_SEND_MARK, sendApproved } from "../send.js";
 import type { Platform } from "../../discovery/models.js";
 import { namedTemplate, type ConsoleData } from "./state.js";
 
@@ -89,9 +89,10 @@ function nameOf(data: ConsoleData, fid: string): string {
 async function pendingMailOf(ctx: Ctx, fid: string): Promise<Row[]> {
   if (!fid) return [];
   const rows = await ctx.base.records(ctx.cfg.tables.contacts, {
-    filter: { logic: "and", conditions: [["待处理", "==", true], ["方向", "intersects", ["收到"]]] }, fields: ["Message ID", "日期", "KOL", "待处理"],
+    filter: { logic: "and", conditions: [["待处理", "==", true], ["方向", "intersects", ["收到"]]] }, fields: ["Message ID", "日期", "KOL", "待处理", "摘要"],
   });
-  return rows.filter((r) => linkIds(r["KOL"]).includes(fid));
+  // A bounce waiting for a new address is not her writing to us (C-12): answering her leaves it alone.
+  return rows.filter((r) => linkIds(r["KOL"]).includes(fid) && !text(r["摘要"]).startsWith(BOUNCE_MARK));
 }
 
 /**
@@ -122,13 +123,19 @@ export async function approve(ctx: Ctx, data: ConsoleData, jobs: Jobs, id: strin
   await answerMail(ctx, fid, seen);
   const r = await approveInConsole(ctx, id, cleanEdits(edits));
   if (option(r["类型"]) === "模板审批") await approveNamedTemplate(ctx, r);
-  if (!executesOnApproval(r)) return null;
+  if (!executesOnApproval(r)) {
+    // Nothing to carry out: the answer is recorded and the item is done, so it no longer holds her up.
+    await ctx.base.update(ctx.cfg.tables.reviews, { [id]: { 状态: ["已执行"], 执行时间: stamp(Date.now(), ctx.cfg.timezone), 执行结果: `${ctx.me.name}在决策台同意了（这件事不用执行）` } });
+    return null;
+  }
   if (await isPaused(ctx)) return null;
   const who = nameOf(data, fid) || text(r["审核项"]);
   return jobs.add(`${who}：${text(r["审核项"])}`, fid, RUN_TITLES.send, async (jctx) => {
     const rep = await sendApproved(jctx, { dryRun: false, only: [id] });
     if (rep.failed.length) throw new Error(rep.failed[0].reason);
     if (rep.sent.length) return `已发给 ${rep.sent[0].recipient}（${rep.sent[0].mailbox}）`;
+    if (rep.codes.length && rep.closed.length) return "码已办好，已结束跟进";
+    if (rep.codes.length) return "码已办好（这件事不发信）";
     if (rep.closed.length) return "已结束跟进";
     if (rep.skipped.length) throw new Error(rep.skipped[0].reason);
     return "已同意（这件事不用发信）";
@@ -148,7 +155,7 @@ export async function manualSent(ctx: Ctx, data: ConsoleData, id: string, edits:
   const r = await approveInConsole(ctx, id, cleanEdits(edits));
   const fid = linkIds(r["KOL"])[0] ?? "";
   const f = data.snapshot.followups.get(fid);
-  const close = f ? closeChanges(r, profileOf(data.snapshot, f), today(ctx.cfg)) : null;
+  const close = f ? closeChanges(r, profileOf(data.snapshot, f), today(ctx.cfg), f) : null;
   if (typeof close === "string") throw new Error(close);
   const channel = option(r["发送渠道"]) || option(f?.["联系渠道"]);
   const { subject, body } = splitDraft(text(r["邮件草稿"]));
@@ -156,7 +163,8 @@ export async function manualSent(ctx: Ctx, data: ConsoleData, id: string, edits:
   const now = stamp(Date.now(), ctx.cfg.timezone);
   if (fid) {
     await ctx.base.create(t.contacts, [{ 方向: ["发出"], 渠道: [channel], 摘要: `[回复] ${subject || "回复"}`.slice(0, 200), 内容: body.slice(0, 5000), 日期: now, KOL: [{ id: fid }] }]);
-    await ctx.base.update(t.followups, { [fid]: { 最近联系日期: now, 当前轮到谁: ["KOL"], ...reopenChanges(f, today(ctx.cfg)), ...(close?.followup ?? {}) } });
+    await ctx.base.update(t.followups, { [fid]: { 最近联系日期: now, 当前轮到谁: ["KOL"],
+      ...reopenAfterWriting(f, today(ctx.cfg), ctx.cfg.timezone, ctx.cfg.followup.closeAfterDays), ...(close?.followup ?? {}) } });
     if (close?.profile) await ctx.base.update(t.profiles, { [close.profile[0]]: close.profile[1] });
   }
   await ctx.base.update(t.reviews, { [id]: { 状态: ["已执行"], 执行时间: now, 执行结果: `${ctx.me.name} 从「${channel}」手动发给 ${recipient}` } });
@@ -205,25 +213,36 @@ export async function todoDone(ctx: Ctx, id: string): Promise<void> {
  * 确认已经发出: the reviewer found the mail in the mailbox's 已发送 after a send whose result was unknown. It is
  * recorded the way a sent mail is, and never sent again.
  */
-export async function problemSent(ctx: Ctx, data: ConsoleData, id: string): Promise<void> {
+export async function problemSent(ctx: Ctx, data: ConsoleData, id: string, codeName = "", how = "在邮箱里确认已经发出，补记"): Promise<void> {
   const t = ctx.cfg.tables;
   const r = await review(ctx, id);
   if (option(r["状态"]) !== "执行失败") throw new Error(`这一条现在是「${option(r["状态"])}」，不是没做成的`);
   const fid = linkIds(r["KOL"])[0] ?? "";
   const f = data.snapshot.followups.get(fid);
-  const close = f ? closeChanges(r, profileOf(data.snapshot, f), today(ctx.cfg)) : null;
+  const close = f ? closeChanges(r, profileOf(data.snapshot, f), today(ctx.cfg), f) : null;
   const channel = option(r["发送渠道"]) || option(f?.["联系渠道"]);
   const { subject, body } = splitDraft(text(r["邮件草稿"]));
   const now = stamp(Date.now(), ctx.cfg.timezone);
-  ctx.journal.mark(`review:${id}`, "recorded");
+  const day = today(ctx.cfg);
+  // An automatic reminder is recorded as one, so it counts toward the two before closing.
+  const auto = autoSendKey(r);
+  const n = auto ? Number(auto.split(":")[2]) : 0;
+  ctx.journal.mark(auto || `review:${id}`, "recorded");
+  // The code the reviewer found made in the project back office (C-04), onto the followup like a made one.
+  const action = option(r["体验码动作"]);
+  const filled = codeName.trim();
+  const codeFields = filled && action ? (action === "开活动码" ? { 活动码: filled } : { 体验码: filled }) : {};
   if (fid) {
-    await ctx.base.create(t.contacts, [{ 方向: ["发出"], 渠道: [channel], 摘要: `[回复] ${subject || "回复"}`.slice(0, 200), 内容: body.slice(0, 5000), 日期: now, KOL: [{ id: fid }] }]);
-    await ctx.base.update(t.followups, { [fid]: { 最近联系日期: now, 当前轮到谁: ["KOL"], ...reopenChanges(f, today(ctx.cfg)), ...(typeof close === "object" && close ? close.followup : {}) } });
+    const kind = auto ? "催信" : "回复";
+    await ctx.base.create(t.contacts, [{ 方向: ["发出"], 渠道: [channel], 摘要: `[${kind}] ${subject || kind}`.slice(0, 200), 内容: body.slice(0, 5000), 日期: now, KOL: [{ id: fid }] }]);
+    const next = auto ? { 下次跟进日期: `${addDays(day, n === 1 ? ctx.cfg.followup.secondAfterDays : ctx.cfg.followup.closeAfterDays)} 10:00` } : {};
+    await ctx.base.update(t.followups, { [fid]: { 最近联系日期: now, 当前轮到谁: ["KOL"], ...next, ...codeFields,
+      ...reopenAfterWriting(f, day, ctx.cfg.timezone, ctx.cfg.followup.closeAfterDays), ...(typeof close === "object" && close ? close.followup : {}) } });
     if (typeof close === "object" && close?.profile) await ctx.base.update(t.profiles, { [close.profile[0]]: close.profile[1] });
   }
-  const code = option(r["体验码动作"]) ? "。体验码 / 活动码有没有建好，请到项目后台核对" : "";
+  const code = !action ? "" : filled ? `，码 ${filled} 已记到跟进` : "。体验码 / 活动码有没有建好，请到项目后台核对，建好了把码名填上";
   await ctx.base.update(t.reviews, { [id]: { 状态: ["已执行"], 执行时间: now,
-    执行结果: `${text(r["执行结果"])}\n${now} ${ctx.me.name} 在邮箱里确认已经发出，补记${code}`.trim().slice(0, 2000) } });
+    执行结果: `${text(r["执行结果"])}\n${now} ${ctx.me.name} ${how}${code}`.trim().slice(0, 2000) } });
 }
 
 /**
@@ -233,14 +252,40 @@ export async function problemSent(ctx: Ctx, data: ConsoleData, id: string): Prom
 export async function problemRetry(ctx: Ctx, id: string): Promise<void> {
   const r = await review(ctx, id);
   if (option(r["状态"]) !== "执行失败") throw new Error(`这一条现在是「${option(r["状态"])}」，不是没做成的`);
-  const prior = ctx.journal.get(`review:${id}`);
-  if (prior?.state === "sending" || prior?.state === "unknown") ctx.journal.mark(`review:${id}`, "failed");
+  const auto = autoSendKey(r);
+  if (auto) {
+    // An automatic reminder that didn't go out: the next daily run sends it again, under the usual rules.
+    ctx.journal.mark(auto, "failed");
+    await ctx.base.update(ctx.cfg.tables.reviews, { [id]: { 状态: ["已撤回"],
+      执行结果: `${text(r["执行结果"])}\n${stamp(Date.now(), ctx.cfg.timezone)} ${ctx.me.name} 确认没发出，下次例行再催`.slice(0, 2000) } });
+    return;
+  }
+  // The reviewer looked: nothing went out and no code was made, so trying again is theirs to allow (I-5).
+  for (const key of [`review:${id}`, `trial:${id}`, `partner:${id}`]) {
+    const prior = ctx.journal.get(key);
+    if (prior?.state === "sending" || prior?.state === "unknown") ctx.journal.mark(key, "failed");
+  }
   await sendBack(ctx, id, `${ctx.me.name} 在邮箱里确认没有发出，重新审核`);
 }
 
+/** The journal key of the automatic reminder an item was filed for (C-04), or "" for a reviewed item. */
+function autoSendKey(r: Row): string {
+  const line = text(r["执行结果"]).split("\n").find((l) => l.startsWith(AUTO_SEND_MARK));
+  return line ? line.slice(AUTO_SEND_MARK.length).trim() : "";
+}
+
 /** A failed item the reviewer has dealt with by hand. */
-export async function problemDone(ctx: Ctx, id: string): Promise<void> {
+export async function problemDone(ctx: Ctx, data: ConsoleData, id: string): Promise<void> {
   const r = await review(ctx, id);
+  // An automatic reminder given up on: the next daily run judges her again under the usual rules, instead of
+  // skipping her for good over a result nobody will settle now.
+  const auto = autoSendKey(r);
+  if (auto) {
+    // Nobody checked whether it went out, so it must not go out again (I-5): it counts as the reminder it was,
+    // and her follow-up moves on as after one, rather than her being chased twice or stuck.
+    await problemSent(ctx, data, id, "", "撤掉了这封结果不明的催信，没有核实发没发出，按已经催过一次记，不重发");
+    return;
+  }
   await ctx.base.update(ctx.cfg.tables.reviews, { [id]: {
     状态: ["已撤回"], 执行结果: `${text(r["执行结果"])}\n${stamp(Date.now(), ctx.cfg.timezone)} ${ctx.me.name} 标为已人工处理`.trim().slice(0, 2000),
   } });
@@ -299,7 +344,12 @@ export async function mailLink(ctx: Ctx, data: ConsoleData, ids: string[], fid: 
     await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { 其他邮箱: others } });
   }
   const last = Math.max(0, ...rows.map((r) => cellTime(r["日期"], ctx.cfg.timezone) ?? 0));
-  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { 当前轮到谁: ["我们"], ...(last ? { 最后来信日期: stamp(last, ctx.cfg.timezone) } : {}) } });
+  // Her mail, now known to be hers, opens a closed followup again (E-12, R-05); a 永不联系 one stays closed (P-6).
+  const neverAgain = option(f["阶段"]) === "结案" && Boolean(blockedReason(data.snapshot, f, senders[0] ?? ""));
+  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: {
+    ...(last ? { 最后来信日期: stamp(last, ctx.cfg.timezone) } : {}),
+    ...(neverAgain ? {} : { 当前轮到谁: ["我们"], ...(option(f["阶段"]) === "已邀约" ? { 阶段: ["已回复"] } : {}), ...reopenChanges(f, today(ctx.cfg)) }),
+  } });
 }
 
 /** 不再跟进 / 不要再联系她. */
@@ -309,12 +359,13 @@ export async function closeFollowup(ctx: Ctx, data: ConsoleData, fid: string, o:
   const reason = o.reason && CLOSE_REASONS.includes(o.reason) ? o.reason : o.never ? "拒绝" : "其他";
   const day = today(ctx.cfg);
   const action = o.never ? "永不联系" : "结案";
-  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { 阶段: ["结案"], 结案原因: [reason], 当前轮到谁: ["无需动作"], 下一步: `${day} ${action}（${reason}，${ctx.me.name}在决策台操作）` } });
+  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: { 阶段: ["结案"], 结案原因: [reason], 当前轮到谁: ["无需动作"], 下一步: `${day} ${action}（${reason}，${ctx.me.name}在决策台操作）${closedFrom(f)}` } });
   const p = profileOf(data.snapshot, f);
   if (o.never && p) await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { 联系许可: ["永不联系"], 联系许可原因: `${day} ${reason}` } });
   // Whatever was still waiting to be done for her is withdrawn, approved or not: closing means stop.
   const open = await ctx.base.records(ctx.cfg.tables.reviews, { filter: { logic: "and", conditions: [["状态", "intersects", ["待你审核", "待执行"]]] }, fields: ["KOL", "状态", "执行结果"] });
-  const mine = open.filter((r) => linkIds(r["KOL"]).includes(fid));
+  // One already being carried out may be going out right now: it is left to finish and be checked, not shown as withdrawn.
+  const mine = open.filter((r) => linkIds(r["KOL"]).includes(fid) && !executing(r));
   if (mine.length) {
     await ctx.base.update(ctx.cfg.tables.reviews, Object.fromEntries(mine.map((r) => [r.record_id, {
       处理: ["不发"], 状态: ["已撤回"], 同意来源: "", 内容指纹: "", 执行结果: `${stamp(Date.now(), ctx.cfg.timezone)} ${action}时撤回（${ctx.me.name}在决策台操作）`,
@@ -322,11 +373,16 @@ export async function closeFollowup(ctx: Ctx, data: ConsoleData, fid: string, o:
   }
 }
 
+/** The stages a reviewer may set by hand (E-32, E-33). 结案 goes through 不再跟进, which asks for a reason. */
+const EDITABLE_STAGES = ["已邀约", "已回复", "体验中", "已看报告", "合作中", "已约发布", "已发布", "暂缓"];
+
 const FOLLOWUP_EDITS: Record<string, (v: string, tz: string) => unknown> = {
   下次跟进日期: (v) => (v ? `${v} 00:00` : null),
+  约定发布日期: (v) => (v ? `${v} 00:00` : null),
   下一步: (v) => v,
   当前轮到谁: (v) => [v],
   级别: (v) => [v],
+  阶段: (v) => [v],
 };
 
 /** Edits to a followup made on its page. */
@@ -336,10 +392,30 @@ export async function updateFollowup(ctx: Ctx, data: ConsoleData, fid: string, f
   for (const [k, v] of Object.entries(fields ?? {})) {
     const to = FOLLOWUP_EDITS[k];
     if (!to) throw new Error(`「${k}」不能在这里改`);
-    if (k === "下次跟进日期" && v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Error("下次跟进日期的格式不对");
+    if ((k === "下次跟进日期" || k === "约定发布日期") && v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Error(`${k}的格式不对`);
+    if (k === "阶段" && !EDITABLE_STAGES.includes(String(v))) throw new Error(`阶段只能改成：${EDITABLE_STAGES.join("、")}；要结案请点「不再跟进」`);
+    const closed = option(data.snapshot.followups.get(fid)!["阶段"]) === "结案" && !fields["阶段"];
+    if (k === "当前轮到谁" && closed && v !== "无需动作") throw new Error("她已经结案了，轮到谁只能是「无需动作」；要继续跟进，先给她写信或改阶段");
     out[k] = to(String(v ?? "").trim(), ctx.cfg.timezone);
   }
-  if (Object.keys(out).length) await ctx.base.update(ctx.cfg.tables.followups, { [fid]: out });
+  if (!Object.keys(out).length) return;
+  if (out["阶段"]) {
+    const was = option(data.snapshot.followups.get(fid)!["阶段"]);
+    out["下一步"] ??= `${today(ctx.cfg)} 阶段从「${was}」改成「${option(out["阶段"])}」（${ctx.me.name}在决策台操作）`;
+  }
+  await ctx.base.update(ctx.cfg.tables.followups, { [fid]: out });
+}
+
+/** 加新邮箱 after a bounce (C-12): the address joins her profile, so mail can go there. */
+export async function addEmail(ctx: Ctx, data: ConsoleData, fid: string, address: string): Promise<void> {
+  const f = data.snapshot.followups.get(fid);
+  if (!f) throw new Error("找不到这位 KOL 的跟进记录");
+  const email = address.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("邮箱格式不对");
+  const p = profileOf(data.snapshot, f);
+  if (!p) throw new Error("她的跟进没有关联档案");
+  if (profileEmails(p).includes(email)) return;
+  await ctx.base.update(ctx.cfg.tables.profiles, { [p.record_id]: { 其他邮箱: [text(p["其他邮箱"]), email].filter(Boolean).join(", ") } });
 }
 
 /** 记下这条发布: a post found by hand, so its numbers get tracked and the KOL moves to 已发布. */
@@ -355,12 +431,18 @@ export async function logPost(ctx: Ctx, data: ConsoleData, fid: string, link: st
 }
 
 /** 写信给她: the reviewer's own words, approved as they write them and sent by the executor. */
-export async function writeMail(ctx: Ctx, data: ConsoleData, jobs: Jobs, fid: string, subject: string, body: string, from?: string): Promise<Job | null> {
+export async function writeMail(ctx: Ctx, data: ConsoleData, jobs: Jobs, fid: string, subject: string, body: string, from?: string,
+                                o: { to?: string; purpose?: string } = {}): Promise<Job | null> {
   const f = data.snapshot.followups.get(fid);
   if (!f) throw new Error("找不到这位 KOL 的跟进记录");
   if (!body.trim()) throw new Error("信是空的");
-  const to = profileEmails(profileOf(data.snapshot, f))[0];
+  // Any address on her profile may be chosen (E-29); the first is the default.
+  const emails = profileEmails(profileOf(data.snapshot, f));
+  const to = o.to ? o.to.trim().toLowerCase() : emails[0];
   if (!to) throw new Error("她的档案里没有邮箱");
+  if (!emails.includes(to)) throw new Error(`${to} 不是她档案里的邮箱，先把它加到她的档案`);
+  const held = (await openMailItems(ctx)).get(fid)?.[0];
+  if (held) throw new Error(`她已经有一封待发或没发成的信「${text(held["审核项"])}」，同一时间只能有一封。先在「待你决定」或「出了问题」里处理那一封`);
   const channel = option(f["联系渠道"]);
   // Writing from another mailbox than the one she knows changes who she hears from, so it is only ever chosen.
   const mb = from ? ctx.cfg.mailboxes.find((m) => m.address === from) : mailboxFor(ctx.cfg, channel);
@@ -369,7 +451,7 @@ export async function writeMail(ctx: Ctx, data: ConsoleData, jobs: Jobs, fid: st
   const draft = subject.trim() ? `主题：${subject.trim()}\n${body.trim()}` : body.trim();
   const [id] = await ctx.base.create(ctx.cfg.tables.reviews, [{
     类型: ["回复邮件"], 状态: ["待你审核"], KOL: [{ id: fid }], 提出时间: stamp(Date.now(), ctx.cfg.timezone),
-    审核项: `${ctx.me.name}在决策台写的信`, 发送渠道: [mb.channel], 收件人: to, 邮件草稿: draft,
+    审核项: `${o.purpose === "发布确认" ? `${CHECK_IN_MARK} ` : ""}${ctx.me.name}在决策台写的信`, 发送渠道: [mb.channel], 收件人: to, 邮件草稿: draft,
   }]);
   // Written from her page, where all her mail is shown, so it answers whatever she sent.
   return approve(ctx, data, jobs, id, {}, true);

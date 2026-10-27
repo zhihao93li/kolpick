@@ -63,7 +63,7 @@ it("reads posts the way each scraper gives them", () => {
   expect(profileInput("tt_post", ["https://www.tiktok.com/@deer.jay"], "2026-10-11").profiles).toEqual(["deer.jay"]);
 });
 
-it("files new posts that mention the project, once, and moves 已约发布 to 已发布", async () => {
+it("S-E7 files new posts that mention the project, once, and moves 已约发布 to 已发布", async () => {
   const r = await findPosts(ctx, { dryRun: false, budget: 1, runner, now: NOW });
   expect(runs).toHaveLength(1);
   expect(runs[0].input).toMatchObject({ directUrls: ["https://www.instagram.com/deer_jay/", "https://www.instagram.com/jay.tw"], onlyPostsNewerThan: "2026-10-11" });

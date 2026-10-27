@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Ctx } from "../ctx.js";
 import { today } from "../ops.js";
-import { approve, closeFollowup, decideTemplate, drop, todoDone, findOptions, isPaused, Jobs, logPost, mailDone, manualSent, mailLink, mailNever, problemDone, problemRetry, problemSent, revise, sendQueued, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
+import { addEmail, approve, closeFollowup, decideTemplate, drop, todoDone, findOptions, isPaused, Jobs, logPost, mailDone, manualSent, mailLink, mailNever, problemDone, problemRetry, problemSent, revise, sendQueued, setPaused, startFind, updateFollowup, writeMail } from "./actions.js";
 import { PAGE } from "./page.js";
 import { backup, hasBackupToday } from "../store/db.js";
 import { StoreLark } from "../store/pg.js";
@@ -111,20 +111,21 @@ export async function startConsole(ctx: Ctx, o: { port?: number; openBrowser: bo
     switch (url.pathname) {
       case "/api/approve": return done({ job: await approve(ctx, data, jobs, String(b.id), b.edits ?? {}, b.seen ? String(b.seen) : undefined), paused: await isPaused(ctx) });
       case "/api/sent-by-hand": await manualSent(ctx, data, String(b.id), b.edits ?? {}, b.seen ? String(b.seen) : undefined); return done();
-      case "/api/problem-sent": await problemSent(ctx, data, String(b.id)); return done();
+      case "/api/problem-sent": await problemSent(ctx, data, String(b.id), String(b.code ?? "")); return done();
       case "/api/problem-retry": await problemRetry(ctx, String(b.id)); return done();
       case "/api/template": await decideTemplate(ctx, String(b.id), Boolean(b.ok)); return done();
       case "/api/revise": await revise(ctx, String(b.id), String(b.note ?? "")); return done();
       case "/api/drop": await drop(ctx, String(b.id), String(b.note ?? "")); return done();
-      case "/api/problem-done": await problemDone(ctx, String(b.id)); return done();
+      case "/api/problem-done": await problemDone(ctx, data, String(b.id)); return done();
       case "/api/todo-done": await todoDone(ctx, String(b.id)); return done();
       case "/api/mail-done": await mailDone(ctx, ids(b.id)); return done();
       case "/api/mail-never": await mailNever(ctx, data, ids(b.id)); return done();
       case "/api/mail-link": await mailLink(ctx, data, ids(b.id), String(b.followup ?? "")); return done();
       case "/api/post": await logPost(ctx, data, String(b.id), String(b.link ?? "")); return done();
+      case "/api/add-email": await addEmail(ctx, data, String(b.id), String(b.email ?? "")); return done();
       case "/api/followup": await updateFollowup(ctx, data, String(b.id), b.fields ?? {}); return done();
       case "/api/close": await closeFollowup(ctx, data, String(b.id), { never: Boolean(b.never), reason: b.reason }); return done();
-      case "/api/write": return done({ job: await writeMail(ctx, data, jobs, String(b.id), String(b.subject ?? ""), String(b.body ?? ""), b.from ? String(b.from) : undefined), paused: await isPaused(ctx) });
+      case "/api/write": return done({ job: await writeMail(ctx, data, jobs, String(b.id), String(b.subject ?? ""), String(b.body ?? ""), b.from ? String(b.from) : undefined, { to: b.to ? String(b.to) : undefined, purpose: b.purpose ? String(b.purpose) : undefined }), paused: await isPaused(ctx) });
       case "/api/find": return done({ job: startFind(jobs, b) });
       case "/api/pause": {
         const paused = await setPaused(ctx, Boolean(b.on));

@@ -84,3 +84,15 @@ it("tells whether a trial code name is free; a partner code of the same name doe
   expect(await checkTrialName(ctx, "deer3", api)).toMatchObject({ 可用: false, 原因: "已经有这个码（体验码，用了 1 次）" });
   expect(await checkTrialName(ctx, "amy-tafu", api)).toEqual({ 码名: "amy-tafu", 可用: true });
 });
+
+it("S-D5 a partner code switched off in the back office is noted on the followup, once", async () => {
+  addProject("测试项目", BASE);
+  setDataApiKey("测试项目", "secret-key");
+  const off = (async () => new Response(JSON.stringify({ codes: [
+    { code: "AMY-TAFU", found: true, kind: "partner", active: false, used: 42, paidOrders: 40, refundedOrders: 2, visitors: 1830 },
+  ] }))) as typeof fetch;
+  const r = await syncCodes(ctx, { dryRun: false, fetchImpl: off });
+  expect(r.后台已停用).toEqual(["Amy：活动码 AMY-TAFU 在项目后台已停用"]);
+  expect(String(lark.table(T.followups).find((f) => f["账号名称"] === "Amy")!["下一步"])).toMatch(/活动码 AMY-TAFU 在项目后台已停用/);
+  expect((await syncCodes(ctx, { dryRun: false, fetchImpl: off })).后台已停用).toEqual([]);
+});

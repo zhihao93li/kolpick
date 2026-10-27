@@ -1,10 +1,10 @@
-import { cellTime, linkIds, option, text } from "./base.js";
+import { cellTime, day, linkIds, option, text } from "./base.js";
 import { mailboxFor, type Config } from "./config.js";
 import type { Ctx } from "./ctx.js";
 import { displayName, followupEmails, loadSnapshot, profileOf } from "./data.js";
 import type { Row } from "./lark.js";
-import { stamp } from "./ops.js";
-import { closeDeclined } from "./reviews.js";
+import { RUN_TITLES, stamp } from "./ops.js";
+import { closeDeclined, openMailItems } from "./reviews.js";
 import { loadTemplates, MissingValue, pickTemplate, render } from "./templates.js";
 import { dateWords, expiryWords } from "./trial.js";
 
@@ -55,6 +55,35 @@ export function trialDue(cfg: Config, f: Row, name: string, now = Date.now()): D
   return null;
 }
 
+/** How long after a trial code runs out it still gets its one 「体验码已过期」 item (R-09); older ones are history. */
+const EXPIRED_WITHIN_DAYS = 14;
+
+/**
+ * A trial that ran out while the KOL was still trying it (R-09): one item asking whether to extend, give a new
+ * code, or stop, raised once per code. Codes that ran out long ago, or whose KOL has moved on, are left alone.
+ */
+export function trialExpired(cfg: Config, f: Row, name: string, now = Date.now()): { key: string; why: string; until: string } | null {
+  const code = text(f["体验码"]);
+  if (!code || !["体验中", "已看报告"].includes(option(f["阶段"]))) return null;
+  const expires = cellTime(f["体验码到期"], cfg.timezone);
+  if (expires == null || expires > now || now - expires > EXPIRED_WITHIN_DAYS * DAY) return null;
+  const until = stamp(expires, cfg.timezone).slice(0, 10);
+  return { key: `[体验过期] ${name} ${code}`, why: `体验码 ${code} 已在 ${until} 到期，用了 ${Number(f["体验码已用"]) || 0}/${Number(f["体验码上限"]) || "?"} 次`, until };
+}
+
+/**
+ * Whether today's usage numbers are in (R-06 to R-08): a code sync finished today. Nudges that rest on how much a
+ * code was used wait for one, so a failed sync never reads as 「还没用过」.
+ */
+async function usageSyncedToday(ctx: Ctx, now: number): Promise<boolean> {
+  const runs = await ctx.base.records(ctx.cfg.tables.runs, {
+    filter: { logic: "and", conditions: [["结果", "intersects", ["完成"]]] },
+    fields: ["运行", "开始时间", "结果"],
+  });
+  const todayStr = day(now, ctx.cfg.timezone);
+  return runs.some((r) => text(r["运行"]).startsWith(RUN_TITLES.codes) && day(r["开始时间"], ctx.cfg.timezone) === todayStr);
+}
+
 /**
  * `kol trial-followup`: files a 待你审核 reply for every trial that needs a nudge, written from the project's
  * approved template for it. Each nudge goes in once per code (per use count for a stalled trial, per expiry
@@ -66,26 +95,42 @@ export async function trialFollowup(ctx: Ctx, o: { dryRun: boolean; now?: number
   const now = o.now ?? Date.now();
   // Withdraw what the reviewer turned down first, so those KOLs are no longer counted as waiting on review.
   const withdrawn = await closeDeclined(ctx, { dryRun: o.dryRun });
-  const [s, reviews, templates] = await Promise.all([
+  const [s, reviews, templates, open, fresh] = await Promise.all([
     loadSnapshot(ctx.base, cfg),
     ctx.base.records(t.reviews, { fields: ["审核项", "状态", "KOL"] }),
     loadTemplates(ctx.base, cfg),
+    openMailItems(ctx),
+    usageSyncedToday(ctx, now),
   ]);
   const done = new Set(reviews.map((r) => text(r["审核项"])).filter((x) => x.startsWith("[体验")));
-  const waiting = new Set(reviews.filter((r) => ["待你审核", "待执行"].includes(option(r["状态"]))).flatMap((r) => linkIds(r["KOL"])));
+  // Anything still open for her (I-1 for mail, plus decisions waiting) comes first.
+  const waiting = new Set([...open.keys(), ...reviews.filter((r) => ["待你审核", "待执行"].includes(option(r["状态"]))).flatMap((r) => linkIds(r["KOL"]))]);
 
   const report = {
     提交审核: [] as { name: string; 类型: Nudge; 原因: string }[],
     要手动跟进: [] as { name: string; 类型: Nudge; 原因: string }[],
     缺模板: [] as string[],
+    已过期待定: [] as string[],
+    用量没同步: fresh ? undefined : "今天还没有成功同步码的用量，「到期」「没用过」「停滞」先不提，同步成功后再跑",
     审核不发已撤回: withdrawn,
     试跑: o.dryRun || undefined,
   };
   const rows: Record<string, unknown>[] = [];
-  const handOver: Record<string, Record<string, unknown>> = {};
   const missing = new Map<string, string[]>();
   for (const f of s.followups.values()) {
     const name = displayName(s, f);
+    const expired = trialExpired(cfg, f, name, now);
+    if (expired && !done.has(expired.key) && !waiting.has(f.record_id)) {
+      // No mail to draft yet: what to do next is the reviewer's call (C-10).
+      report.已过期待定.push(name);
+      rows.push({
+        类型: ["决定"], 状态: ["待你审核"], KOL: [{ id: f.record_id }], 提出时间: stamp(now, cfg.timezone), 发送渠道: ["不发邮件"],
+        审核项: expired.key, 我的判断和建议: expired.why,
+        要你定什么: "体验码已经过期。要延期或换一个新码，就点「让 Claude 改」写一句（比如「延期 7 天」「换新码」），Claude 会起草回信；不再跟进就点「不做了」",
+      });
+      continue;
+    }
+    if (!fresh) continue;
     const due = trialDue(cfg, f, name, now);
     if (!due || done.has(due.key)) continue;
     // We owe them an answer, or something for them is already in review: that comes first.
@@ -123,15 +168,13 @@ export async function trialFollowup(ctx: Ctx, o: { dryRun: boolean; now?: number
     report.提交审核.push({ name, 类型: due.kind, 原因: due.why });
     rows.push({
       类型: ["回复邮件"], 状态: ["待你审核"], KOL: [{ id: f.record_id }], 提出时间: stamp(now, cfg.timezone),
-      审核项: due.key, 我的判断和建议: `${due.why}。按「${tpl.name}」模板写的`, 发送渠道: [mb.channel],
+      审核项: due.key, 我的判断和建议: `${due.why}（用量是 ${day(now, cfg.timezone)} 同步的）。按「${tpl.name}」模板写的`, 发送渠道: [mb.channel],
       收件人: followupEmails(s, f)[0] ?? "", 邮件草稿: mail.subject ? `主题：${mail.subject}\n${mail.body}` : mail.body,
     });
-    handOver[f.record_id] = { 当前轮到谁: ["等你审核"] };
   }
   report.缺模板 = [...missing].map(([m, names]) => `「模板」表里还没有已批准的「${m}」模板，${names.length} 位先没提交：${names.join("、")}`);
   if (o.dryRun || !rows.length) return report;
   await ctx.base.create(t.reviews, rows);
-  await ctx.base.update(t.followups, handOver);
   ctx.run.counts.新增待审 += rows.length;
   ctx.run.op({ type: "飞书变更", result: "完成", action: `体验跟进提交审核 ${rows.length} 条` });
   return report;

@@ -271,7 +271,7 @@ $("refresh").addEventListener("click", function () {
 
 // --- 待你决定 ---
 var GROUPS = ["出了问题", "发布", "回信", "来信", "邀约和决定", "模板", "其他"];
-var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", unknown: "b-purple", batch: "b-warn", template: "", todo: "" };
+var TAG = { problem: "b-bad", overdue: "b-warn", reply: "b-blue", mail: "b-purple", unknown: "b-purple", bounce: "b-bad", waiting: "b-warn", batch: "b-warn", template: "", todo: "" };
 
 function visibleCards() {
   return state.overview.cards.filter(function (c) { return !state.handled[c.id]; });
@@ -294,6 +294,55 @@ function cardEdits(c) {
 function who(c) { return c.who ? c.who.name : c.headline; }
 
 function actionsFor(c) {
+  if (c.kind === "mail" && c.blocked) return [
+    { label: "不用回", key: "D", primary: true, run: function () { later(c.id, "已标成不用回：" + who(c), function () { return post("/api/mail-done", { id: c.id.slice(5) }); }); } },
+  ];
+  if (c.kind === "bounce") return [
+    { label: "加新邮箱", key: "A", primary: true, run: function () {
+      var email = prompt("她的新邮箱是？加到档案以后，到她的页面写信时选这个邮箱。", "");
+      if (!email) return;
+      later(c.id, "已把 " + email + " 加到 " + who(c) + " 的档案", function () {
+        return post("/api/add-email", { id: c.who.id, email: email.trim() }).then(function () { return post("/api/mail-done", { id: c.id.slice(7) }); });
+      });
+    } },
+    { label: "结案", key: "C", run: function () {
+      if (!confirm("结束对 " + who(c) + " 的跟进？原因记成退信或邮箱无效。")) return;
+      later(c.id, "已结案：" + who(c), function () {
+        return post("/api/close", { id: c.who.id, never: false, reason: "退信或邮箱无效" }).then(function () { return post("/api/mail-done", { id: c.id.slice(7) }); });
+      });
+    } },
+    { label: "不用管", key: "D", run: function () { later(c.id, "已放下：" + c.headline, function () { return post("/api/mail-done", { id: c.id.slice(7) }); }); } },
+  ];
+  if (c.kind === "waiting") return [
+    { label: "发信问她", key: "A", primary: true, run: function () {
+      var subject = ($("draft-subject") || {}).value || "", body = ($("draft-body") || {}).value || "";
+      if (!body.trim()) { toast("先把信写好"); return; }
+      later(c.id, "已排队发信给 " + who(c), function () { return post("/api/write", { id: c.who.id, subject: subject, body: body }); });
+    } },
+    { label: "定下次跟进", key: "F", run: function () {
+      var d = prompt("下次什么时候跟进？（格式 2026-11-05）", "");
+      if (!d) return;
+      later(c.id, who(c) + " 下次跟进改到 " + d, function () { return post("/api/followup", { id: c.who.id, fields: { 下次跟进日期: d.trim() } }); });
+    } },
+    { label: "暂缓", key: "P", run: function () { later(c.id, "已暂缓：" + who(c), function () { return post("/api/followup", { id: c.who.id, fields: { 阶段: "暂缓" } }); }); } },
+    { label: "结案", key: "C", run: function () {
+      if (!confirm("结束对 " + who(c) + " 的跟进？原因记成回复后失联。")) return;
+      later(c.id, "已结案：" + who(c), function () { return post("/api/close", { id: c.who.id, never: false, reason: "回复后失联" }); });
+    } },
+  ];
+  if (c.kind === "overdue" && (c.asked || 0) >= 2 && !state.posted[c.id]) return [
+    { label: "结案", key: "C", primary: true, run: function () {
+      if (!confirm("结束对 " + who(c) + " 的跟进？原因记成回复后失联。")) return;
+      later(c.id, "已结案：" + who(c), function () { return post("/api/close", { id: c.who.id, never: false, reason: "回复后失联" }); });
+    } },
+    { label: "暂缓", key: "P", run: function () { later(c.id, "已暂缓：" + who(c), function () { return post("/api/followup", { id: c.who.id, fields: { 阶段: "暂缓" } }); }); } },
+    { label: "再等", key: "W", run: function () {
+      var d = prompt("等到哪天？填新的约定发布日期（格式 2026-11-20）", "");
+      if (!d) return;
+      later(c.id, who(c) + " 的约定发布日期改到 " + d, function () { return post("/api/followup", { id: c.who.id, fields: { 约定发布日期: d.trim() } }); });
+    } },
+    { label: "已经发了", key: "L", run: function () { state.posted[c.id] = true; renderDecide(); } },
+  ];
   if (c.kind === "mail") return [
     { label: "不用回", key: "D", primary: true, run: function () { later(c.id, "已标成不用回：" + who(c), function () { return post("/api/mail-done", { id: c.id.slice(5) }); }); } },
     { label: "标成永不联系", key: "N", danger: true, run: function () { if (confirm("以后这个项目不再联系 " + who(c) + "，确定吗？")) later(c.id, "已标成永不联系：" + who(c), function () { return post("/api/mail-never", { id: c.id.slice(5) }); }); } },
@@ -314,12 +363,9 @@ function actionsFor(c) {
       var subject = ($("draft-subject") || {}).value || "", body = ($("draft-body") || {}).value || "";
       if (!body.trim()) { toast("先把信写好"); return; }
       if (body.indexOf("{") >= 0) { toast("信里还有 { } 占位符，换成实际的字再发"); return; }
-      var next = new Date(Date.now() + 3 * 86400000);
-      var nextDay = next.getFullYear() + "-" + String(next.getMonth() + 1).padStart(2, "0") + "-" + String(next.getDate()).padStart(2, "0");
       later(c.id, "已排队发信给 " + who(c), function () {
-        return post("/api/write", { id: c.who.id, subject: subject, body: body }).then(function (r) {
-          return post("/api/followup", { id: c.who.id, fields: { 下一步: "问了发布时间，等她回", 下次跟进日期: nextDay, 当前轮到谁: "KOL" } }).then(function () { return r; });
-        });
+        // The next follow-up date moves only once the mail has actually gone out (C-07, S-E4).
+        return post("/api/write", { id: c.who.id, subject: subject, body: body, purpose: "发布确认" });
       });
     } },
   ];
@@ -334,7 +380,12 @@ function actionsFor(c) {
   if (c.kind === "problem" && c.unknownSend) return [
     { label: "确认已经发出", key: "A", primary: true, run: function () {
       if (!confirm("在发信邮箱的「已发送」里找到这封信了吗？确认后会记成已发出，不会再发。")) return;
-      later(c.id, "已记成发出：" + c.headline, function () { return post("/api/problem-sent", { id: c.id }); });
+      var code = "";
+      if (c.codeAction) {
+        code = prompt("这一条还要" + c.codeAction + "。到项目后台看一下：码已经建好的话填上码名，记到她的跟进上；没建好就留空。", "");
+        if (code === null) return;
+      }
+      later(c.id, "已记成发出：" + c.headline, function () { return post("/api/problem-sent", { id: c.id, code: code }); });
     } },
     redo, withdraw,
   ];
@@ -484,11 +535,11 @@ function renderDecide() {
       '<button role="radio" aria-checked="' + !!posted + '" class="' + (posted ? "on" : "") + '" data-path="posted">已经发了：记下链接 <span class="kbd">2</span></button></div></div>' : "";
   var linkBox = posted ? '<label class="field">帖子链接<input class="input" id="post-link" placeholder="https://"><span class="tiny">记下后她会移到「已发布」，之后自动记播放和互动</span></label>' : "";
   var draft = c.draft && !posted ? '<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><span class="lbl" style="margin:0">' + esc(c.draft.label) + '</span>' + (c.kind === "reply" ? '<span class="muted tiny">可以直接改字</span>' : "") + '</div>' +
-      (c.kind === "overdue" ? '<label class="field">主旨（她回过我们的信就可以不填）<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
+      (c.kind === "overdue" || c.kind === "waiting" ? '<label class="field">主旨（她回过我们的信就可以不填）<input class="input" id="draft-subject" value="' + esc(c.draft.subject) + '"></label>'
         : c.draft.subject ? '<div class="muted small">主旨：' + esc(c.draft.subject) + '</div>' : "") +
-      (c.kind === "reply" || c.kind === "overdue" ? '<textarea class="input draft" id="draft-body" rows="10" style="resize:vertical;font-size:14px" placeholder="写给她的信">' + esc(c.draft.body) + '</textarea>' : '<div class="draft" style="font-size:14px">' + esc(c.draft.body) + '</div>') +
+      (c.kind === "reply" || c.kind === "overdue" || c.kind === "waiting" ? '<textarea class="input draft" id="draft-body" rows="10" style="resize:vertical;font-size:14px" placeholder="写给她的信">' + esc(c.draft.body) + '</textarea>' : '<div class="draft" style="font-size:14px">' + esc(c.draft.body) + '</div>') +
       (c.draft.note ? '<div class="muted tiny">' + esc(c.draft.note) + '</div>' : "") + '</div>' : "";
-  var mailHint = c.kind === "mail" ? '<div class="muted small">要回信的话：在 Claude 里说「处理来信」，写好的草稿会排进这里。</div>' : "";
+  var mailHint = c.kind === "mail" && !c.blocked ? '<div class="muted small">要回信的话：在 Claude 里说「处理来信」，写好的草稿会排进这里。</div>' : "";
   var changing = state.changing && ["reply", "batch", "template"].indexOf(c.kind) >= 0;
   var next = cards[state.idx + 1];
   if (c.kind === "overdue") steps = "";
@@ -694,10 +745,14 @@ function wirePerson(p) {
       '<label class="field">下一步要做什么<input class="input" id="e-next" value="' + esc(p.next) + '"></label>' +
       '<label class="field">下次跟进<input class="input" type="date" id="e-date" value="' + esc(p.nextDateIso || "") + '"></label>' +
       '<label class="field">等谁<select class="input" id="e-turn"><option' + (p.turn === "我们" ? " selected" : "") + '>我们</option><option' + (p.turn === "KOL" ? " selected" : "") + '>KOL</option><option' + (p.turn === "无需动作" ? " selected" : "") + '>无需动作</option></select></label>' +
+      (p.stage === "结案" ? "" : '<label class="field">阶段<select class="input" id="e-stage">' + ["已邀约", "已回复", "体验中", "已看报告", "合作中", "已约发布", "已发布", "暂缓"].map(function (x) { return "<option" + (x === p.stage ? " selected" : "") + ">" + x + "</option>"; }).join("") + "</select></label>") +
+      '<label class="field">约定发布日期<input class="input" type="date" id="e-agreed" value="' + esc(p.agreedIso || "") + '"></label>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="e-cancel">取消</button><button class="btn primary" id="e-save">保存</button></div>');
     $("e-cancel").onclick = closeModal;
     $("e-save").onclick = function () {
-      post("/api/followup", { id: p.id, fields: { 下一步: $("e-next").value, 下次跟进日期: $("e-date").value, 当前轮到谁: $("e-turn").value } })
+      var fields = { 下一步: $("e-next").value, 下次跟进日期: $("e-date").value, 当前轮到谁: $("e-turn").value, 约定发布日期: $("e-agreed").value };
+      if ($("e-stage") && $("e-stage").value !== p.stage) fields.阶段 = $("e-stage").value;
+      post("/api/followup", { id: p.id, fields: fields })
         .then(function () { closeModal(); toast("已保存"); reload(); }).catch(function (e) { toast("没保存：" + e.message); });
     };
   };
@@ -706,7 +761,8 @@ function wirePerson(p) {
     var fromBox = '<label class="field">从哪个邮箱发<select class="input" id="w-from">' + (sf.usual ? "" : '<option value="">请选择</option>') +
       sf.mailboxes.map(function (m) { return '<option' + (m === sf.usual ? " selected" : "") + ">" + esc(m) + "</option>"; }).join("") + "</select>" +
       (sf.usual ? "" : '<span class="tiny" style="color:var(--warn)">她一直是跟「' + esc(sf.channel || "未填") + '」联系的，这个邮箱系统发不了。换一个邮箱发，她看到的发件人会变。</span>') + "</label>";
-    modal('<h2 style="margin:0;font-size:18px">写信给 ' + esc(p.name) + '</h2><div class="muted small">点「发出」就算你同意了，会按额度排队发出；在「执行记录」里能看到结果。</div>' + fromBox +
+    var toBox = '<label class="field">发到哪个邮箱<select class="input" id="w-to">' + p.emails.filter(function (e) { return !e.blocked; }).map(function (e) { return "<option>" + esc(e.address) + "</option>"; }).join("") + "</select></label>";
+    modal('<h2 style="margin:0;font-size:18px">写信给 ' + esc(p.name) + '</h2><div class="muted small">点「发出」就算你同意了，会按额度排队发出；在「执行记录」里能看到结果。</div>' + fromBox + toBox +
       '<label class="field">主旨（回复她上一封信时可以不填）<input class="input" id="w-subject"></label>' +
       '<label class="field">正文<textarea class="input" id="w-body" rows="10"></textarea></label>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="w-cancel">取消</button><button class="btn primary" id="w-send">发出</button></div>');
@@ -714,7 +770,7 @@ function wirePerson(p) {
     $("w-send").onclick = function () {
       var from = $("w-from").value;
       if (!from) { toast("先选从哪个邮箱发"); return; }
-      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value, from: from })
+      post("/api/write", { id: p.id, subject: $("w-subject").value, body: $("w-body").value, from: from, to: ($("w-to") || {}).value || "" })
         .then(function (r) { closeModal(); toast(r.job ? "已排队从 " + from + " 发出，结果看右上角" : "现在暂停着：已经记下，恢复发送后从 " + from + " 发出"); if (r.job) watchJobs(); })
         .catch(function (e) { toast("没发出：" + e.message); });
     };

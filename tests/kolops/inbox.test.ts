@@ -75,7 +75,7 @@ it("writes nothing when any decision is wrong", async () => {
   expect(lark.table(T.contacts).every((c) => c["待处理"] === true)).toBe(true);
 });
 
-it("files the batch for review, unticks the mail and hands the KOL to review", async () => {
+it("files the batch for review and unticks the mail", async () => {
   const r = await applyInbox(ctx, { dryRun: false, file: decisions([
     { contact: c1, category: "想体验", draft: "您好！體驗碼 {體驗碼}，{到期日}前可用 {次數} 次。", trial: { action: "发码" }, note: "对方说想试" },
     { contact: c2, category: "拒绝", after: "结案", reason: "拒绝" },
@@ -87,7 +87,8 @@ it("files the batch for review, unticks the mail and hands the KOL to review", a
   expect(want["审核项"]).toBe("[批量] 想体验 小鹿與阿哲");
   expect(no).toMatchObject({ 类型: ["决定"], 发送渠道: ["不发邮件"], 发后动作: ["结案"], 结案原因: ["拒绝"] });
   expect(lark.table(T.contacts).every((c) => c["待处理"] === false)).toBe(true);
-  expect(lark.table(T.followups)[0]["当前轮到谁"]).toEqual(["等你审核"]);
+  // 「等你审核」 is shown from the open item; the followup keeps its real turn (2.1).
+  expect(lark.table(T.followups)[0]["当前轮到谁"]).not.toEqual(["等你审核"]);
 
   // Run again: the mails are no longer pending, so nothing is filed twice.
   expect((await applyInbox(ctx, { dryRun: false, file: decisions([{ contact: c1, category: "不用回" }]) })).问题).toHaveLength(1);
