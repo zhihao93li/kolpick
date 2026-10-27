@@ -31,10 +31,20 @@ export class Mail {
   constructor(private lark: Lark) {}
 
   /** Mail in one folder since a moment ("YYYY-MM-DDTHH:mm:ss+08:00" is the only form Feishu takes), newest first. */
-  async since(mailbox: string, folder: "INBOX" | "SENT", startTime: string, max = 400): Promise<MailSummary[]> {
-    const data = await this.lark.json(["mail", "+triage", "--mailbox", mailbox, "--filter",
-      JSON.stringify({ folder_id: folder, time_range: { start_time: startTime } }), "--max", String(max), "--format", "json", "--as", "user"]);
-    return (data?.messages ?? []).filter((m: any) => m.message_id && !m.error);
+  async since(mailbox: string, folder: "INBOX" | "SENT", startTime: string): Promise<MailSummary[]> {
+    const out: MailSummary[] = [];
+    let token = "";
+    // Every page, so a busy stretch (more than one page since the cursor) loses nothing.
+    for (let page = 0; page < 50; page++) {
+      const args = ["mail", "+triage", "--mailbox", mailbox, "--filter", JSON.stringify({ folder_id: folder, time_range: { start_time: startTime } }),
+        "--max", "400", "--format", "json", "--as", "user"];
+      if (token) args.push("--page-token", token);
+      const data = await this.lark.json(args);
+      out.push(...(data?.messages ?? []).filter((m: any) => m.message_id && !m.error));
+      token = data?.has_more ? String(data.page_token ?? "") : "";
+      if (!token) return out;
+    }
+    throw new Error(`${mailbox} 这段时间的邮件太多，读不完；先不挪收信位置`);
   }
 
   /** The newest message this address sent to the mailbox, to reply in the same thread. */

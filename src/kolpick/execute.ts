@@ -8,7 +8,7 @@ import { one } from "./db/db.js";
 import { LarkError } from "./lark.js";
 import { MailBlocked } from "./mail.js";
 import { applyAfter, contentHash, type CodeAction, type ProposalAction } from "./proposals.js";
-import { sendBlock } from "./rules.js";
+import { pausedReason, sendBlock } from "./rules.js";
 import { discountWords, Refused } from "./tafu.js";
 
 /** The external action may have happened; nobody knows. */
@@ -93,7 +93,10 @@ async function setStatus(ctx: Ctx, id: number, status: string, result: string): 
   await ctx.db.query(`update proposals set status=$2, result=$3, updated_at=now()${status === "done" ? ", done_at=now()" : ""} where id=$1`, [id, status, result]);
 }
 
-export async function executeOne(ctx: Ctx, p: Project, card: any): Promise<keyof RunReport> {
+export async function executeOne(ctx: Ctx, p: Project, listed: any): Promise<keyof RunReport> {
+  // The list was read before earlier cards took their time: read this one again, it may have been edited, undone or withdrawn.
+  const card = await one<any>(ctx.db, "select * from proposals where id = $1 and status = 'approved'", [listed.id]);
+  if (!card) return "waiting";
   if (card.approved_hash !== contentHash(card) || card.approved_hash !== card.content_hash) {
     await ctx.db.query("update proposals set status='pending', approved_hash=null, approved_at=null, result='批准后内容变了，要重新批准' where id=$1", [card.id]);
     return "waiting";
@@ -110,11 +113,19 @@ export async function executeOne(ctx: Ctx, p: Project, card: any): Promise<keyof
     await addLog(ctx, p, { kind: "send_failed", who: "tool", kolId: card.kol_id, proposalId: card.id, summary: `没发给 ${kol?.name}：${blocked}` });
     return "failed";
   }
-  await setStatus(ctx, card.id, "running", "正在做");
+  // Claim it: from here on edits, undo and withdrawal refuse a running card.
+  const claimed = await ctx.db.query("update proposals set status='running', result='正在做', updated_at=now() where id=$1 and status='approved' and approved_hash=$2 returning id", [card.id, card.approved_hash]);
+  if (!claimed.length) return "waiting";
+  const pausedNow = async (): Promise<boolean> => {
+    const why = await pausedReason(ctx, p);
+    if (why) await ctx.db.query("update proposals set status='approved', result=$2 where id=$1", [card.id, `等着发：${why}`]);
+    return !!why;
+  };
   try {
     let subject: string = card.subject;
     let body: string = card.body;
     if (action.code) {
+      if (await pausedNow()) return "waiting";
       const values = await doCode(ctx, p, card, kol, action.code);
       for (const [k, v] of Object.entries(values)) {
         subject = subject.split(k).join(v);
@@ -123,17 +134,24 @@ export async function executeOne(ctx: Ctx, p: Project, card: any): Promise<keyof
     }
     let replyTo: string | undefined;
     if (card.in_reply_to) {
-      const m = await one<any>(ctx.db, "select message_id, mailbox from messages where id = $1", [card.in_reply_to]);
-      if (m?.message_id && m.mailbox === card.mailbox) replyTo = m.message_id;
+      // A reply goes to whoever wrote; only thread onto it when that is the address the operator approved.
+      const m = await one<any>(ctx.db, "select message_id, mailbox, from_addr from messages where id = $1", [card.in_reply_to]);
+      if (m?.message_id && m.mailbox === card.mailbox && String(m.from_addr ?? "").toLowerCase() === String(card.to_addr).toLowerCase()) replyTo = m.message_id;
     } else if (card.kind !== "invite") {
       // Follow-ups and new mails stay in the thread with the KOL when there is one.
       const latest = await ctx.mail.latestFrom(card.mailbox, card.to_addr).catch(() => undefined);
       if (latest) replyTo = latest.message_id;
     }
+    if (await pausedNow()) return "waiting";
     const request = { mailbox: card.mailbox, to: card.to_addr, subject, body, replyTo };
     const sent = await once(ctx, p, card.id, "send", request, () => ctx.mail.send(request));
-    await recordSent(ctx, p, card, subject, body, sent);
-    await setStatus(ctx, card.id, "done", `已发出 ${new Date(ctx.now()).toISOString()}`);
+    try {
+      await recordSent(ctx, p, card, subject, body, sent);
+      await setStatus(ctx, card.id, "done", `已发出 ${new Date(ctx.now()).toISOString()}`);
+    } catch (err: any) {
+      // The mail is out; only the bookkeeping failed. Never "failed": that would invite sending it again.
+      await setStatus(ctx, card.id, "done", `已发出，但记到来往时出错：${err?.message ?? err}`).catch(() => {});
+    }
     return "done";
   } catch (err: any) {
     if (err instanceof Unknown) {
@@ -234,6 +252,13 @@ export async function resolveUnknown(ctx: Ctx, p: Project, id: number, happened:
   if (!happened) {
     await ctx.db.query("update actions set status='failed', error=coalesce(error,'') || '；运营确认没做成', finished_at=now() where id = any($1::int[])", [acts.map((a) => a.id)]);
     await ctx.db.query("update proposals set status='pending', approved_hash=null, approved_at=null, result='运营确认没做成，要重新批准' where id=$1", [id]);
+  } else if (!acts.length) {
+    // Nothing unknown: the process stopped after the last step succeeded. Record a send that went out, else carry on.
+    const sent = await one<any>(ctx.db, "select * from actions where proposal_id = $1 and kind = 'send' and status = 'succeeded'", [id]);
+    if (sent) {
+      await recordSent(ctx, p, card, sent.request.subject, sent.request.body, sent.response ?? {});
+      await setStatus(ctx, id, "done", "已发出（中断后补记）");
+    } else await ctx.db.query("update proposals set status='approved', result='接着做' where id=$1", [id]);
   } else {
     for (const a of acts) {
       if (a.kind === "send") {

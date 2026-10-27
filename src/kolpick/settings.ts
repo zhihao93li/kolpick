@@ -133,5 +133,8 @@ export function cleanSetting<K extends keyof Settings>(key: K, value: unknown): 
     }
     return (value ?? {}) as Settings[K];
   }
-  return String(value ?? "").trim() as Settings[K];
+  const text = String(value ?? "").trim();
+  if (key === "timezone" && !/^[+-]\d{2}:\d{2}$/.test(text)) throw new Error("时区要写成 +08:00 这样");
+  if (key === "followupFrom" && text && !/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error("日期要写成 2026-10-22 这样");
+  return text as Settings[K];
 }

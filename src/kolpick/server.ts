@@ -29,9 +29,14 @@ export interface Status {
   busy: string;
 }
 
-function mcpServer(ctx: Ctx, who: string, projectName?: string): McpServer {
+/** Background jobs read mail from strangers, so they get no switches, settings or KOL edits; only "ask" jobs (the operator's own request) may spend money. */
+const JOB_FORBIDDEN = new Set(["settings_set", "mailbox_set", "pause_sending", "kol_update", "kol_add"]);
+const JOB_COSTS = new Set(["find_people", "posts_find", "posts_metrics"]);
+
+function mcpServer(ctx: Ctx, who: string, projectName?: string, jobKind?: string): McpServer {
   const s = new McpServer({ name: "kolpick", version: "1.0.0" }, { instructions: GUIDE });
   for (const t of TOOLS) {
+    if (jobKind && (JOB_FORBIDDEN.has(t.name) || (jobKind !== "ask" && JOB_COSTS.has(t.name)))) continue;
     s.registerTool(t.name, { description: t.description, inputSchema: t.input }, async (args: any) => {
       try {
         const res = await callTool(ctx, t.name, args, who, projectName);
@@ -81,27 +86,46 @@ export class App {
   }
 
   async start(): Promise<void> {
-    const recovered = await recoverAfterCrash(this.ctx);
-    if (recovered) console.log(`上次中断时有 ${recovered} 个外部动作结果不明，已放进决策台等你确认`);
-    await this.ctx.db.query("update agent_jobs set status='queued', started_at=null where status='running'");
     this.server = http.createServer((req, res) => this.handle(req, res).catch((err) => send(res, 500, { error: String(err?.message ?? err) })));
+    // Listen first: a second copy fails here, before it can touch the first one's work in progress.
     await new Promise<void>((resolve, reject) => {
       this.server!.once("error", reject);
       this.server!.listen(this.ctx.cfg.port, "127.0.0.1", () => resolve());
     });
-    this.timers.push(setInterval(() => this.tick().catch(() => {}), 60_000));
-    void this.boot();
+    const recovered = await recoverAfterCrash(this.ctx);
+    if (recovered) console.log(`上次中断时有 ${recovered} 个外部动作结果不明，已放进决策台等你确认`);
+    await this.ctx.db.query("update agent_jobs set status='queued', started_at=null where status='running'");
+    this.timers.push(setInterval(() => void this.safeTick(), 60_000));
+    this.boot().catch((err) => this.note("boot", err));
+  }
+
+  /** Nothing that goes wrong in the background may stop the process: it is noted and shown in the console. */
+  private note(task: string, err: unknown): void {
+    this.status.tasks[task] = { at: new Date().toISOString(), ok: false, note: String((err as any)?.message ?? err) };
+    console.error(`[${task}]`, err);
+  }
+
+  private ticking = false;
+  private async safeTick(): Promise<void> {
+    if (this.ticking) return;
+    this.ticking = true;
+    try {
+      await this.tick();
+    } catch (err) {
+      this.note("tick", err);
+    } finally {
+      this.ticking = false;
+    }
   }
 
   /** On opening: catch up mail, then any daily job whose day has passed, then start watching. */
   private async boot(): Promise<void> {
     const p = await project(this.ctx);
     if (this.ctx.cfg.auto.inbox) {
-      await this.catchUpNow(p);
+      await this.catchUpNow(p).catch((err) => this.note("inbox", err));
       await this.startWatchers(p);
     }
-    if (this.ctx.cfg.auto.schedule) await this.runDaily(p);
-    await this.tick();
+    await this.safeTick();
   }
 
   async stop(): Promise<void> {
@@ -113,6 +137,7 @@ export class App {
   private async startWatchers(p: Project): Promise<void> {
     const boxes = await this.ctx.db.query<{ address: string }>("select address from mailboxes where project_id = $1", [p.id]);
     for (const b of boxes) {
+      if (this.watchers.some((x) => x.mailbox === b.address)) continue;
       const w = new Watcher(this.ctx, p, b.address, async (id) => {
         await recordOne(this.ctx, p, b.address, id);
         void this.kickAgent(p);
@@ -154,6 +179,8 @@ export class App {
     this.execRunning = true;
     try {
       await runApproved(this.ctx, p);
+    } catch (err) {
+      this.note("send", err);
     } finally {
       this.execRunning = false;
     }
@@ -164,6 +191,8 @@ export class App {
     this.agentRunning = true;
     try {
       await runJobs(this.ctx, p, this.mcpUrl);
+    } catch (err) {
+      this.note("agent", err);
     } finally {
       this.agentRunning = false;
     }
@@ -177,6 +206,9 @@ export class App {
       const key = `daily:${name}`;
       const last = await one<{ value: any }>(this.ctx.db, "select value from state where project_id = $1 and key = $2", [p.id, key]);
       if (!only && last?.value?.day === today) continue;
+      await this.ctx.db.query(
+        `insert into state (project_id, key, value, updated_at) values ($1, $2, $3, now()) on conflict (project_id, key) do update set value = excluded.value, updated_at = now()`,
+        [p.id, key, JSON.stringify({ day: today, ok: true, note: "正在跑", at: new Date().toISOString() })]);
       let ok = true, note = "";
       try {
         note = JSON.stringify(await fn(this.ctx, p)).slice(0, 300);
@@ -215,8 +247,10 @@ export class App {
 
   private async mcp(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<void> {
     const who = url.searchParams.get("who") || "agent";
+    const jobId = /^agent-job-(\d+)$/.exec(who)?.[1];
+    const jobKind = jobId ? (await one<{ kind: string }>(this.ctx.db, "select kind from agent_jobs where id = $1", [Number(jobId)]))?.kind ?? "unknown" : undefined;
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-    const server = mcpServer(this.ctx, who, url.searchParams.get("project") ?? undefined);
+    const server = mcpServer(this.ctx, who, url.searchParams.get("project") ?? undefined, jobKind);
     res.on("close", () => {
       void transport.close();
       void server.close();
@@ -330,7 +364,7 @@ export class App {
         if (b.auto) {
           const wasInbox = ctx.cfg.auto.inbox;
           ctx.cfg.auto = { ...ctx.cfg.auto, ...b.auto };
-          if (!wasInbox && ctx.cfg.auto.inbox) void this.catchUpNow(p).then(() => this.startWatchers(p));
+          if (!wasInbox && ctx.cfg.auto.inbox) void this.catchUpNow(p).catch((err) => this.note("inbox", err)).then(() => this.startWatchers(p));
           if (wasInbox && !ctx.cfg.auto.inbox) {
             this.watchers.forEach((w) => w.stop());
             this.watchers = [];

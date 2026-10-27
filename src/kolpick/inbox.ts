@@ -39,6 +39,7 @@ export async function catchUpMailbox(ctx: Ctx, p: Project, mailbox: string, sinc
   const from = since ? Date.parse(since) : cursor ? Date.parse(cursor.value.at) - OVERLAP_MS : startedAt - FIRST_LOOK_MS;
   const r: CatchUp = { mailbox, seen: 0, recorded: 0, replies: 0, unmatched: 0, bounces: 0, sent: 0 };
   const start = feishuTime(from, p.settings.timezone);
+  let incomplete = false;
   for (const folder of ["INBOX", "SENT"] as const) {
     const list = await ctx.mail.since(mailbox, folder, start);
     r.seen += list.length;
@@ -46,7 +47,10 @@ export async function catchUpMailbox(ctx: Ctx, p: Project, mailbox: string, sinc
       "select message_id from messages where project_id = $1 and message_id = any($2::text[])", [p.id, list.map((m) => m.message_id)])).map((m) => m.message_id));
     const fresh = list.filter((m) => !known.has(m.message_id)).reverse();
     if (!fresh.length) continue;
-    for (const m of await ctx.mail.read(mailbox, fresh.map((x) => x.message_id))) {
+    const full = await ctx.mail.read(mailbox, fresh.map((x) => x.message_id));
+    // A mail listed but not read back is read next time: the cursor stays where it was.
+    if (full.length < fresh.length) incomplete = true;
+    for (const m of full) {
       const res = folder === "INBOX" ? await recordIncoming(ctx, p, mailbox, m) : await recordManualSend(ctx, p, mailbox, m);
       if (res === "skip") continue;
       r.recorded++;
@@ -56,7 +60,7 @@ export async function catchUpMailbox(ctx: Ctx, p: Project, mailbox: string, sinc
       else if (res === "bounce") r.bounces++;
     }
   }
-  await ctx.db.query(
+  if (!incomplete) await ctx.db.query(
     `insert into state (project_id, key, value, updated_at) values ($1, $2, $3, now())
      on conflict (project_id, key) do update set value = excluded.value, updated_at = now()`,
     [p.id, key, JSON.stringify({ at: new Date(startedAt).toISOString() })]);
@@ -69,7 +73,7 @@ export type Recorded = "skip" | "reply" | "note" | "unmatched" | "bounce" | "sen
 /** Finds the KOL a sender belongs to: their address, preferring the one last written to from this mailbox. */
 async function kolFor(ctx: Ctx, p: Project, address: string, mailbox: string): Promise<any | undefined> {
   const rows = await ctx.db.query<any>(
-    `select k.* from kols k where k.project_id = $1 and (lower(k.email) = $2 or lower(k.other_emails) like '%' || $2 || '%')
+    `select k.* from kols k where k.project_id = $1 and (lower(k.email) = $2 or $2 = any(regexp_split_to_array(lower(coalesce(k.other_emails, '')), '[\s,，、;；]+')))
      order by (k.mailbox = $3) desc, k.last_contact_at desc nulls last, k.id limit 1`, [p.id, address, mailbox]);
   return rows[0];
 }
@@ -80,31 +84,36 @@ export async function recordIncoming(ctx: Ctx, p: Project, mailbox: string, m: F
   const bounce = isBounce(m.from, m.subject);
   const kol = bounce ? await bouncedKol(ctx, p, m) : await kolFor(ctx, p, m.from, mailbox);
   const words = ownWords(m.body);
-  const ins = await ctx.db.query<{ id: number }>(
-    `insert into messages (project_id, kol_id, direction, mailbox, message_id, thread_id, subject, from_addr, to_addr, body, summary, at, pending, bounce)
-     values ($1, $2, 'in', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) on conflict do nothing returning id`,
-    [p.id, kol?.id ?? null, mailbox, m.messageId, m.threadId || null, m.subject, m.from, bounce ? kol?.bouncedTo ?? null : mailbox, m.body,
-      words.slice(0, 300), m.at, true, bounce]);
-  if (!ins.length) return "skip";
-  const id = ins[0].id;
-  if (bounce) {
-    await queue(ctx, p, "bounce", { kolId: kol?.id ?? null, messageId: id });
-    await addLog(ctx, p, { kind: "inbox", who: "tool", kolId: kol?.id ?? null, summary: `退信：${m.subject}${kol ? `（${kol.name} ${kol.bouncedTo}）` : ""}` });
-    return "bounce";
-  }
-  if (!kol) {
-    await queue(ctx, p, "unmatched", { messageId: id });
-    await addLog(ctx, p, { kind: "inbox", who: "tool", summary: `对不上人的来信：${m.from}「${m.subject}」` });
-    return "unmatched";
-  }
-  await ctx.db.query(
-    `update kols set last_inbound_at = greatest(last_inbound_at, $2::timestamptz), whose_turn = 'us', next_followup_at = null,
-       stage = case when stage in ('new', 'invited', 'on_hold') then 'replied' when stage = 'closed' and close_reason = '无回应' then 'replied' else stage end,
-       updated_at = now() where id = $1`, [kol.id, m.at]);
-  const old = await supersedeOpenMail(ctx, p, kol.id);
-  await queue(ctx, p, "reply", { kolId: kol.id, messageId: id, replaces: old });
-  await addLog(ctx, p, { kind: "inbox", who: "tool", kolId: kol.id, summary: `${kol.name} 来信：${m.subject}` });
-  return "reply";
+  // Recording the mail and everything it sets off happen together: a crash in between would leave a mail that
+  // later reads skip as known, with no reply drafted and an outdated approval still standing.
+  return ctx.db.tx(async (q) => {
+    const c: Ctx = { ...ctx, db: q };
+    const ins = await q.query<{ id: number }>(
+      `insert into messages (project_id, kol_id, direction, mailbox, message_id, thread_id, subject, from_addr, to_addr, body, summary, at, pending, bounce)
+       values ($1, $2, 'in', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) on conflict do nothing returning id`,
+      [p.id, kol?.id ?? null, mailbox, m.messageId, m.threadId || null, m.subject, m.from, bounce ? kol?.bouncedTo ?? null : mailbox, m.body,
+        words.slice(0, 300), m.at, true, bounce]);
+    if (!ins.length) return "skip";
+    const id = ins[0].id;
+    if (bounce) {
+      await queue(c, p, "bounce", { kolId: kol?.id ?? null, messageId: id });
+      await addLog(c, p, { kind: "inbox", who: "tool", kolId: kol?.id ?? null, summary: `退信：${m.subject}${kol ? `（${kol.name} ${kol.bouncedTo}）` : ""}` });
+      return "bounce";
+    }
+    if (!kol) {
+      await queue(c, p, "unmatched", { messageId: id });
+      await addLog(c, p, { kind: "inbox", who: "tool", summary: `对不上人的来信：${m.from}「${m.subject}」` });
+      return "unmatched";
+    }
+    await q.query(
+      `update kols set last_inbound_at = greatest(last_inbound_at, $2::timestamptz), whose_turn = 'us', next_followup_at = null,
+         stage = case when stage in ('new', 'invited', 'on_hold') then 'replied' when stage = 'closed' and close_reason = '无回应' then 'replied' else stage end,
+         updated_at = now() where id = $1`, [kol.id, m.at]);
+    const old = await supersedeOpenMail(c, p, kol.id);
+    await queue(c, p, "reply", { kolId: kol.id, messageId: id, replaces: old });
+    await addLog(c, p, { kind: "inbox", who: "tool", kolId: kol.id, summary: `${kol.name} 来信：${m.subject}` });
+    return "reply";
+  });
 }
 
 /** A bounce names the address it couldn't deliver to; find the KOL we last wrote to at that address. */
@@ -158,6 +167,7 @@ export class Watcher {
     if (this.stopped) return;
     const child = spawn(this.bin, ["mail", "+watch", "--mailbox", this.mailbox, "--format", "data", "--msg-format", "minimal", "--as", "user"], { stdio: ["ignore", "pipe", "pipe"] });
     this.child = child;
+    child.on("error", (e) => (this.lastError = `启动 lark-cli 失败：${e.message}`));
     let errText = "";
     child.stderr!.on("data", (d) => (errText = (errText + d).slice(-2000)));
     createInterface({ input: child.stdout! }).on("line", (line) => {

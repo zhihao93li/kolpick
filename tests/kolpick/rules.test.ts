@@ -254,3 +254,63 @@ describe("codes", () => {
     expect((await one<any>(w.db, "select stage from kols where id = $1", [k])).stage).toBe("partner");
   });
 });
+
+describe("review fixes", () => {
+  it("a card edited after the run read its list is not sent", async () => {
+    const w = await world();
+    const a = await addKol(w), b = await addKol(w);
+    await approved(w, a);
+    const second = await approved(w, b);
+    // While the first one sends, the operator edits the second.
+    const orig = w.mail.send.bind(w.mail);
+    w.mail.send = async (o) => {
+      const r = await orig(o);
+      if (w.mail.sent.length === 1) await editProposal(w.ctx, w.p, second, { body: "改过了" });
+      return r;
+    };
+    await run(w);
+    expect(w.mail.sent).toHaveLength(1);
+    expect((await card(w, second)).status).toBe("pending");
+  });
+
+  it("pausing mid-run stops before the next code or send", async () => {
+    const w = await world();
+    const a = await addKol(w), b = await addKol(w);
+    await approved(w, a);
+    const second = await approved(w, b, { body: "{體驗碼}", action: { code: { type: "trial_create", code: "second_one", maxUses: 3, days: 14 } } });
+    const orig = w.mail.send.bind(w.mail);
+    w.mail.send = async (o) => {
+      const r = await orig(o);
+      await w.db.query("update projects set paused = true");
+      return r;
+    };
+    await run(w);
+    expect(w.mail.sent).toHaveLength(1);
+    expect(w.tafu.calls).toEqual([]);
+    expect((await card(w, second)).status).toBe("approved");
+  });
+
+  it("a reply whose approved recipient differs from the sender goes out as a new mail to the approved address", async () => {
+    const w = await world();
+    const k = await addKol(w, { email: "deer@gmail.com" });
+    const m = await one<{ id: number }>(w.db, "insert into messages (project_id, kol_id, direction, mailbox, message_id, subject, from_addr, at) values (1, $1, 'in', 'hello@tafu.me', 'mid-1', '想體驗', 'agent@talent.tw', now()) returning id", [k]);
+    const { id } = await proposeMail(w.ctx, w.p, { kind: "reply", kolId: k, inReplyTo: m!.id, to: "deer@gmail.com", body: "hi" });
+    await approve(w.ctx, w.p, id, (await card(w, id)).content_hash);
+    await run(w);
+    expect(w.mail.sent[0]).toMatchObject({ to: "deer@gmail.com", replyTo: undefined, subject: "Re: 想體驗" });
+  });
+
+  it("other emails match whole addresses only", async () => {
+    const w = await world();
+    const k = await addKol(w, { email: "x@gmail.com", other_emails: "wang@gmail.com, b@x.tw" });
+    const { sendBlock } = await import("../../src/kolpick/rules.js");
+    await addKol(w, { email: "z@gmail.com", other_emails: "ang@gmail.com", never_contact: true });
+    expect(await sendBlock(w.ctx, w.p, { kolId: k, to: "wang@gmail.com", mailbox: "hello@tafu.me" })).toBe("");
+  });
+
+  it("the timezone setting must be an offset", async () => {
+    const { cleanSetting } = await import("../../src/kolpick/settings.js");
+    expect(() => cleanSetting("timezone", "Asia/Taipei")).toThrow(/\+08:00/);
+    expect(cleanSetting("timezone", "+08:00")).toBe("+08:00");
+  });
+});

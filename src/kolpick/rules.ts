@@ -2,7 +2,7 @@
  * The checks every outgoing mail and code action passes right before it happens (docs/design.md §4). Each returns
  * the reason it may not happen, or "" when it may. Tools never skip them.
  */
-import { dayStart, type Ctx, type Project } from "./ctx.js";
+import { dayOf, dayStart, type Ctx, type Project } from "./ctx.js";
 import { one } from "./db/db.js";
 import { undeliverable } from "./mx.js";
 
@@ -16,9 +16,11 @@ export interface MailboxRow {
 }
 
 /** Today's limit of a mailbox, counting warm-up. */
-export function mailboxLimit(m: MailboxRow, now: number): number {
+export function mailboxLimit(m: MailboxRow, now: number, tz = "+08:00"): number {
   if (!m.warmup_from || m.warmup_start == null) return m.daily_limit;
-  const days = Math.max(0, Math.floor((now - Date.parse(m.warmup_from)) / 86_400_000));
+  // Whole days in the project's zone: the limit steps up at its midnight.
+  const from = (m.warmup_from as unknown) instanceof Date ? (m.warmup_from as unknown as Date).toISOString().slice(0, 10) : String(m.warmup_from).slice(0, 10);
+  const days = Math.max(0, Math.round((Date.parse(dayOf(now, tz)) - Date.parse(from)) / 86_400_000));
   return Math.min(m.daily_limit, m.warmup_start + days * (m.warmup_step ?? 0));
 }
 
@@ -61,7 +63,7 @@ export async function sendBlock(ctx: Ctx, p: Project, s: SendIntent): Promise<st
   const kol = await one<any>(ctx.db, "select never_contact, email, other_emails from kols where id = $1 and project_id = $2", [s.kolId, p.id]);
   if (!kol) return "找不到这位 KOL";
   if (kol.never_contact) return "这位 KOL 是永不联系";
-  const never = await one(ctx.db, "select 1 from kols where project_id = $1 and never_contact and (lower(email) = $2 or lower(other_emails) like '%' || $2 || '%')", [p.id, to]);
+  const never = await one(ctx.db, "select 1 from kols where project_id = $1 and never_contact and (lower(email) = $2 or $2 = any(regexp_split_to_array(lower(coalesce(other_emails, '')), '[\s,，、;；]+')))", [p.id, to]);
   if (never) return `${to} 属于一位永不联系的 KOL，本项目不再往这个邮箱发信`;
 
   const bounce = await one(ctx.db, "select 1 from messages where project_id = $1 and bounce and resolved_at is null and lower(to_addr) = $2", [p.id, to]);
@@ -79,7 +81,7 @@ export async function sendBlock(ctx: Ctx, p: Project, s: SendIntent): Promise<st
     const proj = await one<{ n: number }>(ctx.db, "select count(distinct kol_id)::int as n from messages where project_id = $1 and direction = 'out' and at >= $2", [p.id, today]);
     if ((proj?.n ?? 0) >= p.settings.dailyLimit) return `项目今天联系的人数已到上限（${p.settings.dailyLimit}）`;
     const box = await one<{ n: number }>(ctx.db, "select count(distinct lower(to_addr))::int as n from messages where project_id = $1 and direction = 'out' and lower(mailbox) = lower($2) and at >= $3", [p.id, mb.address, today]);
-    const limit = mailboxLimit(mb, ctx.now());
+    const limit = mailboxLimit(mb, ctx.now(), p.settings.timezone);
     if ((box?.n ?? 0) >= limit) return `${mb.address} 今天的额度（${limit} 人）用完了`;
   }
 

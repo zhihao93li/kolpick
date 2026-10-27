@@ -358,7 +358,7 @@ export async function reject(ctx: Ctx, p: Project, id: number, note?: string): P
   if (!["pending", "drafting", "approved", "failed"].includes(card.status)) throw new Error(`这张卡片已经是「${card.status}」`);
   await ctx.db.query("update proposals set status='rejected', result=$2, done_at=now(), updated_at=now() where (id=$1 or parent_id=$1) and status in ('pending','drafting','approved','failed')", [id, note ?? "不做了"]);
   // An unmatched mail or bounce the operator dropped no longer waits.
-  if (card.in_reply_to && ["unmatched", "bounce"].includes(card.kind)) await ctx.db.query("update messages set pending=false where id=$1", [card.in_reply_to]);
+  if (card.in_reply_to && ["unmatched", "bounce", "no_reply"].includes(card.kind)) await ctx.db.query("update messages set pending=false, resolved_at=now() where id=$1", [card.in_reply_to]);
   await addLog(ctx, p, { kind: "reject", kolId: card.kol_id, proposalId: id, summary: `不做「${card.title}」${note ? `：${note}` : ""}` });
 }
 

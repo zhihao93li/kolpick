@@ -69,6 +69,7 @@ export class TafuApi {
     return this.write(this.keys.trial, "体验码写密钥", `/trial-codes/${encodeURIComponent(code)}/extend`, body);
   }
 
+  /** Same kolRef + same name returns the campaign opened the first time (docs/data-api.md), so it may be asked again. */
   createPartner(body: { code: string; partnerName: string; contact: string; market: string; percentOff: number; followupId: string; operator: string }) {
     return this.write(this.keys.partner, "活动码写密钥", "/partner-codes", body);
   }

@@ -33,7 +33,7 @@ async function roomToday(ctx: Ctx, p: Project): Promise<{ address: string; room:
   for (const b of boxes) {
     const used = await one<{ n: number }>(ctx.db, "select count(distinct lower(to_addr))::int as n from messages where project_id = $1 and direction = 'out' and lower(mailbox) = lower($2) and at >= $3", [p.id, b.address, today]);
     const queued = await one<{ n: number }>(ctx.db, "select count(*)::int as n from proposals where project_id = $1 and status in ('pending','approved') and kind = 'invite' and lower(mailbox) = lower($2)", [p.id, b.address]);
-    out.push({ address: b.address, room: Math.max(0, mailboxLimit(b, ctx.now()) - (used?.n ?? 0) - (queued?.n ?? 0)) });
+    out.push({ address: b.address, room: Math.max(0, mailboxLimit(b, ctx.now(), p.settings.timezone) - (used?.n ?? 0) - (queued?.n ?? 0)) });
   }
   return out;
 }
@@ -102,10 +102,10 @@ export async function scanFollowups(ctx: Ctx, p: Project): Promise<{ group?: num
      from kols k
      where k.project_id = $1 and k.stage = 'invited' and k.whose_turn = 'kol' and not k.never_contact and k.email is not null
        and k.last_contact_at is not null and (k.next_followup_at is null or k.next_followup_at <= $2) and ${NO_OPEN}
-       and ($3 = '' or k.first_invited_at >= $3::date)
+       and ($3 = '' or k.first_invited_at >= ($3 || 'T00:00:00' || $8)::timestamptz)
        and k.mailbox = any($4::text[])
        and not (coalesce(k.level, '') = any($5::text[])) and not (coalesce(k.demand, '') = any($6::text[])) and not (k.mailbox = any($7::text[]))`,
-    [p.id, new Date(now).toISOString(), s.followupFrom, boxes, s.noFollowupLevels, s.noFollowupDemands, s.noFollowupChannels]);
+    [p.id, new Date(now).toISOString(), s.followupFrom, boxes, s.noFollowupLevels, s.noFollowupDemands, s.noFollowupChannels, s.timezone]);
   const t1 = (await activeTemplates(ctx, p, "催信 1"))[0];
   const t2 = (await activeTemplates(ctx, p, "催信 2"))[0];
   const skipped: string[] = [];
@@ -163,18 +163,24 @@ export async function scanForAgent(ctx: Ctx, p: Project): Promise<{ expiring: nu
   let expiring = 0;
   for (const c of codes) {
     const key = `expiry:${c.id}:${c.expires_at instanceof Date ? c.expires_at.toISOString() : c.expires_at}`;
-    if (!(await markOnce(ctx, p, key))) continue;
-    await ctx.db.query("insert into agent_jobs (project_id, kind, kol_id, input) values ($1, 'code_expiry', $2, $3)", [p.id, c.kol_id, JSON.stringify({ code_id: c.id, code: c.code })]);
-    expiring++;
+    const queued = await ctx.db.tx(async (q) => {
+      if (!(await markOnce({ ...ctx, db: q }, p, key))) return false;
+      await q.query("insert into agent_jobs (project_id, kind, kol_id, input) values ($1, 'code_expiry', $2, $3)", [p.id, c.kol_id, JSON.stringify({ code_id: c.id, code: c.code })]);
+      return true;
+    });
+    if (queued) expiring++;
   }
   const missed = await ctx.db.query<any>(
     `select k.* from kols k where k.project_id = $1 and k.stage = 'publish_agreed' and k.publish_due_at < $2 and not k.never_contact
        and not exists (select 1 from posts po where po.kol_id = k.id) and ${NO_OPEN}`, [p.id, new Date(now - 86_400_000).toISOString()]);
   let missedPosts = 0;
   for (const k of missed) {
-    if (!(await markOnce(ctx, p, `checkin:${k.id}:${new Date(k.publish_due_at).toISOString()}`))) continue;
-    await ctx.db.query("insert into agent_jobs (project_id, kind, kol_id, input) values ($1, 'checkin', $2, '{}')", [p.id, k.id]);
-    missedPosts++;
+    const queued = await ctx.db.tx(async (q) => {
+      if (!(await markOnce({ ...ctx, db: q }, p, `checkin:${k.id}:${new Date(k.publish_due_at).toISOString()}`))) return false;
+      await q.query("insert into agent_jobs (project_id, kind, kol_id, input) values ($1, 'checkin', $2, '{}')", [p.id, k.id]);
+      return true;
+    });
+    if (queued) missedPosts++;
   }
   return { expiring, missedPosts };
 }
