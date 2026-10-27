@@ -236,7 +236,7 @@ export class App {
     const p = await project(ctx);
     const path = url.pathname.replace(/^\/api/, "");
     const id = Number(path.split("/")[2]);
-    const route = `${method} ${path.replace(/\/\d+/g, "/:id")}`;
+    const route = `${method} ${path.replace(/\/\d+/g, "/:id").replace(/^\/(tool|daily)\/[\w-]+$/, "/$1/:name")}`;
     const kick = () => {
       void this.kickExec(p);
       void this.kickAgent(p);

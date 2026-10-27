@@ -221,3 +221,26 @@ describe("importer", () => {
     expect(await one<any>(db, "select status from templates")).toEqual({ status: "active" });
   });
 });
+
+describe("console API", () => {
+  it("routes every call the page makes", async () => {
+    const { App } = await import("../../src/kolpick/server.js");
+    const w = await world();
+    const app = new App(w.ctx);
+    const call = (method: string, path: string, body?: unknown) => app.api(method, new URL(`http://127.0.0.1/api${path}`), body);
+    const k = await addKol(w, { email: "deer@gmail.com" });
+    expect(await call("GET", "/state")).toMatchObject({ project: "t", env: "test" });
+    expect(await call("POST", "/tool/settings_get", {})).toMatchObject({ settings: { dailyLimit: 450 } });
+    expect(await call("POST", "/tool/pause_sending", { on: true })).toEqual({ paused: true });
+    expect(await call("GET", `/kols/${k}`)).toMatchObject({ kol: { id: k } });
+    await call("POST", `/kols/${k}`, { fields: { salutation: "鹿鹿" } });
+    const card = (await call("POST", `/kols/${k}/mail`, { subject: "Hi", body: "{稱呼} 好" })) as { id: number };
+    const cards = (await call("GET", "/cards?view=approved")) as any[];
+    expect(cards.map((c) => [c.id, c.body])).toEqual([[card.id, "鹿鹿 好"]]);
+    await call("POST", `/cards/${card.id}/undo`, {});
+    expect(((await call("GET", "/cards?view=pending")) as any[]).map((c) => c.id)).toContain(card.id);
+    expect(await call("GET", "/jobs")).toEqual([]);
+    expect(await call("GET", "/local")).toMatchObject({ env: "test" });
+    await expect(call("GET", "/nope")).rejects.toThrow(/没有这个接口/);
+  });
+});
