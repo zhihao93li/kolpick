@@ -172,7 +172,8 @@ async function renderCards(m) {
   for (const card of cards) wireCard(card);
 }
 function cardHtml(c) {
-  const head = `<h3>${esc(c.kol_name ? c.kol_name + "：" : "")}${esc(c.title)} <span class="chip">${KINDS[c.kind] || c.kind}</span>${c.kol_stage ? `<span class="chip">${STAGES[c.kol_stage]}</span>` : ""}</h3>
+  const title = c.kol_name && c.title !== c.kol_name ? `${c.kol_name}：${c.title}` : c.title || c.kol_name || "";
+  const head = `<h3>${esc(title)} <span class="chip">${KINDS[c.kind] || c.kind}</span>${c.kol_stage ? `<span class="chip">${STAGES[c.kol_stage]}</span>` : ""}</h3>
     <div class="meta">#${c.id} · ${day(c.created_at)}${c.to_addr ? ` · ${esc(c.mailbox)} → ${esc(c.to_addr)}` : ""}</div>${c.why ? `<div class="why">${esc(c.why)}</div>` : ""}`;
   const incoming = c.in_body ? `<details ${c.kind === "reply" ? "open" : ""}><summary class="meta">来信：${esc(c.in_from)} · ${day(c.in_at)} · ${esc(c.in_subject)}</summary><div class="in">${esc(c.in_body)}</div></details>` : "";
   let mid = "";
@@ -200,7 +201,7 @@ function cardHtml(c) {
   const revise = c.to_addr || c.kind === "template" ? `<button class="b" data-a="revise">让它改</button>` : "";
   return `<div class="card" data-card="${c.id}">${head}${mid}<div class="row"><button class="b primary" data-a="ok">${okLabel}</button>${revise}<button class="b danger" data-a="no">不做了</button>
     <span class="spacer"></span><span class="meta" data-a="dirty" hidden>改过的内容会先保存，再同意</span></div>
-    <div class="row" data-a="fb" hidden><input type="text" placeholder="说一句怎么改，比如：语气再轻松一点，提一下可以先用 3 次" data-a="fbtext"><button class="b primary" data-a="fbsend">交给 agent 改</button></div></div>`;
+    <div class="row" data-a="fb" hidden><input type="text" placeholder="说一句怎么改，比如：语气再轻松一点，提一下可以先用 3 次" data-a="fbtext" style="flex:1;width:auto"><button class="b primary" data-a="fbsend">交给 agent 改</button></div></div>`;
 }
 function wireCard(c) {
   const el = document.querySelector(`[data-card="${c.id}"]`);
@@ -227,6 +228,8 @@ function wireCard(c) {
   const rv = el.querySelector('[data-a="revise"]');
   if (rv) rv.onclick = () => { el.querySelector('[data-a="fb"]').hidden = false; el.querySelector('[data-a="fbtext"]').focus(); };
   const fb = el.querySelector('[data-a="fbsend"]');
+  const fbt = el.querySelector('[data-a="fbtext"]');
+  if (fbt) fbt.onkeydown = (e) => { if (e.key === "Enter" && !e.isComposing) fb.click(); };
   if (fb) fb.onclick = () => act(() => api(`/cards/${c.id}/revise`, { feedback: el.querySelector('[data-a="fbtext"]').value }), "交给 agent 改了，改好会回到这里");
 }
 

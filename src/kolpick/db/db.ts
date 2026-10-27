@@ -10,7 +10,11 @@ export interface Db {
 }
 
 export function connect(url: string): Db {
-  const sql = postgres(url, { max: 4, onnotice: () => {}, connect_timeout: 15, types: { bigint: postgres.BigInt } as any });
+  const sql = postgres(url, {
+    max: 4, onnotice: () => {}, connect_timeout: 15,
+    // JSON already turned into text goes in as it is; the driver's default would encode it a second time.
+    types: { json: { to: 3802, from: [114, 3802], serialize: (v: unknown) => (typeof v === "string" ? v : JSON.stringify(v)), parse: (s: string) => JSON.parse(s) } } as any,
+  });
   const wrap = (q: any): Db => ({
     query: async (text, params = []) => [...(await q.unsafe(text, params as any[]))] as any[],
     tx: (fn) => (q === sql ? sql.begin((t) => fn(wrap(t))) : fn(wrap(q))) as any,
