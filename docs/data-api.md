@@ -88,7 +88,7 @@
   "followupId": "recXXXX", "operator": "钟嫣婷" }
 ```
 
-  - `partnerName` 是合作页顶部显示的名称，`contact` 写进合作方的联系方式：只放这位 KOL 的联系邮箱，必须是批准内容里写明的那个，不放别的联系方式或资料（产品规则见 [design.md](design.md) 第八节）。
+  - `partnerName` 是合作页顶部显示的名称，`contact` 写进合作方的联系方式：只放这位 KOL 的联系邮箱，必须是批准内容里写明的那个，不放别的联系方式或资料（产品规则见 [design.md](design.md)「和 TAFU 运营后台的分工」）。
   - `market` 只能是项目支持的一个市场（TAFU：`CN` / `TW` / `GLOBAL`）。
   - `percentOff` 是粉丝折扣，TAFU 允许 10–20，插件默认 15。分润固定用项目的标准阶梯（TAFU：`tiered_paid_v1`，30% / 35% / 40%），这个接口不能改。
   - 从现在起生效，不设结束日期，不限次数。

@@ -112,10 +112,10 @@ lark-cli 登录用的是公司的一个飞书应用，`lark-cli auth status` 里
 
 ## 切换到新数据库（还没做）
 
-所有项目会在同一次切换中，从飞书表直接搬进新的数据库，插件和决策台同时换成新版本，不再按项目一个个切，也不再先用 `kol db import` / `kol db use` 原样搬。正式项目不要再用这两条命令。具体步骤由开发按仓库里 `docs/database-design.md` 第 10 节做，运营同事要配合的是：
+所有项目会在同一次切换中，从飞书表直接搬进新的数据库，插件和决策台同时换成新版本，不再按项目一个个切，也不再先用 `kol db import` / `kol db use` 原样搬。正式项目不要再用这两条命令。新版会重新设计，步骤见仓库里 `docs/design.md`「上线步骤」，运营同事要配合的是：
 
 1. 切换那天按通知打开「暂停所有发送」，关掉决策台，不要再改飞书表；切换前没做完或结果不明的事，先在旧版本里处理完。
-2. 切换完成后运行 `/plugin marketplace update kolpick`，新开一个会话。之后设置、发信邮箱、模板都在决策台的「设置」页里改，飞书表只当存档。
+2. 切换完成后按新版说明安装和使用（这份说明届时整份重写），飞书表只当存档。
 
 tafu-test 现在用的原样搬库还能看：`kol db status` 看每张表多少行，`kol db views` 重建分析视图。决策台开着时每天自动备份到 `~/.kol-ops/backups/`（`kol db backup` 手动备份，`kol db restore --file … --replace` 恢复）。每张表有一个分析用的视图，比如 `select 阶段, count(*) from kol."tafu-test/KOL 跟进" group by 1`。
 
