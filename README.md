@@ -10,13 +10,12 @@ KOL 外联工具：找人和公开邮箱、发邀约、收信、审核后发信�
 
 | 位置 | 内容 |
 | --- | --- |
-| `plugins/kol-ops/` | 插件本体：技能（`skills/`）、共同规则和字段说明（`reference/`），以及打包好的脚本 `scripts/kol.mjs`。项目专属的设置、发信邮箱和邮件模板不在这里，在各项目自己的表里 |
-| `src/kolops/` | `kol.mjs` 的源码：各个命令、发信前的检查、执行器，以及项目表的标准结构（`schema.ts`） |
-| `src/kolops/console/` | 决策台（`kol console`）的本机服务和页面 |
-| `src/kolops/store/` | 存储层：项目表放在 Postgres 时，由它接住所有读写表的命令（`pg.ts`），加上本机副本、备份和 `kol db` 命令 |
+| `src/kolpick/` | 新版：本机服务（`server.ts`：MCP、决策台接口、收信监听、定时任务）、工具（`tools.ts`，MCP 和命令行共用）、规则检查（`rules.ts`）、卡片（`proposals.ts`）、执行（`execute.ts`）、收信（`inbox.ts`）、后台 agent（`agent.ts`）、决策台页面（`console.html`）、安装（`install.ts`） |
+| `src/kolpick/db/` | 数据库连接和迁移（表结构就在 `migrations.ts`） |
+| `src/kolpick/importer/` | 把旧飞书表导出成本机快照、导入新库（可重复跑） |
 | `src/discovery/` | 找人和查邮箱：actor 列表和价格（`apify.ts`）、各平台步骤（`pipeline.ts`）、整体流程（`run.ts`）；为什么这样选见 design.md「找人和查邮箱」 |
-| `src/scripts/build-plugin.ts` | 把 `src/kolops/cli.ts` 打包成 `plugins/kol-ops/scripts/kol.mjs` |
-| `.claude-plugin/marketplace.json` | 让 `/plugin marketplace add zhihao93li/kolpick#stable` 能找到插件 |
+| `src/kolops/`、`plugins/kol-ops/` | 旧版插件（正式 tafu 切换前还在用），切换后删除 |
+| `src/scripts/build-kolpick.ts` | 把 `src/kolpick/cli.ts` 打包成 `bin/kolpick.mjs` |
 
 ## 开发
 
@@ -24,12 +23,12 @@ KOL 外联工具：找人和公开邮箱、发邀约、收信、审核后发信�
 
 ```bash
 npm ci
-npm test               # 包括直接运行打包后的 kol.mjs 的冒烟测试
+npm test
 npm run typecheck
-npm run build:plugin   # 改了 src/ 之后重新打包
+npm run build          # 打包新版 bin/kolpick.mjs
 ```
 
-改完源码要重新打包，并把 `plugins/kol-ops/.claude-plugin/plugin.json` 的版本号加一。
+本机试用新版：`node bin/kolpick.mjs setup --from-kol-ops --test-db <连接串> --prod-db <连接串>`，`node bin/kolpick.mjs install`（开机自启 + 注册到 Claude Code、Codex），然后 `kolpick open` 打开决策台。配置和密钥只在 `~/.kolpick/config.json`。
 
 ## 发布
 
