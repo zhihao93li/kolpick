@@ -11,7 +11,7 @@ import { saveConfig } from "./config.js";
 import { addLog, dayOf, project, type Ctx, type Project } from "./ctx.js";
 import { one } from "./db/db.js";
 import { findPeople } from "./discover.js";
-import { ownWords } from "./mail.js";
+import { splitMail } from "./mail.js";
 import { recoverAfterCrash, resolveUnknown, runApproved } from "./execute.js";
 import { GUIDE } from "./guide.js";
 import { catchUp, recordOne, Watcher } from "./inbox.js";
@@ -304,8 +304,16 @@ export class App {
           days: Number(url.searchParams.get("days") ?? 2), before: Number(url.searchParams.get("before")) || null, kol: Number(url.searchParams.get("kol")) || null });
       case "GET /usage":
         return usage(ctx, p);
-      case "GET /kols/:id":
-        return kolDetail(ctx, p, id);
+      case "GET /kols/:id": {
+        const d = await kolDetail(ctx, p, id);
+        // The console shows what each mail said; the quoted history under it folds away.
+        d.messages = d.messages.map((m: any) => {
+          if (!m.body) return m;
+          const { own, quoted } = splitMail(m.body);
+          return { ...m, body: own, quoted };
+        });
+        return d;
+      }
       case "POST /kols/:id":
         return callTool(ctx, "kol_update", { id, fields: b.fields }, "operator");
       case "POST /kols/:id/mail": {
@@ -433,8 +441,10 @@ export class App {
         r.current = r.draft?.draft_of ? await one(db, "select * from templates where id = $1", [r.draft.draft_of]) : null;
       }
       if (r.in_body) {
-        r.in_own = ownWords(String(r.in_body), 4000);
-        r.in_body = String(r.in_body).slice(0, 4000);
+        const { own, quoted } = splitMail(String(r.in_body));
+        r.in_own = own.slice(0, 4000);
+        r.in_quoted = quoted.slice(0, 6000);
+        delete r.in_body;
       }
     }
     return rows;

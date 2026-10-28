@@ -313,4 +313,12 @@ describe("review fixes", () => {
     expect(() => cleanSetting("timezone", "Asia/Taipei")).toThrow(/\+08:00/);
     expect(cleanSetting("timezone", "+08:00")).toBe("+08:00");
   });
+
+  it("splits a mail into what the sender wrote and the quoted history, even when imports lost the line breaks", async () => {
+    const { splitMail } = await import("../../src/kolpick/mail.js");
+    const body = "主旨：Re: 邀請\n寄件人：joyce@gmail.com\n\n可以幫我延長嗎？ 謝謝🙏 <hello@tafu.me>於 2026年10月19日週一，下午12:07寫道： Joyce 您好 > 发件人：\"商务合作\" <hello@tafu.me> > 时间：2026年10月11日 > > 體驗碼：applemany_u >\u00a0 > 祝順心";
+    const { own, quoted } = splitMail(body);
+    expect(own).toBe("可以幫我延長嗎？ 謝謝🙏");
+    expect(quoted).toBe("<hello@tafu.me>於 2026年10月19日週一，下午12:07寫道：\nJoyce 您好\n\n发件人：\"商务合作\" <hello@tafu.me>\n时间：2026年10月11日\n體驗碼：applemany_u\n\n祝順心");
+  });
 });

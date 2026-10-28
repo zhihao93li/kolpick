@@ -470,8 +470,7 @@ function headHtml(c) {
     ${c.feedback ? `<div class="edited">已按你的意见改过：「${esc(c.feedback)}」</div>` : ""}</div>`;
 }
 function inboundHtml(c) {
-  const own = c.in_own || c.in_body, more = c.in_body && own && own.length < c.in_body.length - 20;
-  return c.in_body ? `<div class="label">来信 · ${esc(c.in_from || "")} · ${when(c.in_at)}${c.in_subject ? " · " + esc(c.in_subject) : ""}</div><div class="bubble">${esc(own)}</div>${more ? `<details style="margin-top:8px"><summary class="hint">看引用的旧邮件</summary><div class="bubble" style="margin-top:6px;font-size:13px">${esc(c.in_body)}</div></details>` : ""}`
+  return c.in_own || c.in_quoted ? `<div class="label">来信 · ${esc(c.in_from || "")} · ${when(c.in_at)}${c.in_subject ? " · " + esc(c.in_subject) : ""}</div><div class="bubble">${esc(c.in_own || "（只有引用的旧邮件，没写新内容）")}</div>${c.in_quoted ? `<details style="margin-top:8px"><summary class="hint">看引用的旧邮件</summary><div class="bubble" style="margin-top:6px;font-size:13px;color:var(--muted)">${esc(c.in_quoted)}</div></details>` : ""}`
     : `<div class="label">情况</div><div class="bubble">${esc(c.why || c.title || "")}</div>`;
 }
 function stepsHtml(c, lead = "同意后会依次做（任何一步失败就停下，不做后面的）") {
@@ -798,7 +797,7 @@ async function renderKol(m, id) {
     ${closed || k.never_contact ? `<div class="knext" style="background:var(--soft);border-color:var(--line)"><b>${k.never_contact ? "永不联系" : `已结案（${esc(k.close_reason || "")}）`}</b><span class="sp" style="min-width:200px">${k.never_contact ? "本项目不会再给她发信。她来信只会出提醒卡。" : "不再排邀约和催信；她来信会自动重新打开。"}</span><button class="btn" type="button" id="kReopen">重新打开</button></div>` : ""}
     ${!closed ? `<div class="knext"><b>下一步</b>${KD.editNext ? `<input class="field" id="kNextIn" style="flex:1;min-width:200px" value="${esc(k.next_step || "")}"><button class="btn primary" type="button" id="kNextSave">保存</button>` : `<span class="sp" style="min-width:200px">${esc(k.next_step || "还没写")}</span><button class="btn" type="button" id="kNextEdit">改</button>`}</div>` : ""}
     <div class="kcols"><section class="kmain" aria-label="详情"><div class="tabs" role="tablist">${[["mail", `来往 ${d.messages.length}`], ["cards", `卡片 ${d.cards.length}`], ["profile", "资料"], ["log", "记录"]].map(([t, l]) => `<button class="tab ${KD.tab === t ? "on" : ""}" type="button" role="tab" aria-selected="${KD.tab === t}" data-ktab="${t}">${l}</button>`).join("")}</div>
-      ${KD.tab === "mail" ? `<div class="thread">${msgs.map((x) => `<div class="tmsg ${x.direction}"><div class="sub">${x.direction === "in" ? esc(k.name) : x.direction === "out" ? esc(x.mailbox || "我们") : "记录"} · ${when(x.at)}${x.bounce ? " · 退信" : ""}${x.pending ? " · 待处理" : ""}</div>${x.subject ? `<b>${esc(x.subject)}</b>\n` : ""}${esc(x.body || x.summary || "")}</div>`).join("") || '<div class="meta">还没有来往</div>'}
+      ${KD.tab === "mail" ? `<div class="thread">${msgs.map((x) => `<div class="tmsg ${x.direction}"><div class="sub">${x.direction === "in" ? esc(k.name) : x.direction === "out" ? esc(x.mailbox || "我们") : "记录"} · ${when(x.at)}${x.bounce ? " · 退信" : ""}${x.pending ? " · 待处理" : ""}</div>${x.subject ? `<b>${esc(x.subject)}</b>\n` : ""}${esc(x.body || x.summary || "")}${x.quoted ? `<details><summary class="hint">看引用的旧邮件</summary><div class="meta">${esc(x.quoted)}</div></details>` : ""}</div>`).join("") || '<div class="meta">还没有来往</div>'}
         <div class="tmsg note">你在飞书邮箱里直接回的信，收信时也会自动记进来</div></div>
         <div class="compose"><div class="row"><b style="font-size:14px">写信</b><span class="meta">${k.never_contact ? "永不联系：不能给她发信" : "接着最近的来往回复 · 你点发出就算同意，5 秒内可撤销"}</span></div>
           <input class="field" id="cSubj" type="text" placeholder="主题（留空 = 接着最近的来往回复）"><textarea class="field" id="cBody" rows="4" placeholder="自己写，或者让 agent 起草"></textarea>

@@ -131,8 +131,11 @@ const QUOTE_MARKERS = [
   /\n\s*>/,
 ];
 
-/** The sender's own words: the mail cut at its first quoted-history marker. */
-export function ownWords(body: string, max = 4000): string {
+/** Header lines the old importer put at the top of a body ("主旨：… / 寄件人：…"). */
+const IMPORT_HEADER = /^(?:(?:主旨|寄件人|收件人|日期|Subject|From|To|Date)\s*[:：][^\n]*\n)+\s*/;
+
+/** Where the quoted history starts: the first quote marker, pulled back to its line when it opens one. */
+function quoteStart(body: string): number {
   let cut = body.length;
   for (const re of QUOTE_MARKERS) {
     const m = re.exec(body);
@@ -141,7 +144,33 @@ export function ownWords(body: string, max = 4000): string {
     const lead = line >= 0 ? body.slice(line, m.index) : "";
     cut = line >= 0 && lead.length <= 40 && !/[。！？!?，,]/.test(lead) ? line : m.index;
   }
-  return body.slice(0, cut).trim().slice(0, max);
+  return cut;
+}
+
+/** Quoted history laid out to read: one line per quoted line and header, without the ">" marks. */
+function layQuote(q: string): string {
+  return q
+    .replace(/\u00a0/g, " ")
+    // Imported mail lost its line breaks, leaving "a > b > > c"; each ">" run was a line start.
+    .replace(/[ \t]*(?:^|\s)(?:>[ \t]?)+/gm, "\n")
+    .replace(/\s*((?:<[^>\s]+>\s*)?(?:於|在)\s*\d{4}\s*年.{0,40}?(?:寫道|写道)\s*[:：]|On .{5,120}? wrote:)/g, "\n\n$1\n")
+    .replace(/\s*((?:发件人|寄件者|From)\s*[:：])/g, "\n\n$1")
+    .replace(/\s*((?:时间|時間|主题|主旨|收件人|Sent|Subject|To|Date)\s*[:：])/g, "\n$1")
+    .replace(/[ \t]*\n[ \t]*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** A mail split into the sender's own words and the quoted history under them. */
+export function splitMail(body: string): { own: string; quoted: string } {
+  const b = body.replace(IMPORT_HEADER, "");
+  const cut = quoteStart(b);
+  return { own: b.slice(0, cut).trim(), quoted: layQuote(b.slice(cut)) };
+}
+
+/** The sender's own words: the mail cut at its first quoted-history marker. */
+export function ownWords(body: string, max = 4000): string {
+  return splitMail(body).own.slice(0, max);
 }
 
 /** Mail the mail system sends back when delivery failed. */
