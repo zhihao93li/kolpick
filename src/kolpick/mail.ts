@@ -181,5 +181,13 @@ export function isBounce(from: string, subject: string): boolean {
 
 /** Senders whose mail never needs an answer: reports, notifications, our own mailboxes. */
 export function isAutomated(from: string): boolean {
-  return /^(no-?reply|noreply|notifications?|dmarcreport|dmarc|postmaster|mailer-daemon)@/i.test(from) || /@(tafu\.me)$/i.test(from);
+  return /^[^@]*(no-?reply|do-?not-?reply|notifications?|dmarc|postmaster|mailer-daemon)[^@]*@/i.test(from) || /@(tafu\.me)$/i.test(from);
 }
+
+/** Replies a mail system writes on its own: out-of-office, auto-acknowledgements. */
+export function isAutoReply(subject: string): boolean {
+  return /^\s*(自动回复|自動回覆|自动答复|Auto(matic)?[ -]?reply|Out of (the )?office|休假)/i.test(subject);
+}
+
+/** A subject without its reply and forward prefixes, to tell whether a mail answers one we sent. */
+export const BASE_SUBJECT_SQL = (col: string) => `lower(regexp_replace(${col}, '^\\s*((re|fw|fwd|回复|回覆|答复|轉寄|转发)\\s*[:：﹕]\\s*)+', '', 'i'))`;

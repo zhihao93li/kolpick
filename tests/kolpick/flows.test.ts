@@ -33,14 +33,20 @@ describe("inbox", () => {
     expect(jobs).toEqual([{ kind: "reply", kol_id: k }]);
   });
 
-  it("an unknown sender goes to the agent to identify; automated mail is ignored", async () => {
+  it("an unknown sender answering our mail goes to the agent; other mail is only kept; automated mail is ignored", async () => {
     const w = await world();
-    w.mail.deliver("hello@tafu.me", { from: "agent@talent.tw", body: "我是經紀人" });
+    const k = await addKol(w, { email: "star@gmail.com" });
+    await w.db.query("insert into messages (project_id, kol_id, direction, mailbox, to_addr, subject, at) values (1, $1, 'out', 'hello@tafu.me', 'star@gmail.com', '【合作邀請】邀請 Star 體驗 TAFU', now() - interval '1 day')", [k]);
+    w.mail.deliver("hello@tafu.me", { from: "agent@talent.tw", subject: "回覆﹕ Re: 【合作邀請】邀請 Star 體驗 TAFU", body: "我是經紀人" });
+    w.mail.deliver("hello@tafu.me", { from: "support@clickbank.com", subject: "Re: Create a ticket", body: "We got your ticket" });
     w.mail.deliver("hello@tafu.me", { from: "noreply@instagram.com", body: "notification" });
+    w.mail.deliver("hello@tafu.me", { from: "noreply-dmarc-support@google.com", subject: "Report domain: tafu.me", body: "report" });
+    w.mail.deliver("hello@tafu.me", { from: "someone@qq.com", subject: "自动回复: 【合作邀請】邀請 Star 體驗 TAFU", body: "我在休假" });
     const [r] = await catchUp(w.ctx, w.p);
-    expect(r.unmatched).toBe(1);
-    expect(r.recorded).toBe(1);
-    expect((await w.db.query<any>("select kind from agent_jobs"))[0].kind).toBe("unmatched");
+    expect(r.unmatched).toBe(2);
+    expect(r.recorded).toBe(2);
+    expect((await w.db.query<any>("select kind from agent_jobs")).map((j) => j.kind)).toEqual(["unmatched"]);
+    expect((await one<any>(w.db, "select pending from messages where from_addr = 'support@clickbank.com'")).pending).toBe(false);
   });
 
   it("a bounce is tied to the KOL it bounced from and blocks that address", async () => {

@@ -7,7 +7,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface } from "node:readline";
 import { addLog, type Ctx, type Project } from "./ctx.js";
 import { one } from "./db/db.js";
-import { feishuTime, isAutomated, isBounce, ownWords, type FullMail } from "./mail.js";
+import { BASE_SUBJECT_SQL, feishuTime, isAutoReply, isAutomated, isBounce, ownWords, type FullMail } from "./mail.js";
 import { supersedeOpenMail } from "./proposals.js";
 
 const OVERLAP_MS = 15 * 60_000;
@@ -80,8 +80,8 @@ async function kolFor(ctx: Ctx, p: Project, address: string, mailbox: string): P
 
 /** Records one incoming mail. Already recorded → "skip", nothing else changes. */
 export async function recordIncoming(ctx: Ctx, p: Project, mailbox: string, m: FullMail): Promise<Recorded> {
-  if (isAutomated(m.from) && !isBounce(m.from, m.subject)) return "skip";
   const bounce = isBounce(m.from, m.subject);
+  if (!bounce && (isAutomated(m.from) || isAutoReply(m.subject))) return "skip";
   const kol = bounce ? await bouncedKol(ctx, p, m) : await kolFor(ctx, p, m.from, mailbox);
   const words = ownWords(m.body);
   // Recording the mail and everything it sets off happen together: a crash in between would leave a mail that
@@ -101,6 +101,14 @@ export async function recordIncoming(ctx: Ctx, p: Project, mailbox: string, m: F
       return "bounce";
     }
     if (!kol) {
+      // Only an answer to mail we sent can be a KOL writing from another address; the rest (platforms, other business) is just kept.
+      const ours = await one(q, `select 1 from messages where project_id = $1 and direction = 'out'
+        and ((thread_id is not null and thread_id = $2) or ${BASE_SUBJECT_SQL("subject")} = ${BASE_SUBJECT_SQL("$3")}) limit 1`, [p.id, m.threadId || null, m.subject]);
+      if (!ours) {
+        await q.query("update messages set pending = false where id = $1", [id]);
+        await addLog(c, p, { kind: "inbox", who: "tool", summary: `不是回我们的信，只记下：${m.from}「${m.subject}」` });
+        return "unmatched";
+      }
       await queue(c, p, "unmatched", { messageId: id });
       await addLog(c, p, { kind: "inbox", who: "tool", summary: `对不上人的来信：${m.from}「${m.subject}」` });
       return "unmatched";
