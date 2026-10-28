@@ -46,7 +46,8 @@ export function agentArgs(cmd: AgentCommand, prompt: string, mcpUrl: string, res
     return { bin: cmd.bin || "codex", args };
   }
   const mcp = JSON.stringify({ mcpServers: { kolpick: { type: "http", url: mcpUrl } } });
-  const args = ["-p", prompt, "--mcp-config", mcp, "--strict-mcp-config", "--allowedTools", "mcp__kolpick",
+  // The operator's ~/.claude/settings.json may point claude at a relay with its own key; skip it so the run uses their subscription.
+  const args = ["-p", prompt, "--setting-sources", "project,local", "--mcp-config", mcp, "--strict-mcp-config", "--allowedTools", "mcp__kolpick",
     // --allowedTools only pre-approves; the agent works on mail from strangers, so it gets nothing but kolpick.
     "--disallowedTools", "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch", "--output-format", "json", ...(cmd.args ?? [])];
   if (resume) args.push("--resume", resume);
