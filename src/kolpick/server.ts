@@ -350,7 +350,7 @@ export class App {
       case "POST /jobs/:id/continue":
         return continueJob(ctx, p, id, b.text, this.mcpUrl);
       case "POST /jobs/:id/retry":
-        await ctx.db.query("update agent_jobs set status='queued', error=null, started_at=null, finished_at=null where id=$1 and project_id=$2 and status='stuck'", [id, p.id]);
+        await ctx.db.query("update agent_jobs set status='queued', error=null, output=null, started_at=null, finished_at=null where id=$1 and project_id=$2 and status='stuck'", [id, p.id]);
         kick();
         return { ok: true };
       case "POST /tool/:name": {
