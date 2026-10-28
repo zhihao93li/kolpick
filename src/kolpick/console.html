@@ -271,6 +271,15 @@ table.mb td{padding:8px 10px;border-bottom:1px solid #F3F1EC}
 .g2sub{font-size:12px;color:var(--muted);margin-top:2px}
 .g2plan{color:var(--accent-ink)}
 .g2x{grid-column:1/6;display:flex;flex-wrap:wrap;gap:16px;padding:12px 0 4px 36px}.g2x>div{flex:1 1 260px;min-width:0}
+body.setup .nav,body.setup .stat,body.setup .pause{display:none}
+.su{max-width:760px;display:flex;flex-direction:column;gap:16px}
+.su h1{font-size:22px;margin:8px 0 0}
+.mrow{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr);gap:6px 14px;align-items:center;padding:10px 0;border-top:1px solid #F3F1EC}
+.mrow:first-of-type{border-top:0}
+.mrow b{font-weight:500;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.mrow .field{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.mfix{grid-column:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (max-width:600px){.mrow{grid-template-columns:1fr}.mfix{grid-column:1}}
 </style>
 </head>
 <body>
@@ -436,7 +445,7 @@ async function render() {
     location.hash = "decide";
   } catch (e) { if (!offline) m.innerHTML = `<div class="wrap"><div class="card"><b>出错了：</b>${esc(e.message)}</div></div>`; }
 }
-window.onhashchange = () => { closeModal(); render(); };
+window.onhashchange = () => { closeModal(); if (!document.body.classList.contains("setup")) render(); };
 
 // ---------- 待你决定 ----------
 // 先看懂发生了什么：队列一行一条，同类做法相同的合成一批；单张卡是 发生了什么 → 上下文 → agent 建议 → 操作，右边是 KOL 资料。
@@ -1127,11 +1136,11 @@ const SECTIONS = [["send", "发信和额度", ["dailyLimit", "perMinute", "coold
   ["tpl", "模板", []], ["posts", "找人和找帖子", ["findCountry", "findLanguage", "postKeyword", "postLookbackDays"]], ["auto", "自动运行", []], ["local", "这台电脑", ["dataApiUrl", "feishuWebhook"]]];
 const ST = { dirty: {}, editTpl: null };
 async function renderSettings(m) {
-  const [s, local, templates] = await Promise.all([api("/tool/settings_get", {}), api("/local"), api("/tool/templates", {})]);
+  const sec = route[1] || "send";
+  const [s, local, templates, mach] = await Promise.all([api("/tool/settings_get", {}), api("/local"), api("/tool/templates", {}), sec === "local" ? api("/setup") : null]);
   const val = (v) => (Array.isArray(v) ? v.join("、") : v && typeof v === "object" ? Object.entries(v).map(([a, b]) => `${a}=${b}`).join("、") : v ?? "");
   const field = (k) => `<label>${esc(s.labels[k] || k)}<input class="field" type="text" data-s="${k}" value="${esc(ST.dirty[k] ?? val(s.settings[k]))}"></label>`;
   const usageBy = Object.fromEntries((U.mailboxes || []).map((b) => [b.address, b]));
-  const sec = route[1] || "send";
   const autoRows = [["inbox", "收信监听", "每个发信邮箱实时收信；断了自动改为每 2 分钟补收", "关掉后不再实时收信，只能手动「现在收一次」"],
     ["schedule", "定时任务", "每天：排邀约和催信、同步码用量、码到期和约好没发、找帖子、抓数据", "关掉后早上不会自动排批"],
     ["agent", "后台 agent", "来信、让它改、码到期、问发布，自动交给 agent 起草", "关掉后来信只记录，不起草"]];
@@ -1150,7 +1159,10 @@ async function renderSettings(m) {
     posts: `<div class="sgrid">${SECTIONS[4][2].map(field).join("")}</div><div class="meta" style="margin-top:10px">找帖子：每天看「已约发布 / 已发布 / 合作中」的人最近的帖子，含这个词就记下，第 1/3/7/30 天各抓一次数据。</div>`,
     auto: `<div class="meta">关掉只是不自动做；手动点照样能做。「暂停所有发送」在页面顶部，和这里无关。</div>${autoRows.map(([k, l, on, off]) => `<div class="srow"><b>${l}<span class="meta" style="display:block;font-weight:400">${local.auto[k] ? on : off}</span></b><button class="sw ${local.auto[k] ? "on" : ""}" type="button" role="switch" aria-checked="${!!local.auto[k]}" aria-label="${l}" data-auto="${k}"></button></div>`).join("")}
       <div class="row" style="margin-top:12px">${Object.entries(S.dailyNames || {}).map(([k, v]) => `<button class="btn sm" type="button" data-daily="${k}">现在跑：${v}${S.daily?.[k] ? `（上次 ${when(S.daily[k].at)}${S.daily[k].ok ? "" : "，出错"}）` : ""}</button>`).join("")}<button class="btn sm" type="button" id="inboxNow">现在收一次信</button></div>`,
-    local: `<div class="meta">数据库连接、接口密钥、Apify token 只存在这台电脑上，页面里不显示；改要在终端里运行 <code>kolpick setup</code>。</div>
+    local: `<div class="label" style="margin-top:4px">收发信和 agent</div><div id="mTools">${mach ? toolsHtml(mach) : ""}</div>
+      <div class="label" style="margin-top:18px">数据库和密钥</div><div class="meta">只存在这台电脑上，页面里不显示原值；粘贴新的值就替换。</div><div id="mKeys">${mach ? keysHtml(mach) : ""}</div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="mkSave">保存</button></div>
+      <div class="label" style="margin-top:18px">运行</div>
       <div class="srow"><b>开机自动启动<span class="meta" style="display:block;font-weight:400">${local.login ? "开机就在后台跑，回信和起草不用等你打开；崩溃了会自动重启" : "只在你点 kolpick.app 时运行；打开后才开始收信和起草"}</span></b><button class="sw ${local.login ? "on" : ""}" type="button" role="switch" aria-checked="${!!local.login}" aria-label="开机自动启动" id="loginSw"></button></div>
       <div class="srow"><b>关闭 kolpick<span class="meta" style="display:block;font-weight:400">停下收信、agent 和定时任务，退出服务，什么都不占。正在发的信会先发完。下次点 kolpick.app 再打开。</span></b><button class="btn sm" type="button" id="quitBtn">关闭</button></div>
       <div class="sgrid" style="margin-top:12px"><label>后台 agent<select class="field" id="agKind"><option value="claude">Claude（claude -p）</option><option value="codex">Codex（codex exec）</option></select></label>
@@ -1194,6 +1206,11 @@ async function renderSettings(m) {
     $("#qNo").onclick = closeModal;
     $("#qGo").onclick = async () => { closeModal(); closedByYou = true; try { await api("/quit", {}); } catch {} $("#closed").hidden = false; };
   });
+  if (mach) {
+    const redraw = (st) => { $("#mTools").innerHTML = toolsHtml(st); wireMachine($("#mTools"), redraw, saved); };
+    const saved = (r) => { apiCache = new Map(); toast(r.dbChanged ? "已保存。数据库换了：关闭 kolpick 再点 kolpick.app 打开后生效" : "已保存，立刻生效", { long: r.dbChanged }); render(); };
+    wireMachine(m, redraw, saved);
+  }
   const ag = $("#agSave"); if (ag) ag.onclick = () => act(() => api("/local", { agent: { kind: $("#agKind").value, bin: $("#agBin").value.trim(), args: $("#agArgs").value.trim() ? $("#agArgs").value.trim().split(/\s+/) : [], parallel: Number($("#agPar").value) || 3 } }), "已保存");
 }
 function tplEditor(t) {
@@ -1203,14 +1220,105 @@ function tplEditor(t) {
     <div class="row"><button class="btn primary" type="button" id="tSave">存成新版，去对比</button><button class="btn" type="button" id="tCancel">取消</button></div></div>`;
 }
 
+// ---------- 这台电脑：数据库、密钥和本机工具（第一次设置和「设置 → 这台电脑」共用） ----------
+// 值只存在本机；页面只知道填没填，从不显示原值。
+const MKEYS = [["testDb", "测试库连接串", "postgres://…"], ["prodDb", "正式库连接串", "postgres://…"], ["dataApi", "TAFU 数据接口密钥", ""],
+  ["trial", "TAFU 体验码密钥", ""], ["partner", "TAFU 活动码密钥", ""], ["apify", "Apify token", "找人和查邮箱用"]];
+const MTOOLS = [["lark", "lark-cli", true], ["larkApp", "飞书应用", true], ["larkAuth", "飞书收发信授权", true], ["claude", "Claude 订阅", "claude"], ["codex", "Codex", "codex"]];
+function keysHtml(st) {
+  const must = st.env === "prod" ? "prodDb" : "testDb";
+  return MKEYS.map(([k, label, ph]) => {
+    const has = st.filled[k];
+    const tag = has ? `<span class="tag green">已填</span>` : k === must ? `<span class="tag red">必填</span>` : k.endsWith("Db") ? `<span class="tag">上线时再填</span>` : `<span class="tag">可以先空着</span>`;
+    return `<div class="mrow"><b>${label}${tag}</b><input class="field" type="password" autocomplete="off" spellcheck="false" data-mk="${k}" placeholder="${has ? "已填；粘贴新的就替换" : esc(ph || "粘贴管理员给的值")}"></div>`;
+  }).join("") + `<div class="hint" style="margin-top:6px">连接串和密钥找管理员要。密钥空着也能先用，用到时会提示来这里填。</div>`;
+}
+function toolsHtml(st) {
+  return MTOOLS.map(([k, label, need]) => {
+    const c = st.checks[k];
+    const required = need === true || need === st.agent;
+    const tag = c.ok ? `<span class="tag green">好了</span>` : required ? `<span class="tag amber">要处理</span>` : `<span class="tag">可选</span>`;
+    let fix = "";
+    if (!c.ok && c.fix) fix = `<code>${esc(c.fix)}</code><button class="btn sm" type="button" data-copy="${esc(c.fix)}">复制</button><span class="hint">粘贴到「终端」运行，做完点「重新检查」</span>`;
+    if (!c.ok && k === "larkApp" && st.checks.lark.ok) fix = `<input class="field" style="max-width:220px" id="laId" placeholder="App ID（cli_ 开头）" autocomplete="off"><input class="field" style="max-width:220px" type="password" id="laSec" placeholder="App Secret" autocomplete="off"><button class="btn sm" type="button" id="laGo">保存</button>`;
+    if (!c.ok && k === "larkAuth" && st.checks.larkApp.ok && !/等你/.test(c.note)) fix = `<button class="btn sm primary" type="button" id="lgGo">去飞书授权</button><span class="hint">会打开飞书的授权页，点同意后这里自己变绿</span>`;
+    return `<div class="mrow"><b>${label}${tag}</b><span class="meta">${esc(c.note)}</span>${fix ? `<div class="mfix">${fix}</div>` : ""}</div>`;
+  }).join("") + `<div class="row" style="margin-top:8px"><button class="btn sm" type="button" id="mCheck">重新检查</button></div>`;
+}
+let loginPoll = null;
+// Wires both blocks inside el; redraw(st) draws them again with fresh status.
+function wireMachine(el, redraw, onSaved) {
+  $$("[data-copy]", el).forEach((b) => (b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast("已复制，粘贴到终端运行"); } catch { toast("复制不了，手动选中复制"); } }));
+  const ck = $("#mCheck", el); if (ck) ck.onclick = async () => { ck.disabled = true; ck.textContent = "检查中…"; try { redraw(await apiFetch("/setup")); } catch (e) { toast("没检查成：" + e.message); } };
+  const la = $("#laGo", el); if (la) la.onclick = async () => {
+    la.disabled = true;
+    try { redraw(await apiFetch("/setup/lark-app", { appId: $("#laId").value, secret: $("#laSec").value })); toast("飞书应用配好了"); } catch (e) { la.disabled = false; toast("没成功：" + e.message); }
+  };
+  const lg = $("#lgGo", el); if (lg) lg.onclick = async () => {
+    lg.disabled = true;
+    const w = window.open("about:blank", "_blank");
+    try {
+      const r = await apiFetch("/setup/lark-login", {});
+      if (w) w.location = r.url; else toast("浏览器拦住了新窗口：允许弹出窗口后再点一次", { long: true });
+      clearInterval(loginPoll);
+      const started = Date.now();
+      loginPoll = setInterval(async () => {
+        if (Date.now() - started > 600000) return clearInterval(loginPoll);
+        const st = await apiFetch("/setup").catch(() => null);
+        if (st && !/等你/.test(st.checks.larkAuth.note)) { clearInterval(loginPoll); redraw(st); toast(st.checks.larkAuth.ok ? "飞书授权好了" : "授权没完成：" + st.checks.larkAuth.note, { long: true }); }
+      }, 3000);
+      redraw(await apiFetch("/setup"));
+    } catch (e) { if (w) w.close(); lg.disabled = false; toast("没成功：" + e.message); }
+  };
+  const ks = $("#mkSave", el); if (ks) ks.onclick = async () => {
+    const b = {};
+    $$("[data-mk]", el).forEach((i) => { if (i.value.trim()) b[i.dataset.mk] = i.value.trim(); });
+    if (!Object.keys(b).length && !onSaved.always) return toast("没有要保存的：在框里粘贴新的值");
+    ks.disabled = true; ks.textContent = b.testDb || b.prodDb ? "试连数据库…" : "保存中…";
+    try { const r = await apiFetch("/setup", b); onSaved(r); } catch (e) { ks.disabled = false; ks.textContent = "保存"; toast("没保存：" + e.message, { long: true }); }
+  };
+}
+
+// 第一次设置：这台电脑还没有数据库时，只显示这一页。
+async function renderSetup(st) {
+  document.body.classList.add("setup");
+  $("#env").textContent = "第一次设置"; $("#env").className = "env";
+  const m = $("#main");
+  if (!st) { m.innerHTML = `<div class="wrap su"><div class="card meta">正在检查这台电脑…</div></div>`; st = await apiFetch("/setup"); }
+  m.innerHTML = `<div class="wrap su"><div><h1>欢迎使用 kolpick</h1><p class="meta" style="margin:6px 0 0">这台电脑还没设置好。照下面做一遍，保存后直接进入决策台。填的东西只存在这台电脑上，以后在「设置 → 这台电脑」里能替换。</p></div>
+    <section class="card" id="suTools"><h2 class="h2">1. 收发信和 agent</h2>${toolsHtml(st)}</section>
+    <section class="card" id="suKeys"><h2 class="h2">2. 数据库和密钥</h2>${keysHtml(st)}<div class="row" style="margin-top:14px"><button class="btn primary" type="button" id="mkSave">保存，进入决策台</button></div></section></div>`;
+  const redraw = (s2) => { $("#suTools").innerHTML = `<h2 class="h2">1. 收发信和 agent</h2>${toolsHtml(s2)}`; wireMachine($("#suTools"), redraw, saved); };
+  const saved = async (r) => {
+    if (!r.ready) return renderSetup(r);
+    m.innerHTML = `<div class="wrap su"><div class="card empty"><span class="big">设置好了，正在启动…</span><span>第一次连数据库要几秒。</span></div></div>`;
+    for (let i = 0; i < 120; i++) {
+      await new Promise((ok) => setTimeout(ok, 1000));
+      const l = await fetch("/api/local").then((x) => x.json()).catch(() => null);
+      if (l && !l.setup) return location.reload();
+    }
+    toast("启动太久了：关掉这个窗口，再点 kolpick.app", { long: true });
+  };
+  saved.always = true;
+  wireMachine(m, redraw, saved);
+}
+
 // ---------- 启动 ----------
-refresh();
-setInterval(() => {
-  if (document.hidden || offline || $("#modal").innerHTML) return;
-  if (document.activeElement?.matches("textarea, input, select")) return;
-  if (route[0] === "settings" && Object.keys(ST.dirty).length) return;
+let started = false;
+async function start() {
+  const l = await fetch("/api/local").then((x) => x.json()).catch(() => null);
+  if (l?.setup) return renderSetup().catch((e) => toast("出错了：" + e.message, { long: true }));
+  if (started) return;
+  started = true;
   refresh();
-}, 15000);
+  setInterval(() => {
+    if (document.hidden || offline || $("#modal").innerHTML) return;
+    if (document.activeElement?.matches("textarea, input, select")) return;
+    if (route[0] === "settings" && Object.keys(ST.dirty).length) return;
+    refresh();
+  }, 15000);
+}
+start();
 </script>
 </body>
 </html>

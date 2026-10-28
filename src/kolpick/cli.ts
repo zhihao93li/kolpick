@@ -12,18 +12,19 @@ import { connect, migrate } from "./db/db.js";
 import { exportBase } from "./importer/export.js";
 import { importSnapshot, projectCounts } from "./importer/import.js";
 import { install, restart, uninstall } from "./install.js";
-import { App } from "./server.js";
+import { App, serveSetup } from "./server.js";
+import { fromKolOps, ready } from "./setup.js";
 import { callTool, TOOLS } from "./tools.js";
 
 const HELP = `kolpick <命令>
 
   open                            打开决策台（浏览器）
   serve                           在前台运行本机服务（决策台 + MCP + 收信 + 定时任务）
-  install                         安装：后台服务开机自启，注册到本机 Claude Code 和 Codex
+  install                         安装：放好 kolpick.app，注册到本机 Claude Code 和 Codex，然后打开它
   uninstall | restart             停掉并移除 / 重启后台服务
   setup [--from-kol-ops] [--test-db URL] [--prod-db URL] [--apify-token T]
         [--data-key K] [--trial-key K] [--partner-key K] [--project tafu]
-                                  保存本机配置（只存在 ~/.kolpick/config.json）
+                                  保存本机配置（只存在 ~/.kolpick/config.json；也可以在决策台里填）
   tools                           列出所有工具
   tool <名字> ['{"参数":...}']      运行一个工具，结果打印成 JSON
   db migrate | db use test|prod   建表升级 / 切换当前数据库
@@ -52,19 +53,26 @@ export async function main(argv: string[]): Promise<void> {
   const project = flag(argv, "--project") ?? cfg.project;
   switch (group) {
     case "serve": {
-      const db = connect(databaseUrl());
-      await migrate(db);
-      const app = new App(makeCtx(db));
-      await app.start();
-      console.log(`kolpick 已启动：http://127.0.0.1:${cfg.port}（${cfg.env === "prod" ? "正式库" : "测试库"}）`);
-      const stop = async () => {
-        await app.stop();
-        await db.end();
-        process.exit(0);
+      const startApp = async () => {
+        const db = connect(databaseUrl());
+        await migrate(db);
+        const app = new App(makeCtx(db));
+        await app.start();
+        console.log(`kolpick 已启动：http://127.0.0.1:${cfg.port}（${loadConfig().env === "prod" ? "正式库" : "测试库"}）`);
+        const stop = async () => {
+          await app.stop();
+          await db.end();
+          process.exit(0);
+        };
+        app.onQuit = stop;
+        process.on("SIGINT", stop);
+        process.on("SIGTERM", stop);
       };
-      app.onQuit = stop;
-      process.on("SIGINT", stop);
-      process.on("SIGTERM", stop);
+      if (ready(cfg)) return startApp();
+      // Not set up yet: the console shows the setup page until a working database is saved.
+      fromKolOps(cfg);
+      await serveSetup(cfg, startApp);
+      console.log(`kolpick 等第一次设置：http://127.0.0.1:${cfg.port}`);
       return;
     }
     case "open": {
@@ -85,18 +93,7 @@ export async function main(argv: string[]): Promise<void> {
       return;
     case "setup": {
       const args = [cmd, ...rest].filter((x) => x !== undefined) as string[];
-      if (args.includes("--from-kol-ops")) {
-        const old = join(homedir(), ".kol-ops", "projects.json");
-        if (existsSync(old)) {
-          const o = JSON.parse(readFileSync(old, "utf8"));
-          for (const [name, v] of Object.entries<any>(o.projects ?? {})) {
-            if (name.endsWith("-test")) continue;
-            cfg.keys[name] = { dataApi: v.dataApiKey, trial: v.trialKey, partner: v.partnerKey };
-          }
-        }
-        const token = join(homedir(), ".kol-ops", "apify-token");
-        if (existsSync(token)) cfg.apifyToken = readFileSync(token, "utf8").trim();
-      }
+      if (args.includes("--from-kol-ops")) fromKolOps(cfg);
       if (flag(args, "--test-db")) cfg.databases.test = flag(args, "--test-db");
       if (flag(args, "--prod-db")) cfg.databases.prod = flag(args, "--prod-db");
       if (flag(args, "--apify-token")) cfg.apifyToken = flag(args, "--apify-token");

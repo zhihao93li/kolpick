@@ -39,7 +39,7 @@ class MemoryLedger implements RunLedger {
 
 export function runner(ctx: Ctx, budget: number): ActorRunner & { spent?: number } {
   const token = process.env.APIFY_TOKEN || ctx.cfg.apifyToken;
-  if (!token) throw new Error("这台电脑没有 Apify token（kolpick setup）");
+  if (!token) throw new Error("这台电脑没有 Apify token：在决策台「设置 → 这台电脑」里填");
   return new ApifyRunner(token, budget, new MemoryLedger());
 }
 

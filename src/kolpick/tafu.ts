@@ -43,7 +43,7 @@ export class TafuApi {
 
   /** Keyed "kind:code" in lower case; trial and partner codes may share a name. */
   async lookup(codes: string[]): Promise<Map<string, CodeInfo>> {
-    if (!this.keys.dataApi) throw new Refused("NO_KEY", "这台电脑没有业务数据接口的只读密钥（kolpick setup）");
+    if (!this.keys.dataApi) throw new Refused("NO_KEY", "这台电脑没有业务数据接口的只读密钥：在决策台「设置 → 这台电脑」里填");
     const out = new Map<string, CodeInfo>();
     for (let i = 0; i < codes.length; i += 200) {
       const res = await this.fetchImpl(`${this.base()}/codes`, {
@@ -75,7 +75,7 @@ export class TafuApi {
   }
 
   private async write(key: string | undefined, what: string, path: string, body: object): Promise<{ created?: boolean; code: CodeInfo }> {
-    if (!key) throw new Refused("NO_KEY", `这台电脑没有${what}（kolpick setup）`);
+    if (!key) throw new Refused("NO_KEY", `这台电脑没有${what}：在决策台「设置 → 这台电脑」里填`);
     const res = await this.fetchImpl(`${this.base()}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },

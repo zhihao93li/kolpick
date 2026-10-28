@@ -13261,7 +13261,7 @@ var require_lib = __commonJS({
   "node_modules/async-retry/lib/index.js"(exports, module) {
     var retrier = require_retry2();
     function retry(fn, opts) {
-      function run(resolve, reject2) {
+      function run2(resolve, reject2) {
         var options = opts || {};
         var op;
         if (!("randomize" in options)) {
@@ -13296,7 +13296,7 @@ var require_lib = __commonJS({
         }
         op.attempt(runAttempt);
       }
-      return new Promise(run);
+      return new Promise(run2);
     }
     module.exports = retry;
   }
@@ -32034,7 +32034,7 @@ var require_helpers = __commonJS({
       return Buffer.concat(chunks, length);
     }
     exports.toBuffer = toBuffer;
-    async function json3(stream) {
+    async function json4(stream) {
       const buf = await toBuffer(stream);
       const str = buf.toString("utf8");
       try {
@@ -32045,7 +32045,7 @@ var require_helpers = __commonJS({
         throw err;
       }
     }
-    exports.json = json3;
+    exports.json = json4;
     function req(url2, opts = {}) {
       const href = typeof url2 === "string" ? url2 : url2.href;
       const req2 = (href.startsWith("https:") ? https : http2).request(url2, opts);
@@ -32330,7 +32330,7 @@ var require_helpers2 = __commonJS({
       return Buffer.concat(chunks, length);
     }
     exports.toBuffer = toBuffer;
-    async function json3(stream) {
+    async function json4(stream) {
       const buf = await toBuffer(stream);
       const str = buf.toString("utf8");
       try {
@@ -32341,7 +32341,7 @@ var require_helpers2 = __commonJS({
         throw err;
       }
     }
-    exports.json = json3;
+    exports.json = json4;
     function req(url2, opts = {}) {
       const href = typeof url2 === "string" ? url2 : url2.href;
       const req2 = (href.startsWith("https:") ? https : http2).request(url2, opts);
@@ -37491,7 +37491,7 @@ var require_helpers5 = __commonJS({
       return Buffer.concat(chunks, length);
     }
     exports.toBuffer = toBuffer;
-    async function json3(stream) {
+    async function json4(stream) {
       const buf = await toBuffer(stream);
       const str = buf.toString("utf8");
       try {
@@ -37502,7 +37502,7 @@ var require_helpers5 = __commonJS({
         throw err;
       }
     }
-    exports.json = json3;
+    exports.json = json4;
     function req(url2, opts = {}) {
       const href = typeof url2 === "string" ? url2 : url2.href;
       const req2 = (href.startsWith("https:") ? https : http2).request(url2, opts);
@@ -37910,7 +37910,7 @@ var require_helpers6 = __commonJS({
       return Buffer.concat(chunks, length);
     }
     exports.toBuffer = toBuffer;
-    async function json3(stream) {
+    async function json4(stream) {
       const buf = await toBuffer(stream);
       const str = buf.toString("utf8");
       try {
@@ -37921,7 +37921,7 @@ var require_helpers6 = __commonJS({
         throw err;
       }
     }
-    exports.json = json3;
+    exports.json = json4;
     function req(url2, opts = {}) {
       const href = typeof url2 === "string" ? url2 : url2.href;
       const req2 = (href.startsWith("https:") ? https : http2).request(url2, opts);
@@ -41759,7 +41759,7 @@ var require_util3 = __commonJS({
       return path3;
     }
     exports.normalize = normalize;
-    function join5(aRoot, aPath) {
+    function join6(aRoot, aPath) {
       if (aRoot === "") {
         aRoot = ".";
       }
@@ -41791,7 +41791,7 @@ var require_util3 = __commonJS({
       }
       return joined;
     }
-    exports.join = join5;
+    exports.join = join6;
     exports.isAbsolute = function(aPath) {
       return aPath.charAt(0) === "/" || urlRegexp.test(aPath);
     };
@@ -41964,7 +41964,7 @@ var require_util3 = __commonJS({
             parsed.path = parsed.path.substring(0, index + 1);
           }
         }
-        sourceURL = join5(urlGenerate(parsed), sourceURL);
+        sourceURL = join6(urlGenerate(parsed), sourceURL);
       }
       return normalize(sourceURL);
     }
@@ -43397,7 +43397,7 @@ var require_escodegen = __commonJS({
   "node_modules/escodegen/escodegen.js"(exports) {
     (function() {
       "use strict";
-      var Syntax, Precedence, BinaryPrecedence, SourceNode, estraverse, esutils, base, indent, json3, renumber, hexadecimal, quotes, escapeless, newline, space, parentheses, semicolons, safeConcatenation, directive, extra, parse4, sourceMap, sourceCode, preserveBlankLines, FORMAT_MINIFY, FORMAT_DEFAULTS;
+      var Syntax, Precedence, BinaryPrecedence, SourceNode, estraverse, esutils, base, indent, json4, renumber, hexadecimal, quotes, escapeless, newline, space, parentheses, semicolons, safeConcatenation, directive, extra, parse4, sourceMap, sourceCode, preserveBlankLines, FORMAT_MINIFY, FORMAT_DEFAULTS;
       estraverse = require_estraverse();
       esutils = require_utils4();
       Syntax = estraverse.Syntax;
@@ -43560,14 +43560,14 @@ var require_escodegen = __commonJS({
           throw new Error("Numeric literal whose value is negative");
         }
         if (value === 1 / 0) {
-          return json3 ? "null" : renumber ? "1e400" : "1e+400";
+          return json4 ? "null" : renumber ? "1e400" : "1e+400";
         }
         result = "" + value;
         if (!renumber || result.length < 3) {
           return result;
         }
         point = result.indexOf(".");
-        if (!json3 && result.charCodeAt(0) === 48 && point === 1) {
+        if (!json4 && result.charCodeAt(0) === 48 && point === 1) {
           point = 0;
           result = result.slice(1);
         }
@@ -43655,7 +43655,7 @@ var require_escodegen = __commonJS({
           return "\\t";
         }
         hex3 = code2.toString(16).toUpperCase();
-        if (json3 || code2 > 255) {
+        if (json4 || code2 > 255) {
           return "\\u" + "0000".slice(hex3.length) + hex3;
         } else if (code2 === 0 && !esutils.code.isDecimalDigit(next)) {
           return "\\0";
@@ -43708,12 +43708,12 @@ var require_escodegen = __commonJS({
             ++singleQuotes;
           } else if (code2 === 34) {
             ++doubleQuotes;
-          } else if (code2 === 47 && json3) {
+          } else if (code2 === 47 && json4) {
             result += "\\";
           } else if (esutils.code.isLineTerminator(code2) || code2 === 92) {
             result += escapeDisallowedCharacter(code2);
             continue;
-          } else if (!esutils.code.isIdentifierPartES5(code2) && (json3 && code2 < 32 || !json3 && !escapeless && (code2 < 32 || code2 > 126))) {
+          } else if (!esutils.code.isIdentifierPartES5(code2) && (json4 && code2 < 32 || !json4 && !escapeless && (code2 < 32 || code2 > 126))) {
             result += escapeAllowedCharacter(code2, str.charCodeAt(i + 1));
             continue;
           }
@@ -43766,7 +43766,7 @@ var require_escodegen = __commonJS({
       function noEmptySpace() {
         return space ? space : " ";
       }
-      function join5(left, right) {
+      function join6(left, right) {
         var leftSource, rightSource, leftCharCode, rightCharCode;
         leftSource = toSourceNodeWhenNeeded(left).toString();
         if (leftSource.length === 0) {
@@ -44097,8 +44097,8 @@ var require_escodegen = __commonJS({
           } else {
             result.push(that.generateExpression(stmt.left, Precedence.Call, E_TTT));
           }
-          result = join5(result, operator);
-          result = [join5(
+          result = join6(result, operator);
+          result = [join6(
             result,
             that.generateExpression(stmt.right, Precedence.Assignment, E_TTT)
           ), ")"];
@@ -44241,11 +44241,11 @@ var require_escodegen = __commonJS({
           var result, fragment2;
           result = ["class"];
           if (stmt.id) {
-            result = join5(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
+            result = join6(result, this.generateExpression(stmt.id, Precedence.Sequence, E_TTT));
           }
           if (stmt.superClass) {
-            fragment2 = join5("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
-            result = join5(result, fragment2);
+            fragment2 = join6("extends", this.generateExpression(stmt.superClass, Precedence.Unary, E_TTT));
+            result = join6(result, fragment2);
           }
           result.push(space);
           result.push(this.generateStatement(stmt.body, S_TFFT));
@@ -44258,9 +44258,9 @@ var require_escodegen = __commonJS({
           return escapeDirective(stmt.directive) + this.semicolon(flags);
         },
         DoWhileStatement: function(stmt, flags) {
-          var result = join5("do", this.maybeBlock(stmt.body, S_TFFF));
+          var result = join6("do", this.maybeBlock(stmt.body, S_TFFF));
           result = this.maybeBlockSuffix(stmt.body, result);
-          return join5(result, [
+          return join6(result, [
             "while" + space + "(",
             this.generateExpression(stmt.test, Precedence.Sequence, E_TTT),
             ")" + this.semicolon(flags)
@@ -44296,11 +44296,11 @@ var require_escodegen = __commonJS({
         ExportDefaultDeclaration: function(stmt, flags) {
           var result = ["export"], bodyFlags;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
-          result = join5(result, "default");
+          result = join6(result, "default");
           if (isStatement(stmt.declaration)) {
-            result = join5(result, this.generateStatement(stmt.declaration, bodyFlags));
+            result = join6(result, this.generateStatement(stmt.declaration, bodyFlags));
           } else {
-            result = join5(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
+            result = join6(result, this.generateExpression(stmt.declaration, Precedence.Assignment, E_TTT) + this.semicolon(flags));
           }
           return result;
         },
@@ -44308,15 +44308,15 @@ var require_escodegen = __commonJS({
           var result = ["export"], bodyFlags, that = this;
           bodyFlags = flags & F_SEMICOLON_OPT ? S_TFFT : S_TFFF;
           if (stmt.declaration) {
-            return join5(result, this.generateStatement(stmt.declaration, bodyFlags));
+            return join6(result, this.generateStatement(stmt.declaration, bodyFlags));
           }
           if (stmt.specifiers) {
             if (stmt.specifiers.length === 0) {
-              result = join5(result, "{" + space + "}");
+              result = join6(result, "{" + space + "}");
             } else if (stmt.specifiers[0].type === Syntax.ExportBatchSpecifier) {
-              result = join5(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
+              result = join6(result, this.generateExpression(stmt.specifiers[0], Precedence.Sequence, E_TTT));
             } else {
-              result = join5(result, "{");
+              result = join6(result, "{");
               withIndent(function(indent2) {
                 var i, iz;
                 result.push(newline);
@@ -44334,7 +44334,7 @@ var require_escodegen = __commonJS({
               result.push(base + "}");
             }
             if (stmt.source) {
-              result = join5(result, [
+              result = join6(result, [
                 "from" + space,
                 // ModuleSpecifier
                 this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -44422,7 +44422,7 @@ var require_escodegen = __commonJS({
           ];
           cursor = 0;
           if (stmt.specifiers[cursor].type === Syntax.ImportDefaultSpecifier) {
-            result = join5(result, [
+            result = join6(result, [
               this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
             ]);
             ++cursor;
@@ -44432,7 +44432,7 @@ var require_escodegen = __commonJS({
               result.push(",");
             }
             if (stmt.specifiers[cursor].type === Syntax.ImportNamespaceSpecifier) {
-              result = join5(result, [
+              result = join6(result, [
                 space,
                 this.generateExpression(stmt.specifiers[cursor], Precedence.Sequence, E_TTT)
               ]);
@@ -44461,7 +44461,7 @@ var require_escodegen = __commonJS({
               }
             }
           }
-          result = join5(result, [
+          result = join6(result, [
             "from" + space,
             // ModuleSpecifier
             this.generateExpression(stmt.source, Precedence.Sequence, E_TTT),
@@ -44515,7 +44515,7 @@ var require_escodegen = __commonJS({
           return result;
         },
         ThrowStatement: function(stmt, flags) {
-          return [join5(
+          return [join6(
             "throw",
             this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
           ), this.semicolon(flags)];
@@ -44526,7 +44526,7 @@ var require_escodegen = __commonJS({
           result = this.maybeBlockSuffix(stmt.block, result);
           if (stmt.handlers) {
             for (i = 0, iz = stmt.handlers.length; i < iz; ++i) {
-              result = join5(result, this.generateStatement(stmt.handlers[i], S_TFFF));
+              result = join6(result, this.generateStatement(stmt.handlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(stmt.handlers[i].body, result);
               }
@@ -44534,7 +44534,7 @@ var require_escodegen = __commonJS({
           } else {
             guardedHandlers = stmt.guardedHandlers || [];
             for (i = 0, iz = guardedHandlers.length; i < iz; ++i) {
-              result = join5(result, this.generateStatement(guardedHandlers[i], S_TFFF));
+              result = join6(result, this.generateStatement(guardedHandlers[i], S_TFFF));
               if (stmt.finalizer || i + 1 !== iz) {
                 result = this.maybeBlockSuffix(guardedHandlers[i].body, result);
               }
@@ -44542,13 +44542,13 @@ var require_escodegen = __commonJS({
             if (stmt.handler) {
               if (Array.isArray(stmt.handler)) {
                 for (i = 0, iz = stmt.handler.length; i < iz; ++i) {
-                  result = join5(result, this.generateStatement(stmt.handler[i], S_TFFF));
+                  result = join6(result, this.generateStatement(stmt.handler[i], S_TFFF));
                   if (stmt.finalizer || i + 1 !== iz) {
                     result = this.maybeBlockSuffix(stmt.handler[i].body, result);
                   }
                 }
               } else {
-                result = join5(result, this.generateStatement(stmt.handler, S_TFFF));
+                result = join6(result, this.generateStatement(stmt.handler, S_TFFF));
                 if (stmt.finalizer) {
                   result = this.maybeBlockSuffix(stmt.handler.body, result);
                 }
@@ -44556,7 +44556,7 @@ var require_escodegen = __commonJS({
             }
           }
           if (stmt.finalizer) {
-            result = join5(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
+            result = join6(result, ["finally", this.maybeBlock(stmt.finalizer, S_TFFF)]);
           }
           return result;
         },
@@ -44590,7 +44590,7 @@ var require_escodegen = __commonJS({
           withIndent(function() {
             if (stmt.test) {
               result = [
-                join5("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
+                join6("case", that.generateExpression(stmt.test, Precedence.Sequence, E_TTT)),
                 ":"
               ];
             } else {
@@ -44638,9 +44638,9 @@ var require_escodegen = __commonJS({
             result.push(this.maybeBlock(stmt.consequent, S_TFFF));
             result = this.maybeBlockSuffix(stmt.consequent, result);
             if (stmt.alternate.type === Syntax.IfStatement) {
-              result = join5(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
+              result = join6(result, ["else ", this.generateStatement(stmt.alternate, bodyFlags)]);
             } else {
-              result = join5(result, join5("else", this.maybeBlock(stmt.alternate, bodyFlags)));
+              result = join6(result, join6("else", this.maybeBlock(stmt.alternate, bodyFlags)));
             }
           } else {
             result.push(this.maybeBlock(stmt.consequent, bodyFlags));
@@ -44741,7 +44741,7 @@ var require_escodegen = __commonJS({
         },
         ReturnStatement: function(stmt, flags) {
           if (stmt.argument) {
-            return [join5(
+            return [join6(
               "return",
               this.generateExpression(stmt.argument, Precedence.Sequence, E_TTT)
             ), this.semicolon(flags)];
@@ -44830,14 +44830,14 @@ var require_escodegen = __commonJS({
           if (leftSource.charCodeAt(leftSource.length - 1) === 47 && esutils.code.isIdentifierPartES5(expr.operator.charCodeAt(0))) {
             result = [fragment2, noEmptySpace(), expr.operator];
           } else {
-            result = join5(fragment2, expr.operator);
+            result = join6(fragment2, expr.operator);
           }
           fragment2 = this.generateExpression(expr.right, rightPrecedence, flags);
           if (expr.operator === "/" && fragment2.toString().charAt(0) === "/" || expr.operator.slice(-1) === "<" && fragment2.toString().slice(0, 3) === "!--") {
             result.push(noEmptySpace());
             result.push(fragment2);
           } else {
-            result = join5(result, fragment2);
+            result = join6(result, fragment2);
           }
           if (expr.operator === "in" && !(flags & F_ALLOW_IN)) {
             return ["(", result, ")"];
@@ -44877,7 +44877,7 @@ var require_escodegen = __commonJS({
           var result, length, i, iz, itemFlags;
           length = expr["arguments"].length;
           itemFlags = flags & F_ALLOW_UNPARATH_NEW && !parentheses && length === 0 ? E_TFT : E_TFF;
-          result = join5(
+          result = join6(
             "new",
             this.generateExpression(expr.callee, Precedence.New, itemFlags)
           );
@@ -44927,11 +44927,11 @@ var require_escodegen = __commonJS({
           var result, fragment2, rightCharCode, leftSource, leftCharCode;
           fragment2 = this.generateExpression(expr.argument, Precedence.Unary, E_TTT);
           if (space === "") {
-            result = join5(expr.operator, fragment2);
+            result = join6(expr.operator, fragment2);
           } else {
             result = [expr.operator];
             if (expr.operator.length > 2) {
-              result = join5(result, fragment2);
+              result = join6(result, fragment2);
             } else {
               leftSource = toSourceNodeWhenNeeded(result).toString();
               leftCharCode = leftSource.charCodeAt(leftSource.length - 1);
@@ -44954,7 +44954,7 @@ var require_escodegen = __commonJS({
             result = "yield";
           }
           if (expr.argument) {
-            result = join5(
+            result = join6(
               result,
               this.generateExpression(expr.argument, Precedence.Yield, E_TTT)
             );
@@ -44962,7 +44962,7 @@ var require_escodegen = __commonJS({
           return parenthesize(result, Precedence.Yield, precedence);
         },
         AwaitExpression: function(expr, precedence, flags) {
-          var result = join5(
+          var result = join6(
             expr.all ? "await*" : "await",
             this.generateExpression(expr.argument, Precedence.Await, E_TTT)
           );
@@ -45045,11 +45045,11 @@ var require_escodegen = __commonJS({
           var result, fragment2;
           result = ["class"];
           if (expr.id) {
-            result = join5(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
+            result = join6(result, this.generateExpression(expr.id, Precedence.Sequence, E_TTT));
           }
           if (expr.superClass) {
-            fragment2 = join5("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
-            result = join5(result, fragment2);
+            fragment2 = join6("extends", this.generateExpression(expr.superClass, Precedence.Unary, E_TTT));
+            result = join6(result, fragment2);
           }
           result.push(space);
           result.push(this.generateStatement(expr.body, S_TFFT));
@@ -45064,7 +45064,7 @@ var require_escodegen = __commonJS({
           }
           if (expr.kind === "get" || expr.kind === "set") {
             fragment2 = [
-              join5(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
+              join6(expr.kind, this.generatePropertyKey(expr.key, expr.computed)),
               this.generateFunctionBody(expr.value)
             ];
           } else {
@@ -45074,7 +45074,7 @@ var require_escodegen = __commonJS({
               this.generateFunctionBody(expr.value)
             ];
           }
-          return join5(result, fragment2);
+          return join6(result, fragment2);
         },
         Property: function(expr, precedence, flags) {
           if (expr.kind === "get" || expr.kind === "set") {
@@ -45269,7 +45269,7 @@ var require_escodegen = __commonJS({
               for (i = 0, iz = expr.blocks.length; i < iz; ++i) {
                 fragment2 = that.generateExpression(expr.blocks[i], Precedence.Sequence, E_TTT);
                 if (i > 0 || extra.moz.comprehensionExpressionStartsWithAssignment) {
-                  result = join5(result, fragment2);
+                  result = join6(result, fragment2);
                 } else {
                   result.push(fragment2);
                 }
@@ -45277,13 +45277,13 @@ var require_escodegen = __commonJS({
             });
           }
           if (expr.filter) {
-            result = join5(result, "if" + space);
+            result = join6(result, "if" + space);
             fragment2 = this.generateExpression(expr.filter, Precedence.Sequence, E_TTT);
-            result = join5(result, ["(", fragment2, ")"]);
+            result = join6(result, ["(", fragment2, ")"]);
           }
           if (!extra.moz.comprehensionExpressionStartsWithAssignment) {
             fragment2 = this.generateExpression(expr.body, Precedence.Assignment, E_TTT);
-            result = join5(result, fragment2);
+            result = join6(result, fragment2);
           }
           result.push(expr.type === Syntax.GeneratorExpression ? ")" : "]");
           return result;
@@ -45299,8 +45299,8 @@ var require_escodegen = __commonJS({
           } else {
             fragment2 = this.generateExpression(expr.left, Precedence.Call, E_TTT);
           }
-          fragment2 = join5(fragment2, expr.of ? "of" : "in");
-          fragment2 = join5(fragment2, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
+          fragment2 = join6(fragment2, expr.of ? "of" : "in");
+          fragment2 = join6(fragment2, this.generateExpression(expr.right, Precedence.Sequence, E_TTT));
           return ["for" + space + "(", fragment2, ")"];
         },
         SpreadElement: function(expr, precedence, flags) {
@@ -45405,10 +45405,10 @@ var require_escodegen = __commonJS({
           indent = options.format.indent.style;
           base = stringRepeat(indent, options.format.indent.base);
         }
-        json3 = options.format.json;
+        json4 = options.format.json;
         renumber = options.format.renumber;
-        hexadecimal = json3 ? false : options.format.hexadecimal;
-        quotes = json3 ? "double" : options.format.quotes;
+        hexadecimal = json4 ? false : options.format.hexadecimal;
+        quotes = json4 ? "double" : options.format.quotes;
         escapeless = options.format.escapeless;
         newline = options.format.newline;
         space = options.format.space;
@@ -45419,7 +45419,7 @@ var require_escodegen = __commonJS({
         semicolons = options.format.semicolons;
         safeConcatenation = options.format.safeConcatenation;
         directive = options.directive;
-        parse4 = json3 ? null : options.parse;
+        parse4 = json4 ? null : options.parse;
         sourceMap = options.sourceMap;
         sourceCode = options.sourceCode;
         preserveBlankLines = options.format.preserveBlankLines && sourceCode !== null;
@@ -66754,9 +66754,8 @@ var require_dist20 = __commonJS({
 
 // src/kolpick/cli.ts
 import { execFileSync as execFileSync2 } from "node:child_process";
-import { existsSync as existsSync3, readFileSync as readFileSync3 } from "node:fs";
-import { homedir as homedir3 } from "node:os";
-import { join as join4 } from "node:path";
+import { homedir as homedir4 } from "node:os";
+import { join as join5 } from "node:path";
 
 // src/kolpick/config.ts
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -66778,7 +66777,7 @@ function saveConfig(c) {
 }
 function databaseUrl(c = loadConfig()) {
   const url2 = process.env.KOLPICK_DATABASE_URL || c.databases[c.env];
-  if (!url2) throw new Error(`\u8FD8\u6CA1\u914D\u7F6E${c.env === "prod" ? "\u6B63\u5F0F" : "\u6D4B\u8BD5"}\u6570\u636E\u5E93\uFF1A\u8FD0\u884C kolpick setup`);
+  if (!url2) throw new Error(`\u8FD8\u6CA1\u914D\u7F6E${c.env === "prod" ? "\u6B63\u5F0F" : "\u6D4B\u8BD5"}\u6570\u636E\u5E93\uFF1A\u6253\u5F00 kolpick.app \u7167\u9875\u9762\u8BBE\u7F6E`);
   return url2;
 }
 
@@ -68557,7 +68556,7 @@ function Postgres(a, b2) {
       unsafe,
       notify,
       array: array2,
-      json: json3,
+      json: json4,
       file: file2
     });
     return sql2;
@@ -68714,7 +68713,7 @@ function Postgres(a, b2) {
     queue2 === open2 ? c.idleTimer.start() : c.idleTimer.cancel();
     return c;
   }
-  function json3(x) {
+  function json4(x) {
     return new Parameter(x, 3802);
   }
   function array2(x, type) {
@@ -68772,14 +68771,14 @@ function Postgres(a, b2) {
   function onopen(c) {
     if (queries.length === 0)
       return move(c, open2);
-    let max = Math.ceil(queries.length / (connecting.length + 1)), ready = true;
-    while (ready && queries.length && max-- > 0) {
+    let max = Math.ceil(queries.length / (connecting.length + 1)), ready2 = true;
+    while (ready2 && queries.length && max-- > 0) {
       const query = queries.shift();
       if (query.reserve)
         return query.reserve(c);
-      ready = c.execute(query);
+      ready2 = c.execute(query);
     }
-    ready ? move(c, busy) : move(c, full);
+    ready2 ? move(c, busy) : move(c, full);
   }
   function onclose(c, e) {
     move(c, closed);
@@ -69281,8 +69280,8 @@ function unwrap(stdout, args = []) {
 var MailBlocked = class extends Error {
 };
 var Mail = class {
-  constructor(lark) {
-    this.lark = lark;
+  constructor(lark2) {
+    this.lark = lark2;
   }
   lark;
   /** Mail in one folder since a moment ("YYYY-MM-DDTHH:mm:ss+08:00" is the only form Feishu takes), newest first. */
@@ -69552,7 +69551,7 @@ var TafuApi = class {
   }
   /** Keyed "kind:code" in lower case; trial and partner codes may share a name. */
   async lookup(codes) {
-    if (!this.keys.dataApi) throw new Refused("NO_KEY", "\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u7684\u53EA\u8BFB\u5BC6\u94A5\uFF08kolpick setup\uFF09");
+    if (!this.keys.dataApi) throw new Refused("NO_KEY", "\u8FD9\u53F0\u7535\u8111\u6CA1\u6709\u4E1A\u52A1\u6570\u636E\u63A5\u53E3\u7684\u53EA\u8BFB\u5BC6\u94A5\uFF1A\u5728\u51B3\u7B56\u53F0\u300C\u8BBE\u7F6E \u2192 \u8FD9\u53F0\u7535\u8111\u300D\u91CC\u586B");
     const out = /* @__PURE__ */ new Map();
     for (let i = 0; i < codes.length; i += 200) {
       const res = await this.fetchImpl(`${this.base()}/codes`, {
@@ -69580,7 +69579,7 @@ var TafuApi = class {
     return this.write(this.keys.partner, "\u6D3B\u52A8\u7801\u5199\u5BC6\u94A5", "/partner-codes", body2);
   }
   async write(key, what, path3, body2) {
-    if (!key) throw new Refused("NO_KEY", `\u8FD9\u53F0\u7535\u8111\u6CA1\u6709${what}\uFF08kolpick setup\uFF09`);
+    if (!key) throw new Refused("NO_KEY", `\u8FD9\u53F0\u7535\u8111\u6CA1\u6709${what}\uFF1A\u5728\u51B3\u7B56\u53F0\u300C\u8BBE\u7F6E \u2192 \u8FD9\u53F0\u7535\u8111\u300D\u91CC\u586B`);
     const res = await this.fetchImpl(`${this.base()}${path3}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
@@ -69606,12 +69605,12 @@ function suggestCode(handle, name) {
 // src/kolpick/ctx.ts
 function makeCtx(db, over = {}) {
   const cfg = over.cfg ?? loadConfig();
-  const lark = over.lark ?? new LarkCli();
+  const lark2 = over.lark ?? new LarkCli();
   return {
     db,
     cfg,
-    lark,
-    mail: over.mail ?? new Mail(lark),
+    lark: lark2,
+    mail: over.mail ?? new Mail(lark2),
     tafu: over.tafu ?? ((p) => new TafuApi(p.settings.dataApiUrl, cfg.keys[p.name] ?? {})),
     now: over.now ?? Date.now,
     sleep: over.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)))
@@ -69773,16 +69772,16 @@ function unwrap2(stdout, args = []) {
 // src/kolpick/importer/export.ts
 var FEISHU_TABLES = ["KOL \u6863\u6848", "KOL \u8DDF\u8FDB", "\u63A5\u89E6\u8BB0\u5F55", "\u53D1\u5E03\u5185\u5BB9", "\u5BA1\u6838\u961F\u5217", "\u8FD0\u884C\u8BB0\u5F55", "\u64CD\u4F5C\u65E5\u5FD7", "\u8BBE\u7F6E", "\u53D1\u4FE1\u90AE\u7BB1", "\u6A21\u677F"];
 async function exportBase(baseToken, dir, log = console.log) {
-  const lark = new LarkCli2(baseToken);
+  const lark2 = new LarkCli2(baseToken);
   await mkdir(dir, { recursive: true });
-  const list2 = await lark.json(["base", "+table-list", "--base-token", baseToken, "--as", "user"]);
+  const list2 = await lark2.json(["base", "+table-list", "--base-token", baseToken, "--as", "user"]);
   for (const name of FEISHU_TABLES) {
     const table = list2.tables.find((t) => t.name === name);
     if (!table) throw new Error(`\u98DE\u4E66\u8868\u91CC\u6CA1\u6709\u300C${name}\u300D`);
-    const fields = await lark.json(["base", "+field-list", "--base-token", baseToken, "--table-id", table.id, "--format", "json", "--as", "user"]);
+    const fields = await lark2.json(["base", "+field-list", "--base-token", baseToken, "--table-id", table.id, "--format", "json", "--as", "user"]);
     const rows = [];
     for (let offset = 0; ; offset += 200) {
-      const page = await lark.json([
+      const page = await lark2.json([
         "base",
         "+record-list",
         "--base-token",
@@ -69864,8 +69863,8 @@ async function insertMany(q, table, cols, rows, tail, returning = "") {
   const decl = cols.map(([c, ty]) => `${c} ${ty === "text[]" ? "jsonb" : ty}`).join(", ");
   const pick2 = cols.map(([c, ty]) => ty === "text[]" ? `coalesce(array(select jsonb_array_elements_text(x.${c})), '{}')` : `x.${c}`).join(", ");
   for (let i = 0; i < rows.length; i += 500) {
-    const json3 = rows.slice(i, i + 500).map((r) => Object.fromEntries(cols.map(([c], j) => [c, r[j] ?? null])));
-    out.push(...await q.query(`insert into ${table} (${names}) select ${pick2} from jsonb_to_recordset($1::text::jsonb) as x(${decl}) ${tail} ${returning && `returning ${returning}`}`, [JSON.stringify(json3)]));
+    const json4 = rows.slice(i, i + 500).map((r) => Object.fromEntries(cols.map(([c], j) => [c, r[j] ?? null])));
+    out.push(...await q.query(`insert into ${table} (${names}) select ${pick2} from jsonb_to_recordset($1::text::jsonb) as x(${decl}) ${tail} ${returning && `returning ${returning}`}`, [JSON.stringify(json4)]));
   }
   return out;
 }
@@ -70337,6 +70336,14 @@ exec "${process.execPath}" "${script}" "$@"
     const r = tryRun("codex", ["mcp", "add", "kolpick", "--url", url2]);
     out.push(r.startsWith("\u5931\u8D25") ? `Codex \u6CE8\u518C\u5931\u8D25\uFF1A${r}` : "\u5DF2\u6CE8\u518C\u5230 Codex");
   } else out.push("\u6CA1\u627E\u5230 codex \u547D\u4EE4\uFF0C\u8DF3\u8FC7 Codex");
+  const base = `http://127.0.0.1:${cfg.port}`;
+  if (!tryRun("curl", ["-s", "-o", "/dev/null", "--max-time", "1", `${base}/api/local`]).startsWith("\u5931\u8D25")) {
+    tryRun("curl", ["-s", "--max-time", "40", "-X", "POST", "-H", "content-type: application/json", "-d", "{}", `${base}/api/quit`]);
+    tryRun("sh", ["-c", `for i in $(seq 60); do curl -s -o /dev/null --max-time 1 ${base}/api/local || exit 0; sleep 0.5; done`]);
+    out.push("\u5DF2\u5173\u6389\u6B63\u5728\u8FD0\u884C\u7684\u65E7\u7248\u672C");
+  }
+  const opened = tryRun("open", [appDir()]);
+  out.push(opened.startsWith("\u5931\u8D25") ? `\u6253\u5F00 kolpick.app \u5931\u8D25\uFF1A${opened}` : "\u5DF2\u6253\u5F00 kolpick.app\uFF1A\u8FD8\u6CA1\u8BBE\u7F6E\u8FC7\u7684\u8BDD\uFF0C\u7167\u9875\u9762\u505A\u5B8C\u7B2C\u4E00\u6B21\u8BBE\u7F6E");
   return out;
 }
 function uninstall() {
@@ -89637,13 +89644,13 @@ function initializeContext(params) {
     external: params?.external ?? void 0
   };
 }
-function handleUnrepresentable(schema, ctx, json3, params, message) {
+function handleUnrepresentable(schema, ctx, json4, params, message) {
   const result = typeof ctx.unrepresentable === "function" ? ctx.unrepresentable({ zodSchema: schema, path: params.path, message }) : ctx.unrepresentable;
   if (result === "any")
     return false;
   if (result === void 0 || result === "throw")
     throw new Error(message);
-  Object.assign(json3, result);
+  Object.assign(json4, result);
   return true;
 }
 function processSchema(schema, ctx, _params = { path: [], schemaPath: [] }) {
@@ -89879,12 +89886,12 @@ function foldObjects(members2) {
   }
   return folded;
 }
-function foldIntersection(json3) {
-  const allOf = json3.allOf;
+function foldIntersection(json4) {
+  const allOf = json4.allOf;
   if (!Array.isArray(allOf) || allOf.length < 2)
     return;
   for (const key of FOLDABLE_KEYS)
-    if (key in json3)
+    if (key in json4)
       return;
   const unions = allOf.filter((m) => UNION_KEYS.some((k) => Array.isArray(m[k])));
   let folded = null;
@@ -89903,8 +89910,8 @@ function foldIntersection(json3) {
   }
   if (!folded)
     return;
-  delete json3.allOf;
-  assignProps(json3, folded);
+  delete json4.allOf;
+  assignProps(json4, folded);
 }
 function finalize(ctx, schema) {
   const root = ctx.seen.get(schema);
@@ -89986,20 +89993,20 @@ function finalize(ctx, schema) {
     if (ctx.intersections.length) {
       const carriers = /* @__PURE__ */ new Map();
       for (const seen of ctx.seen.values()) {
-        for (const json3 of [seen.schema, seen.def]) {
-          const allOf = json3?.allOf;
+        for (const json4 of [seen.schema, seen.def]) {
+          const allOf = json4?.allOf;
           if (!Array.isArray(allOf))
             continue;
           const existing = carriers.get(allOf);
           if (existing)
-            existing.push(json3);
+            existing.push(json4);
           else
-            carriers.set(allOf, [json3]);
+            carriers.set(allOf, [json4]);
         }
       }
       for (const allOf of ctx.intersections) {
-        for (const json3 of carriers.get(allOf) ?? [])
-          foldIntersection(json3);
+        for (const json4 of carriers.get(allOf) ?? [])
+          foldIntersection(json4);
       }
     }
   }
@@ -90234,29 +90241,29 @@ var exactPatterns = /* @__PURE__ */ new Map([
 ]);
 var exactPattern = (p) => exactPatterns.get(p) ?? p;
 var stringProcessor = (schema, ctx, _json, _params) => {
-  const json3 = _json;
-  json3.type = "string";
+  const json4 = _json;
+  json4.type = "string";
   const { minimum, maximum, format, patterns, contentEncoding, laxFormat } = aggregateChecks(schema);
   if (typeof minimum === "number")
-    json3.minLength = minimum;
+    json4.minLength = minimum;
   if (typeof maximum === "number")
-    json3.maxLength = maximum;
+    json4.maxLength = maximum;
   if (format) {
-    json3.format = formatMap[format] ?? format;
-    if (json3.format === "")
-      delete json3.format;
+    json4.format = formatMap[format] ?? format;
+    if (json4.format === "")
+      delete json4.format;
     if (format === "time" || laxFormat) {
-      delete json3.format;
+      delete json4.format;
     }
   }
   if (contentEncoding)
-    json3.contentEncoding = contentEncoding;
+    json4.contentEncoding = contentEncoding;
   if (patterns && patterns.size > 0) {
     const patternList = [...patterns].map(exactPattern);
     if (patternList.length === 1)
-      json3.pattern = patternList[0].source;
+      json4.pattern = patternList[0].source;
     else if (patternList.length > 1) {
-      json3.allOf = [
+      json4.allOf = [
         ...patternList.map((regex) => ({
           ...ctx.target === "draft-07" || ctx.target === "draft-04" || ctx.target === "openapi-3.0" ? { type: "string" } : {},
           pattern: regex.source
@@ -90266,31 +90273,31 @@ var stringProcessor = (schema, ctx, _json, _params) => {
   }
 };
 var numberProcessor = (schema, ctx, _json, params) => {
-  const json3 = _json;
+  const json4 = _json;
   const { minimum, maximum, multipleOf, exclusiveMaximum, exclusiveMinimum, isInt } = aggregateChecks(schema);
-  json3.type = isInt ? "integer" : "number";
+  json4.type = isInt ? "integer" : "number";
   const exMin = typeof exclusiveMinimum === "number" && exclusiveMinimum >= (minimum ?? Number.NEGATIVE_INFINITY);
   const exMax = typeof exclusiveMaximum === "number" && exclusiveMaximum <= (maximum ?? Number.POSITIVE_INFINITY);
   const legacy = ctx.target === "draft-04" || ctx.target === "openapi-3.0";
   if (exMin) {
     if (legacy) {
-      json3.minimum = exclusiveMinimum;
-      json3.exclusiveMinimum = true;
+      json4.minimum = exclusiveMinimum;
+      json4.exclusiveMinimum = true;
     } else {
-      json3.exclusiveMinimum = exclusiveMinimum;
+      json4.exclusiveMinimum = exclusiveMinimum;
     }
   } else if (typeof minimum === "number") {
-    json3.minimum = minimum;
+    json4.minimum = minimum;
   }
   if (exMax) {
     if (legacy) {
-      json3.maximum = exclusiveMaximum;
-      json3.exclusiveMaximum = true;
+      json4.maximum = exclusiveMaximum;
+      json4.exclusiveMaximum = true;
     } else {
-      json3.exclusiveMaximum = exclusiveMaximum;
+      json4.exclusiveMaximum = exclusiveMaximum;
     }
   } else if (typeof maximum === "number") {
-    json3.maximum = maximum;
+    json4.maximum = maximum;
   }
   if (multipleOf) {
     const divisors = /* @__PURE__ */ new Set();
@@ -90298,75 +90305,75 @@ var numberProcessor = (schema, ctx, _json, params) => {
       if (Number.isFinite(divisor) && divisor !== 0)
         divisors.add(Math.abs(divisor));
       else
-        handleUnrepresentable(schema, ctx, json3, params, `A multipleOf divisor of ${divisor} cannot be represented in JSON Schema`);
+        handleUnrepresentable(schema, ctx, json4, params, `A multipleOf divisor of ${divisor} cannot be represented in JSON Schema`);
     }
     const [first2, ...rest] = divisors;
     if (first2 !== void 0)
-      json3.multipleOf = first2;
+      json4.multipleOf = first2;
     if (rest.length)
-      json3.allOf = [...json3.allOf ?? [], ...rest.map((m) => ({ multipleOf: m }))];
+      json4.allOf = [...json4.allOf ?? [], ...rest.map((m) => ({ multipleOf: m }))];
   }
 };
-var booleanProcessor = (_schema, _ctx, json3, _params) => {
-  json3.type = "boolean";
+var booleanProcessor = (_schema, _ctx, json4, _params) => {
+  json4.type = "boolean";
 };
-var bigintProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "BigInt cannot be represented in JSON Schema");
+var bigintProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "BigInt cannot be represented in JSON Schema");
 };
-var symbolProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Symbols cannot be represented in JSON Schema");
+var symbolProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Symbols cannot be represented in JSON Schema");
 };
-var nullProcessor = (_schema, ctx, json3, _params) => {
+var nullProcessor = (_schema, ctx, json4, _params) => {
   if (ctx.target === "openapi-3.0") {
-    json3.type = "string";
-    json3.nullable = true;
-    json3.enum = [null];
+    json4.type = "string";
+    json4.nullable = true;
+    json4.enum = [null];
   } else {
-    json3.type = "null";
+    json4.type = "null";
   }
 };
-var undefinedProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Undefined cannot be represented in JSON Schema");
+var undefinedProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Undefined cannot be represented in JSON Schema");
 };
-var voidProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Void cannot be represented in JSON Schema");
+var voidProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Void cannot be represented in JSON Schema");
 };
-var neverProcessor = (_schema, _ctx, json3, _params) => {
-  json3.not = {};
+var neverProcessor = (_schema, _ctx, json4, _params) => {
+  json4.not = {};
 };
 var anyProcessor = (_schema, _ctx, _json, _params) => {
 };
 var unknownProcessor = (_schema, _ctx, _json, _params) => {
 };
-var dateProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Date cannot be represented in JSON Schema");
+var dateProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Date cannot be represented in JSON Schema");
 };
-var enumProcessor = (schema, _ctx, json3, _params) => {
+var enumProcessor = (schema, _ctx, json4, _params) => {
   const def = schema._zod.def;
   const values2 = getEnumValues(def.entries);
   if (values2.length === 0) {
-    json3.not = {};
+    json4.not = {};
     return;
   }
   if (values2.every((v) => typeof v === "number"))
-    json3.type = "number";
+    json4.type = "number";
   if (values2.every((v) => typeof v === "string"))
-    json3.type = "string";
-  json3.enum = values2;
+    json4.type = "string";
+  json4.enum = values2;
 };
-var literalProcessor = (schema, ctx, json3, params) => {
+var literalProcessor = (schema, ctx, json4, params) => {
   const def = schema._zod.def;
   if (def.values.length === 0) {
-    json3.not = {};
+    json4.not = {};
     return;
   }
   const vals = [];
   for (const val of def.values) {
     if (val === void 0) {
-      if (handleUnrepresentable(schema, ctx, json3, params, "Literal `undefined` cannot be represented in JSON Schema"))
+      if (handleUnrepresentable(schema, ctx, json4, params, "Literal `undefined` cannot be represented in JSON Schema"))
         return;
     } else if (typeof val === "bigint") {
-      if (handleUnrepresentable(schema, ctx, json3, params, "BigInt literals cannot be represented in JSON Schema"))
+      if (handleUnrepresentable(schema, ctx, json4, params, "BigInt literals cannot be represented in JSON Schema"))
         return;
       vals.push(Number(val));
     } else {
@@ -90376,37 +90383,37 @@ var literalProcessor = (schema, ctx, json3, params) => {
   if (vals.length === 0) {
   } else if (vals.length === 1) {
     const val = vals[0];
-    json3.type = val === null ? "null" : typeof val;
+    json4.type = val === null ? "null" : typeof val;
     if (ctx.target === "draft-04" || ctx.target === "openapi-3.0") {
-      json3.enum = [val];
+      json4.enum = [val];
     } else {
-      json3.const = val;
+      json4.const = val;
     }
   } else {
     if (vals.every((v) => typeof v === "number"))
-      json3.type = "number";
+      json4.type = "number";
     if (vals.every((v) => typeof v === "string"))
-      json3.type = "string";
+      json4.type = "string";
     if (vals.every((v) => typeof v === "boolean"))
-      json3.type = "boolean";
+      json4.type = "boolean";
     if (vals.every((v) => v === null))
-      json3.type = "null";
-    json3.enum = vals;
+      json4.type = "null";
+    json4.enum = vals;
   }
 };
-var nanProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "NaN cannot be represented in JSON Schema");
+var nanProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "NaN cannot be represented in JSON Schema");
 };
-var templateLiteralProcessor = (schema, _ctx, json3, _params) => {
-  const _json = json3;
+var templateLiteralProcessor = (schema, _ctx, json4, _params) => {
+  const _json = json4;
   const pattern = schema._zod.pattern;
   if (!pattern)
     throw new Error("Pattern not found in template literal");
   _json.type = "string";
   _json.pattern = pattern.source;
 };
-var fileProcessor = (schema, _ctx, json3, _params) => {
-  const _json = json3;
+var fileProcessor = (schema, _ctx, json4, _params) => {
+  const _json = json4;
   _json.type = "string";
   _json.format = "binary";
   _json.contentEncoding = "binary";
@@ -90424,34 +90431,34 @@ var fileProcessor = (schema, _ctx, json3, _params) => {
   else
     _json.anyOf = mime.map((m) => ({ contentMediaType: m }));
 };
-var successProcessor = (_schema, _ctx, json3, _params) => {
-  json3.type = "boolean";
+var successProcessor = (_schema, _ctx, json4, _params) => {
+  json4.type = "boolean";
 };
-var customProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Custom types cannot be represented in JSON Schema");
+var customProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Custom types cannot be represented in JSON Schema");
 };
-var functionProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Function types cannot be represented in JSON Schema");
+var functionProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Function types cannot be represented in JSON Schema");
 };
-var transformProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Transforms cannot be represented in JSON Schema");
+var transformProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Transforms cannot be represented in JSON Schema");
 };
-var mapProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Map cannot be represented in JSON Schema");
+var mapProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Map cannot be represented in JSON Schema");
 };
-var setProcessor = (schema, ctx, json3, params) => {
-  handleUnrepresentable(schema, ctx, json3, params, "Set cannot be represented in JSON Schema");
+var setProcessor = (schema, ctx, json4, params) => {
+  handleUnrepresentable(schema, ctx, json4, params, "Set cannot be represented in JSON Schema");
 };
 var arrayProcessor = (schema, ctx, _json, params) => {
-  const json3 = _json;
+  const json4 = _json;
   const def = schema._zod.def;
   const { minimum, maximum } = aggregateChecks(schema);
   if (typeof minimum === "number")
-    json3.minItems = minimum;
+    json4.minItems = minimum;
   if (typeof maximum === "number")
-    json3.maxItems = maximum;
-  json3.type = "array";
-  json3.items = processSchema(def.element, ctx, {
+    json4.maxItems = maximum;
+  json4.type = "array";
+  json4.items = processSchema(def.element, ctx, {
     ...params,
     path: [...params.path, "items"]
   });
@@ -90467,17 +90474,17 @@ function inputOptin(schema) {
   return schema._zod.optin;
 }
 var objectProcessor = (schema, ctx, _json, params) => {
-  const json3 = _json;
+  const json4 = _json;
   const def = schema._zod.def;
   const shape = def.shape;
   const symbolKeys = Object.getOwnPropertySymbols(shape);
-  if (symbolKeys.length && handleUnrepresentable(schema, ctx, json3, params, "Symbol keys cannot be represented in JSON Schema")) {
+  if (symbolKeys.length && handleUnrepresentable(schema, ctx, json4, params, "Symbol keys cannot be represented in JSON Schema")) {
     return;
   }
-  json3.type = "object";
-  json3.properties = {};
+  json4.type = "object";
+  json4.properties = {};
   for (const key in shape) {
-    assignProp(json3.properties, key, processSchema(shape[key], ctx, {
+    assignProp(json4.properties, key, processSchema(shape[key], ctx, {
       ...params,
       path: [...params.path, "properties", key]
     }));
@@ -90490,21 +90497,21 @@ var objectProcessor = (schema, ctx, _json, params) => {
     }
   }
   if (requiredKeys.length > 0) {
-    json3.required = requiredKeys;
+    json4.required = requiredKeys;
   }
   if (def.catchall?._zod.def.type === "never") {
-    json3.additionalProperties = false;
+    json4.additionalProperties = false;
   } else if (!def.catchall) {
     if (ctx.io === "output")
-      json3.additionalProperties = false;
+      json4.additionalProperties = false;
   } else if (def.catchall) {
-    json3.additionalProperties = processSchema(def.catchall, ctx, {
+    json4.additionalProperties = processSchema(def.catchall, ctx, {
       ...params,
       path: [...params.path, "additionalProperties"]
     });
   }
 };
-var unionProcessor = (schema, ctx, json3, params) => {
+var unionProcessor = (schema, ctx, json4, params) => {
   const def = schema._zod.def;
   const isExclusive = def.inclusive === false;
   const options = def.options.map((x, i) => processSchema(x, ctx, {
@@ -90512,12 +90519,12 @@ var unionProcessor = (schema, ctx, json3, params) => {
     path: [...params.path, isExclusive ? "oneOf" : "anyOf", i]
   }));
   if (isExclusive) {
-    json3.oneOf = options;
+    json4.oneOf = options;
   } else {
-    json3.anyOf = options;
+    json4.anyOf = options;
   }
 };
-var intersectionProcessor = (schema, ctx, json3, params) => {
+var intersectionProcessor = (schema, ctx, json4, params) => {
   const def = schema._zod.def;
   const a = processSchema(def.left, ctx, {
     ...params,
@@ -90532,13 +90539,13 @@ var intersectionProcessor = (schema, ctx, json3, params) => {
     ...isSimpleIntersection(a) ? a.allOf : [a],
     ...isSimpleIntersection(b2) ? b2.allOf : [b2]
   ];
-  json3.allOf = allOf;
+  json4.allOf = allOf;
   ctx.intersections.push(allOf);
 };
 var tupleProcessor = (schema, ctx, _json, params) => {
-  const json3 = _json;
+  const json4 = _json;
   const def = schema._zod.def;
-  json3.type = "array";
+  json4.type = "array";
   const prefixPath = ctx.target === "draft-2020-12" ? "prefixItems" : "items";
   const restPath = ctx.target === "draft-2020-12" ? "items" : ctx.target === "openapi-3.0" ? "items" : "additionalItems";
   const prefixItems = def.items.map((x, i) => processSchema(x, ctx, {
@@ -90560,70 +90567,70 @@ var tupleProcessor = (schema, ctx, _json, params) => {
   const maxItems = def.items.length;
   const isClosed = !def.rest;
   if (ctx.target === "draft-2020-12") {
-    json3.prefixItems = prefixItems;
+    json4.prefixItems = prefixItems;
     if (isClosed) {
-      json3.items = false;
+      json4.items = false;
     } else if (rest) {
-      json3.items = rest;
+      json4.items = rest;
     }
     if (minItems > 0)
-      json3.minItems = minItems;
+      json4.minItems = minItems;
     if (isClosed)
-      json3.maxItems = maxItems;
+      json4.maxItems = maxItems;
   } else if (ctx.target === "openapi-3.0") {
-    json3.items = {
+    json4.items = {
       anyOf: prefixItems
     };
     if (rest) {
-      json3.items.anyOf.push(rest);
+      json4.items.anyOf.push(rest);
     }
     if (minItems > 0)
-      json3.minItems = minItems;
+      json4.minItems = minItems;
     if (isClosed)
-      json3.maxItems = maxItems;
+      json4.maxItems = maxItems;
   } else {
-    json3.items = prefixItems;
+    json4.items = prefixItems;
     if (isClosed) {
-      json3.additionalItems = false;
+      json4.additionalItems = false;
     } else if (rest) {
-      json3.additionalItems = rest;
+      json4.additionalItems = rest;
     }
     if (minItems > 0)
-      json3.minItems = minItems;
+      json4.minItems = minItems;
     if (isClosed)
-      json3.maxItems = maxItems;
+      json4.maxItems = maxItems;
   }
   const { minimum, maximum } = aggregateChecks(schema);
   if (typeof minimum === "number")
-    json3.minItems = minimum;
+    json4.minItems = minimum;
   if (typeof maximum === "number")
-    json3.maxItems = maximum;
+    json4.maxItems = maximum;
 };
-function stringifyKeyNames(bySchema, json3, visited) {
-  if (json3.$ref) {
-    if (visited.has(json3))
-      return json3;
-    visited.add(json3);
-    const def = bySchema.get(json3)?.def;
+function stringifyKeyNames(bySchema, json4, visited) {
+  if (json4.$ref) {
+    if (visited.has(json4))
+      return json4;
+    visited.add(json4);
+    const def = bySchema.get(json4)?.def;
     if (!def)
-      return json3;
+      return json4;
     const inlined = stringifyKeyNames(bySchema, def, visited);
-    return inlined === def ? json3 : inlined;
+    return inlined === def ? json4 : inlined;
   }
   for (const keyword of ["anyOf", "oneOf"]) {
-    const branches = json3[keyword];
+    const branches = json4[keyword];
     if (!Array.isArray(branches))
       continue;
     const mapped = branches.map((branch) => stringifyKeyNames(bySchema, branch, visited));
     if (mapped.some((branch, i) => branch !== branches[i]))
-      json3 = { ...json3, [keyword]: mapped };
+      json4 = { ...json4, [keyword]: mapped };
   }
-  const types2 = Array.isArray(json3.type) ? json3.type : [json3.type];
+  const types2 = Array.isArray(json4.type) ? json4.type : [json4.type];
   const numericType = !types2.includes("string") && types2.some((t) => t === "number" || t === "integer");
-  const values2 = json3.enum ?? (json3.const !== void 0 ? [json3.const] : void 0);
+  const values2 = json4.enum ?? (json4.const !== void 0 ? [json4.const] : void 0);
   if (!numericType && !values2?.some((v) => typeof v === "number"))
-    return json3;
-  const { minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf, format, id, ...rest } = json3;
+    return json4;
+  const { minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf, format, id, ...rest } = json4;
   if (rest.enum)
     rest.enum = rest.enum.map((v) => typeof v === "number" ? String(v) : v);
   else if (typeof rest.const === "number")
@@ -90663,9 +90670,9 @@ function rewriteKeyNames(ctx) {
   }
 }
 var recordProcessor = (schema, ctx, _json, params) => {
-  const json3 = _json;
+  const json4 = _json;
   const def = schema._zod.def;
-  json3.type = "object";
+  json4.type = "object";
   const keyType = def.keyType;
   const patterns = aggregateChecks(keyType).patterns;
   if (def.mode === "loose" && patterns && patterns.size > 0) {
@@ -90673,13 +90680,13 @@ var recordProcessor = (schema, ctx, _json, params) => {
       ...params,
       path: [...params.path, "patternProperties", "*"]
     });
-    json3.patternProperties = {};
+    json4.patternProperties = {};
     for (const pattern of patterns) {
-      assignProp(json3.patternProperties, exactPattern(pattern).source, valueSchema);
+      assignProp(json4.patternProperties, exactPattern(pattern).source, valueSchema);
     }
   } else {
     if (ctx.target === "draft-07" || ctx.target === "draft-2020-12") {
-      json3.propertyNames = processSchema(def.keyType, ctx, {
+      json4.propertyNames = processSchema(def.keyType, ctx, {
         ...params,
         path: [...params.path, "propertyNames"]
       });
@@ -90691,7 +90698,7 @@ var recordProcessor = (schema, ctx, _json, params) => {
       }
       pending.push(schema);
     }
-    json3.additionalProperties = processSchema(def.valueType, ctx, {
+    json4.additionalProperties = processSchema(def.valueType, ctx, {
       ...params,
       path: [...params.path, "additionalProperties"]
     });
@@ -90701,19 +90708,19 @@ var recordProcessor = (schema, ctx, _json, params) => {
   if (keyValues && !def.partial && !omittableOnInput) {
     const validKeyValues = [...keyValues].filter((v) => typeof v === "string" || typeof v === "number");
     if (validKeyValues.length > 0) {
-      json3.required = validKeyValues.map(String);
+      json4.required = validKeyValues.map(String);
     }
   }
 };
-var nullableProcessor = (schema, ctx, json3, params) => {
+var nullableProcessor = (schema, ctx, json4, params) => {
   const def = schema._zod.def;
   const inner = processSchema(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   if (ctx.target === "openapi-3.0") {
     seen.ref = def.innerType;
-    json3.nullable = true;
+    json4.nullable = true;
   } else {
-    json3.anyOf = [inner, { type: "null" }];
+    json4.anyOf = [inner, { type: "null" }];
   }
 };
 var nonoptionalProcessor = (schema, ctx, _json, params) => {
@@ -90723,7 +90730,7 @@ var nonoptionalProcessor = (schema, ctx, _json, params) => {
   seen.ref = def.innerType;
 };
 var UNREPRESENTABLE_DEFAULT = /* @__PURE__ */ Symbol();
-function serializeDefaultValue(value, schema, ctx, json3, params) {
+function serializeDefaultValue(value, schema, ctx, json4, params) {
   let unrepresentable = false;
   const serialized = JSON.stringify(value, (_, val) => {
     if (typeof val !== "bigint")
@@ -90733,30 +90740,30 @@ function serializeDefaultValue(value, schema, ctx, json3, params) {
   });
   if (!unrepresentable)
     return JSON.parse(serialized);
-  handleUnrepresentable(schema, ctx, json3, params, "BigInt defaults cannot be represented in JSON Schema");
+  handleUnrepresentable(schema, ctx, json4, params, "BigInt defaults cannot be represented in JSON Schema");
   return UNREPRESENTABLE_DEFAULT;
 }
-var defaultProcessor = (schema, ctx, json3, params) => {
+var defaultProcessor = (schema, ctx, json4, params) => {
   const def = schema._zod.def;
   processSchema(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
-  const value = serializeDefaultValue(def.defaultValue, schema, ctx, json3, params);
+  const value = serializeDefaultValue(def.defaultValue, schema, ctx, json4, params);
   if (value !== UNREPRESENTABLE_DEFAULT)
-    json3.default = value;
+    json4.default = value;
 };
-var prefaultProcessor = (schema, ctx, json3, params) => {
+var prefaultProcessor = (schema, ctx, json4, params) => {
   const def = schema._zod.def;
   processSchema(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
   if (ctx.io !== "input")
     return;
-  const value = serializeDefaultValue(def.defaultValue, schema, ctx, json3, params);
+  const value = serializeDefaultValue(def.defaultValue, schema, ctx, json4, params);
   if (value !== UNREPRESENTABLE_DEFAULT)
-    json3._prefault = value;
+    json4._prefault = value;
 };
-var catchProcessor = (schema, ctx, json3, params) => {
+var catchProcessor = (schema, ctx, json4, params) => {
   const def = schema._zod.def;
   processSchema(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
@@ -90765,10 +90772,10 @@ var catchProcessor = (schema, ctx, json3, params) => {
   try {
     catchValue = def.catchValue(void 0);
   } catch {
-    handleUnrepresentable(schema, ctx, json3, params, "Dynamic catch values are not supported in JSON Schema");
+    handleUnrepresentable(schema, ctx, json4, params, "Dynamic catch values are not supported in JSON Schema");
     return;
   }
-  json3.default = catchValue;
+  json4.default = catchValue;
 };
 var pipeProcessor = (schema, ctx, _json, params) => {
   const def = schema._zod.def;
@@ -90778,12 +90785,12 @@ var pipeProcessor = (schema, ctx, _json, params) => {
   const seen = ctx.seen.get(schema);
   seen.ref = innerType;
 };
-var readonlyProcessor = (schema, ctx, json3, params) => {
+var readonlyProcessor = (schema, ctx, json4, params) => {
   const def = schema._zod.def;
   processSchema(def.innerType, ctx, params);
   const seen = ctx.seen.get(schema);
   seen.ref = def.innerType;
-  json3.readOnly = true;
+  json4.readOnly = true;
 };
 var promiseProcessor = (schema, ctx, _json, params) => {
   const def = schema._zod.def;
@@ -91034,7 +91041,7 @@ function visit(schema, fnOrHandlers) {
     return h ? h(node2, rewritten) : node2;
   };
   const cache = /* @__PURE__ */ new Map();
-  function run(s) {
+  function run2(s) {
     const cached2 = cache.get(s);
     if (cached2 === RESOLVING) {
       return new $ZodLazy({
@@ -91060,21 +91067,21 @@ function visit(schema, fnOrHandlers) {
         let changed = false;
         const newShape = {};
         for (const k of keys) {
-          const mapped = run(oldShape[k]);
+          const mapped = run2(oldShape[k]);
           if (mapped !== oldShape[k])
             changed = true;
           newShape[k] = mapped;
         }
         let newCatchall = def.catchall;
         if (def.catchall) {
-          newCatchall = run(def.catchall);
+          newCatchall = run2(def.catchall);
           if (newCatchall !== def.catchall)
             changed = true;
         }
         return changed ? clone(s, { ...def, shape: newShape, catchall: newCatchall }) : s;
       }
       case "array": {
-        const mapped = run(def.element);
+        const mapped = run2(def.element);
         return mapped === def.element ? s : clone(s, { ...def, element: mapped });
       }
       case "tuple": {
@@ -91082,14 +91089,14 @@ function visit(schema, fnOrHandlers) {
         let changed = false;
         const newItems = [];
         for (const item of oldItems) {
-          const mapped = run(item);
+          const mapped = run2(item);
           if (mapped !== item)
             changed = true;
           newItems.push(mapped);
         }
         let newRest = def.rest;
         if (def.rest) {
-          newRest = run(def.rest);
+          newRest = run2(def.rest);
           if (newRest !== def.rest)
             changed = true;
         }
@@ -91097,12 +91104,12 @@ function visit(schema, fnOrHandlers) {
       }
       case "record":
       case "map": {
-        const newKey = run(def.keyType);
-        const newVal = run(def.valueType);
+        const newKey = run2(def.keyType);
+        const newVal = run2(def.valueType);
         return newKey === def.keyType && newVal === def.valueType ? s : clone(s, { ...def, keyType: newKey, valueType: newVal });
       }
       case "set": {
-        const newVal = run(def.valueType);
+        const newVal = run2(def.valueType);
         return newVal === def.valueType ? s : clone(s, { ...def, valueType: newVal });
       }
       case "union": {
@@ -91110,7 +91117,7 @@ function visit(schema, fnOrHandlers) {
         let changed = false;
         const newOptions = [];
         for (const opt of oldOptions) {
-          const mapped = run(opt);
+          const mapped = run2(opt);
           if (mapped !== opt)
             changed = true;
           newOptions.push(mapped);
@@ -91118,8 +91125,8 @@ function visit(schema, fnOrHandlers) {
         return changed ? clone(s, { ...def, options: newOptions }) : s;
       }
       case "intersection": {
-        const newLeft = run(def.left);
-        const newRight = run(def.right);
+        const newLeft = run2(def.left);
+        const newRight = run2(def.right);
         return newLeft === def.left && newRight === def.right ? s : clone(s, { ...def, left: newLeft, right: newRight });
       }
       case "optional":
@@ -91131,23 +91138,23 @@ function visit(schema, fnOrHandlers) {
       case "nonoptional":
       case "promise":
       case "success": {
-        const newInner = run(def.innerType);
+        const newInner = run2(def.innerType);
         return newInner === def.innerType ? s : clone(s, { ...def, innerType: newInner });
       }
       case "pipe": {
-        const newIn = run(def.in);
-        const newOut = run(def.out);
+        const newIn = run2(def.in);
+        const newOut = run2(def.out);
         return newIn === def.in && newOut === def.out ? s : clone(s, { ...def, in: newIn, out: newOut });
       }
       case "function": {
-        const newInput = run(def.input);
-        const newOutput = run(def.output);
+        const newInput = run2(def.input);
+        const newOutput = run2(def.output);
         return newInput === def.input && newOutput === def.output ? s : clone(s, { ...def, input: newInput, output: newOutput });
       }
       case "lazy": {
         const original = def.getter;
         const { _cachedInner, ...rest } = def;
-        return clone(s, { ...rest, getter: () => run(original()) });
+        return clone(s, { ...rest, getter: () => run2(original()) });
       }
       // A leaf by choice: `parts` are regex fragments, not data positions.
       case "template_literal":
@@ -91178,7 +91185,7 @@ function visit(schema, fnOrHandlers) {
       }
     }
   }
-  return run(schema);
+  return run2(schema);
 }
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
@@ -92069,7 +92076,7 @@ var _ZodString = /* @__PURE__ */ $constructor(
   (inst, def) => {
     $ZodString.init(inst, def);
     ZodType2.init(inst, def);
-    inst._zod.processJSONSchema = (ctx, json3, params) => stringProcessor(inst, ctx, json3, params);
+    inst._zod.processJSONSchema = (ctx, json4, params) => stringProcessor(inst, ctx, json4, params);
   },
   /* @__PURE__ */ util_exports.derived({
     format: (inst) => aggregateChecks(inst).format ?? null,
@@ -92428,7 +92435,7 @@ var ZodNumber2 = /* @__PURE__ */ $constructor(
   (inst, def) => {
     $ZodNumber.init(inst, def);
     ZodType2.init(inst, def);
-    inst._zod.processJSONSchema = (ctx, json3, params) => numberProcessor(inst, ctx, json3, params);
+    inst._zod.processJSONSchema = (ctx, json4, params) => numberProcessor(inst, ctx, json4, params);
     inst.isFinite = true;
   },
   /* @__PURE__ */ util_exports.derived({
@@ -92518,7 +92525,7 @@ function uint32(params) {
 var ZodBoolean2 = /* @__PURE__ */ $constructor("ZodBoolean", (inst, def) => {
   $ZodBoolean.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => booleanProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => booleanProcessor(inst, ctx, json4, params);
 });
 function boolean2(params) {
   return _boolean(ZodBoolean2, params);
@@ -92528,7 +92535,7 @@ var ZodBigInt2 = /* @__PURE__ */ $constructor(
   (inst, def) => {
     $ZodBigInt.init(inst, def);
     ZodType2.init(inst, def);
-    inst._zod.processJSONSchema = (ctx, json3, params) => bigintProcessor(inst, ctx, json3, params);
+    inst._zod.processJSONSchema = (ctx, json4, params) => bigintProcessor(inst, ctx, json4, params);
   },
   /* @__PURE__ */ util_exports.derived({
     minValue: (inst) => aggregateChecks(inst).minimum ?? null,
@@ -92586,7 +92593,7 @@ function uint64(params) {
 var ZodSymbol2 = /* @__PURE__ */ $constructor("ZodSymbol", (inst, def) => {
   $ZodSymbol.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => symbolProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => symbolProcessor(inst, ctx, json4, params);
 });
 function symbol(params) {
   return _symbol(ZodSymbol2, params);
@@ -92594,7 +92601,7 @@ function symbol(params) {
 var ZodUndefined2 = /* @__PURE__ */ $constructor("ZodUndefined", (inst, def) => {
   $ZodUndefined.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => undefinedProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => undefinedProcessor(inst, ctx, json4, params);
 });
 function _undefined3(params) {
   return _undefined2(ZodUndefined2, params);
@@ -92602,7 +92609,7 @@ function _undefined3(params) {
 var ZodNull2 = /* @__PURE__ */ $constructor("ZodNull", (inst, def) => {
   $ZodNull.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => nullProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => nullProcessor(inst, ctx, json4, params);
 });
 function _null3(params) {
   return _null2(ZodNull2, params);
@@ -92610,7 +92617,7 @@ function _null3(params) {
 var ZodAny2 = /* @__PURE__ */ $constructor("ZodAny", (inst, def) => {
   $ZodAny.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => anyProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => anyProcessor(inst, ctx, json4, params);
 });
 function any() {
   return _any(ZodAny2);
@@ -92618,7 +92625,7 @@ function any() {
 var ZodUnknown2 = /* @__PURE__ */ $constructor("ZodUnknown", (inst, def) => {
   $ZodUnknown.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => unknownProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => unknownProcessor(inst, ctx, json4, params);
 });
 function unknown() {
   return _unknown(ZodUnknown2);
@@ -92626,7 +92633,7 @@ function unknown() {
 var ZodNever2 = /* @__PURE__ */ $constructor("ZodNever", (inst, def) => {
   $ZodNever.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => neverProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => neverProcessor(inst, ctx, json4, params);
 });
 function never(params) {
   return _never(ZodNever2, params);
@@ -92634,7 +92641,7 @@ function never(params) {
 var ZodVoid2 = /* @__PURE__ */ $constructor("ZodVoid", (inst, def) => {
   $ZodVoid.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => voidProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => voidProcessor(inst, ctx, json4, params);
 });
 function _void2(params) {
   return _void(ZodVoid2, params);
@@ -92644,7 +92651,7 @@ var ZodDate2 = /* @__PURE__ */ $constructor(
   (inst, def) => {
     $ZodDate.init(inst, def);
     ZodType2.init(inst, def);
-    inst._zod.processJSONSchema = (ctx, json3, params) => dateProcessor(inst, ctx, json3, params);
+    inst._zod.processJSONSchema = (ctx, json4, params) => dateProcessor(inst, ctx, json4, params);
     inst.min = (value, params) => inst.check(_gte(value, params));
     inst.max = (value, params) => inst.check(_lte(value, params));
   },
@@ -92666,7 +92673,7 @@ var ZodArray2 = /* @__PURE__ */ $constructor("ZodArray", (inst, def) => {
   _ensureDefaultMemoizer();
   $ZodArray.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => arrayProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => arrayProcessor(inst, ctx, json4, params);
   inst.element = def.element;
 }, {
   min(n, params) {
@@ -92696,7 +92703,7 @@ var ZodObject2 = /* @__PURE__ */ $constructor("ZodObject", (inst, def) => {
   _ensureDefaultMemoizer();
   $ZodObjectJIT.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => objectProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => objectProcessor(inst, ctx, json4, params);
   util_exports.installLazyProp(inst, "shape", (self2) => self2._zod.def.shape, false);
 }, {
   keyof() {
@@ -92769,7 +92776,7 @@ function looseObject(shape, params) {
 var ZodUnion2 = /* @__PURE__ */ $constructor("ZodUnion", (inst, def) => {
   $ZodUnion.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => unionProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => unionProcessor(inst, ctx, json4, params);
   inst.options = def.options;
 });
 function union(options, params) {
@@ -92782,7 +92789,7 @@ function union(options, params) {
 var ZodXor = /* @__PURE__ */ $constructor("ZodXor", (inst, def) => {
   ZodUnion2.init(inst, def);
   $ZodXor.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => unionProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => unionProcessor(inst, ctx, json4, params);
   inst.options = def.options;
 });
 function xor2(options, params) {
@@ -92808,7 +92815,7 @@ function discriminatedUnion(discriminator, options, params) {
 var ZodIntersection2 = /* @__PURE__ */ $constructor("ZodIntersection", (inst, def) => {
   $ZodIntersection.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => intersectionProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => intersectionProcessor(inst, ctx, json4, params);
 });
 function intersection(left, right) {
   return new ZodIntersection2({
@@ -92821,7 +92828,7 @@ var ZodTuple2 = /* @__PURE__ */ $constructor("ZodTuple", (inst, def) => {
   _ensureDefaultMemoizer();
   $ZodTuple.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => tupleProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => tupleProcessor(inst, ctx, json4, params);
 }, {
   rest(rest) {
     return this.clone({
@@ -92854,7 +92861,7 @@ var ZodRecord2 = /* @__PURE__ */ $constructor("ZodRecord", (inst, def) => {
   _ensureDefaultMemoizer();
   $ZodRecord.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => recordProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => recordProcessor(inst, ctx, json4, params);
   inst.keyType = def.keyType;
   inst.valueType = def.valueType;
 });
@@ -92896,7 +92903,7 @@ var ZodMap2 = /* @__PURE__ */ $constructor("ZodMap", (inst, def) => {
   _ensureDefaultMemoizer();
   $ZodMap.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => mapProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => mapProcessor(inst, ctx, json4, params);
   inst.keyType = def.keyType;
   inst.valueType = def.valueType;
   inst.min = (...args) => inst.check(_minSize(...args));
@@ -92916,7 +92923,7 @@ var ZodSet2 = /* @__PURE__ */ $constructor("ZodSet", (inst, def) => {
   _ensureDefaultMemoizer();
   $ZodSet.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => setProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => setProcessor(inst, ctx, json4, params);
   inst.min = (...args) => inst.check(_minSize(...args));
   inst.nonempty = (params) => inst.check(_minSize(1, params));
   inst.max = (...args) => inst.check(_maxSize(...args));
@@ -92932,7 +92939,7 @@ function set(valueType, params) {
 var ZodEnum2 = /* @__PURE__ */ $constructor("ZodEnum", (inst, def) => {
   $ZodEnum.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => enumProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => enumProcessor(inst, ctx, json4, params);
   inst.enum = def.entries;
   inst.options = [...inst._zod.values];
   const keys = new Set(Object.keys(def.entries));
@@ -92985,7 +92992,7 @@ function nativeEnum(entries, params) {
 var ZodLiteral2 = /* @__PURE__ */ $constructor("ZodLiteral", (inst, def) => {
   $ZodLiteral.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => literalProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => literalProcessor(inst, ctx, json4, params);
   inst.values = new Set(def.values);
   Object.defineProperty(inst, "value", {
     get() {
@@ -93006,7 +93013,7 @@ function literal(value, params) {
 var ZodFile = /* @__PURE__ */ $constructor("ZodFile", (inst, def) => {
   $ZodFile.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => fileProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => fileProcessor(inst, ctx, json4, params);
   inst.min = (size2, params) => inst.check(_minSize(size2, params));
   inst.max = (size2, params) => inst.check(_maxSize(size2, params));
   inst.mime = (types2, params) => inst.check(_mime(Array.isArray(types2) ? types2 : [types2], params));
@@ -93018,7 +93025,7 @@ var ZodTransform = /* @__PURE__ */ $constructor("ZodTransform", (inst, def) => {
   _ensureDefaultMemoizer();
   $ZodTransform.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => transformProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => transformProcessor(inst, ctx, json4, params);
   inst._zod.parse = (payload, _ctx) => {
     if (_ctx.direction === "backward") {
       throw new $ZodEncodeError(inst.constructor.name);
@@ -93057,7 +93064,7 @@ function transform(fn) {
 var ZodOptional2 = /* @__PURE__ */ $constructor("ZodOptional", (inst, def) => {
   $ZodOptional.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => optionalProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => optionalProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
 });
 function optional(innerType) {
@@ -93069,7 +93076,7 @@ function optional(innerType) {
 var ZodExactOptional = /* @__PURE__ */ $constructor("ZodExactOptional", (inst, def) => {
   $ZodExactOptional.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => optionalProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => optionalProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
 });
 function exactOptional(innerType) {
@@ -93081,7 +93088,7 @@ function exactOptional(innerType) {
 var ZodNullable2 = /* @__PURE__ */ $constructor("ZodNullable", (inst, def) => {
   $ZodNullable.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => nullableProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => nullableProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
 });
 function nullable(innerType) {
@@ -93096,7 +93103,7 @@ function nullish2(innerType) {
 var ZodDefault2 = /* @__PURE__ */ $constructor("ZodDefault", (inst, def) => {
   $ZodDefault.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => defaultProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => defaultProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
   inst.removeDefault = inst.unwrap;
 });
@@ -93112,7 +93119,7 @@ function _default2(innerType, defaultValue) {
 var ZodPrefault = /* @__PURE__ */ $constructor("ZodPrefault", (inst, def) => {
   $ZodPrefault.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => prefaultProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => prefaultProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
 });
 function prefault(innerType, defaultValue) {
@@ -93127,7 +93134,7 @@ function prefault(innerType, defaultValue) {
 var ZodNonOptional = /* @__PURE__ */ $constructor("ZodNonOptional", (inst, def) => {
   $ZodNonOptional.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => nonoptionalProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => nonoptionalProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
 });
 function nonoptional(innerType, params) {
@@ -93140,7 +93147,7 @@ function nonoptional(innerType, params) {
 var ZodSuccess = /* @__PURE__ */ $constructor("ZodSuccess", (inst, def) => {
   $ZodSuccess.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => successProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => successProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
 });
 function success(innerType) {
@@ -93152,7 +93159,7 @@ function success(innerType) {
 var ZodCatch2 = /* @__PURE__ */ $constructor("ZodCatch", (inst, def) => {
   $ZodCatch.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => catchProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => catchProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
   inst.removeCatch = inst.unwrap;
 });
@@ -93166,7 +93173,7 @@ function _catch2(innerType, catchValue) {
 var ZodNaN2 = /* @__PURE__ */ $constructor("ZodNaN", (inst, def) => {
   $ZodNaN.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => nanProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => nanProcessor(inst, ctx, json4, params);
 });
 function nan(params) {
   return _nan(ZodNaN2, params);
@@ -93174,7 +93181,7 @@ function nan(params) {
 var ZodPipe = /* @__PURE__ */ $constructor("ZodPipe", (inst, def) => {
   $ZodPipe.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => pipeProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => pipeProcessor(inst, ctx, json4, params);
   inst.in = def.in;
   inst.out = def.out;
 });
@@ -93216,7 +93223,7 @@ var ZodPreprocess = /* @__PURE__ */ $constructor("ZodPreprocess", (inst, def) =>
 var ZodReadonly2 = /* @__PURE__ */ $constructor("ZodReadonly", (inst, def) => {
   $ZodReadonly.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => readonlyProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => readonlyProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
 });
 function readonly(innerType) {
@@ -93228,7 +93235,7 @@ function readonly(innerType) {
 var ZodTemplateLiteral = /* @__PURE__ */ $constructor("ZodTemplateLiteral", (inst, def) => {
   $ZodTemplateLiteral.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => templateLiteralProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => templateLiteralProcessor(inst, ctx, json4, params);
 });
 function templateLiteral(parts, params) {
   return new ZodTemplateLiteral({
@@ -93240,7 +93247,7 @@ function templateLiteral(parts, params) {
 var ZodLazy2 = /* @__PURE__ */ $constructor("ZodLazy", (inst, def) => {
   $ZodLazy.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => lazyProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => lazyProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.getter();
 });
 function lazy(getter) {
@@ -93252,7 +93259,7 @@ function lazy(getter) {
 var ZodPromise2 = /* @__PURE__ */ $constructor("ZodPromise", (inst, def) => {
   $ZodPromise.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => promiseProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => promiseProcessor(inst, ctx, json4, params);
   inst.unwrap = () => inst._zod.def.innerType;
 });
 function promise(innerType) {
@@ -93264,7 +93271,7 @@ function promise(innerType) {
 var ZodFunction2 = /* @__PURE__ */ $constructor("ZodFunction", (inst, def) => {
   $ZodFunction.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => functionProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => functionProcessor(inst, ctx, json4, params);
 });
 function _function(params) {
   return new ZodFunction2({
@@ -93276,7 +93283,7 @@ function _function(params) {
 var ZodCustom = /* @__PURE__ */ $constructor("ZodCustom", (inst, def) => {
   $ZodCustom.init(inst, def);
   ZodType2.init(inst, def);
-  inst._zod.processJSONSchema = (ctx, json3, params) => customProcessor(inst, ctx, json3, params);
+  inst._zod.processJSONSchema = (ctx, json4, params) => customProcessor(inst, ctx, json4, params);
 });
 function check(fn) {
   const ch = new $ZodCheck({
@@ -102041,24 +102048,24 @@ var ApifyRunner = class {
       const left = this.maxSpend - this.spent;
       const cap = chargeCap(estimate(key, expectedItems), left);
       if (cap == null) throw new BudgetExceeded(`\u9884\u7B97 $${this.maxSpend.toFixed(2)} \u53EA\u5269 $${Math.max(0, left).toFixed(2)}\uFF0C\u4E0D\u591F Apify \u6BCF\u6B21\u8FD0\u884C\u6700\u4F4E\u7684 $${MIN_CHARGE_CAP.toFixed(2)} \u4E0A\u9650\uFF0C${actor} \u6CA1\u6709\u542F\u52A8`);
-      const run2 = await this.client.actor(actor).start(input2, { maxTotalChargeUsd: cap });
-      record2 = { runId: run2.id, datasetId: run2.defaultDatasetId };
+      const run3 = await this.client.actor(actor).start(input2, { maxTotalChargeUsd: cap });
+      record2 = { runId: run3.id, datasetId: run3.defaultDatasetId };
       await this.ledger.started(key, actor, record2);
     }
-    const run = await this.client.run(record2.runId).waitForFinish();
+    const run2 = await this.client.run(record2.runId).waitForFinish();
     const items = [];
     for (let offset = 0; ; offset += 1e3) {
       const page = await this.client.dataset(record2.datasetId).listItems({ offset, limit: 1e3, clean: true });
       items.push(...page.items);
       if (page.items.length < 1e3) break;
     }
-    if (run.status !== "SUCCEEDED" && items.length === 0) {
-      await this.ledger.finished(key, { status: run.status, items: 0, costUsd: run.usageTotalUsd ?? 0 });
-      throw new Error(`${actor} \u8FD0\u884C\u5931\u8D25\uFF08${run.status}\uFF09\uFF0Crun ${record2.runId}`);
+    if (run2.status !== "SUCCEEDED" && items.length === 0) {
+      await this.ledger.finished(key, { status: run2.status, items: 0, costUsd: run2.usageTotalUsd ?? 0 });
+      throw new Error(`${actor} \u8FD0\u884C\u5931\u8D25\uFF08${run2.status}\uFF09\uFF0Crun ${record2.runId}`);
     }
-    const cost = Math.max(run.usageTotalUsd ?? 0, estimate(key, items.length));
+    const cost = Math.max(run2.usageTotalUsd ?? 0, estimate(key, items.length));
     this.spent += cost;
-    await this.ledger.finished(key, { status: run.status, items: items.length, costUsd: cost });
+    await this.ledger.finished(key, { status: run2.status, items: items.length, costUsd: cost });
     return items;
   }
 };
@@ -102836,9 +102843,9 @@ async function findPeople(ctx, p, input2, o) {
     language: p.settings.findLanguage || DEFAULT_PARAMS.language
   };
   const token = process.env.APIFY_TOKEN || ctx.cfg.apifyToken;
-  if (!o.run && !token) throw new Error("\u8FD9\u53F0\u7535\u8111\u6CA1\u6709 Apify token\uFF08kolpick setup\uFF09");
-  const run = o.run ?? new ApifyRunner(token, params.maxSpend, new MemoryLedger());
-  const result = await discover(run, params, skip);
+  if (!o.run && !token) throw new Error("\u8FD9\u53F0\u7535\u8111\u6CA1\u6709 Apify token\uFF1A\u5728\u51B3\u7B56\u53F0\u300C\u8BBE\u7F6E \u2192 \u8FD9\u53F0\u7535\u8111\u300D\u91CC\u586B");
+  const run2 = o.run ?? new ApifyRunner(token, params.maxSpend, new MemoryLedger());
+  const result = await discover(run2, params, skip);
   const candidates = result.creators.filter((c) => !c.status.startsWith("filtered")).map(({ creator: c }) => ({
     platform: PLATFORM_NAMES[c.platform],
     handle: c.handle,
@@ -102851,7 +102858,7 @@ async function findPeople(ctx, p, input2, o) {
     note: `\u627E\u4EBA\uFF1A${c.discoveredBy}${c.emailSource ? `\uFF0C\u90AE\u7BB1\u6765\u81EA ${c.emailSource}` : ""}`
   }));
   const filtered = result.creators.length - candidates.length;
-  const spent = Number((run.spent ?? 0).toFixed(2));
+  const spent = Number((run2.spent ?? 0).toFixed(2));
   const batch = input2.batch ?? `${PLATFORM_NAMES[input2.platform]} ${new Date(ctx.now()).toISOString().slice(0, 10)}`;
   const summary = { found: candidates.length, withEmail: candidates.filter((c) => c.email).length, filtered, spentUsd: spent, stoppedEarly: result.stoppedEarly || void 0 };
   if (o.direct) {
@@ -103675,7 +103682,7 @@ var MemoryLedger2 = class {
 };
 function runner(ctx, budget) {
   const token = process.env.APIFY_TOKEN || ctx.cfg.apifyToken;
-  if (!token) throw new Error("\u8FD9\u53F0\u7535\u8111\u6CA1\u6709 Apify token\uFF08kolpick setup\uFF09");
+  if (!token) throw new Error("\u8FD9\u53F0\u7535\u8111\u6CA1\u6709 Apify token\uFF1A\u5728\u51B3\u7B56\u53F0\u300C\u8BBE\u7F6E \u2192 \u8FD9\u53F0\u7535\u8111\u300D\u91CC\u586B");
   return new ApifyRunner(token, budget, new MemoryLedger2());
 }
 function handleFrom(url2, re) {
@@ -103741,12 +103748,12 @@ async function findPosts(ctx, p, o = {}) {
     byActor.set(key, [...byActor.get(key) ?? [], k]);
   }
   if (!byActor.size) return { watched: 0, found: 0, skipped };
-  const run = o.run ?? runner(ctx, o.budget ?? 3);
+  const run2 = o.run ?? runner(ctx, o.budget ?? 3);
   const since = dayOf(ctx.now() - p.settings.postLookbackDays * 864e5, p.settings.timezone);
   const known = new Set((await ctx.db.query("select url from posts where project_id = $1", [p.id])).map((r) => postKey(r.url)));
   let found = 0;
   for (const [key, list2] of byActor) {
-    const items = await run.run(key, profileInput(key, list2.map((k) => k.url), since), list2.length * PER_PROFILE);
+    const items = await run2.run(key, profileInput(key, list2.map((k) => k.url), since), list2.length * PER_PROFILE);
     for (const it of items) {
       const post = postOf(it);
       if (!post.url || known.has(postKey(post.url))) continue;
@@ -103784,13 +103791,13 @@ async function postMetrics(ctx, p, o = {}) {
     }
   }
   if (!due.length) return { due: 0, filled: 0 };
-  const run = o.run ?? runner(ctx, o.budget ?? 2);
+  const run2 = o.run ?? runner(ctx, o.budget ?? 2);
   let filled = 0;
   const byActor = /* @__PURE__ */ new Map();
   for (const x of due) byActor.set(ACTOR_FOR[x.post.platform], [...byActor.get(ACTOR_FOR[x.post.platform]) ?? [], x]);
   for (const [key, list2] of byActor) {
     const urls = [...new Set(list2.map((x) => x.post.url))];
-    const items = await run.run(key, inputFor(key, urls), urls.length);
+    const items = await run2.run(key, inputFor(key, urls), urls.length);
     for (const it of items) {
       const url2 = String(it.url ?? it.webVideoUrl ?? it.postUrl ?? it.inputUrl ?? "");
       for (const x of list2.filter((y) => postKey(y.post.url) === postKey(url2))) {
@@ -103805,6 +103812,151 @@ async function postMetrics(ctx, p, o = {}) {
   }
   await addLog(ctx, p, { kind: "metrics", who: "tool", summary: `\u6293\u5E16\u5B50\u6570\u636E\uFF1A${filled}/${due.length}` });
   return { due: due.length, filled };
+}
+
+// src/kolpick/setup.ts
+import { execFile as execFile3, spawn as spawn3 } from "node:child_process";
+import { existsSync as existsSync3, readFileSync as readFileSync3 } from "node:fs";
+import { homedir as homedir3 } from "node:os";
+import { join as join4 } from "node:path";
+var MAIL_SCOPES = [
+  "mail:user_mailbox:readonly",
+  "mail:user_mailbox.message:readonly",
+  "mail:user_mailbox.message.address:read",
+  "mail:user_mailbox.message.subject:read",
+  "mail:user_mailbox.message.body:read",
+  "mail:user_mailbox.message:modify",
+  "mail:user_mailbox.message:send",
+  "mail:event",
+  "mail:user_mailbox.event.mail_address:read"
+].join(" ");
+var lark = () => process.env.KOLPICK_LARK_CLI || "lark-cli";
+function run(bin, args, env) {
+  return new Promise((resolve) => {
+    execFile3(bin, args, { encoding: "utf8", timeout: 15e3, env }, (err, stdout, stderr) => resolve({ out: `${stdout ?? ""}${stderr ?? ""}`, missing: err?.code === "ENOENT" }));
+  });
+}
+function json3(s) {
+  try {
+    return JSON.parse(s.slice(s.indexOf("{"), s.lastIndexOf("}") + 1));
+  } catch {
+    return null;
+  }
+}
+async function larkChecks() {
+  const st = await run(lark(), ["auth", "status"]);
+  if (st.missing) {
+    const no = { ok: false, note: "\u5148\u88C5\u597D lark-cli" };
+    return { cli: { ok: false, note: "\u6CA1\u88C5 lark-cli", fix: "npm install -g @larksuite/cli" }, app: no, auth: no };
+  }
+  const cli = { ok: true, note: "\u5DF2\u5B89\u88C5" };
+  const s = json3(st.out);
+  if (!s?.appId) return { cli, app: { ok: false, note: "\u8FD8\u6CA1\u914D\u98DE\u4E66\u5E94\u7528\uFF1A\u586B\u7BA1\u7406\u5458\u7ED9\u7684 App ID \u548C App Secret" }, auth: { ok: false, note: "\u5148\u914D\u597D\u98DE\u4E66\u5E94\u7528" } };
+  const app = { ok: true, note: `\u98DE\u4E66\u5E94\u7528 ${s.appId}` };
+  if (loginRun?.state === "waiting") return { cli, app, auth: { ok: false, note: "\u7B49\u4F60\u5728\u98DE\u4E66\u6388\u6743\u9875\u70B9\u540C\u610F\u2026" } };
+  const c = json3((await run(lark(), ["auth", "check", "--scope", MAIL_SCOPES])).out);
+  if (c?.ok) return { cli, app, auth: { ok: true, note: `\u5DF2\u6388\u6743${s.identities?.user?.userName ? `\uFF1A${s.identities.user.userName}` : ""}` } };
+  const failed = loginRun?.state === "failed" ? `\uFF08\u4E0A\u6B21\u6388\u6743\u6CA1\u6210\uFF1A${loginRun.note}\uFF09` : "";
+  return { cli, app, auth: { ok: false, note: `\u6536\u53D1\u4FE1\u7684\u98DE\u4E66\u6743\u9650\u4E0D\u9F50\uFF0C\u70B9\u300C\u53BB\u98DE\u4E66\u6388\u6743\u300D${failed}` } };
+}
+async function claudeCheck() {
+  const r = await run("claude", ["auth", "status"], cleanEnv());
+  if (r.missing) return { ok: false, note: "\u6CA1\u88C5 Claude Code", fix: "npm install -g @anthropic-ai/claude-code" };
+  const s = json3(r.out);
+  if (s?.loggedIn && /claude\.ai|oauth/.test(String(s.authMethod))) return { ok: true, note: `\u5DF2\u7528\u8BA2\u9605\u767B\u5F55${s.email ? `\uFF1A${s.email}` : ""}` };
+  return { ok: false, note: s?.loggedIn ? "\u767B\u5F55\u7684\u4E0D\u662F Claude \u8BA2\u9605" : "\u8FD8\u6CA1\u767B\u5F55", fix: "claude auth login --claudeai" };
+}
+async function codexCheck() {
+  const r = await run("codex", ["login", "status"]);
+  if (r.missing) return { ok: false, note: "\u6CA1\u88C5 Codex\uFF08\u53EF\u9009\uFF09", fix: "npm install -g @openai/codex" };
+  if (/logged in/i.test(r.out) && !/not logged in/i.test(r.out)) return { ok: true, note: "\u5DF2\u767B\u5F55" };
+  return { ok: false, note: "\u8FD8\u6CA1\u767B\u5F55", fix: "codex login" };
+}
+function fromKolOps(cfg) {
+  const old = join4(homedir3(), ".kol-ops", "projects.json");
+  if (existsSync3(old)) {
+    const o = JSON.parse(readFileSync3(old, "utf8"));
+    for (const [name, v] of Object.entries(o.projects ?? {})) {
+      if (name.endsWith("-test")) continue;
+      const k = cfg.keys[name] ??= {};
+      k.dataApi ??= v.dataApiKey;
+      k.trial ??= v.trialKey;
+      k.partner ??= v.partnerKey;
+    }
+  }
+  const token = join4(homedir3(), ".kol-ops", "apify-token");
+  if (!cfg.apifyToken && existsSync3(token)) cfg.apifyToken = readFileSync3(token, "utf8").trim() || void 0;
+}
+var ready = (cfg) => !!(process.env.KOLPICK_DATABASE_URL || cfg.databases[cfg.env]);
+async function setupStatus(cfg) {
+  const keys = cfg.keys[cfg.project] ?? {};
+  const [l, claude, codex] = await Promise.all([larkChecks(), claudeCheck(), codexCheck()]);
+  return {
+    ready: ready(cfg),
+    env: cfg.env,
+    project: cfg.project,
+    agent: cfg.agent.kind,
+    filled: { testDb: !!cfg.databases.test, prodDb: !!cfg.databases.prod, dataApi: !!keys.dataApi, trial: !!keys.trial, partner: !!keys.partner, apify: !!cfg.apifyToken },
+    checks: { lark: l.cli, larkApp: l.app, larkAuth: l.auth, claude, codex }
+  };
+}
+async function tryDb(url2, current, projectName) {
+  const db = connect(url2);
+  try {
+    await db.query("select 1");
+    if (current) {
+      await migrate(db);
+      if (!(await db.query("select 1 from projects where name = $1", [projectName])).length) throw new Error(`\u8FD9\u4E2A\u5E93\u91CC\u6CA1\u6709\u9879\u76EE\u300C${projectName}\u300D`);
+    }
+  } catch (err) {
+    throw new Error(`\u8FDE\u4E0D\u4E0A\u8FD9\u4E2A\u6570\u636E\u5E93\uFF1A${String(err?.message ?? err).slice(0, 200)}`);
+  } finally {
+    await db.end().catch(() => {
+    });
+  }
+}
+async function saveSetup(cfg, b2) {
+  const val = (k) => typeof b2[k] === "string" && b2[k].trim() ? b2[k].trim() : void 0;
+  const dbs = { test: val("testDb"), prod: val("prodDb") };
+  for (const env of ["test", "prod"]) if (dbs[env]) await tryDb(dbs[env], env === cfg.env, cfg.project);
+  const dbChanged = !!dbs[cfg.env] && dbs[cfg.env] !== cfg.databases[cfg.env];
+  for (const env of ["test", "prod"]) if (dbs[env]) cfg.databases[env] = dbs[env];
+  const keys = cfg.keys[cfg.project] ??= {};
+  if (val("dataApi")) keys.dataApi = val("dataApi");
+  if (val("trial")) keys.trial = val("trial");
+  if (val("partner")) keys.partner = val("partner");
+  if (val("apify")) cfg.apifyToken = val("apify");
+  if (!ready(cfg)) throw new Error(`\u5148\u586B${cfg.env === "prod" ? "\u6B63\u5F0F" : "\u6D4B\u8BD5"}\u5E93\u7684\u8FDE\u63A5\u4E32`);
+  saveConfig(cfg);
+  return { dbChanged };
+}
+function larkApp(appId, secret) {
+  if (!/^cli_\w+$/.test(appId.trim()) || !secret.trim()) return Promise.reject(new Error("App ID \u662F cli_ \u5F00\u5934\u7684\u4E00\u4E32\uFF0CApp Secret \u4E0D\u80FD\u7A7A"));
+  return new Promise((resolve, reject2) => {
+    const child = spawn3(lark(), ["config", "init", "--app-id", appId.trim(), "--app-secret-stdin", "--brand", "feishu", "--lang", "zh_cn"], { stdio: ["pipe", "pipe", "pipe"] });
+    let out = "";
+    child.stdout.on("data", (d) => out += d);
+    child.stderr.on("data", (d) => out += d);
+    child.on("error", (e) => reject2(new Error(`\u542F\u52A8 lark-cli \u5931\u8D25\uFF1A${e.message}`)));
+    child.on("close", (code2) => code2 === 0 ? resolve() : reject2(new Error(`\u914D\u7F6E\u98DE\u4E66\u5E94\u7528\u5931\u8D25\uFF1A${out.trim().slice(0, 300)}`)));
+    child.stdin.end(secret.trim() + "\n");
+  });
+}
+var loginRun;
+async function larkLogin() {
+  loginRun?.child?.kill();
+  const r = json3((await run(lark(), ["auth", "login", "--scope", MAIL_SCOPES, "--no-wait", "--json"])).out);
+  if (!r?.verification_url || !r.device_code) throw new Error("\u98DE\u4E66\u6CA1\u7ED9\u51FA\u6388\u6743\u94FE\u63A5\uFF0C\u7A0D\u540E\u518D\u8BD5");
+  const child = spawn3(lark(), ["auth", "login", "--device-code", r.device_code], { stdio: ["ignore", "pipe", "pipe"] });
+  const run_ = loginRun = { state: "waiting", note: "", child };
+  let out = "";
+  child.stdout.on("data", (d) => out += d);
+  child.stderr.on("data", (d) => out += d);
+  child.on("close", (code2) => {
+    if (loginRun !== run_) return;
+    loginRun = code2 === 0 ? { state: "done", note: "" } : { state: "failed", note: out.trim().split("\n").pop()?.slice(0, 200) ?? "" };
+  });
+  return { url: r.verification_url };
 }
 
 // src/kolpick/templates.ts
@@ -104353,7 +104505,7 @@ async function usage(ctx, p) {
 }
 
 // src/kolpick/console.html
-var console_default = '<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>kolpick \u51B3\u7B56\u53F0</title>\n<style>\n/* Look and interactions follow the UI/UX design canvas (docs/design.md \xA7\u4E09 \u51B3\u7B56\u53F0). */\n:root{--bg:#F5F4F0;--panel:#FFFFFF;--ink:#1C1B19;--muted:#6B6A64;--sub:#5F5E58;--line:#E4E2DC;--line2:#EFEDE8;--soft:#F0EFEA;--faint:#FAF9F6;\n  --accent:#3A5BD9;--accent-ink:#2B46AE;--accent-bg:#EEF1FC;--accent-bg2:#F6F8FE;--ok:#1E6B3E;--ok-bg:#E8F5EC;--warn:#8A4A00;--warn-bg:#FFF3E0;--warn-line:#F3DDB5;\n  --bad:#B42318;--bad-ink:#7A1A12;--bad-bg:#FDEDEB;--bad-line:#F4C7C2}\n*{box-sizing:border-box}\n[hidden]{display:none !important}\nbody{margin:0;font-family:-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.55}\na{color:var(--accent)}a:hover{color:var(--accent-ink)}\nbutton{font:inherit;cursor:pointer}\nbutton[disabled]{opacity:.45;cursor:not-allowed}\ninput,select,textarea{font:inherit;color:var(--ink)}\n.top{display:flex;align-items:center;gap:20px;padding:0 24px;min-height:56px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;z-index:10}\n.logo{font-weight:700;font-size:17px}\n.env{font-size:12px;padding:2px 10px;border-radius:99px;background:var(--soft);color:#4A4944;font-weight:500}\n.env.prod{background:var(--bad-bg);color:var(--bad)}\n.nav{display:flex;gap:2px}\n.nav a{color:var(--sub);text-decoration:none;padding:8px 12px;border-radius:8px}\n.nav a.on{background:var(--accent-bg);color:var(--accent-ink);font-weight:500}\n.count{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:var(--accent);color:#fff;font-size:12px;text-align:center}\n.count.bad{background:var(--bad)}\n.sp{flex:1}\n.stat{font-size:13px;color:var(--sub);display:flex;gap:16px;align-items:center}\n.dot{display:inline-block;width:8px;height:8px;border-radius:99px;background:#1E7A45;margin-right:6px}\n.dot.warn{background:#D97706}.dot.bad{background:var(--bad)}.dot.off{background:#B5B3AC}\n.pause{display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:6px 12px 6px 6px}\n.sw{width:34px;height:20px;border-radius:99px;background:#D9D7D0;position:relative;flex:none;border:0;padding:0;display:inline-block}\n.sw::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:99px;background:#fff;transition:left .15s}\n.sw.on{background:var(--accent)}.sw.on::after{left:16px}\n.pause.on{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}\n.pause.on .sw{background:#D97706}.pause.on .sw::after{left:16px}\n.bar-warn{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 24px;background:var(--warn-bg);color:var(--warn);border-bottom:1px solid var(--warn-line);font-size:13px}\n.alert{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 24px 0;padding:12px 16px;background:var(--bad-bg);border:1px solid var(--bad-line);border-radius:10px;color:var(--bad-ink)}\n.okbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 24px 0;padding:10px 16px;background:var(--ok-bg);border:1px solid #BFE2CB;border-radius:10px;color:var(--ok);font-size:13px}\n.wrap{max-width:1280px;margin:0 auto;padding:16px 24px 40px}\n.btn{font-size:14px;border-radius:8px;padding:8px 14px;border:1px solid #DCDAD3;background:var(--panel);color:var(--ink);min-height:40px;display:inline-flex;gap:8px;align-items:center;text-decoration:none;white-space:nowrap}\n.btn.sm{min-height:32px;padding:4px 10px;font-size:13px}\n.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}\n.btn.quiet{border-color:transparent;background:transparent;color:var(--bad)}\n.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:500}\n.key{font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.7}\n.link{background:none;border:0;color:var(--accent);padding:0;text-decoration:underline;font-size:13px}\n.meta{font-size:13px;color:var(--muted)}\n.hint{font-size:12px;color:var(--muted)}\n.tag{font-size:11px;padding:1px 7px;border-radius:5px;background:var(--soft);color:#4A4944;font-weight:500;white-space:nowrap}\n.tag.blue{background:var(--accent-bg);color:var(--accent-ink)}.tag.amber{background:var(--warn-bg);color:var(--warn)}.tag.green{background:var(--ok-bg);color:var(--ok)}.tag.red{background:var(--bad-bg);color:var(--bad)}.tag.dark{background:var(--ink);color:#fff}\n.field{display:block;width:100%;border:1px solid #DCDAD3;border-radius:8px;padding:8px 10px;background:var(--panel)}\ntextarea.field{resize:vertical}\n.label{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;display:block}\n.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}\n.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}\n.h1{font-size:20px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}\n.h2{font-size:15px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px}\n.empty{padding:48px 24px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:8px;align-items:center}\n.big{font-size:20px;font-weight:700;color:var(--ink)}\n.chip{font-size:13px;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:4px 12px;color:#4A4944;display:inline-flex;gap:6px;align-items:center}\n.chip b{font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}\n.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}.chip.on b{color:#fff}\n.chip.warn{border-color:var(--warn-line);background:#FFF8EC;color:var(--warn)}\n.chip.bad{border-color:var(--bad-line);background:var(--bad-bg);color:var(--bad)}\n.pill{font-size:13px;border:1px solid #DCDAD3;background:var(--panel);border-radius:99px;padding:4px 12px;min-height:32px}\n.pill.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-ink);font-weight:500}\n.panel{padding:14px 16px;border:1px solid #C9D3F5;background:var(--accent-bg2);border-radius:10px;display:flex;flex-direction:column;gap:10px}\n.panel.red{border-color:var(--bad-line);background:#FFF8F7}\n.radio{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;text-align:left;background:var(--panel);width:100%}\n.radio.on{border-color:var(--accent);background:var(--accent-bg2)}\n.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:14px;align-items:center;background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px 10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.22);z-index:40;max-width:calc(100% - 32px);flex-wrap:wrap}\n.toast .btn{min-height:34px;padding:5px 12px;font-size:13px;background:transparent;color:#fff;border-color:#5F5E58}\n.ring{display:inline-flex;width:24px;height:24px;border-radius:99px;border:2px solid #8EA2EE;align-items:center;justify-content:center;font-size:12px}\n.modalbg{position:fixed;inset:0;background:rgba(28,27,25,.38);display:flex;align-items:flex-start;justify-content:center;padding:80px 16px;z-index:50}\n.modal{background:var(--panel);border-radius:14px;width:100%;max-width:540px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}\n.modal h2{margin:0;font-size:18px}\n.steps{padding:12px 16px;border:1px dashed #D9D7D0;border-radius:10px;display:flex;flex-direction:column;gap:6px;font-size:13px}\n.step{display:flex;gap:10px;align-items:baseline}\n.n{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:99px;background:var(--soft);font-size:12px;font-weight:500;flex:none}\n.bubble{background:var(--bg);border-radius:4px 12px 12px 12px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow:auto}\n.offline{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}\ncode{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--bg);padding:2px 6px;border-radius:5px}\ninput[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);margin:0}\n\n/* \u5F85\u4F60\u51B3\u5B9A */\n.dbody{display:flex;flex-wrap:wrap;gap:16px;padding:16px 24px 24px;align-items:flex-start}\n.queue{flex:1 1 340px;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:sticky;top:72px;max-height:calc(100vh - 90px);overflow-y:auto}\n.qchips{display:flex;gap:6px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--line)}\n.qchip{font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--sub);border-radius:99px;padding:3px 10px}\n.qchip.on{background:var(--ink);color:#fff;border-color:var(--ink)}\n.item{display:block;width:100%;text-align:left;background:var(--panel);border:0;border-bottom:1px solid var(--line2);padding:12px 14px;color:var(--ink)}\n.item.on{background:var(--accent-bg);box-shadow:inset 3px 0 0 var(--accent)}\n.itop{display:flex;gap:8px;align-items:center}\n.iname{font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.itime{font-size:12px;color:var(--muted)}\n.isub{font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.qhead{font-size:12px;color:var(--muted);padding:10px 14px 4px;background:var(--faint)}\n.ghost{padding:10px 14px;color:var(--muted);font-size:13px;border-bottom:1px solid var(--line2);display:flex;gap:8px;align-items:center}\n.detail{flex:999 1 640px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column}\n.dhead{padding:18px 22px 14px;border-bottom:1px solid var(--line2)}\n.why{margin-top:10px;padding:10px 12px;background:var(--faint);border-radius:8px;font-size:13px;color:#4A4944}\n.edited{font-size:12px;color:var(--warn);background:var(--warn-bg);border-radius:6px;padding:2px 8px;display:inline-block;margin-top:6px}\n.cols{display:flex;flex-wrap:wrap}\n.col{flex:1 1 320px;min-width:0;padding:16px 22px}\n.col+.col{border-left:1px solid var(--line2)}\n.sec{padding:0 22px 16px}\n.dbar{margin-top:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 22px;border-top:1px solid var(--line2);background:#FCFBF9;border-radius:0 0 12px 12px;position:sticky;bottom:0}\n.draft{min-height:260px;line-height:1.7}\n.quota{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}\n.q{flex:1 1 200px;border:1px solid var(--line2);border-radius:10px;padding:10px 12px}\n.q b{font-size:20px;font-variant-numeric:tabular-nums}\n.q.over{border-color:var(--bad-line);background:#FFF8F7}\n.track{height:6px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:6px}\n.fill{height:6px;background:var(--accent);border-radius:99px}\n.fill.over{background:var(--bad)}\n.grow{display:grid;grid-template-columns:32px minmax(0,1.5fr) minmax(0,1.4fr) 90px 80px;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid #F3F1EC;font-size:13px}\n.grow.head{font-size:12px;color:var(--muted);font-weight:500;background:#FBFAF7;position:sticky;top:0}\n.grow.off{color:#A3A29C}\n.grow.cur{background:var(--accent-bg2)}\n.gbox{border:1px solid var(--line2);border-radius:10px;overflow:auto;max-height:420px}\n.rowbtn{background:none;border:0;padding:0;color:inherit;text-align:left}\n.rowbtn:hover{text-decoration:underline}\n.preview{background:var(--faint);border-radius:10px;padding:12px 14px;white-space:pre-wrap;font-size:13px;line-height:1.7;max-height:420px;overflow:auto}\n.diff{display:flex;flex-wrap:wrap;gap:0}\n.cand{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}\n\n/* KOL \u5217\u8868 */\n.ltitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 14px}\n.lstrip,.lfilters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}\n.sel{font-size:13px;border:1px solid #DCDAD3;border-radius:8px;padding:6px 10px;background:var(--panel)}\n.lbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}\n.lscroll{overflow-x:auto}\n.lscroll>div{min-width:1180px}\n.lg{display:grid;grid-template-columns:36px minmax(190px,1.5fr) 64px 120px minmax(170px,1.5fr) minmax(140px,1.1fr) 110px minmax(130px,1fr) 48px;gap:10px;align-items:start;padding:10px 12px;border-bottom:1px solid #F3F1EC;font-size:13px}\n.lg.head{font-size:12px;color:var(--muted);font-weight:500;background:#FBFAF7;align-items:center}\n.lg.sel{background:var(--accent-bg2)}\n.lg:not(.head):hover{background:var(--faint)}\n.who{display:flex;gap:10px;align-items:center;min-width:0}\n.av{width:32px;height:32px;border-radius:99px;background:var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#4A4944;flex:none}\n.lname{font-weight:500;color:var(--ink);text-decoration:none}\n.lname:hover{text-decoration:underline}\n.sub{font-size:12px;color:var(--muted);display:block}\n.snip{display:block;color:#4A4944;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.turn{font-size:12px;display:block;margin-top:4px}\n.turn.us{color:var(--warn);font-weight:500}\n.mini{width:64px;height:5px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:4px;display:block}\n.mini i{display:block;height:5px;background:var(--accent)}\n.flag{font-size:12px;padding:1px 7px;border-radius:6px;white-space:nowrap;display:inline-block;margin:0 4px 4px 0}\n.flag.bad{background:var(--bad-bg);color:var(--bad)}.flag.warn{background:var(--warn-bg);color:var(--warn)}\n.cell{font-size:13px;text-align:left;background:none;border:0;padding:4px 6px;margin:-4px -6px;border-radius:6px;color:var(--ink);min-width:0}\n.cell:hover{background:var(--accent-bg)}\n.chev{font-size:12px;background:none;border:1px solid var(--line);border-radius:6px;color:#4A4944;padding:3px 0;min-height:28px}\n.exp{display:flex;flex-wrap:wrap;gap:16px;padding:14px 16px 16px 58px;background:#FBFAF7;border-bottom:1px solid var(--line);box-shadow:inset 3px 0 0 var(--accent)}\n.pane{min-width:0;background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:12px 14px}\n.msg{font-size:13px;padding:8px 10px;border-radius:8px;margin-bottom:6px;white-space:pre-wrap;word-break:break-word;max-width:92%}\n.msg.in{background:var(--bg)}\n.msg.out{background:var(--accent-bg);margin-left:auto}\n.msg.note{background:none;color:var(--muted);font-size:12px;text-align:center;max-width:100%}\n.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #F3F1EC;font-size:13px}\n.post{border:1px solid var(--line2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:13px}\n.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0}\n.metrics span{display:flex;flex-direction:column}\n.metrics b{font-variant-numeric:tabular-nums;font-size:15px}\n.metrics i{font-style:normal;font-size:11px;color:var(--muted)}\n.late{color:var(--warn);font-weight:500}\n.lfoot{display:flex;align-items:center;gap:12px;padding:10px 14px;font-size:13px;color:var(--muted);flex-wrap:wrap}\n.bulk{position:sticky;bottom:16px;margin:14px auto 0;max-width:760px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px 10px 18px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:5}\n.bulk .btn{min-height:36px;padding:6px 12px;font-size:13px;background:transparent;border-color:#4A4944;color:#fff}\n.pop{position:absolute;bottom:56px;right:12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;min-width:160px;box-shadow:0 10px 24px rgba(0,0,0,.15)}\n.pop button{font-size:13px;text-align:left;background:none;border:0;padding:8px 10px;border-radius:6px;color:var(--ink)}\n.pop button:hover{background:var(--bg)}\n\n/* KOL \u8BE6\u60C5 */\n.khead{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}\n.kav{width:56px;height:56px;border-radius:99px;background:var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#4A4944}\n.knext{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:#FFF8EC;border:1px solid var(--warn-line);border-radius:10px;margin-bottom:16px}\n.kcols{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}\n.kmain{flex:999 1 600px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px}\n.kside{flex:1 1 320px;max-width:380px;display:flex;flex-direction:column;gap:16px}\n.tabs{display:flex;gap:4px;padding:10px 12px;border-bottom:1px solid var(--line2)}\n.tab{font-size:13px;border:0;background:transparent;padding:6px 12px;border-radius:8px;color:var(--sub)}\n.tab.on{background:var(--soft);color:var(--ink);font-weight:500}\n.thread{padding:16px 20px;display:flex;flex-direction:column;gap:12px}\n.tmsg{max-width:80%;border-radius:12px;padding:10px 14px;white-space:pre-wrap;word-break:break-word}\n.tmsg.in{align-self:flex-start;background:var(--bg);border-top-left-radius:4px}\n.tmsg.out{align-self:flex-end;background:var(--accent-bg);border-top-right-radius:4px}\n.tmsg.note{align-self:center;background:transparent;color:var(--muted);font-size:12px;padding:0}\n.compose{border-top:1px solid var(--line2);padding:14px 20px;display:flex;flex-direction:column;gap:8px}\n.dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}\n.dl label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}\n.crow{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #F3F1EC;font-size:13px}\ntable.t{width:100%;border-collapse:collapse;font-size:13px}\ntable.t th{text-align:right;font-weight:500;color:var(--muted);font-size:12px;padding:4px 6px;border-bottom:1px solid var(--line2)}\ntable.t td{text-align:right;padding:6px;border-bottom:1px solid #F3F1EC}\ntable.t th:first-child,table.t td:first-child{text-align:left}\n\n/* \u627E\u4EBA */\n.seg{display:inline-flex;border:1px solid #DCDAD3;border-radius:10px;overflow:hidden}\n.seg button{font-size:13px;border:0;background:var(--panel);padding:8px 14px;color:#4A4944;min-height:36px}\n.seg button+button{border-left:1px solid #DCDAD3}\n.seg button.on{background:var(--ink);color:#fff}\n.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;margin-top:12px}\n.fgrid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px;font-weight:500}\n.full{grid-column:1/-1}\n.unit{display:flex;gap:8px;align-items:center}\n.unit .field{width:120px}\n\n/* \u8BB0\u5F55 */\n.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}\n.statb{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:96px}\n.statb b{display:block;font-size:20px;font-variant-numeric:tabular-nums}\n.statb span{font-size:12px;color:var(--muted)}\n.now{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px}\n.spin{width:12px;height:12px;border-radius:99px;border:2px solid var(--accent);border-top-color:transparent;display:inline-block;animation:spin 1s linear infinite}\n@keyframes spin{to{transform:rotate(360deg)}}\n.rbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}\n.rday{font-size:12px;font-weight:500;color:var(--muted);padding:8px 16px;background:#FBFAF7;border-bottom:1px solid var(--line2)}\n.rrow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:start;padding:10px 16px;border-bottom:1px solid #F3F1EC}\n.rrow.bad{background:#FFF8F7}\n.rtime{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}\n.rlinks{display:flex;gap:10px;font-size:13px;white-space:nowrap}\n.rdetail{grid-column:2/4;background:var(--faint);border-radius:8px;padding:10px 12px;font-size:13px;white-space:pre-wrap;color:#4A4944;word-break:break-word}\n\n/* \u8BBE\u7F6E */\n.swrap{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}\n.smenu{flex:1 1 200px;max-width:220px;display:flex;flex-direction:column;gap:2px;position:sticky;top:72px}\n.smenu a{text-decoration:none;color:var(--sub);padding:8px 12px;border-radius:8px}\n.smenu a.on{background:var(--panel);color:var(--ink);font-weight:500;box-shadow:0 0 0 1px var(--line)}\n.scontent{flex:999 1 600px;min-width:0;display:flex;flex-direction:column;gap:16px}\n.sgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px}\n.sgrid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}\n.srow{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #F3F1EC;flex-wrap:wrap}\n.srow b{flex:1;min-width:160px;font-weight:500}\ntable.mb{width:100%;border-collapse:collapse;font-size:13px}\ntable.mb th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;padding:8px 10px;background:var(--faint);border-bottom:1px solid var(--line2)}\ntable.mb td{padding:8px 10px;border-bottom:1px solid #F3F1EC}\n.savebar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px 10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.15);z-index:30}\n@media (max-width:760px){.sgrid,.fgrid{grid-template-columns:minmax(0,1fr)}.col+.col{border-left:0;border-top:1px solid var(--line2)}.queue{position:static;max-height:none}}\n.q1{display:flex;gap:8px;align-items:center;padding:11px 14px}\n.q1 .iname{flex:none;max-width:140px}\n.qask{flex:1;min-width:0;font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.qn{font-size:11px;font-weight:700;background:var(--ink);color:#fff;border-radius:99px;padding:0 7px;line-height:18px}\n.item.urgent{box-shadow:inset 3px 0 0 #D97706}.item.bad{box-shadow:inset 3px 0 0 var(--bad)}.item.on{box-shadow:inset 3px 0 0 var(--accent)}\n.mwrap{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}\n.mmain{flex:999 1 480px;min-width:0;display:flex;flex-direction:column}\n.mside{flex:1 1 220px;max-width:280px;border-left:1px solid var(--line2);padding:20px 18px;font-size:13px;display:flex;flex-direction:column;gap:10px;background:#FCFBF9;border-radius:0 12px 0 0}\n.mside h2{font-size:15px;margin:0}\n.mkv{display:flex;flex-direction:column;gap:1px;word-break:break-all}.mkv span{font-size:12px;color:var(--muted)}\n.mhead{padding:20px 24px 16px}\n.mwho{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}.mwho b{color:var(--ink)}\n.mheadline{font-size:21px;line-height:1.4;font-weight:700;margin:8px 0 10px}\n.mfacts{display:flex;gap:6px;flex-wrap:wrap}\n.mfact{font-size:13px;background:var(--bg);border-radius:6px;padding:2px 9px;color:#4A4944}.mfact.warn{background:var(--warn-bg);color:var(--warn)}\n.mctx{margin:0 24px 16px}\n.mctx-h{display:flex;align-items:center;gap:10px;margin-bottom:6px}\n.mmsg{padding:8px 12px;border-radius:10px;background:var(--bg);margin-bottom:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:240px;overflow:auto}\n.mmsg.we{background:var(--panel);border:1px solid var(--line2)}.mmsg .hint{display:block;margin-bottom:2px}\n.mplan{margin:0 24px 16px;padding:14px 16px;background:var(--accent-bg2);border:1px solid #DCE3FA;border-radius:12px}\n.mplan-l{font-size:12px;font-weight:500;color:var(--accent-ink);margin-bottom:4px}\n.mplan-t{font-size:16px;font-weight:500}\n.mflow{margin-top:6px;font-size:13px;color:var(--sub)}\n.mwhy{margin-top:6px;font-size:12px;color:var(--sub)}\n.mletter-h{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:6px}\n.mpaper{border:1px solid var(--line);border-radius:10px;padding:14px 18px;white-space:pre-wrap;word-break:break-word;line-height:1.75;font-size:14px;max-height:320px;overflow:auto;background:var(--panel)}\n.mpaper b{display:block;margin-bottom:8px}\n.g2row{display:grid;grid-template-columns:24px minmax(0,160px) minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 24px;border-top:1px solid var(--line2);font-size:14px}\n.g2row.off{opacity:.45}\n.g2name{font-weight:500;color:var(--ink);text-decoration:none}.g2name:hover{text-decoration:underline;color:var(--accent-ink)}\n.g2sub{font-size:12px;color:var(--muted);margin-top:2px}\n.g2plan{color:var(--accent-ink)}\n.g2x{grid-column:1/6;display:flex;flex-wrap:wrap;gap:16px;padding:12px 0 4px 36px}.g2x>div{flex:1 1 260px;min-width:0}\n</style>\n</head>\n<body>\n<header class="top">\n  <span class="logo">kolpick</span><span id="env" class="env"></span>\n  <nav class="nav" id="nav" aria-label="\u4E3B\u5BFC\u822A"></nav>\n  <span class="sp"></span>\n  <span class="stat" id="stat"></span>\n  <button class="pause" id="pause" type="button" aria-pressed="false"><span class="sw"></span><span id="pauseLabel">\u6682\u505C\u6240\u6709\u53D1\u9001</span></button>\n</header>\n<div id="bars"></div>\n<main id="main"></main>\n<div id="modal"></div>\n<div id="toast" class="toast" hidden role="status" aria-live="polite"></div>\n<div id="offline" class="offline" hidden>\n  <div class="empty"><span class="big">\u8FDE\u4E0D\u4E0A\u8FD9\u53F0\u7535\u8111\u4E0A\u7684 kolpick</span>\n    <span>\u901A\u5E38\u662F\u7535\u8111\u521A\u5F00\u673A\u3001\u521A\u7761\u9192\uFF0C\u6216\u8005\u670D\u52A1\u6B63\u5728\u91CD\u542F\u3002\u6BCF 5 \u79D2\u81EA\u52A8\u91CD\u8FDE\u4E00\u6B21\uFF08\u5DF2\u8BD5 <span id="tries">0</span> \u6B21\uFF09\u3002</span>\n    <span>\u8FDE\u4E0D\u4E0A\u7684\u65F6\u5019\u4EC0\u4E48\u90FD\u4E0D\u4F1A\u53D1\uFF1B\u6062\u590D\u540E\u4F1A\u81EA\u52A8\u8865\u6536\u8FD9\u6BB5\u65F6\u95F4\u7684\u4FE1\u3002</span>\n    <button class="btn primary" id="retry" type="button">\u73B0\u5728\u91CD\u8FDE</button>\n    <span class="hint">\u4E00\u5206\u949F\u8FD8\u4E0D\u884C\uFF1A\u70B9\u300C\u5E94\u7528\u7A0B\u5E8F\u300D\u91CC\u7684 kolpick.app \u91CD\u65B0\u6253\u5F00\u3002</span></div>\n</div>\n<div id="closed" class="offline" hidden>\n  <div class="empty"><span class="big">kolpick \u5DF2\u5173\u95ED</span>\n    <span>\u6536\u4FE1\u3001agent \u8D77\u8349\u548C\u5B9A\u65F6\u4EFB\u52A1\u90FD\u505C\u4E86\uFF0C\u4E0D\u5360\u8D44\u6E90\u3002\u8FD9\u6BB5\u65F6\u95F4\u7684\u6765\u4FE1\u4F1A\u5728\u4E0B\u6B21\u6253\u5F00\u65F6\u8865\u6536\u3002</span>\n    <span>\u8981\u518D\u7528\uFF1A\u70B9\u300C\u5E94\u7528\u7A0B\u5E8F\u300D\u91CC\u7684 kolpick.app\uFF08\u6216 Dock \u4E0A\u7684\u56FE\u6807\uFF09\u3002\u8FD9\u4E2A\u7A97\u53E3\u53EF\u4EE5\u5173\u6389\u4E86\u3002</span></div>\n</div>\n<script>\nconst $ = (s, el = document) => el.querySelector(s);\nconst $$ = (s, el = document) => [...el.querySelectorAll(s)];\nconst esc = (s) => String(s ?? "").replace(/[&<>"\']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", \'"\': "&quot;", "\'": "&#39;" }[c]));\nconst pad = (n) => String(n).padStart(2, "0");\nfunction when(t) {\n  if (!t) return "";\n  const d = new Date(t), now = new Date();\n  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;\n  const days = Math.round((new Date(now.toDateString()) - new Date(d.toDateString())) / 86400000);\n  if (days === 0) return "\u4ECA\u5929 " + hm;\n  if (days === 1) return "\u6628\u5929 " + hm;\n  return `${d.getMonth() + 1}/${d.getDate()}`;\n}\nconst ago = (t) => { if (!t) return ""; const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 1 ? "\u521A\u521A" : m < 60 ? `${m} \u5206\u949F\u524D` : m < 1440 ? `${Math.round(m / 60)} \u5C0F\u65F6\u524D` : when(t); };\nconst md = (t) => (t ? `${new Date(t).getMonth() + 1}/${new Date(t).getDate()}` : "");\nconst fans = (n) => (n == null ? "\u2014" : n >= 10000 ? `${(n / 10000).toFixed(n >= 100000 ? 0 : 1)} \u4E07` : n.toLocaleString());\nconst num = (n) => (n == null ? "\u2014" : n >= 10000 ? `${(n / 10000).toFixed(1)} \u4E07` : Number(n).toLocaleString());\nconst STAGES = { new: "\u672A\u8054\u7CFB", invited: "\u5DF2\u9080\u7EA6", replied: "\u5DF2\u56DE\u590D", trial: "\u4F53\u9A8C\u4E2D", report_seen: "\u5DF2\u770B\u62A5\u544A", publish_agreed: "\u5DF2\u7EA6\u53D1\u5E03", published: "\u5DF2\u53D1\u5E03", partner: "\u5408\u4F5C\u4E2D", on_hold: "\u6682\u7F13", closed: "\u7ED3\u6848" };\nconst STAGE_CLS = { partner: "green", trial: "amber", replied: "blue", report_seen: "blue", publish_agreed: "blue", published: "green" };\nconst CLOSE = ["\u65E0\u56DE\u5E94", "\u9898\u6750\u4E0D\u7B26", "\u53EA\u63A5\u56FA\u5B9A\u8D39", "\u5B97\u6559\u4FE1\u4EF0", "\u9690\u79C1", "\u6863\u671F", "\u62D2\u7EDD", "\u56DE\u590D\u540E\u5931\u8054", "\u9000\u4FE1\u6216\u90AE\u7BB1\u65E0\u6548", "\u4F5C\u5E9F", "\u5176\u4ED6"];\nconst KINDS = { reply: "\u56DE\u4FE1", mail: "\u4E3B\u52A8\u5199\u4FE1", invite: "\u9080\u7EA6", followup: "\u50AC\u4FE1", code_expiry: "\u7801\u5230\u671F", checkin: "\u95EE\u53D1\u5E03", invite_batch: "\u9080\u7EA6\u6279", followup_group: "\u50AC\u4FE1\u6279",\n  unmatched: "\u5BF9\u4E0D\u4E0A\u4EBA", bounce: "\u9000\u4FE1", no_reply: "\u4E0D\u7528\u56DE", close: "\u5EFA\u8BAE\u7ED3\u6848", template: "\u6A21\u677F\u65B0\u7248", discovery: "\u627E\u5230\u7684\u4EBA", legacy: "\u65E7\u5BA1\u6838\u5355", other: "\u8981\u4F60\u62CD\u677F" };\nconst KIND_CLS = { reply: "blue", mail: "blue", followup: "blue", code_expiry: "amber", checkin: "amber", invite_batch: "green", followup_group: "green", bounce: "red", other: "amber" };\n\n// GET answers are kept until something changes: a click that only changes what is shown redraws without waiting on the\n// database. Any write and every refresh start fresh.\nlet apiCache = new Map();\nasync function api(path, body) {\n  if (body === undefined && apiCache.has(path)) return apiCache.get(path);\n  if (body !== undefined) apiCache = new Map();\n  const p = apiFetch(path, body);\n  if (body === undefined) { apiCache.set(path, p); p.catch(() => apiCache.delete(path)); }\n  return p;\n}\nasync function apiFetch(path, body) {\n  let r;\n  try {\n    r = await fetch("/api" + path, body === undefined ? {} : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });\n  } catch (e) { goOffline(); throw new Error("\u8FDE\u4E0D\u4E0A\u672C\u5730\u670D\u52A1"); }\n  const j = await r.json().catch(() => ({}));\n  if (!r.ok) throw new Error(j.error || r.statusText);\n  return j;\n}\n\n// ---------- \u901A\u7528\uFF1A\u63D0\u793A\u6761\u3001\u5F39\u7A97\u3001\u79BB\u7EBF ----------\nlet toastTimer = null;\nfunction toast(text, opts = {}) {\n  const t = $("#toast");\n  clearInterval(toastTimer);\n  let secs = opts.undo ? 5 : 0;\n  const draw = () => {\n    t.innerHTML = (opts.undo ? `<span class="ring">${secs}</span>` : "") + `<span>${esc(text)}</span>`\n      + (opts.undo ? `<button class="btn" id="tUndo" type="button">\u64A4\u9500 Z</button>` : "")\n      + (opts.link ? `<a class="btn" href="${opts.link[1]}">${esc(opts.link[0])}</a>` : "")\n      + (!opts.undo ? `<button class="btn" id="tOk" type="button">\u597D</button>` : "");\n    t.hidden = false;\n    if ($("#tUndo")) $("#tUndo").onclick = doUndo;\n    if ($("#tOk")) $("#tOk").onclick = () => { t.hidden = true; clearInterval(toastTimer); };\n  };\n  const doUndo = async () => { clearInterval(toastTimer); t.hidden = true; undoFn = null; try { await opts.undo(); toast("\u5DF2\u64A4\u9500\uFF0C\u56DE\u5230\u539F\u4F4D"); refresh(); } catch (e) { toast("\u6CA1\u64A4\u9500\u6210\u529F\uFF1A" + e.message); } };\n  undoFn = opts.undo ? doUndo : null;\n  draw();\n  if (opts.undo) toastTimer = setInterval(() => { secs--; if (secs <= 0) { clearInterval(toastTimer); undoFn = null; text = opts.after || text; opts = { link: opts.link }; draw(); toastTimer = setTimeout(() => (t.hidden = true), 3500); } else draw(); }, 1000);\n  else toastTimer = setTimeout(() => (t.hidden = true), opts.long ? 6000 : 3500);\n}\nlet undoFn = null;\nasync function act(fn, ok, opts = {}) {\n  try { const r = await fn(); if (ok) toast(typeof ok === "function" ? ok(r) : ok, opts); await refresh(); return r; } catch (e) { toast("\u6CA1\u6210\u529F\uFF1A" + e.message); }\n}\nfunction modal(html, wire) {\n  $("#modal").innerHTML = `<div class="modalbg" id="mbg"><div class="modal" role="dialog">${html}</div></div>`;\n  $("#mbg").onclick = (e) => { if (e.target.id === "mbg") closeModal(); };\n  wire && wire($("#modal"));\n}\nconst closeModal = () => ($("#modal").innerHTML = "");\n\nlet offline = false, tries = 0, retryTimer = null;\nlet closedByYou = false;\nfunction goOffline() {\n  if (offline || closedByYou) return;\n  offline = true; $("#offline").hidden = false;\n  retryTimer = setInterval(tryBack, 5000);\n}\nasync function tryBack() {\n  tries++; $("#tries").textContent = tries;\n  try { const r = await fetch("/api/state"); if (r.ok) { offline = false; tries = 0; clearInterval(retryTimer); $("#offline").hidden = true; refresh(); } } catch {}\n}\n$("#retry").onclick = tryBack;\n\n// ---------- \u6846\u67B6 ----------\nlet S = {}, U = {}, route = [], view = {};\nconst PAGES = [["decide", "\u5F85\u4F60\u51B3\u5B9A"], ["kols", "KOL"], ["log", "\u8BB0\u5F55"], ["settings", "\u8BBE\u7F6E"]];\nfunction parseRoute() { route = (location.hash.slice(1) || "decide").split("/"); }\nfunction drawTop() {\n  const c = S.counts || {};\n  const waiting = (c.pending || 0) + (c.problems || 0);\n  const page = route[0] === "kol" || route[0] === "find" ? "kols" : route[0];\n  $("#nav").innerHTML = PAGES.map(([k, v]) => `<a href="#${k}" class="${k === page ? "on" : ""}">${v}${k === "decide" && waiting ? `<span class="count ${c.problems ? "bad" : ""}">${waiting}</span>` : ""}</a>`).join("");\n  $("#env").textContent = (S.env === "prod" ? "\u6B63\u5F0F\u5E93" : "\u6D4B\u8BD5\u5E93") + (S.project ? " \xB7 " + S.project : "");\n  $("#env").className = "env " + (S.env === "prod" ? "prod" : "");\n  const w = Object.entries(S.status?.watchers || {});\n  const down = w.filter(([, v]) => !v.up);\n  const watch = !S.auto?.inbox ? `<span><span class="dot off"></span>\u6536\u4FE1\u76D1\u542C\u5173\u7740</span>`\n    : down.length ? `<span><span class="dot warn"></span>${esc(down.map(([k]) => k.split("@")[0] + "@").join("\u3001"))} \u6536\u4FE1\u76D1\u542C\u65AD\u4E86</span>`\n    : `<span><span class="dot"></span>\u6536\u4FE1\u76D1\u542C\u6B63\u5E38 \xB7 ${w.length} \u4E2A\u90AE\u7BB1</span>`;\n  $("#stat").innerHTML = watch + (U.dailyLimit ? `<span>\u4ECA\u5929\u5DF2\u8054\u7CFB ${U.contacted} / ${U.dailyLimit} \u4EBA</span>` : "");\n  $("#pause").classList.toggle("on", !!S.paused);\n  $("#pause").setAttribute("aria-pressed", String(!!S.paused));\n  $("#pauseLabel").textContent = S.paused ? "\u5DF2\u6682\u505C\u53D1\u9001" : "\u6682\u505C\u6240\u6709\u53D1\u9001";\n  let bars = "";\n  if (S.paused) bars += `<div class="bar-warn" role="status"><b>\u6240\u6709\u53D1\u9001\u5DF2\u6682\u505C</b><span class="sp" style="min-width:240px">\u53EF\u4EE5\u7167\u5E38\u540C\u610F\uFF0C\u5361\u7247\u4F1A\u6392\u961F\uFF0C\u4E0D\u5EFA\u7801\u3001\u4E0D\u53D1\u4FE1\u3002\u6062\u590D\u540E\u6309\u540C\u610F\u7684\u5148\u540E\u53D1\u51FA\u3002\u6392\u961F\u4E2D ${c.approved || 0} \u5F20\u3002</span><button class="btn sm" type="button" data-unpause>\u6062\u590D\u53D1\u9001</button></div>`;\n  for (const [addr, v] of down) if (S.auto?.inbox) bars += `<div class="bar-warn" role="status"><b>${esc(addr)} \u7684\u5B9E\u65F6\u6536\u4FE1\u65AD\u4E86</b><span class="sp" style="min-width:240px">\u6539\u4E3A\u6BCF 2 \u5206\u949F\u8865\u6536\u4E00\u6B21\uFF0C\u6765\u4FE1\u6700\u591A\u665A 2 \u5206\u949F\u51FA\u73B0\uFF0C\u4E0D\u4F1A\u6F0F\u3002\u7CFB\u7EDF\u4F1A\u81EA\u52A8\u91CD\u8FDE\u3002${v.error ? "\u539F\u56E0\uFF1A" + esc(v.error) : ""}</span></div>`;\n  $("#bars").innerHTML = bars;\n  const up = $("[data-unpause]"); if (up) up.onclick = togglePause;\n}\nconst togglePause = () => act(() => api("/tool/pause_sending", { on: !S.paused }), S.paused ? "\u5DF2\u6062\u590D\u53D1\u9001\uFF0C\u6392\u961F\u7684\u6309\u540C\u610F\u987A\u5E8F\u53D1\u51FA" : "\u5DF2\u6682\u505C\u6240\u6709\u53D1\u9001");\n$("#pause").onclick = togglePause;\n\nasync function refresh() {\n  apiCache = new Map();\n  // The page\'s own data loads at the same time as the header\'s.\n  const head = Promise.all([api("/state"), api("/usage")]).then(([s, u]) => { S = s; U = u; drawTop(); }).catch(() => {});\n  const page = render();\n  await Promise.all([head, page]);\n}\nasync function render() {\n  parseRoute(); drawTop();\n  const m = $("#main");\n  try {\n    if (route[0] === "decide") return await renderDecide(m);\n    if (route[0] === "kols") return await renderKols(m);\n    if (route[0] === "kol") return await renderKol(m, Number(route[1]));\n    if (route[0] === "find") return renderFind(m);\n    if (route[0] === "log") return await renderLog(m);\n    if (route[0] === "settings") return await renderSettings(m);\n    location.hash = "decide";\n  } catch (e) { if (!offline) m.innerHTML = `<div class="wrap"><div class="card"><b>\u51FA\u9519\u4E86\uFF1A</b>${esc(e.message)}</div></div>`; }\n}\nwindow.onhashchange = () => { closeModal(); render(); };\n\n// ---------- \u5F85\u4F60\u51B3\u5B9A ----------\n// \u5148\u770B\u61C2\u53D1\u751F\u4E86\u4EC0\u4E48\uFF1A\u961F\u5217\u4E00\u884C\u4E00\u6761\uFF0C\u540C\u7C7B\u505A\u6CD5\u76F8\u540C\u7684\u5408\u6210\u4E00\u6279\uFF1B\u5355\u5F20\u5361\u662F \u53D1\u751F\u4E86\u4EC0\u4E48 \u2192 \u4E0A\u4E0B\u6587 \u2192 agent \u5EFA\u8BAE \u2192 \u64CD\u4F5C\uFF0C\u53F3\u8FB9\u662F KOL \u8D44\u6599\u3002\nconst D = { filter: "all", sel: null, mode: null, rej: "leave", revOn: {}, edits: {}, batchOff: {}, batchCur: {}, candOff: {}, alertDone: null, ctx: false, editing: false, gOff: {}, peek: null };\nconst GROUPS = [["all", "\u5168\u90E8"], ["problem", "\u51FA\u95EE\u9898\u4E86"], ["mail", "\u56DE\u4E00\u5C01\u4FE1"], ["batch", "\u53D1\u4E00\u6279"], ["decide", "\u8981\u4F60\u62CD\u677F"], ["done", "\u5DF2\u5904\u7406"]];\n// Kinds whose cards merge into one batch when two or more are waiting.\nconst BATCHABLE = { code_expiry: "\u7801\u5230\u671F", checkin: "\u95EE\u53D1\u5E03", no_reply: "\u4E0D\u7528\u56DE", close: "\u5EFA\u8BAE\u7ED3\u6848" };\nfunction groupOf(c) {\n  if (c.status === "unknown" || c.status === "failed" || c.kind === "unmatched" || c.kind === "bounce") return "problem";\n  if (c.kind === "invite_batch" || c.kind === "followup_group") return "batch";\n  if (c.to_addr && !c.items) return "mail";\n  return "decide";\n}\nconst batchKey = (c) => (c.group !== "problem" && c.status === "pending" && !c.items && !c.feedback && BATCHABLE[c.kind] ? c.kind : null);\nconst urgent = (c) => c.kind === "code_expiry" || c.kind === "checkin";\nfunction headOf(c) {\n  if (c.status === "unknown") return "\u8FD9\u5C01\u4FE1\u53D1\u51FA\u53BB\u6CA1\u6709\uFF0C\u4E0D\u786E\u5B9A";\n  if (c.status === "failed") return "\u540C\u610F\u540E\u6CA1\u505A\u6210\uFF1A" + (c.result || "");\n  if (c.items) return c.title || KINDS[c.kind];\n  if (c.title && c.title !== c.kol_name) return c.title;\n  return (c.why || "").split(/[\u3002\uFF01\uFF1F\\n]/)[0] || KINDS[c.kind] || c.kind;\n}\n// What the agent suggests; cards drafted before plan existed get a short one from their action.\nfunction planOf(c) {\n  if (c.plan) return c.plan;\n  const a = c.action || {}, code = a.code, x = a.after || {};\n  if (code?.type === "trial_extend") return `\u5EF6\u671F ${code.days} \u5929${c.to_addr ? "\uFF0C\u56DE\u4FE1\u544A\u8BC9\u5BF9\u65B9" : ""}`;\n  if (code?.type === "trial_create") return `\u53D1\u4F53\u9A8C\u7801\uFF08${code.maxUses} \u6B21\u3001${code.days} \u5929\uFF09`;\n  if (code) return `\u5F00\u6D3B\u52A8\u7801 ${code.code}`;\n  if (c.to_addr) return x.close_reason ? `\u56DE\u4FE1\u6536\u5C3E\uFF0C\u7136\u540E\u7ED3\u6848\uFF08${x.close_reason}\uFF09` : c.kind === "checkin" ? "\u5199\u4FE1\u95EE\u53D1\u5E03\u8FDB\u5EA6" : c.kind === "code_expiry" ? "\u4E0D\u5EF6\u671F\uFF0C\u5199\u4E00\u5C01\u6536\u5C3E\u4FE1" : c.kind === "followup" ? "\u50AC\u4E00\u5C01" : "\u56DE\u4E00\u5C01\u4FE1";\n  if (c.kind === "no_reply") return "\u4E0D\u56DE";\n  if (c.kind === "close") return `\u7ED3\u6848\uFF08${x.close_reason || "\u65E0\u56DE\u5E94"}\uFF09`;\n  if (c.kind === "bounce") return a.bounce === "close" ? "\u7ED3\u6848\uFF1A\u90AE\u7BB1\u65E0\u6548" : "\u89E3\u9664\u5BF9\u8FD9\u4E2A\u5730\u5740\u7684\u62E6\u622A";\n  if (c.kind === "unmatched") return a.match_kol_id ? `\u8BB0\u5230 KOL #${a.match_kol_id} \u540D\u4E0B\uFF0C\u8BA9 agent \u8D77\u8349\u56DE\u4FE1` : "\u4E0D\u662F KOL \u7684\u4FE1\uFF0C\u4E0D\u7528\u5904\u7406";\n  return stepsOf(c)[0] || c.why || "";\n}\nfunction askOf(c) {\n  if (c.status === "unknown") return "\u7ED3\u679C\u4E0D\u660E\uFF0C\u53BB\u90AE\u7BB1\u786E\u8BA4";\n  if (c.status === "failed") return "\u6CA1\u505A\u6210\uFF1A" + (c.result || "");\n  if (c.items) return `${c.items.length} \u9879`;\n  return c.plan ? `${headOf(c)} \u2192 ${c.plan}` : headOf(c);\n}\nfunction daysTo(t) { return Math.round((new Date(t) - Date.now()) / 86400000); }\nfunction factsOf(c) {\n  const f = [];\n  for (const k of c.codes || []) {\n    if (k.kind === "partner") { f.push({ t: `\u6D3B\u52A8\u7801 ${k.code} \xB7 \u8BBF\u5BA2 ${k.visitors ?? 0} \xB7 \u4ED8\u6B3E ${k.paid_orders ?? 0}` }); continue; }\n    let t = `${k.code} \u7528\u4E86 ${k.used ?? 0}/${k.max_uses ?? "?"}`, warn = false;\n    if (k.expires_at) { const d = daysTo(k.expires_at); warn = d <= 3; t += d < 0 ? ` \xB7 ${when(k.expires_at)} \u5DF2\u8FC7\u671F` : d === 0 ? " \xB7 \u4ECA\u5929\u5230\u671F" : ` \xB7 ${d} \u5929\u540E\u5230\u671F`; }\n    f.push({ t, warn });\n  }\n  if (c.kol_publish_due_at && c.kind === "checkin") { const d = -daysTo(c.kol_publish_due_at); if (d > 0) f.push({ t: `\u8FC7\u7EA6\u5B9A\u65E5 ${d} \u5929`, warn: true }); }\n  if (c.in_at) f.push({ t: `\u6765\u4FE1 ${ago(c.in_at)}` });\n  if (c.feedback) f.push({ t: `\u5DF2\u6309\u4F60\u7684\u610F\u89C1\u6539\u8FC7\uFF1A\u300C${c.feedback}\u300D`, warn: true });\n  return f;\n}\nconst factsHtml = (c) => factsOf(c).map((x) => `<span class="mfact ${x.warn ? "warn" : ""}">${esc(x.t)}</span>`).join("");\nfunction kolRows(c) {\n  return [["\u5E73\u53F0 \xB7 \u7C89\u4E1D", [c.kol_platform, c.kol_followers ? fans(c.kol_followers) + " \u7C89" : ""].filter(Boolean).join(" \xB7 ")], ["\u9636\u6BB5", STAGES[c.kol_stage] || ""],\n    ["\u90AE\u7BB1", c.kol_email || c.to_addr || c.in_from || ""], ["\u5E02\u573A", c.kol_market || ""],\n    ...(c.codes || []).map((k) => ["\u7801", `${k.code}\uFF08${k.kind === "partner" ? "\u6D3B\u52A8\u7801" : "\u4F53\u9A8C\u7801"}\uFF09${k.kind === "partner" ? "" : ` ${k.used ?? 0}/${k.max_uses ?? "?"}`}${k.expires_at ? " \xB7 \u5230 " + when(k.expires_at) : ""}`])]\n    .filter(([, v]) => v);\n}\nconst kolRowsHtml = (c) => kolRows(c).map(([k, v]) => `<div class="mkv"><span>${esc(k)}</span>${esc(v)}</div>`).join("");\nfunction threadOf(c) {\n  if (c.thread?.length) return c.thread;\n  return c.in_own ? [{ direction: "in", at: c.in_at, text: c.in_own }] : [];\n}\nconst msgHtml = (c, x) => `<div class="mmsg ${x.direction === "out" ? "we" : ""}"><span class="hint">${x.direction === "out" ? `\u6211\u4EEC${x.mailbox ? "\uFF08" + esc(x.mailbox) + "\uFF09" : ""}` : esc(c.kol_name || c.in_from || "\u5BF9\u65B9")} \xB7 ${when(x.at)}${x.bounce ? " \xB7 \u9000\u4FE1" : ""}</span>${x.subject && x.direction === "out" && !x.text ? esc(x.subject) : esc(x.text || "")}</div>`;\nfunction contextHtml(c) {\n  const t = threadOf(c);\n  if (!t.length) return "";\n  const older = t.slice(0, -1), last = t[t.length - 1], total = c.thread_total || t.length;\n  return `<div class="mctx"><div class="mctx-h"><span class="label" style="margin:0">\u4E0A\u4E0B\u6587 \xB7 \u6765\u5F80 ${total} \u5C01</span><span class="sp"></span>${older.length ? `<button class="link" type="button" data-act="ctx">${D.ctx ? "\u6536\u8D77\u66F4\u65E9\u7684" : `\u5C55\u5F00\u66F4\u65E9\u7684 ${older.length} \u5C01`}</button>` : ""}</div>\n    ${D.ctx ? older.map((x) => msgHtml(c, x)).join("") + (total > t.length && c.kol_id ? `<div class="hint" style="margin-bottom:6px">\u66F4\u65E9\u7684 ${total - t.length} \u5C01\u5728 <a href="#kol/${c.kol_id}">KOL \u8BE6\u60C5</a></div>` : "") : ""}\n    ${msgHtml(c, last).replace(\'</span>\', \'\uFF08\u6700\u8FD1\u4E00\u5C01\uFF09</span>\')}</div>`;\n}\nfunction letterHtml(c, label = "\u8981\u53D1\u7684\u4FE1") {\n  const e = D.edits[c.id] || {}, subj = e.subject ?? c.subject ?? "", body = e.body ?? c.body ?? "";\n  const edited = subj !== (c.subject ?? "") || body !== (c.body ?? "");\n  const canEdit = c.status === "pending";\n  return `<div class="mletter-h"><span>${label} \xB7 ${esc(c.mailbox || "")} \u2192 ${esc(c.to_addr || "")}</span><span class="edited" id="dEdited" style="margin:0" ${edited ? "" : "hidden"}>\u4F60\u6539\u8FC7</span><span class="sp"></span>\n    ${canEdit && D.editing && edited ? `<button class="link" type="button" data-act="resetdraft">\u6062\u590D agent \u7684\u7248\u672C</button>` : ""}${canEdit ? `<button class="link" type="button" data-act="edit">${D.editing ? "\u6539\u597D\u4E86" : "\u6539"}</button>` : ""}</div>\n    ${D.editing && canEdit ? `<input class="field" id="dSubj" type="text" value="${esc(subj)}" aria-label="\u4E3B\u9898"><textarea class="field draft" id="dBody" style="margin-top:8px" aria-label="\u6B63\u6587">${esc(body)}</textarea><div class="hint" style="margin-top:6px">{\u9AD4\u9A57\u78BC}\u3001{\u6B21\u6578} \u8FD9\u7C7B\u5360\u4F4D\u7531\u7CFB\u7EDF\u5728\u540C\u610F\u540E\u586B\u5165\u771F\u5B9E\u7684\u7801\u548C\u65E5\u671F\u3002</div>`\n      : `<div class="mpaper"><b>${esc(subj)}</b>${esc(body)}</div>`}`;\n}\nfunction cardHtml(c) {\n  const flow = stepsOf(c);\n  const decideBox = c.kind === "other" || c.kind === "unmatched" || c.kind === "bounce"\n    ? `<label class="label" for="dDecide" style="margin-top:12px">${c.kind === "other" ? "\u4F60\u7684\u51B3\u5B9A\uFF08\u4EA4\u7ED9 agent\uFF0C\u5B83\u7167\u8FD9\u4E2A\u8D77\u8349\u56DE\u4FE1\uFF0C\u56DE\u4FE1\u8FD8\u4F1A\u518D\u7ED9\u4F60\u770B\uFF09" : "\u4E0D\u540C\u610F agent \u7684\u5224\u65AD\uFF1F\u5199\u7ED9\u5B83\uFF08\u6BD4\u5982\uFF1A\u662F\u300C\u6797\u6797\u592B\u59BB\u300D\u7684\u7ECF\u7EAA\u4EBA\uFF09"}</label><textarea class="field" id="dDecide" rows="2"></textarea>` : "";\n  const main = `<div class="mhead"><div class="mwho"><span class="tag ${c.status === "unknown" || c.status === "failed" ? "red" : KIND_CLS[c.kind] || ""}">${c.status === "unknown" ? "\u7ED3\u679C\u4E0D\u660E" : c.status === "failed" ? "\u5931\u8D25" : KINDS[c.kind] || c.kind}</span><span>${ago(c.created_at)}</span></div>\n      <h1 class="mheadline">${esc(headOf(c))}</h1><div class="mfacts">${factsHtml(c)}</div></div>\n    ${c.status === "unknown" ? `<div class="sec"><div class="panel red"><span><b>\u7ED3\u679C\u4E0D\u660E\uFF1A</b>${esc(c.result || "")}\u3002\u7CFB\u7EDF\u4E0D\u4F1A\u81EA\u52A8\u91CD\u505A\uFF0C\u53BB ${esc(c.mailbox || "\u90AE\u7BB1")} \u7684\u300C\u5DF2\u53D1\u9001\u300D\u91CC\u770B\u4E00\u773C\u518D\u9009\u3002</span></div></div>` : ""}\n    ${contextHtml(c)}\n    <div class="mplan"><div class="mplan-l">agent \u5EFA\u8BAE</div><div class="mplan-t">${esc(planOf(c))}</div>\n      ${flow.length ? `<div class="mflow">\u540C\u610F\u540E\uFF1A${esc(flow.join(" \u2192 "))}</div>` : ""}${c.why && c.why !== planOf(c) ? `<div class="mwhy">\u7406\u7531\uFF1A${esc(c.why)}</div>` : ""}\n      ${decideBox}${c.to_addr ? `<div style="margin-top:12px">${letterHtml(c, c.status === "pending" ? "\u8981\u53D1\u7684\u4FE1" : "\u5F53\u65F6\u8981\u53D1\u7684\u4FE1")}</div>` : ""}</div>\n    ${modePanel(c)}`;\n  const side = `<aside class="mside" aria-label="KOL \u8D44\u6599"><h2>${esc(c.kol_name || c.in_from || "\u4E0D\u5728\u5E93\u91CC")}</h2>${kolRowsHtml(c)}${c.kol_id ? `<a href="#kol/${c.kol_id}">\u6253\u5F00 KOL \u8BE6\u60C5 \u2192</a>` : ""}</aside>`;\n  return `<div class="mwrap"><div class="mmain">${main}</div>${side}</div>` + barHtml(c);\n}\nfunction barHtml(c) {\n  if (c.status === "unknown") return `<div class="dbar"><button class="btn primary" type="button" data-resolve="${c.id}" data-happened="1">\u90AE\u7BB1\u91CC\u6709\uFF0C\u5DF2\u53D1\u51FA</button><button class="btn" type="button" data-resolve="${c.id}" data-happened="0">\u6CA1\u53D1\u51FA\uFF0C\u91CD\u65B0\u5BA1</button></div>`;\n  if (c.status === "failed") return `<div class="dbar"><button class="btn primary" type="button" data-act="redo">\u8BA9 agent \u91CD\u65B0\u8D77\u8349</button><button class="btn quiet" type="button" data-act="reject">\u4E0D\u505A\u4E86</button><span class="sp"></span><span class="hint">\u91CD\u65B0\u8D77\u8349\u4F1A\u51FA\u4E00\u5F20\u65B0\u5361</span></div>`;\n  if (c.to_addr) {\n    const e = D.edits[c.id], edited = e && (e.subject !== (c.subject ?? "") || e.body !== (c.body ?? ""));\n    return `<div class="dbar"><button class="btn primary" type="button" data-act="approve">${S.paused ? "\u540C\u610F\uFF08\u6682\u505C\u4E2D\uFF0C\u5148\u6392\u961F\uFF09" : edited ? "\u6309\u6211\u6539\u7684\u53D1\u51FA" : "\u540C\u610F\u5E76\u53D1\u51FA"} <span class="key">A</span></button>\n      <button class="btn" type="button" data-act="revise">\u8BA9\u5B83\u6539 <span class="key">R</span></button><button class="btn quiet" type="button" data-act="reject">\u4E0D\u505A\u4E86 <span class="key">X</span></button>\n      <span class="sp"></span><span class="hint">5 \u79D2\u5185\u53EF\u64A4\u9500 \xB7 J / K \u4E0A\u4E0B\u5207\u6362</span></div>`;\n  }\n  const ok = { unmatched: c.action?.match_kol_id ? "\u8BB0\u5230\u8FD9\u4F4D\u540D\u4E0B" : "\u540C\u610F\uFF0C\u4E0D\u5904\u7406", bounce: c.action?.bounce === "close" ? "\u540C\u610F\u7ED3\u6848\uFF1A\u90AE\u7BB1\u65E0\u6548" : "\u540C\u610F\uFF0C\u89E3\u9664\u62E6\u622A", no_reply: "\u540C\u610F\uFF0C\u4E0D\u56DE", close: "\u540C\u610F\u7ED3\u6848", legacy: "\u5DF2\u5904\u7406" }[c.kind] || "\u540C\u610F";\n  const no = { unmatched: "\u4E0D\u662F KOL \u7684\u4FE1\uFF0C\u5FFD\u7565", bounce: "\u5148\u653E\u7740", no_reply: "\u8FD8\u662F\u56DE\u4E00\u5C01\uFF08\u8BA9 agent \u5199\uFF09", close: "\u518D\u7B49\u7B49" }[c.kind] || "\u4E0D\u505A\u4E86";\n  return `<div class="dbar">${c.kind === "other" ? "" : `<button class="btn primary" type="button" data-act="approve">${ok} <span class="key">A</span></button>`}\n    ${c.kind === "other" || c.kind === "unmatched" || c.kind === "bounce" ? `<button class="btn ${c.kind === "other" ? "primary" : ""}" type="button" data-act="decide">\u6309\u6211\u5199\u7684\u4EA4\u7ED9 agent</button>` : ""}\n    <button class="btn quiet" type="button" data-act="${c.kind === "no_reply" ? "noreply-answer" : "reject"}">${no} <span class="key">X</span></button><span class="sp"></span><span class="hint">5 \u79D2\u5185\u53EF\u64A4\u9500</span></div>`;\n}\nfunction groupHtml(g) {\n  const ms = g.members, on = ms.filter((x) => !D.gOff[x.id]);\n  const plans = {};\n  ms.forEach((x) => { const k = planOf(x).split(/[\uFF0C,\uFF1B]/)[0]; plans[k] = (plans[k] || 0) + 1; });\n  const head = { code_expiry: "\u8FD9\u51E0\u4F4D\u7684\u4F53\u9A8C\u7801\u5FEB\u5230\u671F\u6216\u5DF2\u7528\u5B8C\uFF0Cagent \u6BCF\u4F4D\u5199\u597D\u4E86\u4E00\u5C01\u4FE1", checkin: "\u8FD9\u51E0\u4F4D\u8FC7\u4E86\u7EA6\u5B9A\u65E5\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50\uFF0Cagent \u6BCF\u4F4D\u5199\u597D\u4E86\u4E00\u5C01\u95EE\u5019", no_reply: "\u8FD9\u51E0\u5C01\u6765\u4FE1\u4E0D\u9700\u8981\u56DE", close: "\u8FD9\u51E0\u4F4D\u5EFA\u8BAE\u7ED3\u6848" }[g.kind];\n  return `<div class="mhead"><div class="mwho"><span class="tag ${KIND_CLS[g.kind] || ""}">${BATCHABLE[g.kind]}</span><b>${ms.length} \u4F4D</b></div><h1 class="mheadline">${head}</h1>\n      <div class="mfacts"><span class="mfact">agent \u5EFA\u8BAE\uFF1A${esc(Object.entries(plans).map(([k, n]) => `${n} \u4F4D${k}`).join("\uFF1B"))}</span></div></div>\n    ${ms.map((x) => {\n      const open = D.peek === x.id, t = threadOf(x);\n      return `<div class="g2row ${D.gOff[x.id] ? "off" : ""}"><input type="checkbox" data-goff="${x.id}" ${D.gOff[x.id] ? "" : "checked"} aria-label="${esc(x.kol_name || "")}">\n        <div><a class="g2name" href="#kol/${x.kol_id}">${esc(x.kol_name || "")}</a><div class="g2sub">${esc(factsOf(x).map((f) => f.t).join(" \xB7 "))}</div></div>\n        <div>${esc(headOf(x))}</div><div class="g2plan">${esc(planOf(x))}</div><button class="link" type="button" data-peek="${x.id}">${open ? "\u6536\u8D77" : "\u5C55\u5F00"}</button>\n        ${open ? `<div class="g2x"><div><div class="label">\u6765\u5F80 \xB7 \u6700\u8FD1 ${Math.min(3, t.length)} \u5C01\uFF08\u5171 ${x.thread_total || t.length} \u5C01\uFF09</div>${t.slice(-3).map((m) => msgHtml(x, m)).join("") || \'<div class="hint">\u8FD8\u6CA1\u6709\u6765\u5F80</div>\'}</div>\n          <div>${x.to_addr ? `<div class="label">\u8981\u53D1\u7684\u4FE1 \xB7 ${esc(x.mailbox || "")} \u2192 ${esc(x.to_addr)}</div><div class="mpaper"><b>${esc(x.subject || "")}</b>${esc(x.body || "")}</div>` : `<div class="label">\u540C\u610F\u540E</div><div>${esc(stepsOf(x).join(" \u2192 "))}</div>`}${x.why ? `<div class="hint" style="margin-top:6px">\u7406\u7531\uFF1A${esc(x.why)}</div>` : ""}</div>\n          <div style="flex:0 1 220px"><div class="label">\u8D44\u6599</div>${kolRowsHtml(x)}<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px"><a href="#kol/${x.kol_id}">\u6253\u5F00 KOL \u8BE6\u60C5 \u2192</a><button class="link" type="button" data-gsingle="${x.id}" style="text-align:left">\u5355\u72EC\u5904\u7406\u8FD9\u4F4D\uFF08\u6539\u4FE1\u3001\u8BA9\u5B83\u6539\uFF09</button></div></div></div>` : ""}</div>`;\n    }).join("")}\n    <div class="dbar"><button class="btn primary" type="button" data-act="gapprove" ${on.length ? "" : "disabled"}>${S.paused ? `\u540C\u610F\u8FD9 ${on.length} \u4F4D\uFF08\u6682\u505C\u4E2D\uFF0C\u5148\u6392\u961F\uFF09` : `\u540C\u610F\u8FD9 ${on.length} \u4F4D`} <span class="key">A</span></button>\n      <button class="btn quiet" type="button" data-act="greject">\u8FD9\u6279\u90FD\u4E0D\u505A <span class="key">X</span></button><span class="sp"></span><span class="hint">\u53BB\u6389\u52FE\u7684\u4EBA\u7559\u5728\u961F\u5217\u91CC\u5355\u72EC\u5904\u7406 \xB7 5 \u79D2\u5185\u53EF\u64A4\u9500</span></div>`;\n}\nlet cards = [], drafting = [], done = [];\nasync function loadCards() {\n  const [pending, problems, dr, dn] = await Promise.all([api("/cards?view=pending"), api("/cards?view=problems"), api("/cards?view=drafting"), api("/cards?view=done")]);\n  const all = problems.concat(pending.filter((p) => !problems.some((x) => x.id === p.id)));\n  all.forEach((c) => (c.group = groupOf(c)));\n  // \u51FA\u95EE\u9898\u7684\u56FA\u5B9A\u5728\u6700\u4E0A\u9762\uFF0C\u6309\u610F\u89C1\u6539\u597D\u7684\u63A5\u7740\uFF0C\u5FEB\u5230\u671F\u548C\u8FC7\u4E86\u7EA6\u5B9A\u65E5\u7684\u518D\u63A5\u7740\uFF0C\u5176\u4F59\u6309\u5148\u6765\u540E\u5230\u3002\n  const rest = all.filter((c) => c.group !== "problem" && !c.feedback);\n  cards = all.filter((c) => c.group === "problem").concat(all.filter((c) => c.group !== "problem" && c.feedback), rest.filter(urgent), rest.filter((c) => !urgent(c)));\n  drafting = dr.filter((d) => !d.parent_id);\n  done = dn.filter((d) => !d.parent_id);\n}\n// Queue entries: a card, or a batch of same-kind cards when two or more wait.\nfunction entriesOf(list) {\n  const n = {};\n  list.forEach((c) => { const k = batchKey(c); if (k) n[k] = (n[k] || 0) + 1; });\n  const seen = {}, out = [];\n  for (const c of list) {\n    const k = batchKey(c);\n    if (k && n[k] >= 2) { if (!seen[k]) { seen[k] = true; out.push({ key: "g:" + k, kind: k, members: list.filter((x) => batchKey(x) === k) }); } }\n    else out.push({ key: String(c.id), card: c });\n  }\n  return out;\n}\nfunction itemHtml(e) {\n  if (e.members) return `<button class="item q1 urgent ${e.key === D.sel ? "on" : ""}" type="button" data-sel="${e.key}"><span class="tag ${KIND_CLS[e.kind] || ""}">${BATCHABLE[e.kind]}</span><span class="iname">${e.members.length} \u4F4D</span><span class="qask">${esc([...new Set(e.members.map((x) => planOf(x).split(/[\uFF0C,\uFF1B]/)[0]))].join(" \xB7 "))}</span></button>`;\n  const c = e.card, bad = c.group === "problem";\n  return `<button class="item q1 ${bad ? "bad" : urgent(c) ? "urgent" : ""} ${e.key === D.sel ? "on" : ""}" type="button" data-sel="${e.key}"><span class="tag ${c.status === "unknown" || c.status === "failed" ? "red" : KIND_CLS[c.kind] || ""}">${c.status === "unknown" ? "\u7ED3\u679C\u4E0D\u660E" : c.status === "failed" ? "\u5931\u8D25" : c.feedback ? "\u5DF2\u6309\u610F\u89C1\u6539" : KINDS[c.kind] || c.kind}</span><span class="iname">${esc(c.kol_name || c.in_from || c.title || "")}</span><span class="qask">${esc(askOf(c))}</span></button>`;\n}\nasync function renderDecide(m, reload = true) {\n  if (reload) await loadCards();\n  if (route[1]) { D.sel = String(route[1]); history.replaceState(null, "", "#decide"); }\n  const visible = entriesOf(D.filter === "all" ? cards : cards.filter((c) => c.group === D.filter));\n  const allEntries = entriesOf(cards);\n  // A single card the operator picked out of a batch is shown on its own.\n  let cur = allEntries.find((e) => e.key === D.sel) || (cards.some((c) => String(c.id) === D.sel) ? { key: D.sel, card: cards.find((c) => String(c.id) === D.sel) } : null);\n  if (!cur) { cur = visible[0] || allEntries[0] || null; D.sel = cur?.key ?? null; D.ctx = false; D.editing = false; }\n  const unknown = cards.filter((c) => c.status === "unknown");\n  let h = "";\n  if (unknown.length) {\n    const u = unknown[0];\n    h += `<div class="alert" role="alert"><span style="flex:1;min-width:240px"><b>${unknown.length} \u4EF6\u4E8B\u8981\u4F60\u786E\u8BA4\uFF1A</b>${esc(u.kol_name || "")}\u300C${esc(u.title || "")}\u300D${esc(u.result || "\u7ED3\u679C\u4E0D\u660E")}\u3002\u7CFB\u7EDF\u4E0D\u4F1A\u81EA\u52A8\u91CD\u505A\uFF0C\u8BF7\u5230 ${esc(u.mailbox || "\u90AE\u7BB1")} \u7684\u300C\u5DF2\u53D1\u9001\u300D\u91CC\u770B\u4E00\u773C\u3002</span>\n      <button class="btn" type="button" data-resolve="${u.id}" data-happened="1">\u90AE\u7BB1\u91CC\u6709\uFF0C\u5DF2\u53D1\u51FA</button><button class="btn" type="button" data-resolve="${u.id}" data-happened="0">\u6CA1\u53D1\u51FA\uFF0C\u91CD\u65B0\u5BA1</button></div>`;\n  }\n  if (D.alertDone) h += `<div class="okbar"><span class="sp">${esc(D.alertDone)}</span><button class="link" type="button" data-hideok>\u77E5\u9053\u4E86</button></div>`;\n  const count = (g) => (g === "done" ? done.length : g === "all" ? cards.length : cards.filter((c) => c.group === g).length);\n  h += `<div class="dbody"><section class="queue" aria-label="\u5F85\u4F60\u51B3\u5B9A"><div class="qchips" role="group" aria-label="\u6309\u8981\u4F60\u505A\u4EC0\u4E48">${GROUPS.map(([k, v]) => `<button class="qchip ${D.filter === k ? "on" : ""}" type="button" data-filter="${k}" aria-pressed="${D.filter === k}">${v} ${count(k)}</button>`).join("")}</div>`;\n  if (D.filter === "done") {\n    h += `<div class="qhead">\u6700\u8FD1 3 \u5929\u5904\u7406\u8FC7\u7684 \xB7 5 \u79D2\u5185\u53EF\u4EE5\u64A4\u9500\uFF0C\u4E4B\u540E\u53BB KOL \u8BE6\u60C5\u91CC\u770B</div>` + (done.map((d) => `<div class="ghost"><span class="tag ${d.status === "done" ? "green" : ""}">${{ done: "\u505A\u5B8C", rejected: "\u4E0D\u505A", superseded: "\u88AB\u53D6\u4EE3", dropped: "\u5254\u6389" }[d.status] || d.status}</span><span class="sp">${esc(d.kol_name || d.title || "")}${d.result ? " \xB7 " + esc(d.result) : ""}</span><span class="itime">${when(d.done_at)}</span></div>`).join("") || `<div class="empty">\u8FD8\u6CA1\u6709</div>`);\n  } else {\n    h += visible.map(itemHtml).join("");\n    if (!visible.length) h += `<div class="empty"><span>${cards.length ? "\u8FD9\u4E00\u7C7B\u90FD\u5904\u7406\u5B8C\u4E86" : "\u73B0\u5728\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B"}</span>${cards.length ? `<button class="link" type="button" data-filter="all">\u770B\u5168\u90E8</button>` : ""}</div>`;\n    if (drafting.length) h += `<div class="qhead">agent \u6B63\u5728\u5199\uFF08${drafting.length}\uFF09\xB7 \u5199\u597D\u4F1A\u81EA\u52A8\u6392\u8FDB\u6765</div>` + drafting.map((d) => `<div class="ghost"><span class="tag">${d.feedback ? "\u6309\u610F\u89C1\u6539" : KINDS[d.kind] || "\u8D77\u8349"}</span><span class="sp">${esc(d.kol_name || d.title || "")}</span><span class="itime">${ago(d.updated_at || d.created_at)}</span></div>`).join("");\n  }\n  const c = cur?.card;\n  const detail = !cur ? `<div class="empty" style="padding:120px 24px"><span class="big">\u90FD\u5904\u7406\u5B8C\u4E86</span><span>\u65B0\u6765\u4FE1\u4F1A\u5728\u51E0\u79D2\u5185\u51FA\u73B0\u5728\u8FD9\u91CC\uFF1B\u6BCF\u5929\u65E9\u4E0A\u6392\u597D\u4E0B\u4E00\u6279\u9080\u7EA6\u548C\u50AC\u4FE1\u3002</span></div>`\n    : cur.members ? groupHtml(cur) : c.items ? batchHtml(c) : c.kind === "template" ? templateHtml(c) : c.kind === "discovery" ? discoveryHtml(c) : cardHtml(c);\n  h += `</section><article class="detail" aria-label="\u8BE6\u60C5">${detail}</article></div>`;\n  m.innerHTML = h;\n  wireDecide(m, cur, visible);\n}\nfunction stepsOf(c) {\n  const a = c.action || {}, s = [];\n  const code = a.code;\n  if (code) {\n    if (code.type === "trial_create") s.push(`\u5728 TAFU \u5EFA\u4F53\u9A8C\u7801 ${code.code}\uFF0C${code.maxUses} \u6B21\uFF0C${code.days} \u5929`);\n    else if (code.type === "trial_extend") s.push(`\u5728 TAFU \u628A ${code.code} \u5EF6\u671F ${code.days} \u5929${code.addUses ? `\uFF0C\u52A0 ${code.addUses} \u6B21` : ""}`);\n    else s.push(`\u5728 TAFU \u5F00\u6D3B\u52A8\u7801 ${code.code}\uFF08${code.market || ""}\uFF0C\u7C89\u4E1D ${100 - (code.percentOff || 0)}% \u4EF7\uFF09\uFF0C\u8054\u7CFB\u90AE\u7BB1 ${code.contact || ""}`);\n  }\n  if (c.to_addr) s.push(`${code ? "\u628A\u7801\u3001\u6B21\u6570\u3001\u5230\u671F\u65E5\u586B\u8FDB\u4FE1\u91CC\uFF0C" : ""}\u4ECE ${c.mailbox || "\u53D1\u4FE1\u90AE\u7BB1"} ${c.in_reply_to ? "\u63A5\u7740\u539F\u90AE\u4EF6\u4E32" : ""}\u53D1\u7ED9 ${c.to_addr}`);\n  const x = a.after || {};\n  const after = [];\n  if (x.close_reason) after.push(`\u7ED3\u6848\uFF08${x.close_reason}\uFF09`); else if (x.stage) after.push(`\u9636\u6BB5\u6539\u4E3A\u300C${STAGES[x.stage] || x.stage}\u300D`);\n  if (x.never_contact) after.push("\u8BBE\u4E3A\u6C38\u4E0D\u8054\u7CFB");\n  if (x.publish_due_at) after.push(`\u7EA6\u5B9A\u53D1\u5E03 ${String(x.publish_due_at).slice(0, 10)}`);\n  if (x.next_followup_days != null && !x.close_reason) after.push(`${x.next_followup_days} \u5929\u540E\u63D0\u9192\u8DDF\u8FDB`);\n  if (after.length) s.push(after.join("\uFF0C"));\n  if (c.kind === "unmatched") s.push(a.match_kol_id ? `\u628A\u8FD9\u5C01\u4FE1\u8BB0\u5230 KOL #${a.match_kol_id} \u540D\u4E0B\uFF0Cagent \u7167\u5E38\u8D77\u8349\u56DE\u4FE1` : "\u8FD9\u5C01\u4FE1\u4E0D\u7528\u5904\u7406\uFF0C\u4EE5\u540E\u540C\u4E00\u53D1\u4EF6\u4EBA\u7684\u4FE1\u4E5F\u4E0D\u518D\u51FA\u5361");\n  if (c.kind === "bounce") s.push(a.bounce === "close" ? "\u8FD9\u4F4D KOL \u7ED3\u6848\uFF08\u9000\u4FE1\u6216\u90AE\u7BB1\u65E0\u6548\uFF09\uFF0C\u539F\u90AE\u7BB1\u4E0D\u518D\u7528" : "\u53EA\u89E3\u9664\u5BF9\u8FD9\u4E2A\u5730\u5740\u7684\u62E6\u622A");\n  if (c.kind === "no_reply") s.push("\u8FD9\u5C01\u6765\u4FE1\u6807\u4E3A\u4E0D\u7528\u56DE\uFF0C\u9636\u6BB5\u4E0D\u53D8");\n  return s;\n}\nfunction headHtml(c) {\n  const badges = [c.kol_stage ? STAGES[c.kol_stage] : "", c.kol_platform ? `${c.kol_platform}${c.kol_followers ? " \xB7 " + fans(c.kol_followers) + "\u7C89" : ""}` : ""].filter(Boolean);\n  return `<div class="dhead"><h1 class="h1">${esc(c.kol_name || c.title || "")}${badges.map((b) => `<span class="tag">${esc(b)}</span>`).join("")}<span class="tag ${KIND_CLS[c.kind] || ""}">${KINDS[c.kind] || c.kind}</span></h1>\n    <div class="meta">${c.to_addr ? `${esc(c.mailbox || "")} \u2192 ${esc(c.to_addr)}` : esc(c.in_from || "")}${c.kol_id ? ` \xB7 <a href="#kol/${c.kol_id}">\u770B\u5168\u90E8\u8D44\u6599\u548C\u6765\u5F80</a>` : ""}</div>\n    ${c.why ? `<div class="why"><b>agent\uFF1A</b>${esc(c.why)}</div>` : ""}\n    ${c.status === "failed" ? `<div class="panel red" style="margin-top:10px"><span><b>\u540C\u610F\u540E\u6CA1\u505A\u6210\uFF1A</b>${esc(c.result || "")}\u3002\u4FE1\u6CA1\u6709\u53D1\u51FA\u3002</span></div>` : ""}\n    ${c.status === "unknown" ? `<div class="panel red" style="margin-top:10px"><span><b>\u7ED3\u679C\u4E0D\u660E\uFF1A</b>${esc(c.result || "")}\u3002\u7CFB\u7EDF\u4E0D\u4F1A\u81EA\u52A8\u91CD\u505A\u3002</span></div>` : ""}\n    ${c.feedback ? `<div class="edited">\u5DF2\u6309\u4F60\u7684\u610F\u89C1\u6539\u8FC7\uFF1A\u300C${esc(c.feedback)}\u300D</div>` : ""}</div>`;\n}\nfunction modePanel(c) {\n  if (D.mode === "revise") {\n    const chips = ["\u66F4\u77ED\u4E00\u70B9", "\u8BED\u6C14\u66F4\u53E3\u8BED", "\u5148\u522B\u63D0\u7801", "\u7528\u7E41\u4F53\u53F0\u6E7E\u8BF4\u6CD5"];\n    return `<div class="sec"><div class="panel"><label class="label" style="margin:0" for="revNote">\u544A\u8BC9 agent \u54EA\u91CC\u8981\u6539\uFF08\u5B83\u4F1A\u91CD\u5199\u8FD9\u5F20\u5361\uFF0C\u539F\u5361\u5148\u6536\u8D77\uFF09</label>\n      <div class="row">${chips.map((x) => `<button class="pill ${D.revOn[x] ? "on" : ""}" type="button" data-revchip="${esc(x)}">${esc(x)}</button>`).join("")}</div>\n      <textarea class="field" id="revNote" rows="2" placeholder="\u6BD4\u5982\uFF1A\u522B\u5148\u95EE\u5E74\u9F84\uFF0C\u5148\u8BF4\u600E\u4E48\u7528\u7801"></textarea>\n      <div class="row"><button class="btn primary" type="button" data-act="revise-send">\u4EA4\u7ED9 agent \u6539</button><button class="btn" type="button" data-act="mode-close">\u53D6\u6D88</button><span class="hint">\u6539\u597D\u7684\u5361\u56DE\u5230\u961F\u5217\u6700\u4E0A\u9762</span></div></div></div>`;\n  }\n  if (D.mode === "reject") {\n    const opts = c.to_addr ? [["leave", "\u4E0D\u56DE\uFF0C\u5C31\u653E\u7740", "\u4E0D\u53D1\u4FE1\uFF0C\u9636\u6BB5\u4E0D\u53D8\uFF1B\u5979\u518D\u6765\u4FE1\u4F1A\u7167\u5E38\u51FA\u5361"], ["self", "\u6211\u81EA\u5DF1\u5728\u90AE\u7BB1\u91CC\u56DE", "\u4F60\u56DE\u4E86\u4EE5\u540E\uFF0C\u6536\u4FE1\u65F6\u4F1A\u81EA\u52A8\u8BB0\u8FDB\u6765\u5F80"], ["close", "\u4E0D\u56DE\uFF0C\u5E76\u628A\u8FD9\u4F4D\u7ED3\u6848", "\u7ED3\u6848\u539F\u56E0\u9009\u300C\u62D2\u7EDD\u300D\uFF0C\u4EE5\u540E\u4E0D\u518D\u6392\u5979"]]\n      : [["leave", "\u4E0D\u505A", "\u8FD9\u5F20\u5361\u6536\u8D77"]];\n    return `<div class="sec"><div class="panel red"><div class="label" style="margin:0">\u4E0D\u505A\u8FD9\u5F20\u5361\uFF0C\u7136\u540E\u5462\uFF1F</div>${opts.map(([k, l, hint]) => `<button class="radio ${D.rej === k ? "on" : ""}" type="button" data-rej="${k}"><span><b>${l}</b><br><span class="hint">${hint}</span></span></button>`).join("")}\n      <div class="row"><button class="btn danger" type="button" data-act="reject-send">\u786E\u5B9A\u4E0D\u505A</button><button class="btn" type="button" data-act="mode-close">\u53D6\u6D88</button><span class="hint">5 \u79D2\u5185\u53EF\u4EE5\u64A4\u9500</span></div></div></div>`;\n  }\n  return "";\n}\nfunction batchHtml(c) {\n  const off = D.batchOff[c.id] || {};\n  const keep = c.items.filter((i) => !off[i.id]);\n  const byBox = {};\n  keep.forEach((i) => { if (i.to_addr) byBox[(i.mailbox || "").toLowerCase()] = (byBox[(i.mailbox || "").toLowerCase()] || 0) + 1; });\n  const sends = keep.filter((i) => i.to_addr).length;\n  const quota = (U.mailboxes || []).filter((b) => b.enabled).map((b) => ({ label: `${b.address} \u4ECA\u5929${b.warmup_from ? "\uFF08\u9884\u70ED\u4E2D\uFF09" : ""}`, used: b.used + (byBox[b.address.toLowerCase()] || 0), limit: b.limit_today }))\n    .concat([{ label: "\u9879\u76EE\u4ECA\u5929\uFF08\u6309\u4EBA\u6570\uFF09", used: U.contacted + sends, limit: U.dailyLimit }]);\n  const over = quota.some((q) => q.used > q.limit);\n  const curId = D.batchCur[c.id] ?? c.items[0]?.id;\n  const ci = c.items.find((i) => i.id === curId) || c.items[0];\n  const label = (i) => (i.kind === "close" ? "\u7ED3\u6848" : i.kind === "followup" ? (/2/.test(i.title || "") ? "\u50AC 2" : "\u50AC 1") : KINDS[i.kind] || i.kind);\n  return headHtml(c) + `<div class="sec" style="padding-top:12px"><div class="quota">${quota.map((q) => `<div class="q ${q.used > q.limit ? "over" : ""}"><div class="meta">${esc(q.label)}</div><b>${q.used}</b> <span class="meta">/ ${q.limit} \u4EBA \xB7 ${q.used > q.limit ? `\u8D85\u4E86 ${q.used - q.limit} \u4EBA\uFF0C\u8D85\u51FA\u7684\u4E0D\u4F1A\u53D1` : `\u53D1\u5B8C\u5269 ${q.limit - q.used}`}</span><div class="track"><div class="fill ${q.used > q.limit ? "over" : ""}" style="width:${Math.min(100, Math.round((q.used / Math.max(1, q.limit)) * 100))}%"></div></div></div>`).join("")}</div></div>\n    <div class="cols"><div class="col" style="flex:1 1 440px"><div class="label">\u540D\u5355 \xB7 \u53D6\u6D88\u52FE\u9009\u5C31\u4E0D\u53D1 \xB7 \u70B9\u540D\u5B57\u770B\u8FD9\u4E2A\u4EBA\u4F1A\u6536\u5230\u7684\u4FE1</div><div class="gbox">\n      <div class="grow head"><span><input type="checkbox" aria-label="\u5168\u9009" data-ball ${keep.length === c.items.length ? "checked" : ""}></span><span>KOL</span><span>\u90AE\u7BB1</span><span>\u505A\u4EC0\u4E48</span><span>\u4ECE\u54EA\u53D1</span></div>\n      ${c.items.map((i) => `<div class="grow ${off[i.id] ? "off" : ""} ${i.id === ci?.id ? "cur" : ""}"><span><input type="checkbox" data-bitem="${i.id}" aria-label="\u53D1\u7ED9 ${esc(i.kol_name || "")}" ${off[i.id] ? "" : "checked"}></span><span><button class="rowbtn" type="button" data-bcur="${i.id}">${esc(i.kol_name || "")}</button>${off[i.id] ? `<span class="sub">\u5254\u6389\u4E86 \xB7 \u7559\u5728\u5E93\u91CC\uFF0C\u4E0B\u6B21\u8FD8\u4F1A\u6392</span>` : ""}</span><span class="snip">${esc(i.to_addr || "\u2014")}</span><span><span class="tag">${esc(label(i))}</span></span><span class="sub">${esc((i.mailbox || "").split("@")[0])}${i.mailbox ? "@" : "\u2014"}</span></div>`).join("")}\n    </div></div><div class="col" style="flex:1 1 360px"><div class="label">\u300C${esc(ci?.kol_name || "")}\u300D${ci?.to_addr ? "\u4F1A\u6536\u5230\u7684\u4FE1" : "\uFF1A\u4E0D\u53D1\u4FE1"}</div><div class="preview">${ci?.to_addr ? `<b>${esc(ci.subject || "")}</b>\\n\\n${esc(ci.body || "")}` : esc(ci?.why || ci?.title || "")}</div></div></div>\n    ${modePanel(c)}<div class="dbar"><button class="btn primary" type="button" data-act="approve" ${over || !keep.length ? "disabled" : ""}>${over ? "\u989D\u5EA6\u8D85\u4E86\uFF0C\u5148\u5254\u6389\u51E0\u4E2A" : `\u540C\u610F\uFF0C${sends ? `\u53D1\u51FA ${sends} \u5C01` : ""}${keep.length - sends ? `${sends ? "\u3001" : ""}\u7ED3\u6848 ${keep.length - sends} \u4EBA` : ""}`} <span class="key">A</span></button>\n      <button class="btn quiet" type="button" data-act="reject">\u8FD9\u6279\u4E0D\u53D1\u4E86 <span class="key">X</span></button><span class="sp"></span><span class="hint">\u6BCF\u5C01\u53D1\u524D\u8FD8\u4F1A\u518D\u67E5\u989D\u5EA6\u3001\u51B7\u5374\u3001\u6C38\u4E0D\u8054\u7CFB\u3001\u9000\u4FE1\u548C\u90AE\u7BB1\u57DF\u540D\uFF1B\u53D1\u9001\u8FDB\u5EA6\u5728\u300C\u8BB0\u5F55\u300D\u91CC</span></div>`;\n}\nfunction templateHtml(c) {\n  const d = c.draft || {}, cur = c.current;\n  return headHtml(c) + `<div class="cols"><div class="col"><div class="label">${cur ? "\u73B0\u5728\u5728\u7528\uFF08\u6279\u51C6\u524D\u7167\u5E38\u53D1\u8FD9\u4E00\u7248\uFF09" : "\u65B0\u6A21\u677F"}</div><div class="preview">${cur ? `<b>${esc(cur.subject || "")}</b>\\n\\n${esc(cur.body || "")}` : "\uFF08\u4EE5\u524D\u6CA1\u6709\uFF09"}</div></div>\n    <div class="col"><div class="label">\u65B0\u7248 \xB7 ${esc(d.purpose || "")} \xB7 ${esc(d.language || "")}</div><div class="preview">${`<b>${esc(d.subject || "")}</b>\\n\\n${esc(d.body || "")}`}</div></div></div>\n    ${modePanel(c)}<div class="dbar"><button class="btn primary" type="button" data-act="approve">\u6279\u51C6\uFF0C\u6362\u6210\u65B0\u7248 <span class="key">A</span></button><button class="btn" type="button" data-act="revise">\u8BA9\u5B83\u6539 <span class="key">R</span></button>\n    <a class="btn" href="#settings/tpl">\u6211\u81EA\u5DF1\u6539</a><button class="btn quiet" type="button" data-act="reject">\u4E0D\u6362\u4E86 <span class="key">X</span></button><span class="sp"></span><span class="hint">\u5DF2\u6392\u8FDB\u5361\u7247\u91CC\u7684\u4FE1\u4E0D\u53D7\u5F71\u54CD</span></div>`;\n}\nfunction discoveryHtml(c) {\n  const list = c.action?.candidates || [], off = D.candOff[c.id] || {};\n  const n = list.filter((_, i) => !off[i]).length;\n  return headHtml(c) + `<div class="sec" style="padding-top:12px"><div class="label">\u52FE\u7740\u7684\u5165\u5E93\uFF08\u300C\u672A\u8054\u7CFB\u300D\uFF09\uFF0C\u4E4B\u540E\u6392\u8FDB\u9080\u7EA6\u6279</div>\n    ${list.slice(0, 300).map((x, i) => `<label class="cand"><input type="checkbox" data-cand="${i}" ${off[i] ? "" : "checked"}><b style="font-weight:500;flex:0 0 200px"><a href="${esc(x.url || "#")}" target="_blank" rel="noopener">${esc(x.name || x.handle)}</a></b><span class="meta" style="flex:0 0 70px">${fans(x.followers)}</span><span class="sp" style="color:#5F5E58">${esc((x.bio || "").slice(0, 80))}</span><span class="meta">${esc(x.email || "\u6CA1\u90AE\u7BB1")}</span></label>`).join("")}</div>\n    <div class="dbar"><button class="btn primary" type="button" data-act="approve" ${n ? "" : "disabled"}>\u540C\u610F\uFF0C\u5165\u5E93 ${n} \u4F4D <span class="key">A</span></button><button class="btn quiet" type="button" data-act="reject">\u4E00\u4E2A\u90FD\u4E0D\u8981 <span class="key">X</span></button><span class="sp"></span><span class="hint">\u5E93\u91CC\u5DF2\u6709\u7684\u4F1A\u81EA\u52A8\u8DF3\u8FC7</span></div>`;\n}\nfunction wireDecide(m, entry, visible) {\n  $$("[data-filter]", m).forEach((b) => (b.onclick = () => { D.filter = b.dataset.filter; D.mode = null; render(); }));\n  $$("[data-sel]", m).forEach((b) => (b.onclick = () => { D.sel = b.dataset.sel; D.mode = null; D.revOn = {}; D.rej = "leave"; D.ctx = false; D.editing = false; D.peek = null; render(); }));\n  $$("[data-resolve]", m).forEach((b) => (b.onclick = () => act(() => api(`/cards/${b.dataset.resolve}/resolve`, { happened: b.dataset.happened === "1" }), () => {\n    D.alertDone = b.dataset.happened === "1" ? "\u5DF2\u8BB0\u4E3A\u53D1\u51FA\uFF1A\u8FD9\u5C01\u4FE1\u8BB0\u8FDB\u6765\u5F80\uFF0C\u540E\u9762\u7684\u6B65\u9AA4\u7167\u5E38\u505A\u3002" : null;\n    return b.dataset.happened === "1" ? "\u5DF2\u8BB0\u4E3A\u53D1\u51FA" : "\u5DF2\u8BB0\u4E3A\u6CA1\u53D1\u51FA\uFF0C\u5361\u7247\u56DE\u5230\u961F\u5217\u91CD\u65B0\u5BA1\uFF08\u7801\u5EFA\u8FC7\u7684\u4E0D\u4F1A\u518D\u5EFA\uFF09";\n  })));\n  const hk = $("[data-hideok]", m); if (hk) hk.onclick = () => { D.alertDone = null; render(); };\n  if (!entry) return;\n  const next = () => { const i = visible.findIndex((e) => e.key === entry.key); const n = visible[i + 1] || visible[i - 1]; D.sel = n ? n.key : null; D.mode = null; D.ctx = false; D.editing = false; D.peek = null; };\n  const go = (k) => { const i = visible.findIndex((e) => e.key === entry.key); const n = visible[k === "j" ? i + 1 : i - 1]; if (n) { D.sel = n.key; D.mode = null; D.ctx = false; D.editing = false; D.peek = null; render(); } };\n  if (entry.members) {\n    const ms = entry.members;\n    $$("[data-goff]", m).forEach((cb) => (cb.onchange = () => { D.gOff[cb.dataset.goff] = !cb.checked; render(); }));\n    $$("[data-peek]", m).forEach((b) => (b.onclick = () => { const id = Number(b.dataset.peek); D.peek = D.peek === id ? null : id; render(); }));\n    $$("[data-gsingle]", m).forEach((b) => (b.onclick = () => { D.sel = b.dataset.gsingle; D.editing = true; D.peek = null; render(); }));\n    const A = {\n      gapprove: async () => {\n        const on = ms.filter((x) => !D.gOff[x.id]);\n        if (!on.length) return;\n        await Promise.all(on.map((x) => api(`/cards/${x.id}/approve`, { hash: x.hash })));\n        next(); dropCards(on.map((x) => x.id));\n        toast(`\u5DF2\u540C\u610F ${on.length} \u4F4D\uFF0C5 \u79D2\u540E${S.paused ? "\u6392\u961F\uFF08\u6682\u505C\u4E2D\uFF09" : "\u5F00\u59CB\u6267\u884C"}`, { undo: () => Promise.all(on.map((x) => api(`/cards/${x.id}/undo`, {}))), after: `\u5DF2\u540C\u610F ${on.length} \u4F4D` });\n        refresh();\n      },\n      greject: async () => {\n        await Promise.all(ms.map((x) => api(`/cards/${x.id}/reject`, { note: "\u6574\u6279\u4E0D\u505A" })));\n        next(); dropCards(ms.map((x) => x.id));\n        toast(`\u8FD9\u6279 ${ms.length} \u4F4D\u90FD\u4E0D\u505A`, { undo: () => Promise.all(ms.map((x) => api(`/cards/${x.id}/undo`, {}))) });\n        refresh();\n      },\n    };\n    $$("[data-act]", m).forEach((b) => (b.onclick = () => (A[b.dataset.act] ? Promise.resolve(A[b.dataset.act]()).catch((e) => toast("\u6CA1\u6210\u529F\uFF1A" + e.message)) : null)));\n    decideKeys = (k) => { if (k === "a") $(\'[data-act="gapprove"]\', m)?.click(); else if (k === "x") $(\'[data-act="greject"]\', m)?.click(); else if (k === "j" || k === "k") go(k); };\n    return;\n  }\n  const cur = entry.card;\n  const subj = $("#dSubj"), body = $("#dBody");\n  const onEdit = () => { D.edits[cur.id] = { subject: subj.value, body: body.value }; const ed = subj.value !== (cur.subject ?? "") || body.value !== (cur.body ?? ""); $("#dEdited").hidden = !ed; const a = $(\'[data-act="approve"]\'); if (a && !S.paused) a.firstChild.textContent = ed ? "\u6309\u6211\u6539\u7684\u53D1\u51FA " : "\u540C\u610F\u5E76\u53D1\u51FA "; };\n  if (subj) { subj.oninput = onEdit; body.oninput = onEdit; }\n  $$("[data-revchip]", m).forEach((b) => (b.onclick = () => { D.revOn[b.dataset.revchip] = !D.revOn[b.dataset.revchip]; b.classList.toggle("on"); }));\n  $$("[data-rej]", m).forEach((b) => (b.onclick = () => { D.rej = b.dataset.rej; $$("[data-rej]", m).forEach((x) => x.classList.toggle("on", x === b)); }));\n  $$("[data-bitem]", m).forEach((cb) => (cb.onchange = () => { (D.batchOff[cur.id] ||= {})[cb.dataset.bitem] = !cb.checked; render(); }));\n  const ball = $("[data-ball]", m); if (ball) ball.onchange = () => { D.batchOff[cur.id] = {}; if (!ball.checked) cur.items.forEach((i) => (D.batchOff[cur.id][i.id] = true)); render(); };\n  $$("[data-bcur]", m).forEach((b) => (b.onclick = () => { D.batchCur[cur.id] = Number(b.dataset.bcur); render(); }));\n  $$("[data-cand]", m).forEach((cb) => (cb.onchange = () => { (D.candOff[cur.id] ||= {})[cb.dataset.cand] = !cb.checked; render(); }));\n  const undo = () => api(`/cards/${cur.id}/undo`, {});\n  const A = {\n    ctx: () => { D.ctx = !D.ctx; render(); },\n    edit: () => { D.editing = !D.editing; render(); },\n    approve: async () => {\n      let hash = cur.hash;\n      const e = D.edits[cur.id];\n      if (e && (e.subject !== (cur.subject ?? "") || e.body !== (cur.body ?? ""))) {\n        await api(`/cards/${cur.id}/edit`, { subject: e.subject, body: e.body });\n        hash = (await api("/cards?view=pending")).find((x) => x.id === cur.id)?.hash;\n      }\n      if (cur.kind === "discovery" && Object.values(D.candOff[cur.id] || {}).some(Boolean)) {\n        const off = D.candOff[cur.id];\n        await api(`/cards/${cur.id}/edit`, { action: { ...cur.action, candidates: cur.action.candidates.filter((_, i) => !off[i]) } });\n        hash = (await api("/cards?view=pending")).find((x) => x.id === cur.id)?.hash;\n      }\n      const drop = Object.entries(D.batchOff[cur.id] || {}).filter(([, v]) => v).map(([k]) => Number(k));\n      await api(`/cards/${cur.id}/approve`, { hash, drop });\n      delete D.edits[cur.id];\n      const name = cur.kol_name || cur.title || "";\n      next();\n      dropCards([cur.id]);\n      toast(`\u5DF2\u540C\u610F\u300C${name}\u300D\uFF0C5 \u79D2\u540E${S.paused ? "\u6392\u961F\uFF08\u6682\u505C\u4E2D\uFF09" : "\u5F00\u59CB\u6267\u884C"}`, { undo, after: S.paused ? `\u5DF2\u540C\u610F\u300C${name}\u300D\uFF0C\u6682\u505C\u4E2D\uFF0C\u6062\u590D\u53D1\u9001\u540E\u53D1\u51FA` : `\u5DF2\u540C\u610F\u300C${name}\u300D\uFF0C\u6B63\u5728\u6267\u884C` });\n      refresh();\n    },\n    revise: () => { D.mode = D.mode === "revise" ? null : "revise"; render(); },\n    reject: () => { if (cur.to_addr || cur.items || cur.kind === "template" || cur.kind === "discovery") { D.mode = D.mode === "reject" ? null : "reject"; render(); } else A["reject-send"](); },\n    "mode-close": () => { D.mode = null; render(); },\n    resetdraft: () => { delete D.edits[cur.id]; render(); },\n    "revise-send": async () => {\n      const note = Object.keys(D.revOn).filter((k) => D.revOn[k]).concat($("#revNote").value.trim() ? [$("#revNote").value.trim()] : []).join("\uFF1B");\n      if (!note) return toast("\u5148\u8BF4\u4E00\u53E5\u54EA\u91CC\u8981\u6539");\n      await api(`/cards/${cur.id}/revise`, { feedback: note });\n      D.revOn = {}; next(); dropCards([cur.id]);\n      toast(`\u5DF2\u4EA4\u7ED9 agent \u6539\u300C${cur.kol_name || cur.title || ""}\u300D\uFF0C\u6539\u597D\u56DE\u5230\u6700\u4E0A\u9762`); refresh();\n    },\n    "reject-send": async () => {\n      const note = { leave: "\u4E0D\u505A\u4E86", self: "\u8FD0\u8425\u81EA\u5DF1\u5728\u90AE\u7BB1\u56DE", close: "\u4E0D\u56DE\u5E76\u7ED3\u6848" }[D.rej] || "\u4E0D\u505A\u4E86";\n      await api(`/cards/${cur.id}/reject`, { note });\n      if (D.rej === "close" && cur.kol_id) await api(`/kols/${cur.kol_id}`, { fields: { stage: "closed", close_reason: "\u62D2\u7EDD", whose_turn: "none", next_followup_at: null } });\n      const name = cur.kol_name || cur.title || ""; next(); D.rej = "leave"; dropCards([cur.id]);\n      toast(`\u4E0D\u505A\u300C${name}\u300D`, { undo }); refresh();\n    },\n    decide: async () => {\n      const t = $("#dDecide").value.trim();\n      if (!t) return toast("\u5148\u5199\u4E00\u53E5\u4F60\u7684\u51B3\u5B9A");\n      await api(`/cards/${cur.id}/revise`, { feedback: t });\n      next(); dropCards([cur.id]); toast("\u5DF2\u4EA4\u7ED9 agent\uFF0C\u7167\u4F60\u7684\u51B3\u5B9A\u91CD\u65B0\u8D77\u8349"); refresh();\n    },\n    "noreply-answer": async () => {\n      await api(`/cards/${cur.id}/revise`, { feedback: "\u8FD0\u8425\u8981\u56DE\u8FD9\u5C01\u4FE1\uFF1A\u8BF7\u8D77\u8349\u4E00\u5C01\u56DE\u4FE1" });\n      next(); dropCards([cur.id]); toast("\u5DF2\u4EA4\u7ED9 agent \u8D77\u8349\u56DE\u4FE1"); refresh();\n    },\n    redo: async () => {\n      await api(`/cards/${cur.id}/reject`, { note: "\u5931\u8D25\u540E\u8BA9 agent \u91CD\u65B0\u8D77\u8349" });\n      await api("/ask", { text: `KOL #${cur.kol_id}\uFF08${cur.kol_name}\uFF09\u7684\u5361\u7247 #${cur.id}\u300C${cur.title}\u300D\u540C\u610F\u540E\u6CA1\u505A\u6210\uFF1A${cur.result}\u3002\u8BF7\u907F\u5F00\u8FD9\u4E2A\u95EE\u9898\u91CD\u65B0\u8D77\u8349\u4E00\u5F20\u5361\u3002` });\n      next(); dropCards([cur.id]); toast("\u5DF2\u4EA4\u7ED9 agent \u91CD\u65B0\u8D77\u8349"); refresh();\n    },\n  };\n  $$("[data-act]", m).forEach((b) => (b.onclick = () => (A[b.dataset.act] ? Promise.resolve(A[b.dataset.act]()).catch((e) => toast("\u6CA1\u6210\u529F\uFF1A" + e.message)) : null)));\n  decideKeys = (k) => {\n    if (k === "a") $(\'[data-act="approve"]\', m)?.click();\n    else if (k === "r") $(\'[data-act="revise"]\', m)?.click();\n    else if (k === "x") $(\'[data-act="reject"]\', m)?.click();\n    else if (k === "j" || k === "k") go(k);\n  };\n}\n// The cards just handled leave the queue at once; the fresh list follows from the refresh.\nfunction dropCards(ids) {\n  cards = cards.filter((c) => !ids.includes(c.id));\n  if (route[0] === "decide") renderDecide($("#main"), false);\n}\nlet decideKeys = null;\ndocument.addEventListener("keydown", (e) => {\n  if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing || e.target.matches("input, textarea, select") || $("#modal").innerHTML) return;\n  const k = e.key.toLowerCase();\n  if (k === "z" && undoFn) { e.preventDefault(); return undoFn(); }\n  if (route[0] === "decide" && decideKeys && "arxjk".includes(k)) { e.preventDefault(); decideKeys(k); }\n});\n\n// ---------- KOL \u5217\u8868 ----------\nconst K = { stage: "", flag: "", q: "", sort: "recent", page: 0, sel: {}, exp: null, expData: {}, menu: false };\nconst FLAGS = [["us", "\u8F6E\u5230\u6211\u4EEC", "warn"], ["expiry", "\u7801 3 \u5929\u5185\u5230\u671F", "warn"], ["late", "\u8FC7\u4E86\u7EA6\u5B9A\u65E5", "warn"], ["bounce", "\u9000\u4FE1\u672A\u5904\u7406", "bad"], ["posted", "\u53D1\u4E86\u5E16\u5B50", ""]];\nlet krows = [];\nasync function renderKols(m) {\n  const [counts, rows] = await Promise.all([api("/kols/counts"), api(`/kols?q=${encodeURIComponent(K.q)}&stage=${K.stage}&flag=${K.flag}&sort=${K.sort}&page=${K.page}`)]);\n  krows = rows;\n  const total = Object.values(counts.stages).reduce((a, b) => a + b, 0);\n  const selRows = rows.filter((r) => K.sel[r.id]);\n  m.innerHTML = `<div class="wrap"><div class="ltitle"><h1 class="h1">KOL</h1><span class="meta">\u672C\u9879\u76EE ${total.toLocaleString()} \u4F4D \xB7 \u4ECA\u5929\u5DF2\u8054\u7CFB ${U.contacted ?? 0} / ${U.dailyLimit ?? "?"} \u4EBA</span><span class="sp"></span>\n    <input class="field" style="width:240px" type="search" id="kq" placeholder="\u641C\u540D\u5B57\u3001\u8D26\u53F7\u3001\u90AE\u7BB1" value="${esc(K.q)}" aria-label="\u641C KOL">\n    <button class="btn" type="button" id="kAdd">\u624B\u52A8\u52A0\u4E00\u4F4D</button><a class="btn primary" href="#find">\u627E\u65B0\u7684\u4EBA\u2026</a></div>\n    <div class="lstrip" role="group" aria-label="\u6309\u9636\u6BB5"><button class="chip ${!K.stage ? "on" : ""}" type="button" data-stage="">\u5168\u90E8 <b>${total.toLocaleString()}</b></button>\n      ${Object.entries(STAGES).map(([k, v]) => `<button class="chip ${K.stage === k ? "on" : ""}" type="button" data-stage="${k}">${v} <b>${(counts.stages[k] || 0).toLocaleString()}</b></button>`).join("")}</div>\n    <div class="lfilters"><span class="meta">\u8981\u6CE8\u610F\u7684\uFF1A</span>${FLAGS.map(([k, v, c]) => `<button class="chip ${K.flag === k ? "on" : c}" type="button" data-flag="${k}" aria-pressed="${K.flag === k}">${v} <b>${counts.flags[k] || 0}</b></button>`).join("")}\n      <span class="sp"></span><select class="sel" id="kSort" aria-label="\u6392\u5E8F"><option value="recent">\u6700\u8FD1\u6765\u5F80\u5728\u524D</option><option value="wait">\u8F6E\u5230\u6211\u4EEC\u6700\u4E45\u5728\u524D</option><option value="fans">\u7C89\u4E1D\u591A\u5728\u524D</option></select></div>\n    <div class="lbox"><div class="lscroll"><div>\n      <div class="lg head"><span><input type="checkbox" aria-label="\u5168\u9009\u8FD9\u9875" id="kAll" ${rows.length && rows.every((r) => K.sel[r.id]) ? "checked" : ""}></span><span>KOL</span><span style="text-align:right">\u7C89\u4E1D</span><span>\u9636\u6BB5 \xB7 \u8F6E\u5230\u8C01</span><span>\u6700\u8FD1\u6765\u5F80\uFF08\u70B9\u5F00\u770B\uFF09</span><span>\u4E0B\u4E00\u6B65</span><span>\u7801</span><span>\u53D1\u5E03</span><span></span></div>\n      ${rows.map(kolRow).join("") || `<div class="empty"><span>\u6CA1\u6709\u7B26\u5408\u7684 KOL</span><button class="link" type="button" id="kClear">\u6E05\u6389\u7B5B\u9009</button></div>`}\n    </div></div><div class="lfoot"><span>${rows.length} \u4F4D${rows.length === 50 ? "\uFF08\u8FD9\u4E00\u9875\uFF09" : ""}</span><span class="sp"></span>${K.page ? `<button class="btn sm" type="button" id="kPrev">\u4E0A\u4E00\u9875</button>` : ""}${rows.length === 50 ? `<button class="btn sm" type="button" id="kNext">\u4E0B\u4E00\u9875</button>` : ""}</div></div>\n    ${selRows.length ? `<div class="bulk" role="region" aria-label="\u6279\u91CF\u64CD\u4F5C" style="position:sticky"><b>\u5DF2\u9009 ${selRows.length} \u4F4D</b><span class="sp"></span>\n      <button class="btn" type="button" id="bDraft">\u8BA9 agent \u5404\u8D77\u8349\u4E00\u5C01</button><button class="btn" type="button" id="bStage">\u6539\u9636\u6BB5\u2026</button><button class="btn" type="button" id="bHold">\u6682\u7F13</button><button class="btn" type="button" id="bClear">\u53D6\u6D88\u9009\u62E9</button>\n      ${K.menu ? `<div class="pop" role="menu">${["replied", "trial", "report_seen", "publish_agreed", "published", "partner", "on_hold"].map((k) => `<button type="button" role="menuitem" data-setstage="${k}">\u6539\u4E3A\u300C${STAGES[k]}\u300D</button>`).join("")}</div>` : ""}</div>` : ""}\n    <p class="hint">\u70B9\u540D\u5B57\u8FDB\u8BE6\u60C5\u3002\u6279\u91CF\u8D77\u8349\u7684\u4FE1\u7167\u6837\u8FDB\u300C\u5F85\u4F60\u51B3\u5B9A\u300D\uFF0C\u5728\u90A3\u91CC\u4E00\u5C01\u5C01\u540C\u610F\uFF1B\u8FD9\u9875\u4E0D\u76F4\u63A5\u53D1\u4FE1\u3002\u6709\u90AE\u7BB1\u3001\u6CA1\u8054\u7CFB\u8FC7\u7684\u4EBA\u6BCF\u5929\u65E9\u4E0A\u4F1A\u81EA\u52A8\u6392\u8FDB\u9080\u7EA6\u6279\u3002</p></div>`;\n  $("#kSort").value = K.sort;\n  wireKols(m, rows, selRows);\n}\nfunction kolRow(r) {\n  const last = r.last_message;\n  const trial = (r.codes || []).filter((c) => c.kind === "trial").pop(), partner = (r.codes || []).find((c) => c.kind === "partner");\n  const code = partner ? `<span class="sub">\u6D3B\u52A8\u7801 ${esc(partner.code)}</span><span style="font-weight:500">${partner.paid_orders ?? 0} \u5355</span>`\n    : trial ? `<span class="sub">\u4F53\u9A8C\u7801 ${esc(trial.code)}</span><span class="mini"><i style="width:${trial.max_uses ? Math.min(100, Math.round(((trial.used || 0) / trial.max_uses) * 100)) : 0}%"></i></span><span class="sub">${trial.used ?? "?"}/${trial.max_uses ?? "?"} \u6B21${trial.expires_at ? " \xB7 " + md(trial.expires_at) + " \u5230\u671F" : ""}</span>` : `<span class="sub">\u2014</span>`;\n  const posts = r.posts || [];\n  const p0 = posts[0], view = (p) => { const m = p?.metrics || {}; const k = ["30", "7", "3", "1"].find((d) => m[d]?.views != null); return k ? `\u7B2C ${k} \u5929 ${num(m[k].views)} \u64AD\u653E` : ""; };\n  const post = posts.length ? `<span style="display:block;font-weight:500">${posts.length} \u6761 \xB7 ${esc(p0.format || p0.platform || "\u5E16\u5B50")} ${md(p0.published_at)}</span><span class="sub">${view(p0)}</span>`\n    : r.flag_late ? `<span class="late">\u903E\u671F\u672A\u53D1</span>` : `<span class="sub">\u2014</span>`;\n  const flags = [r.flag_bounce ? ["bad", "\u9000\u4FE1\u672A\u5904\u7406"] : null, r.flag_expiry ? ["warn", "\u7801\u5FEB\u5230\u671F"] : null, r.flag_late ? ["warn", "\u8FC7\u4E86\u7EA6\u5B9A\u65E5"] : null, r.open_card ? ["warn", "\u6709\u5361\u7B49\u4F60\u51B3\u5B9A"] : null].filter(Boolean);\n  const turn = r.stage === "closed" ? (r.close_reason ? "\u7ED3\u6848\uFF1A" + r.close_reason : "") : r.whose_turn === "us" ? `\u8F6E\u5230\u6211\u4EEC${r.last_inbound_at ? " \xB7 " + ago(r.last_inbound_at).replace(" \u524D", "") : ""}` : r.whose_turn === "kol" ? "\u8F6E\u5230 KOL" : "";\n  const open = K.exp === r.id;\n  return `<div class="lg ${K.sel[r.id] ? "sel" : ""}"><span><input type="checkbox" data-ksel="${r.id}" aria-label="\u9009 ${esc(r.name)}" ${K.sel[r.id] ? "checked" : ""}></span>\n    <span class="who"><span class="av" aria-hidden="true">${esc((r.name || "?").slice(0, 1))}</span><span style="min-width:0"><a class="lname" href="#kol/${r.id}">${esc(r.name)}</a>${r.never_contact ? \' <span class="tag dark">\u6C38\u4E0D\u8054\u7CFB</span>\' : ""}<span class="sub">${esc([r.handle, r.platform, r.market].filter(Boolean).join(" \xB7 "))}</span></span></span>\n    <span style="text-align:right;font-variant-numeric:tabular-nums">${fans(r.followers)}</span>\n    <span><span class="tag ${STAGE_CLS[r.stage] || ""}">${STAGES[r.stage]}</span><span class="turn ${r.whose_turn === "us" && r.stage !== "closed" ? "us" : ""}">${esc(turn)}</span></span>\n    <button class="cell" type="button" data-kexp="${r.id}" aria-expanded="${open}"><span class="sub">${last ? `${when(last.at)} ${last.direction === "in" ? "\u6536" : "\u53D1"}` : "\u2014"}</span><span class="snip">${esc(last?.text || last?.subject || "")}</span></button>\n    <span>${flags.map(([c, t]) => `<span class="flag ${c}">${t}</span>`).join("")}<span style="display:block">${esc(r.next_step || "")}</span></span>\n    <span>${code}</span>\n    <button class="cell" type="button" data-kexp="${r.id}">${post}</button>\n    <button class="chev" type="button" data-kexp="${r.id}" aria-label="\u5C55\u5F00 ${esc(r.name)}" aria-expanded="${open}">${open ? "\u6536\u8D77" : "\u5C55\u5F00"}</button></div>\n    ${open ? expHtml(r) : ""}`;\n}\nfunction expHtml(r) {\n  const d = K.expData[r.id];\n  if (!d) return `<div class="exp"><span class="meta">\u8BFB\u53D6\u4E2D\u2026</span></div>`;\n  const msgs = d.messages.slice(0, 4).reverse();\n  const codeLines = d.codes.flatMap((c) => c.kind === "trial"\n    ? [[`\u4F53\u9A8C\u7801 ${c.code}`, `${c.used ?? "?"}/${c.max_uses ?? "?"} \u6B21${c.expires_at ? " \xB7 " + md(c.expires_at) + (new Date(c.expires_at) < new Date() ? " \u5DF2\u8FC7\u671F" : " \u5230\u671F") : ""}`]]\n    : [[`\u6D3B\u52A8\u7801 ${c.code}`, c.ref_link ? "\u6709\u4E13\u5C5E\u8FDE\u7ED3" : ""], ["\u8BBF\u5BA2", num(c.visitors)], ["\u4ED8\u6B3E\u5355", c.paid_orders ?? "\u2014"], ["\u9000\u6B3E", c.refunded_orders ?? "\u2014"]]);\n  const posts = d.posts.slice().reverse();\n  const cardOpen = d.cards.find((c) => ["pending", "unknown", "failed"].includes(c.status));\n  return `<div class="exp"><section class="pane" style="flex:1.4 1 360px" aria-label="\u6765\u5F80"><div class="label">\u6765\u5F80 \xB7 \u6700\u8FD1 ${msgs.length} \u5C01</div>\n      ${msgs.map((x) => `<div class="msg ${x.direction}"><span class="sub">${x.direction === "in" ? esc(d.kol.name) : x.direction === "out" ? esc(x.mailbox || "\u6211\u4EEC") : "\u8BB0\u5F55"} \xB7 ${when(x.at)}${x.bounce ? " \xB7 \u9000\u4FE1" : ""}</span>${esc((x.summary || x.body || x.subject || "").slice(0, 400))}</div>`).join("") || `<div class="sub">\u8FD8\u6CA1\u6709\u6765\u5F80</div>`}\n      ${cardOpen ? `<a class="flag warn" href="#decide/${cardOpen.id}" style="display:inline-block;margin-top:6px;text-decoration:none">\u5F85\u4F60\u51B3\u5B9A\u91CC\u6709 1 \u5F20\u5361 \u2192</a>` : ""}\n      <div class="row" style="margin-top:8px"><button class="btn sm" type="button" data-kdraft="${r.id}">\u8BA9 agent \u8D77\u8349\u4E00\u5C01</button><a href="#kol/${r.id}" style="font-size:13px">\u6253\u5F00\u8BE6\u60C5\uFF08\u5168\u90E8\u6765\u5F80\u3001\u8D44\u6599\u3001\u8BB0\u5F55\uFF09\u2192</a></div></section>\n    <section class="pane" style="flex:1 1 220px" aria-label="\u7801\u548C\u6210\u4EA4"><div class="label">\u7801\u548C\u6210\u4EA4</div>${codeLines.map(([k, v]) => `<div class="kv"><span class="sub">${esc(k)}</span><b>${esc(v)}</b></div>`).join("") || `<div class="sub">\u8FD8\u6CA1\u53D1\u7801</div>`}</section>\n    <section class="pane" style="flex:1.4 1 320px" aria-label="\u53D1\u5E03"><div class="label">\u53D1\u5E03 \xB7 \u6BCF\u5929\u81EA\u52A8\u627E\u542B\u300C${esc(S.settings?.postKeyword || "\u54C1\u724C\u8BCD")}\u300D\u7684\u5E16\u5B50</div>\n      ${posts.map((p) => `<div class="post"><div class="row" style="justify-content:space-between"><a href="${esc(p.url)}" target="_blank" rel="noopener" style="font-weight:500">${esc(p.format || p.platform || "\u5E16\u5B50")} \xB7 ${md(p.published_at)}</a>${p.link_placed ? \'<span class="sub">\u653E\u4E86\u8FDE\u7ED3</span>\' : ""}</div>\n        <div class="metrics">${["1", "3", "7", "30"].map((k) => `<span><b>${p.metrics?.[k]?.views != null ? num(p.metrics[k].views) : "\u2014"}</b><i>\u7B2C ${k} \u5929</i></span>`).join("")}</div>${p.metrics?.["3"]?.engagement != null ? `<span class="sub">\u7B2C 3 \u5929\u4E92\u52A8 ${num(p.metrics["3"].engagement)}</span>` : ""}</div>`).join("")\n      || `<div class="sub">${r.stage === "publish_agreed" ? (r.flag_late ? "\u7EA6\u597D\u7684\u65E5\u5B50\u8FC7\u4E86\u8FD8\u6CA1\u627E\u5230" : "\u7EA6\u597D\u4E86\uFF0C\u5230\u65F6\u6BCF\u5929\u627E") : "\u8FD8\u6CA1\u6709\u5E16\u5B50"}</div>`}</section></div>`;\n}\nfunction wireKols(m, rows, selRows) {\n  let t; $("#kq").oninput = (e) => { K.q = e.target.value; K.page = 0; clearTimeout(t); t = setTimeout(() => render().then(() => { const q = $("#kq"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }), 300); };\n  $$("[data-stage]", m).forEach((b) => (b.onclick = () => { K.stage = b.dataset.stage; K.page = 0; render(); }));\n  $$("[data-flag]", m).forEach((b) => (b.onclick = () => { K.flag = K.flag === b.dataset.flag ? "" : b.dataset.flag; K.page = 0; render(); }));\n  $("#kSort").onchange = (e) => { K.sort = e.target.value; render(); };\n  $("#kAll").onchange = (e) => { rows.forEach((r) => (K.sel[r.id] = e.target.checked)); render(); };\n  $$("[data-ksel]", m).forEach((cb) => (cb.onchange = () => { K.sel[cb.dataset.ksel] = cb.checked; K.menu = false; render(); }));\n  $$("[data-kexp]", m).forEach((b) => (b.onclick = async () => {\n    const id = Number(b.dataset.kexp);\n    K.exp = K.exp === id ? null : id;\n    render();\n    if (K.exp && !K.expData[id]) { K.expData[id] = await api(`/kols/${id}`); render(); }\n  }));\n  $$("[data-kdraft]", m).forEach((b) => (b.onclick = () => askDraft([rows.find((r) => r.id === Number(b.dataset.kdraft))])));\n  const c = $("#kClear"); if (c) c.onclick = () => { Object.assign(K, { stage: "", flag: "", q: "", page: 0 }); render(); };\n  const pv = $("#kPrev"); if (pv) pv.onclick = () => { K.page--; render(); };\n  const nx = $("#kNext"); if (nx) nx.onclick = () => { K.page++; render(); };\n  $("#kAdd").onclick = addKolModal;\n  if (!selRows.length) return;\n  $("#bClear").onclick = () => { K.sel = {}; K.menu = false; render(); };\n  $("#bDraft").onclick = () => askDraft(selRows);\n  $("#bStage").onclick = () => { K.menu = !K.menu; render(); };\n  $$("[data-setstage]", m).forEach((b) => (b.onclick = () => act(async () => { for (const r of selRows) await api(`/kols/${r.id}`, { fields: { stage: b.dataset.setstage } }); K.sel = {}; K.menu = false; }, `${selRows.length} \u4F4D\u6539\u4E3A\u300C${STAGES[b.dataset.setstage]}\u300D\u3002\u6539\u9636\u6BB5\u4E0D\u4F1A\u53D1\u4FE1`)));\n  $("#bHold").onclick = () => act(async () => { for (const r of selRows) await api(`/kols/${r.id}`, { fields: { stage: "on_hold" } }); K.sel = {}; }, `${selRows.length} \u4F4D\u6682\u7F13\uFF1A\u4E0D\u6392\u9080\u7EA6\u3001\u4E0D\u50AC\u4FE1\uFF0C\u6765\u4FE1\u7167\u5E38\u51FA\u5361`);\n}\nfunction askDraft(list) {\n  modal(`<h2>\u7ED9 ${list.length === 1 ? esc(list[0].name) : list.length + " \u4F4D"}${list.length > 1 ? "\u5404" : ""}\u8D77\u8349\u4E00\u5C01</h2><label class="label" for="dNote" style="margin:0">\u60F3\u8BF4\u4EC0\u4E48</label>\n    <textarea class="field" id="dNote" rows="3" placeholder="\u6BD4\u5982\uFF1A\u95EE\u4E00\u4E0B\u6700\u8FD1\u6709\u6CA1\u6709\u7A7A\u770B\u62A5\u544A\uFF0C\u987A\u4FBF\u8BF4 11 \u6708\u6709\u65B0\u529F\u80FD"></textarea>\n    <div class="hint">agent \u6309\u6BCF\u4E2A\u4EBA\u7684\u6765\u5F80\u5404\u5199\u4E00\u5C01\uFF0C\u5199\u597D\u540E\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A\uFF1B\u53EA\u6709\u4F60\u540C\u610F\u4E86\u624D\u4F1A\u53D1\u3002</div>\n    <div class="row"><button class="btn primary" type="button" id="dGo">\u4EA4\u7ED9 agent</button><button class="btn" type="button" id="dNo">\u53D6\u6D88</button></div>`, () => {\n    $("#dNo").onclick = closeModal;\n    $("#dGo").onclick = () => {\n      const what = $("#dNote").value.trim();\n      if (!what) return toast("\u5148\u5199\u4E00\u53E5\u60F3\u8BF4\u4EC0\u4E48");\n      closeModal();\n      act(() => api("/ask", { text: `\u7ED9\u8FD9\u4E9B KOL \u5404\u8D77\u8349\u4E00\u5C01\u4FE1\uFF08draft_mail\uFF0Ckind=mail\uFF09\uFF0C\u8FD0\u8425\u8981\u8BF4\u7684\u662F\uFF1A${what}\\n${list.map((r) => `- KOL #${r.id} ${r.name}`).join("\\n")}` }), "\u5DF2\u4EA4\u7ED9 agent\uFF0C\u5199\u597D\u7684\u4FE1\u4F1A\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A");\n      K.sel = {};\n    };\n  });\n}\nfunction addKolModal() {\n  modal(`<h2>\u624B\u52A8\u52A0\u4E00\u4F4D</h2>\n    <label class="label" style="margin:0">\u540D\u5B57<input class="field" id="aName" type="text"></label>\n    <label class="label" style="margin:0">\u8D26\u53F7\u94FE\u63A5<input class="field" id="aUrl" type="url" placeholder="https://www.instagram.com/\u2026"></label>\n    <label class="label" style="margin:0">\u90AE\u7BB1<input class="field" id="aMail" type="email" placeholder="\u53EF\u4EE5\u5148\u7A7A\u7740"></label>\n    <div class="row"><label class="label" style="margin:0;flex:1">\u5E73\u53F0<select class="field" id="aPlat"><option>Instagram</option><option>YouTube</option><option>TikTok</option><option>Threads</option><option>\u5176\u4ED6</option></select></label>\n      <label class="label" style="margin:0;flex:1">\u9080\u7EA6\u65B9\u5411<select class="field" id="aAngle"><option value="">\u81EA\u52A8\u5224\u65AD</option><option>\u4EB2\u5B50</option><option>\u4F34\u4FA3</option><option>\u804C\u573A</option><option>\u81EA\u6211\u63A2\u7D22</option></select></label></div>\n    <div class="hint">\u52A0\u8FDB\u6765\u662F\u300C\u672A\u8054\u7CFB\u300D\uFF0C\u6709\u90AE\u7BB1\u7684\u4F1A\u6392\u8FDB\u4E4B\u540E\u7684\u9080\u7EA6\u6279\u3002</div>\n    <div class="row"><button class="btn primary" type="button" id="aGo">\u52A0\u5165</button><button class="btn" type="button" id="aNo">\u53D6\u6D88</button></div>`, () => {\n    $("#aNo").onclick = closeModal;\n    $("#aGo").onclick = async () => {\n      const name = $("#aName").value.trim(); if (!name) return toast("\u5148\u586B\u540D\u5B57");\n      const url = $("#aUrl").value.trim(), email = $("#aMail").value.trim();\n      const dup = await api(`/kols?q=${encodeURIComponent(email || url.replace(/\\/$/, "").split("/").pop() || name)}`);\n      if (dup.length && (email || url) && !confirm(`\u5E93\u91CC\u5DF2\u7ECF\u6709\u300C${dup[0].name}\u300D\uFF0C\u8FD8\u8981\u52A0\u5417\uFF1F`)) return;\n      closeModal();\n      act(() => api("/tool/kol_add", { name, url: url || undefined, email: email || undefined, platform: $("#aPlat").value, handle: url ? url.replace(/\\/$/, "").split("/").pop() : undefined, invite_angle: $("#aAngle").value || undefined, source_batch: "\u624B\u52A8\u52A0\u7684" }), "\u5DF2\u52A0\u5165\u300C\u672A\u8054\u7CFB\u300D");\n    };\n  });\n}\n\n// ---------- KOL \u8BE6\u60C5 ----------\nconst KD = { tab: "mail", dirty: {}, editNext: false };\nasync function renderKol(m, id) {\n  const [d, logs] = await Promise.all([api(`/kols/${id}`), KD.tab === "log" ? api(`/log?kol=${id}&days=3650`) : Promise.resolve([])]);\n  const k = d.kol, closed = k.stage === "closed";\n  const msgs = d.messages.slice().reverse();\n  const trial = d.codes.filter((c) => c.kind === "trial"), partner = d.codes.filter((c) => c.kind === "partner");\n  const f = (key, label, type = "text") => `<label>${label}<input class="field" type="${type}" data-kf="${key}" value="${esc(type === "date" && k[key] ? String(k[key]).slice(0, 10) : k[key] ?? "")}"></label>`;\n  m.innerHTML = `<div class="wrap"><a href="#kols" style="font-size:13px">\u2190 KOL \u5217\u8868</a>\n    <div class="khead"><div class="kav" aria-hidden="true">${esc((k.name || "?").slice(0, 1))}</div><div style="flex:1;min-width:240px"><h1 class="h1" style="font-size:24px">${esc(k.name)}</h1>\n      <div class="meta">${k.url ? `<a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.handle || k.url)}</a>` : esc(k.handle || "")} \xB7 ${esc(k.platform || "")} \xB7 ${fans(k.followers)}\u7C89${k.market ? " \xB7 " + esc(k.market) : ""}${k.invite_angle ? " \xB7 " + esc(k.invite_angle) : ""}${k.source_batch ? ` \xB7 \u6765\u81EA\u300C${esc(k.source_batch)}\u300D` : ""}</div></div>\n      <span class="tag ${STAGE_CLS[k.stage] || ""}">${STAGES[k.stage]}</span>${k.whose_turn && !closed ? `<span class="tag">${k.whose_turn === "us" ? "\u8F6E\u5230\u6211\u4EEC" : k.whose_turn === "kol" ? "\u8F6E\u5230 KOL" : ""}</span>` : ""}${k.never_contact ? \'<span class="tag dark">\u6C38\u4E0D\u8054\u7CFB</span>\' : ""}</div>\n    ${closed || k.never_contact ? `<div class="knext" style="background:var(--soft);border-color:var(--line)"><b>${k.never_contact ? "\u6C38\u4E0D\u8054\u7CFB" : `\u5DF2\u7ED3\u6848\uFF08${esc(k.close_reason || "")}\uFF09`}</b><span class="sp" style="min-width:200px">${k.never_contact ? "\u672C\u9879\u76EE\u4E0D\u4F1A\u518D\u7ED9\u5979\u53D1\u4FE1\u3002\u5979\u6765\u4FE1\u53EA\u4F1A\u51FA\u63D0\u9192\u5361\u3002" : "\u4E0D\u518D\u6392\u9080\u7EA6\u548C\u50AC\u4FE1\uFF1B\u5979\u6765\u4FE1\u4F1A\u81EA\u52A8\u91CD\u65B0\u6253\u5F00\u3002"}</span><button class="btn" type="button" id="kReopen">\u91CD\u65B0\u6253\u5F00</button></div>` : ""}\n    ${!closed ? `<div class="knext"><b>\u4E0B\u4E00\u6B65</b>${KD.editNext ? `<input class="field" id="kNextIn" style="flex:1;min-width:200px" value="${esc(k.next_step || "")}"><button class="btn primary" type="button" id="kNextSave">\u4FDD\u5B58</button>` : `<span class="sp" style="min-width:200px">${esc(k.next_step || "\u8FD8\u6CA1\u5199")}</span><button class="btn" type="button" id="kNextEdit">\u6539</button>`}</div>` : ""}\n    <div class="kcols"><section class="kmain" aria-label="\u8BE6\u60C5"><div class="tabs" role="tablist">${[["mail", `\u6765\u5F80 ${d.messages.length}`], ["cards", `\u5361\u7247 ${d.cards.length}`], ["profile", "\u8D44\u6599"], ["log", "\u8BB0\u5F55"]].map(([t, l]) => `<button class="tab ${KD.tab === t ? "on" : ""}" type="button" role="tab" aria-selected="${KD.tab === t}" data-ktab="${t}">${l}</button>`).join("")}</div>\n      ${KD.tab === "mail" ? `<div class="thread">${msgs.map((x) => `<div class="tmsg ${x.direction}"><div class="sub">${x.direction === "in" ? esc(k.name) : x.direction === "out" ? esc(x.mailbox || "\u6211\u4EEC") : "\u8BB0\u5F55"} \xB7 ${when(x.at)}${x.bounce ? " \xB7 \u9000\u4FE1" : ""}${x.pending ? " \xB7 \u5F85\u5904\u7406" : ""}</div>${x.subject ? `<b>${esc(x.subject)}</b>\\n` : ""}${esc(x.body || x.summary || "")}${x.quoted ? `<details><summary class="hint">\u770B\u5F15\u7528\u7684\u65E7\u90AE\u4EF6</summary><div class="meta">${esc(x.quoted)}</div></details>` : ""}</div>`).join("") || \'<div class="meta">\u8FD8\u6CA1\u6709\u6765\u5F80</div>\'}\n        <div class="tmsg note">\u4F60\u5728\u98DE\u4E66\u90AE\u7BB1\u91CC\u76F4\u63A5\u56DE\u7684\u4FE1\uFF0C\u6536\u4FE1\u65F6\u4E5F\u4F1A\u81EA\u52A8\u8BB0\u8FDB\u6765</div></div>\n        <div class="compose"><div class="row"><b style="font-size:14px">\u5199\u4FE1</b><span class="meta">${k.never_contact ? "\u6C38\u4E0D\u8054\u7CFB\uFF1A\u4E0D\u80FD\u7ED9\u5979\u53D1\u4FE1" : "\u63A5\u7740\u6700\u8FD1\u7684\u6765\u5F80\u56DE\u590D \xB7 \u4F60\u70B9\u53D1\u51FA\u5C31\u7B97\u540C\u610F\uFF0C5 \u79D2\u5185\u53EF\u64A4\u9500"}</span></div>\n          <input class="field" id="cSubj" type="text" placeholder="\u4E3B\u9898\uFF08\u7559\u7A7A = \u63A5\u7740\u6700\u8FD1\u7684\u6765\u5F80\u56DE\u590D\uFF09"><textarea class="field" id="cBody" rows="4" placeholder="\u81EA\u5DF1\u5199\uFF0C\u6216\u8005\u8BA9 agent \u8D77\u8349"></textarea>\n          <div class="row"><button class="btn primary" type="button" id="cSend" ${k.never_contact ? "disabled" : ""}>\u53D1\u51FA</button><button class="btn" type="button" id="cAsk">\u8BA9 agent \u8D77\u8349</button></div></div>` : ""}\n      ${KD.tab === "cards" ? `<div class="thread">${d.cards.map((c) => `<div class="crow"><span class="tag ${c.status === "done" ? "green" : c.status === "pending" ? "amber" : c.status === "failed" || c.status === "unknown" ? "red" : ""}">${{ pending: "\u7B49\u4F60\u51B3\u5B9A", done: "\u505A\u5B8C", rejected: "\u4E0D\u505A", superseded: "\u88AB\u53D6\u4EE3", dropped: "\u5254\u6389", failed: "\u5931\u8D25", unknown: "\u7ED3\u679C\u4E0D\u660E", drafting: "agent \u5728\u5199", approved: "\u6392\u961F\u53D1", running: "\u6B63\u5728\u505A" }[c.status] || c.status}</span><span class="sp">${esc(KINDS[c.kind] || c.kind)} \xB7 ${esc(c.title || "")}${c.result ? " \xB7 " + esc(c.result) : ""}</span><span class="meta">${when(c.created_at)}</span>${["pending", "unknown", "failed"].includes(c.status) ? `<a href="#decide/${c.id}">\u53BB\u51B3\u5B9A</a>` : ""}</div>`).join("") || \'<div class="meta">\u8FD8\u6CA1\u6709\u5361\u7247</div>\'}</div>` : ""}\n      ${KD.tab === "profile" ? `<div class="thread"><div class="dl" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[["\u5E73\u53F0", k.platform], ["\u8D26\u53F7", k.handle], ["\u7C89\u4E1D", k.followers?.toLocaleString()], ["\u5730\u533A", k.market], ["\u8BED\u8A00", k.language], ["\u9080\u7EA6\u65B9\u5411", k.invite_angle], ["\u90AE\u7BB1", k.email], ["\u5907\u7528\u90AE\u7BB1", k.other_emails], ["\u7EA7\u522B", k.level], ["\u5185\u5BB9", k.content_type], ["\u6765\u6E90", k.source_batch], ["\u5176\u4ED6\u8D26\u53F7", k.other_accounts]].map(([l, v]) => `<label>${l}<span class="field">${esc(v ?? "\u2014")}</span></label>`).join("")}</div>\n        ${k.notes ? `<div class="meta" style="white-space:pre-wrap">\u5907\u6CE8\uFF1A${esc(k.notes)}</div>` : ""}${k.legacy_followup || k.legacy_profile ? `<div class="hint">\u4ECE\u65E7\u98DE\u4E66\u8868\u5BFC\u5165</div>` : ""}</div>` : ""}\n      ${KD.tab === "log" ? `<div class="thread">${logs.map((l) => `<div class="crow"><span class="meta" style="width:110px">${when(l.at)}</span><span class="sp ${l.bad ? "late" : ""}">${esc(l.summary)}</span></div>`).join("") || \'<div class="meta">\u8FD8\u6CA1\u6709\u8BB0\u5F55</div>\'}</div>` : ""}\n    </section>\n    <aside class="kside"><div class="card"><h2 class="h2">\u72B6\u6001</h2><div class="dl">\n      <label>\u9636\u6BB5<select class="field" data-kf="stage">${Object.entries(STAGES).filter(([s]) => s !== "closed" || closed).map(([s, v]) => `<option value="${s}" ${k.stage === s ? "selected" : ""}>${v}</option>`).join("")}</select></label>\n      ${f("salutation", "\u79F0\u547C")}${f("publish_due_at", "\u7EA6\u5B9A\u53D1\u5E03", "date")}${f("next_followup_at", "\u4E0B\u6B21\u8DDF\u8FDB", "date")}${f("email", "\u90AE\u7BB1", "email")}${f("demand", "\u5BF9\u65B9\u8981\u6C42")}${f("mailbox", "\u8054\u7CFB\u7528\u7684\u90AE\u7BB1")}${f("level", "\u7EA7\u522B")}</div>\n      <div class="row" id="kDirty" style="margin-top:10px" hidden><button class="btn primary" type="button" id="kSave">\u4FDD\u5B58</button><button class="btn" type="button" id="kDiscard">\u653E\u5F03\u6539\u52A8</button><span class="hint">\u6539\u9636\u6BB5\u4E0D\u4F1A\u53D1\u4FE1</span></div>\n      <div class="row" style="margin-top:10px">${!closed ? `<button class="btn quiet" type="button" id="kClose">\u7ED3\u6848\u2026</button>` : ""}<button class="btn quiet" type="button" id="kNever">${k.never_contact ? "\u53D6\u6D88\u6C38\u4E0D\u8054\u7CFB" : "\u6C38\u4E0D\u8054\u7CFB\u2026"}</button></div></div>\n    <div class="card"><h2 class="h2">\u7801</h2>${trial.map((c) => `<div class="meta">\u4F53\u9A8C\u7801 ${esc(c.code)}${c.expires_at ? " \xB7 " + md(c.expires_at) + (new Date(c.expires_at) < new Date() ? " \u5DF2\u8FC7\u671F" : " \u5230\u671F") : ""}</div><div><span class="big">${c.used ?? "?"}</span> <span class="meta">/ ${c.max_uses ?? "?"} \u6B21\u5DF2\u7528</span></div><div class="track"><div class="fill" style="width:${c.max_uses ? Math.min(100, Math.round(((c.used || 0) / c.max_uses) * 100)) : 0}%"></div></div>`).join("")}\n      ${partner.map((c) => `<div class="meta" style="margin-top:10px">\u6D3B\u52A8\u7801 ${esc(c.code)}${c.ref_link ? ` \xB7 <a href="${esc(c.ref_link)}" target="_blank" rel="noopener">\u4E13\u5C5E\u8FDE\u7ED3</a>` : ""}${c.ledger_link ? ` \xB7 <a href="${esc(c.ledger_link)}" target="_blank" rel="noopener">\u5728 TAFU \u540E\u53F0\u67E5\u770B</a>` : ""}</div><div class="row" style="gap:20px;margin-top:4px"><span><span class="big">${num(c.visitors)}</span> <span class="meta">\u8BBF\u5BA2</span></span><span><span class="big">${c.paid_orders ?? "\u2014"}</span> <span class="meta">\u4ED8\u6B3E\u5355</span></span><span><span class="big">${c.refunded_orders ?? "\u2014"}</span> <span class="meta">\u9000\u6B3E</span></span></div>${c.synced_at ? `<div class="meta">${when(c.synced_at)} \u540C\u6B65\u81EA TAFU</div>` : ""}`).join("")}\n      ${d.codes.length ? "" : \'<div class="meta">\u8FD8\u6CA1\u53D1\u7801</div>\'}<div class="row" style="margin-top:8px"><button class="btn sm" type="button" id="kCode">${trial.length ? "\u5EF6\u671F\u6216\u52A0\u6B21\u6570\u2026" : "\u53D1\u4F53\u9A8C\u7801\u2026"}</button></div></div>\n    <div class="card"><h2 class="h2">\u53D1\u5E03</h2>${d.posts.length ? `<table class="t"><thead><tr><th scope="col">\u5E16\u5B50</th><th scope="col">\u7B2C 1 \u5929</th><th scope="col">\u7B2C 3 \u5929</th><th scope="col">\u7B2C 7 \u5929</th><th scope="col">\u7B2C 30 \u5929</th></tr></thead><tbody>${d.posts.map((p) => `<tr><td><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.format || "\u5E16\u5B50")} \xB7 ${md(p.published_at)}</a></td>${["1", "3", "7", "30"].map((n) => `<td>${p.metrics?.[n]?.views != null ? num(p.metrics[n].views) : "\u2014"}</td>`).join("")}</tr>`).join("")}</tbody></table><div class="hint" style="margin-top:4px">\u64AD\u653E\u6570</div>`\n      : `<div class="meta">${k.stage === "publish_agreed" ? `\u7EA6\u597D ${md(k.publish_due_at)} \u53D1\uFF0C\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50\uFF08\u6BCF\u5929\u627E\u4E00\u6B21\uFF09` : "\u8FD8\u6CA1\u6709\u5E16\u5B50"}</div>`}</div></aside></div></div>`;\n  wireKol(m, k);\n}\nfunction wireKol(m, k) {\n  $$("[data-ktab]", m).forEach((b) => (b.onclick = () => { KD.tab = b.dataset.ktab; render(); }));\n  const ne = $("#kNextEdit"); if (ne) ne.onclick = () => { KD.editNext = true; render(); };\n  const ns = $("#kNextSave"); if (ns) ns.onclick = () => { KD.editNext = false; act(() => api(`/kols/${k.id}`, { fields: { next_step: $("#kNextIn").value.trim() || null } }), "\u4E0B\u4E00\u6B65\u5DF2\u4FDD\u5B58\uFF0Cagent \u4E4B\u540E\u8D77\u8349\u4F1A\u53C2\u8003"); };\n  const ro = $("#kReopen"); if (ro) ro.onclick = () => act(() => api(`/kols/${k.id}`, { fields: { stage: "replied", close_reason: null, never_contact: false, never_reason: null } }), "\u5DF2\u91CD\u65B0\u6253\u5F00\uFF0C\u9636\u6BB5\u56DE\u5230\u300C\u5DF2\u56DE\u590D\u300D");\n  const inputs = $$("[data-kf]", m);\n  const changed = () => { const o = {}; inputs.forEach((el) => { const old = el.type === "date" && k[el.dataset.kf] ? String(k[el.dataset.kf]).slice(0, 10) : k[el.dataset.kf] ?? ""; if (el.value.trim() !== String(old)) o[el.dataset.kf] = el.value.trim() || null; }); return o; };\n  inputs.forEach((el) => (el.oninput = el.onchange = () => ($("#kDirty").hidden = !Object.keys(changed()).length)));\n  $("#kSave").onclick = () => act(() => api(`/kols/${k.id}`, { fields: changed() }), "\u5DF2\u4FDD\u5B58\u3002\u6539\u9636\u6BB5\u4E0D\u53D1\u4FE1");\n  $("#kDiscard").onclick = () => render();\n  const cl = $("#kClose"); if (cl) cl.onclick = () => {\n    let reason = "";\n    modal(`<h2>\u7ED3\u6848\uFF1A${esc(k.name)}</h2><div class="label" style="margin:0">\u539F\u56E0</div><div class="row">${CLOSE.map((r) => `<button class="pill" type="button" data-reason="${r}">${r}</button>`).join("")}</div>\n      <textarea class="field" id="cNote" rows="2" placeholder="\u5907\u6CE8\uFF08\u53EF\u4E0D\u586B\uFF09"></textarea>\n      <div class="steps"><div class="step"><span class="n">1</span><span>\u9636\u6BB5\u6539\u4E3A\u300C\u7ED3\u6848\u300D\uFF0C\u4E0D\u518D\u6392\u9080\u7EA6\u548C\u50AC\u4FE1</span></div><div class="step"><span class="n">2</span><span>\u5979\u4EE5\u540E\u6765\u4FE1\u4F1A\u81EA\u52A8\u91CD\u65B0\u6253\u5F00\uFF0C\u5E76\u51FA\u56DE\u4FE1\u5361</span></div></div>\n      <div class="row"><button class="btn danger" type="button" id="cGo" disabled>\u7ED3\u6848</button><button class="btn" type="button" id="cNo">\u53D6\u6D88</button><span class="hint">\u4E0D\u53D1\u4FE1</span></div>`, (el) => {\n      $$("[data-reason]", el).forEach((b) => (b.onclick = () => { reason = b.dataset.reason; $$("[data-reason]", el).forEach((x) => x.classList.toggle("on", x === b)); $("#cGo").disabled = false; }));\n      $("#cNo").onclick = closeModal;\n      $("#cGo").onclick = () => { const note = $("#cNote").value.trim(); closeModal(); act(() => api(`/kols/${k.id}`, { fields: { stage: "closed", close_reason: reason, whose_turn: "none", next_followup_at: null, ...(note ? { notes: [k.notes, note].filter(Boolean).join("\\n") } : {}) } }), `\u5DF2\u7ED3\u6848\uFF08${reason}\uFF09`); };\n    });\n  };\n  $("#kNever").onclick = () => {\n    if (k.never_contact) return act(() => api(`/kols/${k.id}`, { fields: { never_contact: false, never_reason: null } }), "\u5DF2\u53D6\u6D88\u6C38\u4E0D\u8054\u7CFB");\n    const mails = [k.email, ...(k.other_emails || "").split(/[\\s,\uFF0C\u3001;\uFF1B]+/)].filter(Boolean);\n    modal(`<h2>\u6C38\u4E0D\u8054\u7CFB\uFF1A${esc(k.name)}</h2><div>\u6BD4\u7ED3\u6848\u66F4\u4E25\uFF1A\u672C\u9879\u76EE\u4EE5\u540E<b>\u4E0D\u4F1A\u518D\u5F80\u5979\u7684\u4EFB\u4F55\u90AE\u7BB1\u53D1\u4FE1</b>\uFF08${esc(mails.join("\u3001") || "\u6CA1\u6709\u90AE\u7BB1")}\uFF09\uFF0C\u4E5F\u5305\u62EC\u7528\u8FD9\u4E9B\u90AE\u7BB1\u7684\u5176\u4ED6 KOL \u8BB0\u5F55\u3002</div>\n      <div class="steps"><div class="step"><span class="n">1</span><span>\u6807\u8BB0\u6C38\u4E0D\u8054\u7CFB\uFF0C\u9636\u6BB5\u6539\u4E3A\u7ED3\u6848</span></div><div class="step"><span class="n">2</span><span>\u8FD8\u6CA1\u53D1\u51FA\u7684\u4FE1\u5728\u53D1\u51FA\u524D\u4F1A\u88AB\u6321\u4E0B</span></div><div class="step"><span class="n">3</span><span>\u5979\u6765\u4FE1\u7167\u5E38\u8BB0\u5F55</span></div></div>\n      <label class="row" style="font-size:14px"><input type="checkbox" id="nOk"> \u5979\u8981\u6C42\u4E0D\u518D\u8054\u7CFB\uFF0C\u6216\u8005\u786E\u5B9E\u4E0D\u8BE5\u518D\u8054\u7CFB</label>\n      <div class="row"><button class="btn danger" type="button" id="nGo" disabled>\u8BBE\u4E3A\u6C38\u4E0D\u8054\u7CFB</button><button class="btn" type="button" id="nNo">\u53D6\u6D88</button><span class="hint">\u4E4B\u540E\u53EF\u4EE5\u5728\u8FD9\u91CC\u53D6\u6D88</span></div>`, () => {\n      $("#nOk").onchange = (e) => ($("#nGo").disabled = !e.target.checked);\n      $("#nNo").onclick = closeModal;\n      $("#nGo").onclick = () => { closeModal(); act(() => api(`/kols/${k.id}`, { fields: { never_contact: true, never_reason: "\u8FD0\u8425\u6807\u8BB0", stage: "closed", close_reason: k.close_reason || "\u62D2\u7EDD", whose_turn: "none", next_followup_at: null } }), "\u5DF2\u8BBE\u4E3A\u6C38\u4E0D\u8054\u7CFB"); };\n    });\n  };\n  const send = $("#cSend");\n  if (send) send.onclick = async () => {\n    const body = $("#cBody").value.trim(); if (!body) return toast("\u5148\u5199\u6B63\u6587");\n    try {\n      const card = await api(`/kols/${k.id}/mail`, { subject: $("#cSubj").value.trim() || undefined, body });\n      toast("5 \u79D2\u540E\u53D1\u51FA\uFF08\u53D1\u524D\u7167\u6837\u68C0\u67E5\u989D\u5EA6\u3001\u6682\u505C\u548C\u9000\u4FE1\uFF09", { undo: () => api(`/cards/${card.id}/undo`, {}).then(() => api(`/cards/${card.id}/reject`, { note: "\u8FD0\u8425\u64A4\u9500" })), after: "\u5DF2\u6392\u597D\uFF0C\u51E0\u79D2\u540E\u53D1\u51FA" });\n      render();\n    } catch (e) { toast("\u6CA1\u6210\u529F\uFF1A" + e.message); }\n  };\n  const ask = $("#cAsk"); if (ask) ask.onclick = () => askDraft([{ id: k.id, name: k.name }]);\n  $("#kCode").onclick = () => askDraft([{ id: k.id, name: k.name }]);\n}\n\n// ---------- \u627E\u65B0\u7684\u4EBA ----------\nconst F = { plat: "instagram", mode: "kw", busy: false, result: null };\nfunction renderFind(m) {\n  m.innerHTML = `<div class="wrap" style="max-width:960px"><a href="#kols" style="font-size:13px">\u2190 KOL \u5217\u8868</a><h1 class="h1" style="margin:8px 0 14px">\u627E\u65B0\u7684\u4EBA</h1>\n    <section class="card"><div class="row" style="justify-content:space-between">\n      <div class="seg" role="group" aria-label="\u5E73\u53F0">${[["instagram", "Instagram"], ["youtube", "YouTube"], ["tiktok", "TikTok"]].map(([k, v]) => `<button type="button" class="${F.plat === k ? "on" : ""}" data-plat="${k}">${v}</button>`).join("")}</div>\n      <div class="seg" role="group" aria-label="\u65B9\u5F0F">${[["kw", "\u6309\u5173\u952E\u8BCD"], ["seed", "\u627E\u76F8\u4F3C\u8D26\u53F7"], ["handles", "\u67E5\u8FD9\u4E9B\u8D26\u53F7\u7684\u90AE\u7BB1"]].map(([k, v]) => `<button type="button" class="${F.mode === k ? "on" : ""}" data-mode="${k}" ${k === "seed" && F.plat !== "instagram" ? "disabled" : ""}>${v}</button>`).join("")}</div></div>\n      <div class="fgrid">\n        ${F.mode === "kw" ? `<label class="full">\u5173\u952E\u8BCD\uFF08\u4E00\u884C\u4E00\u4E2A\uFF0C\u6BCF\u4E2A\u5404\u641C\u4E00\u6B21\uFF09<textarea class="field" id="fK" rows="3" placeholder="\u89AA\u5B50\u65E5\u5E38&#10;\u80B2\u5152"></textarea></label>` : ""}\n        ${F.mode === "seed" ? `<label class="full">\u53C2\u8003\u8D26\u53F7\uFF08\u4E00\u884C\u4E00\u4E2A\uFF0C\u627E\u548C\u5B83\u4EEC\u76F8\u4F3C\u7684\u8D26\u53F7\uFF09<textarea class="field" id="fS" rows="3" placeholder="@someone"></textarea></label>` : ""}\n        ${F.mode === "handles" ? `<label class="full">\u8FD9\u4E9B\u8D26\u53F7\uFF08\u4E00\u884C\u4E00\u4E2A\uFF0C\u53EA\u67E5\u516C\u5F00\u90AE\u7BB1\uFF09<textarea class="field" id="fH" rows="4"></textarea></label>` : ""}\n        ${F.mode !== "handles" ? `<label>\u5927\u7EA6\u8981\u591A\u5C11\u4EBA<span class="unit"><input class="field" type="number" id="fT" value="50"><span class="meta">\u4EBA</span></span></label>\n          <label>\u7C89\u4E1D\u6570<span class="unit"><input class="field" type="number" id="fMin" placeholder="\u6700\u5C11" aria-label="\u6700\u5C11"><span class="meta">\u5230</span><input class="field" type="number" id="fMax" placeholder="\u6700\u591A" aria-label="\u6700\u591A"></span></label>` : ""}\n        <label>\u6700\u591A\u82B1<span class="unit"><input class="field" type="number" id="fB" value="5"><span class="meta">\u7F8E\u5143\uFF08Apify\uFF09\uFF0C\u5230\u4E86\u5C31\u505C</span></span></label>\n        <label>\u8FD9\u6279\u53EB<input class="field" type="text" id="fBatch" placeholder="\u9ED8\u8BA4\uFF1A\u5E73\u53F0 + \u65E5\u671F"></label>\n        ${F.plat === "youtube" ? `<label class="full" style="flex-direction:row;align-items:center;gap:8px;font-weight:400;font-size:14px;color:var(--ink)"><input type="checkbox" id="fY"> \u4E5F\u67E5 YouTube \u9690\u85CF\u7684\u5546\u52A1\u90AE\u7BB1\uFF08\u627E\u5230\u4E00\u4E2A\u7EA6 12 \u7F8E\u5206\uFF09</label>` : ""}\n      </div>\n      <div class="hint" style="margin-top:10px">\u5730\u533A\u548C\u8BED\u8A00\u6309\u8BBE\u7F6E\u91CC\u7684\u300C\u627E\u4EBA\u300D\u3002\u5E93\u91CC\u5DF2\u7ECF\u6709\u7684\u8D26\u53F7\u4F1A\u81EA\u52A8\u8DF3\u8FC7\uFF0C\u4E0D\u91CD\u590D\u82B1\u94B1\u3002</div>\n      <div class="row" style="margin-top:14px"><button class="btn primary" type="button" id="fGo" ${F.busy ? "disabled" : ""}>${F.busy ? "\u6B63\u5728\u627E\u2026\u53EF\u80FD\u8981\u51E0\u5206\u949F" : "\u5F00\u59CB\u627E"}</button>${F.busy ? \'<span class="spin"></span>\' : ""}<span class="hint">\u627E\u5230\u7684\u4EBA\u76F4\u63A5\u8FDB\u5E93\uFF0C\u662F\u300C\u672A\u8054\u7CFB\u300D\uFF0C\u4E4B\u540E\u6392\u8FDB\u9080\u7EA6\u6279</span></div>\n      ${F.result ? `<div class="okbar" style="margin:14px 0 0">${esc(F.result)}<span class="sp"></span><a href="#kols">\u53BB KOL \u5217\u8868\u770B</a></div>` : ""}</section>\n    <section class="card" style="margin-top:16px"><h2 class="h2">\u4E0D\u60F3\u586B\u8868\uFF1F\u4EA4\u7ED9 agent</h2><div class="row"><input class="field" id="fAsk" style="flex:1;min-width:260px" type="text" placeholder="\u6BD4\u5982\uFF1A\u627E 30 \u4E2A\u53F0\u6E7E\u7684\u4EB2\u5B50\u535A\u4E3B\uFF0C\u7C89\u4E1D 1\u201310 \u4E07\uFF0C\u8981\u6709\u90AE\u7BB1"><button class="btn" type="button" id="fAskGo">\u4EA4\u7ED9 agent</button></div>\n      <div class="hint" style="margin-top:6px">agent \u4F1A\u81EA\u5DF1\u5B9A\u5173\u952E\u8BCD\u53BB\u627E\uFF0C\u7ED3\u679C\u53D8\u6210\u4E00\u5F20\u300C\u627E\u5230\u7684\u4EBA\u300D\u5361\u7247\uFF0C\u4F60\u5728\u5F85\u4F60\u51B3\u5B9A\u91CC\u52FE\u9009\u540C\u610F\u540E\u624D\u8FDB\u5E93\u3002</div></section></div>`;\n  $$("[data-plat]", m).forEach((b) => (b.onclick = () => { F.plat = b.dataset.plat; if (F.plat !== "instagram" && F.mode === "seed") F.mode = "kw"; renderFind(m); }));\n  $$("[data-mode]", m).forEach((b) => (b.onclick = () => { F.mode = b.dataset.mode; renderFind(m); }));\n  const lines = (id) => ($(id)?.value || "").split(/[\\n,\uFF0C]/).map((s) => s.trim()).filter(Boolean);\n  $("#fGo").onclick = async () => {\n    F.busy = true; F.result = null; renderFind(m);\n    try {\n      const r = await api("/find", { platform: F.plat, keywords: lines("#fK"), seeds: lines("#fS"), handles: lines("#fH"), target: Number($("#fT")?.value) || undefined,\n        minFollowers: Number($("#fMin")?.value) || undefined, maxFollowers: Number($("#fMax")?.value) || undefined, youtubeHidden: !!$("#fY")?.checked, budget: Number($("#fB").value) || 5, batch: $("#fBatch").value.trim() || undefined });\n      F.result = `\u627E\u5230 ${r.found} \u4F4D\uFF08${r.withEmail} \u4F4D\u6709\u90AE\u7BB1\uFF09\uFF0C\u5165\u5E93 ${r.added} \u4F4D\uFF0C\u82B1\u4E86\u7EA6 $${r.spentUsd}${r.stoppedEarly ? "\uFF1B" + r.stoppedEarly : ""}`;\n    } catch (e) { F.result = null; toast("\u6CA1\u627E\u6210\uFF1A" + e.message); }\n    F.busy = false; if (route[0] === "find") renderFind($("#main"));\n  };\n  $("#fAskGo").onclick = () => { const t = $("#fAsk").value.trim(); if (!t) return toast("\u5148\u5199\u8981\u627E\u4EC0\u4E48\u4EBA"); act(() => api("/ask", { text: `\u627E\u4EBA\uFF1A${t}\u3002\u7528 find_people\uFF0C\u7ED3\u679C\u505A\u6210\u300C\u8FD9\u6279\u8981\u4E0D\u8981\u5165\u5E93\u300D\u7684\u5361\u7247\u3002` }), "\u5DF2\u4EA4\u7ED9 agent \u53BB\u627E\uFF0C\u7ED3\u679C\u4F1A\u4F5C\u4E3A\u5361\u7247\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A"); };\n}\n\n// ---------- \u8BB0\u5F55 ----------\nconst L = { q: "", bad: false, days: 2, open: {}, more: [] };\nasync function renderLog(m) {\n  const [rows, jobs] = await Promise.all([api(`/log?q=${encodeURIComponent(L.q)}&bad=${L.bad ? 1 : ""}&days=${L.days}`), api("/jobs")]);\n  const all = rows.concat(L.more);\n  const running = jobs.filter((j) => j.status === "running"), queued = jobs.filter((j) => j.status === "queued"), stuck = jobs.filter((j) => j.status === "stuck");\n  const days = [];\n  for (const r of all) { const k = new Date(r.at).toDateString(); let d = days.find((x) => x.k === k); if (!d) days.push((d = { k, label: when(r.at).split(" ")[0] + " \xB7 " + `${new Date(r.at).getMonth() + 1} \u6708 ${new Date(r.at).getDate()} \u65E5`, rows: [] })); d.rows.push(r); }\n  m.innerHTML = `<div class="wrap" style="max-width:1180px"><div class="ltitle"><h1 class="h1">\u8BB0\u5F55</h1><span class="meta">\u53D1\u751F\u8FC7\u7684\u6BCF\u4E00\u4EF6\u4E8B\uFF0C\u4E00\u6761\u4E00\u6761\u6309\u65F6\u95F4\u6392</span></div>\n    <div class="stats">${[["\u4ECA\u5929\u6765\u4FE1", U.incoming], ["\u4ECA\u5929\u8054\u7CFB\u7684\u4EBA", U.contacted], ["\u4F60\u540C\u610F\u7684", U.approved], ["\u8BA9\u5B83\u6539\u7684", U.revised], ["\u53D1\u51FA\u7684\u4FE1", U.sent], ["\u51FA\u9519", U.errors]].map(([l, v], i) => `<div class="statb"><b ${i === 5 && v ? \'style="color:var(--bad)"\' : ""}>${v ?? 0}</b><span>${l}</span></div>`).join("")}</div>\n    ${running.length || queued.length ? `<div class="now" role="status"><span class="spin" aria-hidden="true"></span><span class="sp" style="min-width:240px"><b>agent \u6B63\u5728\u5199\uFF1A</b>${running.map((j) => esc(jobName(j))).join("\u3001") || "\u2014"}${queued.length ? ` \xB7 \u6392\u961F ${queued.length} \u4EF6` : ""}</span><span class="meta">\u5199\u597D\u7684\u5361\u4F1A\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A</span></div>` : ""}\n    ${stuck.map((j) => `<div class="alert" style="margin:0 0 14px" role="alert"><span class="sp" style="min-width:240px"><b>agent \u5361\u4F4F\u4E86\uFF1A</b>${esc(jobName(j))}${j.error ? " \xB7 " + esc(j.error) : ""}</span>${j.kol_id ? `<a class="btn sm" href="#kol/${j.kol_id}">\u770B\u539F\u4FE1</a>` : ""}<button class="btn sm" type="button" data-retry="${j.id}">\u539F\u6837\u518D\u8BD5\u4E00\u6B21</button>${j.session_id ? `<button class="btn sm" type="button" data-copy="${esc(resumeCmd(j))}">\u590D\u5236\u63A5\u7740\u804A\u7684\u547D\u4EE4</button>` : ""}</div>`).join("")}\n    <div class="lfilters"><input class="field" style="width:240px" type="search" id="lq" placeholder="\u641C KOL \u540D\u5B57\u6216\u5185\u5BB9" value="${esc(L.q)}"><select class="sel" id="ld"><option value="2">\u4ECA\u5929\u548C\u6628\u5929</option><option value="7">\u6700\u8FD1 7 \u5929</option><option value="30">\u6700\u8FD1 30 \u5929</option></select>\n      <label class="row" style="font-size:13px"><input type="checkbox" id="lb" ${L.bad ? "checked" : ""}> \u53EA\u770B\u51FA\u9519\u7684</label></div>\n    <div class="rbox">${days.map((d) => `<div class="rday">${esc(d.label)}</div>${d.rows.map((r) => `<div class="rrow ${r.bad ? "bad" : ""}"><span class="rtime">${pad(new Date(r.at).getHours())}:${pad(new Date(r.at).getMinutes())}</span>\n      <span>${esc(r.summary)}${r.detail ? ` <button class="link" type="button" data-lopen="${r.id}">${L.open[r.id] ? "\u6536\u8D77" : "\u8BE6\u60C5"}</button>` : ""}</span>\n      <span class="rlinks">${r.kol_id ? `<a href="#kol/${r.kol_id}">${esc(r.kol_name || "KOL")}</a>` : ""}${r.proposal_id ? `<a href="#decide/${r.proposal_id}">\u770B\u5361\u7247</a>` : ""}</span>\n      ${L.open[r.id] ? `<div class="rdetail">${esc(typeof r.detail === "string" ? r.detail : JSON.stringify(r.detail, null, 2))}</div>` : ""}</div>`).join("")}`).join("") || \'<div class="empty">\u6CA1\u6709\u7B26\u5408\u7684\u8BB0\u5F55</div>\'}\n      ${all.length >= 200 ? `<div class="rday" style="border-bottom:0;text-align:center"><button class="link" type="button" id="lMore">\u518D\u5F80\u524D\u770B</button></div>` : ""}</div></div>`;\n  $("#ld").value = String(L.days);\n  let t; $("#lq").oninput = (e) => { L.q = e.target.value; L.more = []; clearTimeout(t); t = setTimeout(() => render().then(() => { const q = $("#lq"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }), 300); };\n  $("#ld").onchange = (e) => { L.days = Number(e.target.value); L.more = []; render(); };\n  $("#lb").onchange = (e) => { L.bad = e.target.checked; L.more = []; render(); };\n  $$("[data-lopen]", m).forEach((b) => (b.onclick = () => { L.open[b.dataset.lopen] = !L.open[b.dataset.lopen]; render(); }));\n  $$("[data-retry]", m).forEach((b) => (b.onclick = () => act(() => api(`/jobs/${b.dataset.retry}/retry`, {}), "\u91CD\u65B0\u6392\u961F\u4E86")));\n  $$("[data-copy]", m).forEach((b) => (b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "\u5DF2\u590D\u5236\u547D\u4EE4"; } catch { prompt("\u590D\u5236\u8FD9\u6761\u547D\u4EE4\uFF1A", b.dataset.copy); } }));\n  const mo = $("#lMore"); if (mo) mo.onclick = async () => { const last = all[all.length - 1]; L.more = L.more.concat(await api(`/log?q=${encodeURIComponent(L.q)}&bad=${L.bad ? 1 : ""}&days=3650&before=${last.id}`)); render(); };\n}\nconst JOBS = { reply: "\u5199\u56DE\u4FE1", revise: "\u6309\u610F\u89C1\u6539", unmatched: "\u770B\u5BF9\u4E0D\u4E0A\u4EBA\u7684\u6765\u4FE1", bounce: "\u770B\u9000\u4FE1", code_expiry: "\u7801\u5230\u671F", checkin: "\u95EE\u53D1\u5E03", template: "\u6539\u6A21\u677F", ask: "\u4F60\u4EA4\u4EE3\u7684\u4E8B" };\nconst jobName = (j) => `${JOBS[j.kind] || j.kind}${j.kol_id ? ` \xB7 KOL #${j.kol_id}` : ""}`;\nconst resumeCmd = (j) => (j.agent === "codex" ? `cd ~/.kolpick/agent && codex exec resume ${j.session_id}` : `cd ~/.kolpick/agent && claude --resume ${j.session_id}`);\n\n// ---------- \u8BBE\u7F6E ----------\nconst SECTIONS = [["send", "\u53D1\u4FE1\u548C\u989D\u5EA6", ["dailyLimit", "perMinute", "cooldownDays", "bounceRate", "bounceWindowDays", "bounceMinSent", "timezone"]],\n  ["follow", "\u50AC\u4FE1\u548C\u7ED3\u6848", ["followup1Days", "followup2Days", "closeDays", "noFollowupLevels", "noFollowupDemands", "noFollowupChannels", "followupFrom"]],\n  ["codes", "\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801", ["trialUses", "trialDays", "trialUnusedDays", "trialExpiryDays", "partnerDiscount", "partnerMarkets", "partnerMarketDefault"]],\n  ["tpl", "\u6A21\u677F", []], ["posts", "\u627E\u4EBA\u548C\u627E\u5E16\u5B50", ["findCountry", "findLanguage", "postKeyword", "postLookbackDays"]], ["auto", "\u81EA\u52A8\u8FD0\u884C", []], ["local", "\u8FD9\u53F0\u7535\u8111", ["dataApiUrl", "feishuWebhook"]]];\nconst ST = { dirty: {}, editTpl: null };\nasync function renderSettings(m) {\n  const [s, local, templates] = await Promise.all([api("/tool/settings_get", {}), api("/local"), api("/tool/templates", {})]);\n  const val = (v) => (Array.isArray(v) ? v.join("\u3001") : v && typeof v === "object" ? Object.entries(v).map(([a, b]) => `${a}=${b}`).join("\u3001") : v ?? "");\n  const field = (k) => `<label>${esc(s.labels[k] || k)}<input class="field" type="text" data-s="${k}" value="${esc(ST.dirty[k] ?? val(s.settings[k]))}"></label>`;\n  const usageBy = Object.fromEntries((U.mailboxes || []).map((b) => [b.address, b]));\n  const sec = route[1] || "send";\n  const autoRows = [["inbox", "\u6536\u4FE1\u76D1\u542C", "\u6BCF\u4E2A\u53D1\u4FE1\u90AE\u7BB1\u5B9E\u65F6\u6536\u4FE1\uFF1B\u65AD\u4E86\u81EA\u52A8\u6539\u4E3A\u6BCF 2 \u5206\u949F\u8865\u6536", "\u5173\u6389\u540E\u4E0D\u518D\u5B9E\u65F6\u6536\u4FE1\uFF0C\u53EA\u80FD\u624B\u52A8\u300C\u73B0\u5728\u6536\u4E00\u6B21\u300D"],\n    ["schedule", "\u5B9A\u65F6\u4EFB\u52A1", "\u6BCF\u5929\uFF1A\u6392\u9080\u7EA6\u548C\u50AC\u4FE1\u3001\u540C\u6B65\u7801\u7528\u91CF\u3001\u7801\u5230\u671F\u548C\u7EA6\u597D\u6CA1\u53D1\u3001\u627E\u5E16\u5B50\u3001\u6293\u6570\u636E", "\u5173\u6389\u540E\u65E9\u4E0A\u4E0D\u4F1A\u81EA\u52A8\u6392\u6279"],\n    ["agent", "\u540E\u53F0 agent", "\u6765\u4FE1\u3001\u8BA9\u5B83\u6539\u3001\u7801\u5230\u671F\u3001\u95EE\u53D1\u5E03\uFF0C\u81EA\u52A8\u4EA4\u7ED9 agent \u8D77\u8349", "\u5173\u6389\u540E\u6765\u4FE1\u53EA\u8BB0\u5F55\uFF0C\u4E0D\u8D77\u8349"]];\n  const body = {\n    send: `<div class="meta">\u989D\u5EA6\u6309\u4EBA\u6570\u7B97\uFF1A\u540C\u4E00\u4E2A\u4EBA\u4E00\u5929\u91CC\u591A\u53D1\u4E00\u5C01\u4E0D\u518D\u5360\u989D\u5EA6\u3002</div><div class="sgrid">${SECTIONS[0][2].map(field).join("")}</div>\n      <div style="overflow-x:auto;margin-top:12px;border:1px solid var(--line2);border-radius:10px"><table class="mb"><thead><tr><th>\u53D1\u4FE1\u90AE\u7BB1</th><th>\u542F\u7528</th><th>\u4ECA\u5929</th><th>\u6BCF\u5929\u4E0A\u9650</th><th>\u9884\u70ED\u5F00\u59CB</th><th>\u8D77\u6B65</th><th>\u6BCF\u5929\u52A0</th><th></th></tr></thead><tbody>\n      ${s.mailboxes.map((b) => `<tr data-mb="${esc(b.address)}"><td>${esc(b.address)}</td><td><button class="sw ${b.enabled ? "on" : ""}" type="button" role="switch" aria-checked="${b.enabled}" aria-label="\u542F\u7528 ${esc(b.address)}" data-mtoggle></button></td><td>${usageBy[b.address] ? `${usageBy[b.address].used} / ${usageBy[b.address].limit_today}` : "\u2014"}</td>\n        <td><input class="field" style="width:80px" type="number" data-m="daily_limit" value="${b.daily_limit}"></td><td><input class="field" type="date" data-m="warmup_from" value="${b.warmup_from ? String(b.warmup_from).slice(0, 10) : ""}"></td><td><input class="field" style="width:70px" type="number" data-m="warmup_start" value="${b.warmup_start ?? ""}"></td><td><input class="field" style="width:70px" type="number" data-m="warmup_step" value="${b.warmup_step ?? ""}"></td><td><button class="btn sm" type="button" data-msave>\u4FDD\u5B58</button></td></tr>`).join("")}</tbody></table></div>\n      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="mAdd">\u52A0\u4E00\u4E2A\u53D1\u4FE1\u90AE\u7BB1</button><span class="meta">\u90AE\u7BB1\u8981\u5148\u5728\u98DE\u4E66\u90AE\u7BB1\u91CC\u5F00\u597D\uFF0C\u5E76\u8BA9 lark-cli \u6709\u6743\u9650${S.env !== "prod" ? "\uFF1B\u6D4B\u8BD5\u5E93\u53EA\u5728\u7ED9\u6D4B\u8BD5\u5730\u5740\u53D1\u4FE1\u65F6\u624D\u542F\u7528" : ""}</span></div>`,\n    follow: `<div class="meta">\u6BCF\u5929\u65E9\u4E0A\u626B\u4E00\u6B21\uFF0C\u6392\u6210\u300C\u4E00\u6279\u300D\u7ED9\u4F60\u770B\u3002\u5217\u8868\u7528\u987F\u53F7\u9694\u5F00\u3002</div><div class="sgrid">${SECTIONS[1][2].map(field).join("")}</div>`,\n    codes: `<div class="meta">agent \u8D77\u8349\u53D1\u7801\u7684\u4FE1\u65F6\u7528\u8FD9\u4E9B\u9ED8\u8BA4\u503C\uFF1B\u6BCF\u5F20\u5361\u4E0A\u4F60\u8FD8\u80FD\u770B\u5230\u5177\u4F53\u6570\u5B57\u518D\u540C\u610F\u3002\u5E02\u573A\u5199\u6210 \u53F0\u6E7E=TW\u3001\u9999\u6E2F=HK\u3002</div><div class="sgrid">${SECTIONS[2][2].map(field).join("")}</div>`,\n    tpl: `<div class="meta">\u6539\u5728\u7528\u7684\u6A21\u677F\u53EA\u5B58\u6210\u65B0\u7248\uFF0C\u5728\u300C\u5F85\u4F60\u51B3\u5B9A\u300D\u91CC\u5BF9\u6BD4\u540E\u6279\u51C6\u624D\u6362\uFF1B\u5DF2\u6392\u8FDB\u5361\u7247\u91CC\u7684\u4FE1\u4E0D\u53D7\u5F71\u54CD\u3002</div>\n      ${templates.map((t) => `<div class="srow"><b>${esc(t.name)}<span class="meta" style="display:block;font-weight:400">${esc(t.purpose)} \xB7 ${esc((t.subject || "").slice(0, 50))}</span></b><span class="tag ${t.status === "active" ? "green" : t.status === "draft" ? "amber" : ""}">${t.status === "active" ? "\u5728\u7528" : t.status === "draft" ? (t.draft_of ? "\u65B0\u7248\u5F85\u6279\u51C6" : "\u8349\u7A3F") : "\u505C\u7528"}</span><button class="btn sm" type="button" data-tedit="${t.id}">${ST.editTpl === t.id ? "\u6536\u8D77" : "\u6539"}</button></div>${ST.editTpl === t.id ? tplEditor(t) : ""}`).join("")}\n      <div class="srow"><b>\u65B0\u6A21\u677F</b><button class="btn sm" type="button" data-tedit="new">${ST.editTpl === "new" ? "\u6536\u8D77" : "\u65B0\u5EFA"}</button></div>${ST.editTpl === "new" ? tplEditor({ purpose: "\u5176\u4ED6" }) : ""}\n      <div class="row" style="margin-top:12px"><input class="field" id="tAsk" style="flex:1;min-width:260px" type="text" placeholder="\u6216\u8005\u8BF4\u600E\u4E48\u6539\uFF0C\u6BD4\u5982\uFF1A\u9080\u7EA6\u4FE1\u518D\u77ED\u4E00\u70B9\uFF1B\u6216\u8005\uFF1A\u65B0\u5199\u4E00\u4E2A\u300C\u50AC\u53D1\u5E03\u300D\u6A21\u677F"><button class="btn" type="button" id="tAskGo">\u4EA4\u7ED9 agent</button></div>`,\n    posts: `<div class="sgrid">${SECTIONS[4][2].map(field).join("")}</div><div class="meta" style="margin-top:10px">\u627E\u5E16\u5B50\uFF1A\u6BCF\u5929\u770B\u300C\u5DF2\u7EA6\u53D1\u5E03 / \u5DF2\u53D1\u5E03 / \u5408\u4F5C\u4E2D\u300D\u7684\u4EBA\u6700\u8FD1\u7684\u5E16\u5B50\uFF0C\u542B\u8FD9\u4E2A\u8BCD\u5C31\u8BB0\u4E0B\uFF0C\u7B2C 1/3/7/30 \u5929\u5404\u6293\u4E00\u6B21\u6570\u636E\u3002</div>`,\n    auto: `<div class="meta">\u5173\u6389\u53EA\u662F\u4E0D\u81EA\u52A8\u505A\uFF1B\u624B\u52A8\u70B9\u7167\u6837\u80FD\u505A\u3002\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D\u5728\u9875\u9762\u9876\u90E8\uFF0C\u548C\u8FD9\u91CC\u65E0\u5173\u3002</div>${autoRows.map(([k, l, on, off]) => `<div class="srow"><b>${l}<span class="meta" style="display:block;font-weight:400">${local.auto[k] ? on : off}</span></b><button class="sw ${local.auto[k] ? "on" : ""}" type="button" role="switch" aria-checked="${!!local.auto[k]}" aria-label="${l}" data-auto="${k}"></button></div>`).join("")}\n      <div class="row" style="margin-top:12px">${Object.entries(S.dailyNames || {}).map(([k, v]) => `<button class="btn sm" type="button" data-daily="${k}">\u73B0\u5728\u8DD1\uFF1A${v}${S.daily?.[k] ? `\uFF08\u4E0A\u6B21 ${when(S.daily[k].at)}${S.daily[k].ok ? "" : "\uFF0C\u51FA\u9519"}\uFF09` : ""}</button>`).join("")}<button class="btn sm" type="button" id="inboxNow">\u73B0\u5728\u6536\u4E00\u6B21\u4FE1</button></div>`,\n    local: `<div class="meta">\u6570\u636E\u5E93\u8FDE\u63A5\u3001\u63A5\u53E3\u5BC6\u94A5\u3001Apify token \u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF0C\u9875\u9762\u91CC\u4E0D\u663E\u793A\uFF1B\u6539\u8981\u5728\u7EC8\u7AEF\u91CC\u8FD0\u884C <code>kolpick setup</code>\u3002</div>\n      <div class="srow"><b>\u5F00\u673A\u81EA\u52A8\u542F\u52A8<span class="meta" style="display:block;font-weight:400">${local.login ? "\u5F00\u673A\u5C31\u5728\u540E\u53F0\u8DD1\uFF0C\u56DE\u4FE1\u548C\u8D77\u8349\u4E0D\u7528\u7B49\u4F60\u6253\u5F00\uFF1B\u5D29\u6E83\u4E86\u4F1A\u81EA\u52A8\u91CD\u542F" : "\u53EA\u5728\u4F60\u70B9 kolpick.app \u65F6\u8FD0\u884C\uFF1B\u6253\u5F00\u540E\u624D\u5F00\u59CB\u6536\u4FE1\u548C\u8D77\u8349"}</span></b><button class="sw ${local.login ? "on" : ""}" type="button" role="switch" aria-checked="${!!local.login}" aria-label="\u5F00\u673A\u81EA\u52A8\u542F\u52A8" id="loginSw"></button></div>\n      <div class="srow"><b>\u5173\u95ED kolpick<span class="meta" style="display:block;font-weight:400">\u505C\u4E0B\u6536\u4FE1\u3001agent \u548C\u5B9A\u65F6\u4EFB\u52A1\uFF0C\u9000\u51FA\u670D\u52A1\uFF0C\u4EC0\u4E48\u90FD\u4E0D\u5360\u3002\u6B63\u5728\u53D1\u7684\u4FE1\u4F1A\u5148\u53D1\u5B8C\u3002\u4E0B\u6B21\u70B9 kolpick.app \u518D\u6253\u5F00\u3002</span></b><button class="btn sm" type="button" id="quitBtn">\u5173\u95ED</button></div>\n      <div class="sgrid" style="margin-top:12px"><label>\u540E\u53F0 agent<select class="field" id="agKind"><option value="claude">Claude\uFF08claude -p\uFF09</option><option value="codex">Codex\uFF08codex exec\uFF09</option></select></label>\n        <label>\u547D\u4EE4\u8DEF\u5F84\uFF08\u7559\u7A7A = \u9ED8\u8BA4\uFF09<input class="field" type="text" id="agBin" value="${esc(local.agent.bin || "")}"></label><label>\u989D\u5916\u53C2\u6570\uFF08\u7A7A\u683C\u9694\u5F00\uFF09<input class="field" type="text" id="agArgs" value="${esc((local.agent.args || []).join(" "))}"></label>\n        <label>\u540C\u65F6\u505A\u51E0\u4EF6\uFF08\u540C\u4E00\u4F4D KOL \u7684\u4E8B\u603B\u662F\u4E00\u4EF6\u4E00\u4EF6\u505A\uFF09<input class="field" type="number" min="1" max="10" id="agPar" value="${local.agent.parallel || 3}"></label>\n        <label>\u5F53\u524D\u6570\u636E\u5E93<span class="field">${local.env === "prod" ? "\u6B63\u5F0F\u5E93 kolpick_prod" : "\u6D4B\u8BD5\u5E93 kolpick_test"}</span></label><label>\u7ED9 Claude / Codex \u7528\u7684 MCP<span class="field">${esc(local.mcpUrl)}</span></label>\n        ${SECTIONS[6][2].map(field).join("")}</div>\n      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="agSave">\u4FDD\u5B58 agent \u8BBE\u7F6E</button><span class="meta">\u5207\u6362\u6570\u636E\u5E93\uFF1A\u5728\u7EC8\u7AEF\u8FD0\u884C <code>kolpick db use test</code> \u6216 <code>kolpick db use prod</code>\uFF0C\u518D\u5728\u4E0A\u9762\u300C\u5173\u95ED kolpick\u300D\uFF0C\u70B9 kolpick.app \u91CD\u65B0\u6253\u5F00</span></div>`,\n  };\n  m.innerHTML = `<div class="wrap"><div class="swrap"><nav class="smenu" aria-label="\u8BBE\u7F6E\u5206\u7EC4">${SECTIONS.map(([k, v]) => `<a class="${sec === k ? "on" : ""}" href="#settings/${k}">${v}</a>`).join("")}</nav>\n    <div class="scontent"><section class="card"><h2 class="h2">${SECTIONS.find(([k]) => k === sec)?.[1] || ""}</h2>${body[sec] || ""}</section></div></div></div>\n    ${Object.keys(ST.dirty).length ? `<div class="savebar" role="status"><span>\u6709\u6539\u52A8\u6CA1\u4FDD\u5B58</span><button class="btn" type="button" id="sDiscard">\u653E\u5F03</button><button class="btn primary" type="button" id="sSave">\u4FDD\u5B58</button></div>` : ""}`;\n  if ($("#agKind")) $("#agKind").value = local.agent.kind;\n  $$("[data-s]", m).forEach((el) => (el.oninput = () => { if (el.value === String(val(s.settings[el.dataset.s]))) delete ST.dirty[el.dataset.s]; else ST.dirty[el.dataset.s] = el.value; const has = Object.keys(ST.dirty).length; if (!!$(".savebar") !== !!has) renderSettings(m).then(() => { const x = $(`[data-s="${el.dataset.s}"]`); x.focus(); x.setSelectionRange(x.value.length, x.value.length); }); }));\n  const sv = $("#sSave"); if (sv) sv.onclick = () => act(async () => { for (const [key, value] of Object.entries(ST.dirty)) await api("/tool/settings_set", { key, value }); ST.dirty = {}; }, "\u5DF2\u4FDD\u5B58\uFF0C\u7ACB\u523B\u751F\u6548\uFF1B\u6392\u961F\u4E2D\u7684\u4FE1\u4E5F\u6309\u65B0\u89C4\u5219\u68C0\u67E5");\n  const sd = $("#sDiscard"); if (sd) sd.onclick = () => { ST.dirty = {}; render(); };\n  $$("[data-mtoggle]", m).forEach((b) => (b.onclick = () => {\n    const addr = b.closest("tr").dataset.mb, on = !b.classList.contains("on");\n    act(() => api("/tool/mailbox_set", { address: addr, enabled: on }), on ? `\u5DF2\u542F\u7528 ${addr}` : `\u5DF2\u505C\u7528 ${addr}\uFF1A\u6392\u5728\u5B83\u540D\u4E0B\u8FD8\u6CA1\u53D1\u7684\u4FE1\u4F1A\u505C\u4F4F\uFF0C\u5B83\u7167\u5E38\u6536\u4FE1`);\n  }));\n  $$("[data-msave]", m).forEach((b) => (b.onclick = () => {\n    const tr = b.closest("tr"), g = (k) => tr.querySelector(`[data-m="${k}"]`).value;\n    act(() => api("/tool/mailbox_set", { address: tr.dataset.mb, daily_limit: Number(g("daily_limit")), warmup_from: g("warmup_from") || undefined, warmup_start: g("warmup_start") ? Number(g("warmup_start")) : undefined, warmup_step: g("warmup_step") ? Number(g("warmup_step")) : undefined }), "\u90AE\u7BB1\u5DF2\u4FDD\u5B58");\n  }));\n  const ma = $("#mAdd"); if (ma) ma.onclick = () => modal(`<h2>\u52A0\u4E00\u4E2A\u53D1\u4FE1\u90AE\u7BB1</h2><label class="label" style="margin:0">\u5730\u5740<input class="field" id="nbA" type="email" placeholder="team@tafu.me"></label><label class="label" style="margin:0">\u6BCF\u5929\u4E0A\u9650<input class="field" id="nbL" type="number" value="50"></label>\n    <label class="row" style="font-size:14px"><input type="checkbox" id="nbW" checked> \u9884\u70ED\uFF1A\u4ECE\u6BCF\u5929 10 \u4EBA\u5F00\u59CB\uFF0C\u6BCF\u5929\u52A0 5\uFF0C\u76F4\u5230\u4E0A\u9650</label><div class="hint">\u52A0\u597D\u540E\u5148\u662F\u505C\u7528\u7684\uFF1B\u786E\u8BA4\u5B83\u80FD\u6536\u53D1\u540E\u518D\u6253\u5F00\u3002</div>\n    <div class="row"><button class="btn primary" type="button" id="nbGo">\u52A0\u4E0A</button><button class="btn" type="button" id="nbNo">\u53D6\u6D88</button></div>`, () => {\n    $("#nbNo").onclick = closeModal;\n    $("#nbGo").onclick = () => { const a = $("#nbA").value.trim(); if (!a) return toast("\u5148\u586B\u5730\u5740"); closeModal(); act(() => api("/tool/mailbox_set", { address: a, enabled: false, daily_limit: Number($("#nbL").value) || 50, ...($("#nbW").checked ? { warmup_from: new Date().toISOString().slice(0, 10), warmup_start: 10, warmup_step: 5 } : {}) }), `\u5DF2\u52A0\u4E0A ${a}\uFF08\u505C\u7528\u4E2D\uFF09`); };\n  });\n  $$("[data-tedit]", m).forEach((b) => (b.onclick = () => { const v = b.dataset.tedit === "new" ? "new" : Number(b.dataset.tedit); ST.editTpl = ST.editTpl === v ? null : v; render(); }));\n  const ts = $("#tSave"); if (ts) ts.onclick = () => { const t = templates.find((x) => x.id === ST.editTpl) || {}; act(() => api("/templates", { template_id: t.id, name: $("#tn").value, purpose: $("#tp").value, language: $("#tl").value, subject: $("#ts").value, body: $("#tb").value, why: "\u8FD0\u8425\u81EA\u5DF1\u6539\u7684" }), "\u5DF2\u5B58\u6210\u65B0\u7248\uFF0C\u53BB\u5F85\u4F60\u51B3\u5B9A\u91CC\u5BF9\u6BD4\u540E\u6279\u51C6", { link: ["\u53BB\u5BF9\u6BD4", "#decide"] }).then(() => (ST.editTpl = null)); };\n  const tc = $("#tCancel"); if (tc) tc.onclick = () => { ST.editTpl = null; render(); };\n  const ta = $("#tAskGo"); if (ta) ta.onclick = () => { const f = $("#tAsk").value.trim(); if (!f) return toast("\u5148\u8BF4\u600E\u4E48\u6539"); act(() => api("/templates/ask", { feedback: f }), "\u5DF2\u4EA4\u7ED9 agent\uFF0C\u65B0\u7248\u4F1A\u4F5C\u4E3A\u6A21\u677F\u5BF9\u6BD4\u5361\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A"); };\n  $$("[data-auto]", m).forEach((b) => (b.onclick = () => act(() => api("/local", { auto: { [b.dataset.auto]: !local.auto[b.dataset.auto] } }), "\u5DF2\u4FDD\u5B58")));\n  $$("[data-daily]", m).forEach((b) => (b.onclick = () => { b.disabled = true; act(() => api(`/daily/${b.dataset.daily}`, {}), (r) => (r?.ok === false ? "\u51FA\u9519\uFF1A" + (r.note || "") : "\u8DD1\u5B8C\u4E86")); }));\n  const ib = $("#inboxNow"); if (ib) ib.onclick = () => act(() => api("/inbox", {}), (r) => (Array.isArray(r) ? r.map((x) => `${x.mailbox}\uFF1A\u65B0 ${x.recorded} \u5C01`).join("\uFF1B") || "\u6CA1\u6709\u65B0\u4FE1" : "\u6536\u5B8C\u4E86"));\n  const ls = $("#loginSw"); if (ls) ls.onclick = () => act(() => api("/login", { on: !local.login }), local.login ? "\u5DF2\u5173\u95ED\u5F00\u673A\u81EA\u52A8\u542F\u52A8\uFF0C\u73B0\u5728\u8FD9\u6B21\u7167\u5E38\u8FD0\u884C" : "\u5DF2\u6253\u5F00\u5F00\u673A\u81EA\u52A8\u542F\u52A8\uFF0C\u4E0B\u6B21\u5F00\u673A\u751F\u6548");\n  const qb = $("#quitBtn"); if (qb) qb.onclick = () => modal(`<h2>\u5173\u95ED kolpick\uFF1F</h2><p style="margin:0">\u6536\u4FE1\u3001agent \u8D77\u8349\u548C\u5B9A\u65F6\u4EFB\u52A1\u90FD\u4F1A\u505C\u4E0B\uFF0C\u51B3\u7B56\u53F0\u4E5F\u6253\u4E0D\u5F00\uFF0C\u76F4\u5230\u4F60\u518D\u70B9 kolpick.app\u3002${S.counts?.jobs ? `<br><b>agent \u8FD8\u6709 ${S.counts.jobs} \u4EF6\u4E8B\u6CA1\u505A\u5B8C</b>\uFF0C\u4E0B\u6B21\u6253\u5F00\u4F1A\u63A5\u7740\u505A\u3002` : ""}</p>\n    <div class="row"><button class="btn danger" type="button" id="qGo">\u5173\u95ED</button><button class="btn" type="button" id="qNo">\u53D6\u6D88</button></div>`, () => {\n    $("#qNo").onclick = closeModal;\n    $("#qGo").onclick = async () => { closeModal(); closedByYou = true; try { await api("/quit", {}); } catch {} $("#closed").hidden = false; };\n  });\n  const ag = $("#agSave"); if (ag) ag.onclick = () => act(() => api("/local", { agent: { kind: $("#agKind").value, bin: $("#agBin").value.trim(), args: $("#agArgs").value.trim() ? $("#agArgs").value.trim().split(/\\s+/) : [], parallel: Number($("#agPar").value) || 3 } }), "\u5DF2\u4FDD\u5B58");\n}\nfunction tplEditor(t) {\n  return `<div class="panel" style="margin:4px 0 10px"><div class="sgrid" style="margin:0"><label>\u540D\u5B57<input class="field" id="tn" value="${esc(t.name || "")}"></label><label>\u7528\u9014<select class="field" id="tp">${["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u4F53\u9A8C\u8DDF\u8FDB", "\u4F53\u9A8C\u672A\u7528", "\u4F53\u9A8C\u5230\u671F", "\u53D1\u6D3B\u52A8\u7801", "\u53D1\u5E03\u786E\u8BA4", "\u5176\u4ED6"].map((p) => `<option ${t.purpose === p ? "selected" : ""}>${p}</option>`).join("")}</select></label><label>\u8BED\u8A00<input class="field" id="tl" value="${esc(t.language || "")}"></label></div>\n    <input class="field" id="ts" value="${esc(t.subject || "")}" placeholder="\u4E3B\u9898"><textarea class="field" id="tb" rows="8">${esc(t.body || "")}</textarea>\n    <div class="hint">\u53EF\u7528\u5360\u4F4D\uFF1A{\u7A31\u547C}{\u9AD4\u9A57\u78BC}{\u6B21\u6578}{\u5230\u671F\u65E5}{\u6D3B\u52D5\u78BC}{\u5C08\u5C6C\u9023\u7D50}{\u5E33\u672C\u9023\u7D50}{\u7C89\u7D72\u6298\u6263}</div>\n    <div class="row"><button class="btn primary" type="button" id="tSave">\u5B58\u6210\u65B0\u7248\uFF0C\u53BB\u5BF9\u6BD4</button><button class="btn" type="button" id="tCancel">\u53D6\u6D88</button></div></div>`;\n}\n\n// ---------- \u542F\u52A8 ----------\nrefresh();\nsetInterval(() => {\n  if (document.hidden || offline || $("#modal").innerHTML) return;\n  if (document.activeElement?.matches("textarea, input, select")) return;\n  if (route[0] === "settings" && Object.keys(ST.dirty).length) return;\n  refresh();\n}, 15000);\n</script>\n</body>\n</html>\n';
+var console_default = '<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>kolpick \u51B3\u7B56\u53F0</title>\n<style>\n/* Look and interactions follow the UI/UX design canvas (docs/design.md \xA7\u4E09 \u51B3\u7B56\u53F0). */\n:root{--bg:#F5F4F0;--panel:#FFFFFF;--ink:#1C1B19;--muted:#6B6A64;--sub:#5F5E58;--line:#E4E2DC;--line2:#EFEDE8;--soft:#F0EFEA;--faint:#FAF9F6;\n  --accent:#3A5BD9;--accent-ink:#2B46AE;--accent-bg:#EEF1FC;--accent-bg2:#F6F8FE;--ok:#1E6B3E;--ok-bg:#E8F5EC;--warn:#8A4A00;--warn-bg:#FFF3E0;--warn-line:#F3DDB5;\n  --bad:#B42318;--bad-ink:#7A1A12;--bad-bg:#FDEDEB;--bad-line:#F4C7C2}\n*{box-sizing:border-box}\n[hidden]{display:none !important}\nbody{margin:0;font-family:-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.55}\na{color:var(--accent)}a:hover{color:var(--accent-ink)}\nbutton{font:inherit;cursor:pointer}\nbutton[disabled]{opacity:.45;cursor:not-allowed}\ninput,select,textarea{font:inherit;color:var(--ink)}\n.top{display:flex;align-items:center;gap:20px;padding:0 24px;min-height:56px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;z-index:10}\n.logo{font-weight:700;font-size:17px}\n.env{font-size:12px;padding:2px 10px;border-radius:99px;background:var(--soft);color:#4A4944;font-weight:500}\n.env.prod{background:var(--bad-bg);color:var(--bad)}\n.nav{display:flex;gap:2px}\n.nav a{color:var(--sub);text-decoration:none;padding:8px 12px;border-radius:8px}\n.nav a.on{background:var(--accent-bg);color:var(--accent-ink);font-weight:500}\n.count{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:var(--accent);color:#fff;font-size:12px;text-align:center}\n.count.bad{background:var(--bad)}\n.sp{flex:1}\n.stat{font-size:13px;color:var(--sub);display:flex;gap:16px;align-items:center}\n.dot{display:inline-block;width:8px;height:8px;border-radius:99px;background:#1E7A45;margin-right:6px}\n.dot.warn{background:#D97706}.dot.bad{background:var(--bad)}.dot.off{background:#B5B3AC}\n.pause{display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:6px 12px 6px 6px}\n.sw{width:34px;height:20px;border-radius:99px;background:#D9D7D0;position:relative;flex:none;border:0;padding:0;display:inline-block}\n.sw::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:99px;background:#fff;transition:left .15s}\n.sw.on{background:var(--accent)}.sw.on::after{left:16px}\n.pause.on{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}\n.pause.on .sw{background:#D97706}.pause.on .sw::after{left:16px}\n.bar-warn{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 24px;background:var(--warn-bg);color:var(--warn);border-bottom:1px solid var(--warn-line);font-size:13px}\n.alert{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 24px 0;padding:12px 16px;background:var(--bad-bg);border:1px solid var(--bad-line);border-radius:10px;color:var(--bad-ink)}\n.okbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 24px 0;padding:10px 16px;background:var(--ok-bg);border:1px solid #BFE2CB;border-radius:10px;color:var(--ok);font-size:13px}\n.wrap{max-width:1280px;margin:0 auto;padding:16px 24px 40px}\n.btn{font-size:14px;border-radius:8px;padding:8px 14px;border:1px solid #DCDAD3;background:var(--panel);color:var(--ink);min-height:40px;display:inline-flex;gap:8px;align-items:center;text-decoration:none;white-space:nowrap}\n.btn.sm{min-height:32px;padding:4px 10px;font-size:13px}\n.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}\n.btn.quiet{border-color:transparent;background:transparent;color:var(--bad)}\n.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:500}\n.key{font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.7}\n.link{background:none;border:0;color:var(--accent);padding:0;text-decoration:underline;font-size:13px}\n.meta{font-size:13px;color:var(--muted)}\n.hint{font-size:12px;color:var(--muted)}\n.tag{font-size:11px;padding:1px 7px;border-radius:5px;background:var(--soft);color:#4A4944;font-weight:500;white-space:nowrap}\n.tag.blue{background:var(--accent-bg);color:var(--accent-ink)}.tag.amber{background:var(--warn-bg);color:var(--warn)}.tag.green{background:var(--ok-bg);color:var(--ok)}.tag.red{background:var(--bad-bg);color:var(--bad)}.tag.dark{background:var(--ink);color:#fff}\n.field{display:block;width:100%;border:1px solid #DCDAD3;border-radius:8px;padding:8px 10px;background:var(--panel)}\ntextarea.field{resize:vertical}\n.label{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;display:block}\n.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}\n.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}\n.h1{font-size:20px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}\n.h2{font-size:15px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px}\n.empty{padding:48px 24px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:8px;align-items:center}\n.big{font-size:20px;font-weight:700;color:var(--ink)}\n.chip{font-size:13px;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:4px 12px;color:#4A4944;display:inline-flex;gap:6px;align-items:center}\n.chip b{font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}\n.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}.chip.on b{color:#fff}\n.chip.warn{border-color:var(--warn-line);background:#FFF8EC;color:var(--warn)}\n.chip.bad{border-color:var(--bad-line);background:var(--bad-bg);color:var(--bad)}\n.pill{font-size:13px;border:1px solid #DCDAD3;background:var(--panel);border-radius:99px;padding:4px 12px;min-height:32px}\n.pill.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-ink);font-weight:500}\n.panel{padding:14px 16px;border:1px solid #C9D3F5;background:var(--accent-bg2);border-radius:10px;display:flex;flex-direction:column;gap:10px}\n.panel.red{border-color:var(--bad-line);background:#FFF8F7}\n.radio{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;text-align:left;background:var(--panel);width:100%}\n.radio.on{border-color:var(--accent);background:var(--accent-bg2)}\n.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:14px;align-items:center;background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px 10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.22);z-index:40;max-width:calc(100% - 32px);flex-wrap:wrap}\n.toast .btn{min-height:34px;padding:5px 12px;font-size:13px;background:transparent;color:#fff;border-color:#5F5E58}\n.ring{display:inline-flex;width:24px;height:24px;border-radius:99px;border:2px solid #8EA2EE;align-items:center;justify-content:center;font-size:12px}\n.modalbg{position:fixed;inset:0;background:rgba(28,27,25,.38);display:flex;align-items:flex-start;justify-content:center;padding:80px 16px;z-index:50}\n.modal{background:var(--panel);border-radius:14px;width:100%;max-width:540px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}\n.modal h2{margin:0;font-size:18px}\n.steps{padding:12px 16px;border:1px dashed #D9D7D0;border-radius:10px;display:flex;flex-direction:column;gap:6px;font-size:13px}\n.step{display:flex;gap:10px;align-items:baseline}\n.n{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:99px;background:var(--soft);font-size:12px;font-weight:500;flex:none}\n.bubble{background:var(--bg);border-radius:4px 12px 12px 12px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow:auto}\n.offline{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}\ncode{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--bg);padding:2px 6px;border-radius:5px}\ninput[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);margin:0}\n\n/* \u5F85\u4F60\u51B3\u5B9A */\n.dbody{display:flex;flex-wrap:wrap;gap:16px;padding:16px 24px 24px;align-items:flex-start}\n.queue{flex:1 1 340px;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:sticky;top:72px;max-height:calc(100vh - 90px);overflow-y:auto}\n.qchips{display:flex;gap:6px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--line)}\n.qchip{font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--sub);border-radius:99px;padding:3px 10px}\n.qchip.on{background:var(--ink);color:#fff;border-color:var(--ink)}\n.item{display:block;width:100%;text-align:left;background:var(--panel);border:0;border-bottom:1px solid var(--line2);padding:12px 14px;color:var(--ink)}\n.item.on{background:var(--accent-bg);box-shadow:inset 3px 0 0 var(--accent)}\n.itop{display:flex;gap:8px;align-items:center}\n.iname{font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.itime{font-size:12px;color:var(--muted)}\n.isub{font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.qhead{font-size:12px;color:var(--muted);padding:10px 14px 4px;background:var(--faint)}\n.ghost{padding:10px 14px;color:var(--muted);font-size:13px;border-bottom:1px solid var(--line2);display:flex;gap:8px;align-items:center}\n.detail{flex:999 1 640px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column}\n.dhead{padding:18px 22px 14px;border-bottom:1px solid var(--line2)}\n.why{margin-top:10px;padding:10px 12px;background:var(--faint);border-radius:8px;font-size:13px;color:#4A4944}\n.edited{font-size:12px;color:var(--warn);background:var(--warn-bg);border-radius:6px;padding:2px 8px;display:inline-block;margin-top:6px}\n.cols{display:flex;flex-wrap:wrap}\n.col{flex:1 1 320px;min-width:0;padding:16px 22px}\n.col+.col{border-left:1px solid var(--line2)}\n.sec{padding:0 22px 16px}\n.dbar{margin-top:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 22px;border-top:1px solid var(--line2);background:#FCFBF9;border-radius:0 0 12px 12px;position:sticky;bottom:0}\n.draft{min-height:260px;line-height:1.7}\n.quota{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}\n.q{flex:1 1 200px;border:1px solid var(--line2);border-radius:10px;padding:10px 12px}\n.q b{font-size:20px;font-variant-numeric:tabular-nums}\n.q.over{border-color:var(--bad-line);background:#FFF8F7}\n.track{height:6px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:6px}\n.fill{height:6px;background:var(--accent);border-radius:99px}\n.fill.over{background:var(--bad)}\n.grow{display:grid;grid-template-columns:32px minmax(0,1.5fr) minmax(0,1.4fr) 90px 80px;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid #F3F1EC;font-size:13px}\n.grow.head{font-size:12px;color:var(--muted);font-weight:500;background:#FBFAF7;position:sticky;top:0}\n.grow.off{color:#A3A29C}\n.grow.cur{background:var(--accent-bg2)}\n.gbox{border:1px solid var(--line2);border-radius:10px;overflow:auto;max-height:420px}\n.rowbtn{background:none;border:0;padding:0;color:inherit;text-align:left}\n.rowbtn:hover{text-decoration:underline}\n.preview{background:var(--faint);border-radius:10px;padding:12px 14px;white-space:pre-wrap;font-size:13px;line-height:1.7;max-height:420px;overflow:auto}\n.diff{display:flex;flex-wrap:wrap;gap:0}\n.cand{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}\n\n/* KOL \u5217\u8868 */\n.ltitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 14px}\n.lstrip,.lfilters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}\n.sel{font-size:13px;border:1px solid #DCDAD3;border-radius:8px;padding:6px 10px;background:var(--panel)}\n.lbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}\n.lscroll{overflow-x:auto}\n.lscroll>div{min-width:1180px}\n.lg{display:grid;grid-template-columns:36px minmax(190px,1.5fr) 64px 120px minmax(170px,1.5fr) minmax(140px,1.1fr) 110px minmax(130px,1fr) 48px;gap:10px;align-items:start;padding:10px 12px;border-bottom:1px solid #F3F1EC;font-size:13px}\n.lg.head{font-size:12px;color:var(--muted);font-weight:500;background:#FBFAF7;align-items:center}\n.lg.sel{background:var(--accent-bg2)}\n.lg:not(.head):hover{background:var(--faint)}\n.who{display:flex;gap:10px;align-items:center;min-width:0}\n.av{width:32px;height:32px;border-radius:99px;background:var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#4A4944;flex:none}\n.lname{font-weight:500;color:var(--ink);text-decoration:none}\n.lname:hover{text-decoration:underline}\n.sub{font-size:12px;color:var(--muted);display:block}\n.snip{display:block;color:#4A4944;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n.turn{font-size:12px;display:block;margin-top:4px}\n.turn.us{color:var(--warn);font-weight:500}\n.mini{width:64px;height:5px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:4px;display:block}\n.mini i{display:block;height:5px;background:var(--accent)}\n.flag{font-size:12px;padding:1px 7px;border-radius:6px;white-space:nowrap;display:inline-block;margin:0 4px 4px 0}\n.flag.bad{background:var(--bad-bg);color:var(--bad)}.flag.warn{background:var(--warn-bg);color:var(--warn)}\n.cell{font-size:13px;text-align:left;background:none;border:0;padding:4px 6px;margin:-4px -6px;border-radius:6px;color:var(--ink);min-width:0}\n.cell:hover{background:var(--accent-bg)}\n.chev{font-size:12px;background:none;border:1px solid var(--line);border-radius:6px;color:#4A4944;padding:3px 0;min-height:28px}\n.exp{display:flex;flex-wrap:wrap;gap:16px;padding:14px 16px 16px 58px;background:#FBFAF7;border-bottom:1px solid var(--line);box-shadow:inset 3px 0 0 var(--accent)}\n.pane{min-width:0;background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:12px 14px}\n.msg{font-size:13px;padding:8px 10px;border-radius:8px;margin-bottom:6px;white-space:pre-wrap;word-break:break-word;max-width:92%}\n.msg.in{background:var(--bg)}\n.msg.out{background:var(--accent-bg);margin-left:auto}\n.msg.note{background:none;color:var(--muted);font-size:12px;text-align:center;max-width:100%}\n.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #F3F1EC;font-size:13px}\n.post{border:1px solid var(--line2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:13px}\n.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0}\n.metrics span{display:flex;flex-direction:column}\n.metrics b{font-variant-numeric:tabular-nums;font-size:15px}\n.metrics i{font-style:normal;font-size:11px;color:var(--muted)}\n.late{color:var(--warn);font-weight:500}\n.lfoot{display:flex;align-items:center;gap:12px;padding:10px 14px;font-size:13px;color:var(--muted);flex-wrap:wrap}\n.bulk{position:sticky;bottom:16px;margin:14px auto 0;max-width:760px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--ink);color:#fff;border-radius:12px;padding:10px 12px 10px 18px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:5}\n.bulk .btn{min-height:36px;padding:6px 12px;font-size:13px;background:transparent;border-color:#4A4944;color:#fff}\n.pop{position:absolute;bottom:56px;right:12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;min-width:160px;box-shadow:0 10px 24px rgba(0,0,0,.15)}\n.pop button{font-size:13px;text-align:left;background:none;border:0;padding:8px 10px;border-radius:6px;color:var(--ink)}\n.pop button:hover{background:var(--bg)}\n\n/* KOL \u8BE6\u60C5 */\n.khead{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}\n.kav{width:56px;height:56px;border-radius:99px;background:var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#4A4944}\n.knext{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:#FFF8EC;border:1px solid var(--warn-line);border-radius:10px;margin-bottom:16px}\n.kcols{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}\n.kmain{flex:999 1 600px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px}\n.kside{flex:1 1 320px;max-width:380px;display:flex;flex-direction:column;gap:16px}\n.tabs{display:flex;gap:4px;padding:10px 12px;border-bottom:1px solid var(--line2)}\n.tab{font-size:13px;border:0;background:transparent;padding:6px 12px;border-radius:8px;color:var(--sub)}\n.tab.on{background:var(--soft);color:var(--ink);font-weight:500}\n.thread{padding:16px 20px;display:flex;flex-direction:column;gap:12px}\n.tmsg{max-width:80%;border-radius:12px;padding:10px 14px;white-space:pre-wrap;word-break:break-word}\n.tmsg.in{align-self:flex-start;background:var(--bg);border-top-left-radius:4px}\n.tmsg.out{align-self:flex-end;background:var(--accent-bg);border-top-right-radius:4px}\n.tmsg.note{align-self:center;background:transparent;color:var(--muted);font-size:12px;padding:0}\n.compose{border-top:1px solid var(--line2);padding:14px 20px;display:flex;flex-direction:column;gap:8px}\n.dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}\n.dl label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}\n.crow{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #F3F1EC;font-size:13px}\ntable.t{width:100%;border-collapse:collapse;font-size:13px}\ntable.t th{text-align:right;font-weight:500;color:var(--muted);font-size:12px;padding:4px 6px;border-bottom:1px solid var(--line2)}\ntable.t td{text-align:right;padding:6px;border-bottom:1px solid #F3F1EC}\ntable.t th:first-child,table.t td:first-child{text-align:left}\n\n/* \u627E\u4EBA */\n.seg{display:inline-flex;border:1px solid #DCDAD3;border-radius:10px;overflow:hidden}\n.seg button{font-size:13px;border:0;background:var(--panel);padding:8px 14px;color:#4A4944;min-height:36px}\n.seg button+button{border-left:1px solid #DCDAD3}\n.seg button.on{background:var(--ink);color:#fff}\n.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;margin-top:12px}\n.fgrid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px;font-weight:500}\n.full{grid-column:1/-1}\n.unit{display:flex;gap:8px;align-items:center}\n.unit .field{width:120px}\n\n/* \u8BB0\u5F55 */\n.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}\n.statb{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:96px}\n.statb b{display:block;font-size:20px;font-variant-numeric:tabular-nums}\n.statb span{font-size:12px;color:var(--muted)}\n.now{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px}\n.spin{width:12px;height:12px;border-radius:99px;border:2px solid var(--accent);border-top-color:transparent;display:inline-block;animation:spin 1s linear infinite}\n@keyframes spin{to{transform:rotate(360deg)}}\n.rbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}\n.rday{font-size:12px;font-weight:500;color:var(--muted);padding:8px 16px;background:#FBFAF7;border-bottom:1px solid var(--line2)}\n.rrow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:start;padding:10px 16px;border-bottom:1px solid #F3F1EC}\n.rrow.bad{background:#FFF8F7}\n.rtime{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}\n.rlinks{display:flex;gap:10px;font-size:13px;white-space:nowrap}\n.rdetail{grid-column:2/4;background:var(--faint);border-radius:8px;padding:10px 12px;font-size:13px;white-space:pre-wrap;color:#4A4944;word-break:break-word}\n\n/* \u8BBE\u7F6E */\n.swrap{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}\n.smenu{flex:1 1 200px;max-width:220px;display:flex;flex-direction:column;gap:2px;position:sticky;top:72px}\n.smenu a{text-decoration:none;color:var(--sub);padding:8px 12px;border-radius:8px}\n.smenu a.on{background:var(--panel);color:var(--ink);font-weight:500;box-shadow:0 0 0 1px var(--line)}\n.scontent{flex:999 1 600px;min-width:0;display:flex;flex-direction:column;gap:16px}\n.sgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px}\n.sgrid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}\n.srow{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #F3F1EC;flex-wrap:wrap}\n.srow b{flex:1;min-width:160px;font-weight:500}\ntable.mb{width:100%;border-collapse:collapse;font-size:13px}\ntable.mb th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;padding:8px 10px;background:var(--faint);border-bottom:1px solid var(--line2)}\ntable.mb td{padding:8px 10px;border-bottom:1px solid #F3F1EC}\n.savebar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px 10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.15);z-index:30}\n@media (max-width:760px){.sgrid,.fgrid{grid-template-columns:minmax(0,1fr)}.col+.col{border-left:0;border-top:1px solid var(--line2)}.queue{position:static;max-height:none}}\n.q1{display:flex;gap:8px;align-items:center;padding:11px 14px}\n.q1 .iname{flex:none;max-width:140px}\n.qask{flex:1;min-width:0;font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n.qn{font-size:11px;font-weight:700;background:var(--ink);color:#fff;border-radius:99px;padding:0 7px;line-height:18px}\n.item.urgent{box-shadow:inset 3px 0 0 #D97706}.item.bad{box-shadow:inset 3px 0 0 var(--bad)}.item.on{box-shadow:inset 3px 0 0 var(--accent)}\n.mwrap{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}\n.mmain{flex:999 1 480px;min-width:0;display:flex;flex-direction:column}\n.mside{flex:1 1 220px;max-width:280px;border-left:1px solid var(--line2);padding:20px 18px;font-size:13px;display:flex;flex-direction:column;gap:10px;background:#FCFBF9;border-radius:0 12px 0 0}\n.mside h2{font-size:15px;margin:0}\n.mkv{display:flex;flex-direction:column;gap:1px;word-break:break-all}.mkv span{font-size:12px;color:var(--muted)}\n.mhead{padding:20px 24px 16px}\n.mwho{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}.mwho b{color:var(--ink)}\n.mheadline{font-size:21px;line-height:1.4;font-weight:700;margin:8px 0 10px}\n.mfacts{display:flex;gap:6px;flex-wrap:wrap}\n.mfact{font-size:13px;background:var(--bg);border-radius:6px;padding:2px 9px;color:#4A4944}.mfact.warn{background:var(--warn-bg);color:var(--warn)}\n.mctx{margin:0 24px 16px}\n.mctx-h{display:flex;align-items:center;gap:10px;margin-bottom:6px}\n.mmsg{padding:8px 12px;border-radius:10px;background:var(--bg);margin-bottom:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:240px;overflow:auto}\n.mmsg.we{background:var(--panel);border:1px solid var(--line2)}.mmsg .hint{display:block;margin-bottom:2px}\n.mplan{margin:0 24px 16px;padding:14px 16px;background:var(--accent-bg2);border:1px solid #DCE3FA;border-radius:12px}\n.mplan-l{font-size:12px;font-weight:500;color:var(--accent-ink);margin-bottom:4px}\n.mplan-t{font-size:16px;font-weight:500}\n.mflow{margin-top:6px;font-size:13px;color:var(--sub)}\n.mwhy{margin-top:6px;font-size:12px;color:var(--sub)}\n.mletter-h{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:6px}\n.mpaper{border:1px solid var(--line);border-radius:10px;padding:14px 18px;white-space:pre-wrap;word-break:break-word;line-height:1.75;font-size:14px;max-height:320px;overflow:auto;background:var(--panel)}\n.mpaper b{display:block;margin-bottom:8px}\n.g2row{display:grid;grid-template-columns:24px minmax(0,160px) minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 24px;border-top:1px solid var(--line2);font-size:14px}\n.g2row.off{opacity:.45}\n.g2name{font-weight:500;color:var(--ink);text-decoration:none}.g2name:hover{text-decoration:underline;color:var(--accent-ink)}\n.g2sub{font-size:12px;color:var(--muted);margin-top:2px}\n.g2plan{color:var(--accent-ink)}\n.g2x{grid-column:1/6;display:flex;flex-wrap:wrap;gap:16px;padding:12px 0 4px 36px}.g2x>div{flex:1 1 260px;min-width:0}\nbody.setup .nav,body.setup .stat,body.setup .pause{display:none}\n.su{max-width:760px;display:flex;flex-direction:column;gap:16px}\n.su h1{font-size:22px;margin:8px 0 0}\n.mrow{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr);gap:6px 14px;align-items:center;padding:10px 0;border-top:1px solid #F3F1EC}\n.mrow:first-of-type{border-top:0}\n.mrow b{font-weight:500;display:flex;gap:6px;align-items:center;flex-wrap:wrap}\n.mrow .field{font-family:ui-monospace,Menlo,monospace;font-size:13px}\n.mfix{grid-column:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap}\n@media (max-width:600px){.mrow{grid-template-columns:1fr}.mfix{grid-column:1}}\n</style>\n</head>\n<body>\n<header class="top">\n  <span class="logo">kolpick</span><span id="env" class="env"></span>\n  <nav class="nav" id="nav" aria-label="\u4E3B\u5BFC\u822A"></nav>\n  <span class="sp"></span>\n  <span class="stat" id="stat"></span>\n  <button class="pause" id="pause" type="button" aria-pressed="false"><span class="sw"></span><span id="pauseLabel">\u6682\u505C\u6240\u6709\u53D1\u9001</span></button>\n</header>\n<div id="bars"></div>\n<main id="main"></main>\n<div id="modal"></div>\n<div id="toast" class="toast" hidden role="status" aria-live="polite"></div>\n<div id="offline" class="offline" hidden>\n  <div class="empty"><span class="big">\u8FDE\u4E0D\u4E0A\u8FD9\u53F0\u7535\u8111\u4E0A\u7684 kolpick</span>\n    <span>\u901A\u5E38\u662F\u7535\u8111\u521A\u5F00\u673A\u3001\u521A\u7761\u9192\uFF0C\u6216\u8005\u670D\u52A1\u6B63\u5728\u91CD\u542F\u3002\u6BCF 5 \u79D2\u81EA\u52A8\u91CD\u8FDE\u4E00\u6B21\uFF08\u5DF2\u8BD5 <span id="tries">0</span> \u6B21\uFF09\u3002</span>\n    <span>\u8FDE\u4E0D\u4E0A\u7684\u65F6\u5019\u4EC0\u4E48\u90FD\u4E0D\u4F1A\u53D1\uFF1B\u6062\u590D\u540E\u4F1A\u81EA\u52A8\u8865\u6536\u8FD9\u6BB5\u65F6\u95F4\u7684\u4FE1\u3002</span>\n    <button class="btn primary" id="retry" type="button">\u73B0\u5728\u91CD\u8FDE</button>\n    <span class="hint">\u4E00\u5206\u949F\u8FD8\u4E0D\u884C\uFF1A\u70B9\u300C\u5E94\u7528\u7A0B\u5E8F\u300D\u91CC\u7684 kolpick.app \u91CD\u65B0\u6253\u5F00\u3002</span></div>\n</div>\n<div id="closed" class="offline" hidden>\n  <div class="empty"><span class="big">kolpick \u5DF2\u5173\u95ED</span>\n    <span>\u6536\u4FE1\u3001agent \u8D77\u8349\u548C\u5B9A\u65F6\u4EFB\u52A1\u90FD\u505C\u4E86\uFF0C\u4E0D\u5360\u8D44\u6E90\u3002\u8FD9\u6BB5\u65F6\u95F4\u7684\u6765\u4FE1\u4F1A\u5728\u4E0B\u6B21\u6253\u5F00\u65F6\u8865\u6536\u3002</span>\n    <span>\u8981\u518D\u7528\uFF1A\u70B9\u300C\u5E94\u7528\u7A0B\u5E8F\u300D\u91CC\u7684 kolpick.app\uFF08\u6216 Dock \u4E0A\u7684\u56FE\u6807\uFF09\u3002\u8FD9\u4E2A\u7A97\u53E3\u53EF\u4EE5\u5173\u6389\u4E86\u3002</span></div>\n</div>\n<script>\nconst $ = (s, el = document) => el.querySelector(s);\nconst $$ = (s, el = document) => [...el.querySelectorAll(s)];\nconst esc = (s) => String(s ?? "").replace(/[&<>"\']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", \'"\': "&quot;", "\'": "&#39;" }[c]));\nconst pad = (n) => String(n).padStart(2, "0");\nfunction when(t) {\n  if (!t) return "";\n  const d = new Date(t), now = new Date();\n  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;\n  const days = Math.round((new Date(now.toDateString()) - new Date(d.toDateString())) / 86400000);\n  if (days === 0) return "\u4ECA\u5929 " + hm;\n  if (days === 1) return "\u6628\u5929 " + hm;\n  return `${d.getMonth() + 1}/${d.getDate()}`;\n}\nconst ago = (t) => { if (!t) return ""; const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 1 ? "\u521A\u521A" : m < 60 ? `${m} \u5206\u949F\u524D` : m < 1440 ? `${Math.round(m / 60)} \u5C0F\u65F6\u524D` : when(t); };\nconst md = (t) => (t ? `${new Date(t).getMonth() + 1}/${new Date(t).getDate()}` : "");\nconst fans = (n) => (n == null ? "\u2014" : n >= 10000 ? `${(n / 10000).toFixed(n >= 100000 ? 0 : 1)} \u4E07` : n.toLocaleString());\nconst num = (n) => (n == null ? "\u2014" : n >= 10000 ? `${(n / 10000).toFixed(1)} \u4E07` : Number(n).toLocaleString());\nconst STAGES = { new: "\u672A\u8054\u7CFB", invited: "\u5DF2\u9080\u7EA6", replied: "\u5DF2\u56DE\u590D", trial: "\u4F53\u9A8C\u4E2D", report_seen: "\u5DF2\u770B\u62A5\u544A", publish_agreed: "\u5DF2\u7EA6\u53D1\u5E03", published: "\u5DF2\u53D1\u5E03", partner: "\u5408\u4F5C\u4E2D", on_hold: "\u6682\u7F13", closed: "\u7ED3\u6848" };\nconst STAGE_CLS = { partner: "green", trial: "amber", replied: "blue", report_seen: "blue", publish_agreed: "blue", published: "green" };\nconst CLOSE = ["\u65E0\u56DE\u5E94", "\u9898\u6750\u4E0D\u7B26", "\u53EA\u63A5\u56FA\u5B9A\u8D39", "\u5B97\u6559\u4FE1\u4EF0", "\u9690\u79C1", "\u6863\u671F", "\u62D2\u7EDD", "\u56DE\u590D\u540E\u5931\u8054", "\u9000\u4FE1\u6216\u90AE\u7BB1\u65E0\u6548", "\u4F5C\u5E9F", "\u5176\u4ED6"];\nconst KINDS = { reply: "\u56DE\u4FE1", mail: "\u4E3B\u52A8\u5199\u4FE1", invite: "\u9080\u7EA6", followup: "\u50AC\u4FE1", code_expiry: "\u7801\u5230\u671F", checkin: "\u95EE\u53D1\u5E03", invite_batch: "\u9080\u7EA6\u6279", followup_group: "\u50AC\u4FE1\u6279",\n  unmatched: "\u5BF9\u4E0D\u4E0A\u4EBA", bounce: "\u9000\u4FE1", no_reply: "\u4E0D\u7528\u56DE", close: "\u5EFA\u8BAE\u7ED3\u6848", template: "\u6A21\u677F\u65B0\u7248", discovery: "\u627E\u5230\u7684\u4EBA", legacy: "\u65E7\u5BA1\u6838\u5355", other: "\u8981\u4F60\u62CD\u677F" };\nconst KIND_CLS = { reply: "blue", mail: "blue", followup: "blue", code_expiry: "amber", checkin: "amber", invite_batch: "green", followup_group: "green", bounce: "red", other: "amber" };\n\n// GET answers are kept until something changes: a click that only changes what is shown redraws without waiting on the\n// database. Any write and every refresh start fresh.\nlet apiCache = new Map();\nasync function api(path, body) {\n  if (body === undefined && apiCache.has(path)) return apiCache.get(path);\n  if (body !== undefined) apiCache = new Map();\n  const p = apiFetch(path, body);\n  if (body === undefined) { apiCache.set(path, p); p.catch(() => apiCache.delete(path)); }\n  return p;\n}\nasync function apiFetch(path, body) {\n  let r;\n  try {\n    r = await fetch("/api" + path, body === undefined ? {} : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });\n  } catch (e) { goOffline(); throw new Error("\u8FDE\u4E0D\u4E0A\u672C\u5730\u670D\u52A1"); }\n  const j = await r.json().catch(() => ({}));\n  if (!r.ok) throw new Error(j.error || r.statusText);\n  return j;\n}\n\n// ---------- \u901A\u7528\uFF1A\u63D0\u793A\u6761\u3001\u5F39\u7A97\u3001\u79BB\u7EBF ----------\nlet toastTimer = null;\nfunction toast(text, opts = {}) {\n  const t = $("#toast");\n  clearInterval(toastTimer);\n  let secs = opts.undo ? 5 : 0;\n  const draw = () => {\n    t.innerHTML = (opts.undo ? `<span class="ring">${secs}</span>` : "") + `<span>${esc(text)}</span>`\n      + (opts.undo ? `<button class="btn" id="tUndo" type="button">\u64A4\u9500 Z</button>` : "")\n      + (opts.link ? `<a class="btn" href="${opts.link[1]}">${esc(opts.link[0])}</a>` : "")\n      + (!opts.undo ? `<button class="btn" id="tOk" type="button">\u597D</button>` : "");\n    t.hidden = false;\n    if ($("#tUndo")) $("#tUndo").onclick = doUndo;\n    if ($("#tOk")) $("#tOk").onclick = () => { t.hidden = true; clearInterval(toastTimer); };\n  };\n  const doUndo = async () => { clearInterval(toastTimer); t.hidden = true; undoFn = null; try { await opts.undo(); toast("\u5DF2\u64A4\u9500\uFF0C\u56DE\u5230\u539F\u4F4D"); refresh(); } catch (e) { toast("\u6CA1\u64A4\u9500\u6210\u529F\uFF1A" + e.message); } };\n  undoFn = opts.undo ? doUndo : null;\n  draw();\n  if (opts.undo) toastTimer = setInterval(() => { secs--; if (secs <= 0) { clearInterval(toastTimer); undoFn = null; text = opts.after || text; opts = { link: opts.link }; draw(); toastTimer = setTimeout(() => (t.hidden = true), 3500); } else draw(); }, 1000);\n  else toastTimer = setTimeout(() => (t.hidden = true), opts.long ? 6000 : 3500);\n}\nlet undoFn = null;\nasync function act(fn, ok, opts = {}) {\n  try { const r = await fn(); if (ok) toast(typeof ok === "function" ? ok(r) : ok, opts); await refresh(); return r; } catch (e) { toast("\u6CA1\u6210\u529F\uFF1A" + e.message); }\n}\nfunction modal(html, wire) {\n  $("#modal").innerHTML = `<div class="modalbg" id="mbg"><div class="modal" role="dialog">${html}</div></div>`;\n  $("#mbg").onclick = (e) => { if (e.target.id === "mbg") closeModal(); };\n  wire && wire($("#modal"));\n}\nconst closeModal = () => ($("#modal").innerHTML = "");\n\nlet offline = false, tries = 0, retryTimer = null;\nlet closedByYou = false;\nfunction goOffline() {\n  if (offline || closedByYou) return;\n  offline = true; $("#offline").hidden = false;\n  retryTimer = setInterval(tryBack, 5000);\n}\nasync function tryBack() {\n  tries++; $("#tries").textContent = tries;\n  try { const r = await fetch("/api/state"); if (r.ok) { offline = false; tries = 0; clearInterval(retryTimer); $("#offline").hidden = true; refresh(); } } catch {}\n}\n$("#retry").onclick = tryBack;\n\n// ---------- \u6846\u67B6 ----------\nlet S = {}, U = {}, route = [], view = {};\nconst PAGES = [["decide", "\u5F85\u4F60\u51B3\u5B9A"], ["kols", "KOL"], ["log", "\u8BB0\u5F55"], ["settings", "\u8BBE\u7F6E"]];\nfunction parseRoute() { route = (location.hash.slice(1) || "decide").split("/"); }\nfunction drawTop() {\n  const c = S.counts || {};\n  const waiting = (c.pending || 0) + (c.problems || 0);\n  const page = route[0] === "kol" || route[0] === "find" ? "kols" : route[0];\n  $("#nav").innerHTML = PAGES.map(([k, v]) => `<a href="#${k}" class="${k === page ? "on" : ""}">${v}${k === "decide" && waiting ? `<span class="count ${c.problems ? "bad" : ""}">${waiting}</span>` : ""}</a>`).join("");\n  $("#env").textContent = (S.env === "prod" ? "\u6B63\u5F0F\u5E93" : "\u6D4B\u8BD5\u5E93") + (S.project ? " \xB7 " + S.project : "");\n  $("#env").className = "env " + (S.env === "prod" ? "prod" : "");\n  const w = Object.entries(S.status?.watchers || {});\n  const down = w.filter(([, v]) => !v.up);\n  const watch = !S.auto?.inbox ? `<span><span class="dot off"></span>\u6536\u4FE1\u76D1\u542C\u5173\u7740</span>`\n    : down.length ? `<span><span class="dot warn"></span>${esc(down.map(([k]) => k.split("@")[0] + "@").join("\u3001"))} \u6536\u4FE1\u76D1\u542C\u65AD\u4E86</span>`\n    : `<span><span class="dot"></span>\u6536\u4FE1\u76D1\u542C\u6B63\u5E38 \xB7 ${w.length} \u4E2A\u90AE\u7BB1</span>`;\n  $("#stat").innerHTML = watch + (U.dailyLimit ? `<span>\u4ECA\u5929\u5DF2\u8054\u7CFB ${U.contacted} / ${U.dailyLimit} \u4EBA</span>` : "");\n  $("#pause").classList.toggle("on", !!S.paused);\n  $("#pause").setAttribute("aria-pressed", String(!!S.paused));\n  $("#pauseLabel").textContent = S.paused ? "\u5DF2\u6682\u505C\u53D1\u9001" : "\u6682\u505C\u6240\u6709\u53D1\u9001";\n  let bars = "";\n  if (S.paused) bars += `<div class="bar-warn" role="status"><b>\u6240\u6709\u53D1\u9001\u5DF2\u6682\u505C</b><span class="sp" style="min-width:240px">\u53EF\u4EE5\u7167\u5E38\u540C\u610F\uFF0C\u5361\u7247\u4F1A\u6392\u961F\uFF0C\u4E0D\u5EFA\u7801\u3001\u4E0D\u53D1\u4FE1\u3002\u6062\u590D\u540E\u6309\u540C\u610F\u7684\u5148\u540E\u53D1\u51FA\u3002\u6392\u961F\u4E2D ${c.approved || 0} \u5F20\u3002</span><button class="btn sm" type="button" data-unpause>\u6062\u590D\u53D1\u9001</button></div>`;\n  for (const [addr, v] of down) if (S.auto?.inbox) bars += `<div class="bar-warn" role="status"><b>${esc(addr)} \u7684\u5B9E\u65F6\u6536\u4FE1\u65AD\u4E86</b><span class="sp" style="min-width:240px">\u6539\u4E3A\u6BCF 2 \u5206\u949F\u8865\u6536\u4E00\u6B21\uFF0C\u6765\u4FE1\u6700\u591A\u665A 2 \u5206\u949F\u51FA\u73B0\uFF0C\u4E0D\u4F1A\u6F0F\u3002\u7CFB\u7EDF\u4F1A\u81EA\u52A8\u91CD\u8FDE\u3002${v.error ? "\u539F\u56E0\uFF1A" + esc(v.error) : ""}</span></div>`;\n  $("#bars").innerHTML = bars;\n  const up = $("[data-unpause]"); if (up) up.onclick = togglePause;\n}\nconst togglePause = () => act(() => api("/tool/pause_sending", { on: !S.paused }), S.paused ? "\u5DF2\u6062\u590D\u53D1\u9001\uFF0C\u6392\u961F\u7684\u6309\u540C\u610F\u987A\u5E8F\u53D1\u51FA" : "\u5DF2\u6682\u505C\u6240\u6709\u53D1\u9001");\n$("#pause").onclick = togglePause;\n\nasync function refresh() {\n  apiCache = new Map();\n  // The page\'s own data loads at the same time as the header\'s.\n  const head = Promise.all([api("/state"), api("/usage")]).then(([s, u]) => { S = s; U = u; drawTop(); }).catch(() => {});\n  const page = render();\n  await Promise.all([head, page]);\n}\nasync function render() {\n  parseRoute(); drawTop();\n  const m = $("#main");\n  try {\n    if (route[0] === "decide") return await renderDecide(m);\n    if (route[0] === "kols") return await renderKols(m);\n    if (route[0] === "kol") return await renderKol(m, Number(route[1]));\n    if (route[0] === "find") return renderFind(m);\n    if (route[0] === "log") return await renderLog(m);\n    if (route[0] === "settings") return await renderSettings(m);\n    location.hash = "decide";\n  } catch (e) { if (!offline) m.innerHTML = `<div class="wrap"><div class="card"><b>\u51FA\u9519\u4E86\uFF1A</b>${esc(e.message)}</div></div>`; }\n}\nwindow.onhashchange = () => { closeModal(); if (!document.body.classList.contains("setup")) render(); };\n\n// ---------- \u5F85\u4F60\u51B3\u5B9A ----------\n// \u5148\u770B\u61C2\u53D1\u751F\u4E86\u4EC0\u4E48\uFF1A\u961F\u5217\u4E00\u884C\u4E00\u6761\uFF0C\u540C\u7C7B\u505A\u6CD5\u76F8\u540C\u7684\u5408\u6210\u4E00\u6279\uFF1B\u5355\u5F20\u5361\u662F \u53D1\u751F\u4E86\u4EC0\u4E48 \u2192 \u4E0A\u4E0B\u6587 \u2192 agent \u5EFA\u8BAE \u2192 \u64CD\u4F5C\uFF0C\u53F3\u8FB9\u662F KOL \u8D44\u6599\u3002\nconst D = { filter: "all", sel: null, mode: null, rej: "leave", revOn: {}, edits: {}, batchOff: {}, batchCur: {}, candOff: {}, alertDone: null, ctx: false, editing: false, gOff: {}, peek: null };\nconst GROUPS = [["all", "\u5168\u90E8"], ["problem", "\u51FA\u95EE\u9898\u4E86"], ["mail", "\u56DE\u4E00\u5C01\u4FE1"], ["batch", "\u53D1\u4E00\u6279"], ["decide", "\u8981\u4F60\u62CD\u677F"], ["done", "\u5DF2\u5904\u7406"]];\n// Kinds whose cards merge into one batch when two or more are waiting.\nconst BATCHABLE = { code_expiry: "\u7801\u5230\u671F", checkin: "\u95EE\u53D1\u5E03", no_reply: "\u4E0D\u7528\u56DE", close: "\u5EFA\u8BAE\u7ED3\u6848" };\nfunction groupOf(c) {\n  if (c.status === "unknown" || c.status === "failed" || c.kind === "unmatched" || c.kind === "bounce") return "problem";\n  if (c.kind === "invite_batch" || c.kind === "followup_group") return "batch";\n  if (c.to_addr && !c.items) return "mail";\n  return "decide";\n}\nconst batchKey = (c) => (c.group !== "problem" && c.status === "pending" && !c.items && !c.feedback && BATCHABLE[c.kind] ? c.kind : null);\nconst urgent = (c) => c.kind === "code_expiry" || c.kind === "checkin";\nfunction headOf(c) {\n  if (c.status === "unknown") return "\u8FD9\u5C01\u4FE1\u53D1\u51FA\u53BB\u6CA1\u6709\uFF0C\u4E0D\u786E\u5B9A";\n  if (c.status === "failed") return "\u540C\u610F\u540E\u6CA1\u505A\u6210\uFF1A" + (c.result || "");\n  if (c.items) return c.title || KINDS[c.kind];\n  if (c.title && c.title !== c.kol_name) return c.title;\n  return (c.why || "").split(/[\u3002\uFF01\uFF1F\\n]/)[0] || KINDS[c.kind] || c.kind;\n}\n// What the agent suggests; cards drafted before plan existed get a short one from their action.\nfunction planOf(c) {\n  if (c.plan) return c.plan;\n  const a = c.action || {}, code = a.code, x = a.after || {};\n  if (code?.type === "trial_extend") return `\u5EF6\u671F ${code.days} \u5929${c.to_addr ? "\uFF0C\u56DE\u4FE1\u544A\u8BC9\u5BF9\u65B9" : ""}`;\n  if (code?.type === "trial_create") return `\u53D1\u4F53\u9A8C\u7801\uFF08${code.maxUses} \u6B21\u3001${code.days} \u5929\uFF09`;\n  if (code) return `\u5F00\u6D3B\u52A8\u7801 ${code.code}`;\n  if (c.to_addr) return x.close_reason ? `\u56DE\u4FE1\u6536\u5C3E\uFF0C\u7136\u540E\u7ED3\u6848\uFF08${x.close_reason}\uFF09` : c.kind === "checkin" ? "\u5199\u4FE1\u95EE\u53D1\u5E03\u8FDB\u5EA6" : c.kind === "code_expiry" ? "\u4E0D\u5EF6\u671F\uFF0C\u5199\u4E00\u5C01\u6536\u5C3E\u4FE1" : c.kind === "followup" ? "\u50AC\u4E00\u5C01" : "\u56DE\u4E00\u5C01\u4FE1";\n  if (c.kind === "no_reply") return "\u4E0D\u56DE";\n  if (c.kind === "close") return `\u7ED3\u6848\uFF08${x.close_reason || "\u65E0\u56DE\u5E94"}\uFF09`;\n  if (c.kind === "bounce") return a.bounce === "close" ? "\u7ED3\u6848\uFF1A\u90AE\u7BB1\u65E0\u6548" : "\u89E3\u9664\u5BF9\u8FD9\u4E2A\u5730\u5740\u7684\u62E6\u622A";\n  if (c.kind === "unmatched") return a.match_kol_id ? `\u8BB0\u5230 KOL #${a.match_kol_id} \u540D\u4E0B\uFF0C\u8BA9 agent \u8D77\u8349\u56DE\u4FE1` : "\u4E0D\u662F KOL \u7684\u4FE1\uFF0C\u4E0D\u7528\u5904\u7406";\n  return stepsOf(c)[0] || c.why || "";\n}\nfunction askOf(c) {\n  if (c.status === "unknown") return "\u7ED3\u679C\u4E0D\u660E\uFF0C\u53BB\u90AE\u7BB1\u786E\u8BA4";\n  if (c.status === "failed") return "\u6CA1\u505A\u6210\uFF1A" + (c.result || "");\n  if (c.items) return `${c.items.length} \u9879`;\n  return c.plan ? `${headOf(c)} \u2192 ${c.plan}` : headOf(c);\n}\nfunction daysTo(t) { return Math.round((new Date(t) - Date.now()) / 86400000); }\nfunction factsOf(c) {\n  const f = [];\n  for (const k of c.codes || []) {\n    if (k.kind === "partner") { f.push({ t: `\u6D3B\u52A8\u7801 ${k.code} \xB7 \u8BBF\u5BA2 ${k.visitors ?? 0} \xB7 \u4ED8\u6B3E ${k.paid_orders ?? 0}` }); continue; }\n    let t = `${k.code} \u7528\u4E86 ${k.used ?? 0}/${k.max_uses ?? "?"}`, warn = false;\n    if (k.expires_at) { const d = daysTo(k.expires_at); warn = d <= 3; t += d < 0 ? ` \xB7 ${when(k.expires_at)} \u5DF2\u8FC7\u671F` : d === 0 ? " \xB7 \u4ECA\u5929\u5230\u671F" : ` \xB7 ${d} \u5929\u540E\u5230\u671F`; }\n    f.push({ t, warn });\n  }\n  if (c.kol_publish_due_at && c.kind === "checkin") { const d = -daysTo(c.kol_publish_due_at); if (d > 0) f.push({ t: `\u8FC7\u7EA6\u5B9A\u65E5 ${d} \u5929`, warn: true }); }\n  if (c.in_at) f.push({ t: `\u6765\u4FE1 ${ago(c.in_at)}` });\n  if (c.feedback) f.push({ t: `\u5DF2\u6309\u4F60\u7684\u610F\u89C1\u6539\u8FC7\uFF1A\u300C${c.feedback}\u300D`, warn: true });\n  return f;\n}\nconst factsHtml = (c) => factsOf(c).map((x) => `<span class="mfact ${x.warn ? "warn" : ""}">${esc(x.t)}</span>`).join("");\nfunction kolRows(c) {\n  return [["\u5E73\u53F0 \xB7 \u7C89\u4E1D", [c.kol_platform, c.kol_followers ? fans(c.kol_followers) + " \u7C89" : ""].filter(Boolean).join(" \xB7 ")], ["\u9636\u6BB5", STAGES[c.kol_stage] || ""],\n    ["\u90AE\u7BB1", c.kol_email || c.to_addr || c.in_from || ""], ["\u5E02\u573A", c.kol_market || ""],\n    ...(c.codes || []).map((k) => ["\u7801", `${k.code}\uFF08${k.kind === "partner" ? "\u6D3B\u52A8\u7801" : "\u4F53\u9A8C\u7801"}\uFF09${k.kind === "partner" ? "" : ` ${k.used ?? 0}/${k.max_uses ?? "?"}`}${k.expires_at ? " \xB7 \u5230 " + when(k.expires_at) : ""}`])]\n    .filter(([, v]) => v);\n}\nconst kolRowsHtml = (c) => kolRows(c).map(([k, v]) => `<div class="mkv"><span>${esc(k)}</span>${esc(v)}</div>`).join("");\nfunction threadOf(c) {\n  if (c.thread?.length) return c.thread;\n  return c.in_own ? [{ direction: "in", at: c.in_at, text: c.in_own }] : [];\n}\nconst msgHtml = (c, x) => `<div class="mmsg ${x.direction === "out" ? "we" : ""}"><span class="hint">${x.direction === "out" ? `\u6211\u4EEC${x.mailbox ? "\uFF08" + esc(x.mailbox) + "\uFF09" : ""}` : esc(c.kol_name || c.in_from || "\u5BF9\u65B9")} \xB7 ${when(x.at)}${x.bounce ? " \xB7 \u9000\u4FE1" : ""}</span>${x.subject && x.direction === "out" && !x.text ? esc(x.subject) : esc(x.text || "")}</div>`;\nfunction contextHtml(c) {\n  const t = threadOf(c);\n  if (!t.length) return "";\n  const older = t.slice(0, -1), last = t[t.length - 1], total = c.thread_total || t.length;\n  return `<div class="mctx"><div class="mctx-h"><span class="label" style="margin:0">\u4E0A\u4E0B\u6587 \xB7 \u6765\u5F80 ${total} \u5C01</span><span class="sp"></span>${older.length ? `<button class="link" type="button" data-act="ctx">${D.ctx ? "\u6536\u8D77\u66F4\u65E9\u7684" : `\u5C55\u5F00\u66F4\u65E9\u7684 ${older.length} \u5C01`}</button>` : ""}</div>\n    ${D.ctx ? older.map((x) => msgHtml(c, x)).join("") + (total > t.length && c.kol_id ? `<div class="hint" style="margin-bottom:6px">\u66F4\u65E9\u7684 ${total - t.length} \u5C01\u5728 <a href="#kol/${c.kol_id}">KOL \u8BE6\u60C5</a></div>` : "") : ""}\n    ${msgHtml(c, last).replace(\'</span>\', \'\uFF08\u6700\u8FD1\u4E00\u5C01\uFF09</span>\')}</div>`;\n}\nfunction letterHtml(c, label = "\u8981\u53D1\u7684\u4FE1") {\n  const e = D.edits[c.id] || {}, subj = e.subject ?? c.subject ?? "", body = e.body ?? c.body ?? "";\n  const edited = subj !== (c.subject ?? "") || body !== (c.body ?? "");\n  const canEdit = c.status === "pending";\n  return `<div class="mletter-h"><span>${label} \xB7 ${esc(c.mailbox || "")} \u2192 ${esc(c.to_addr || "")}</span><span class="edited" id="dEdited" style="margin:0" ${edited ? "" : "hidden"}>\u4F60\u6539\u8FC7</span><span class="sp"></span>\n    ${canEdit && D.editing && edited ? `<button class="link" type="button" data-act="resetdraft">\u6062\u590D agent \u7684\u7248\u672C</button>` : ""}${canEdit ? `<button class="link" type="button" data-act="edit">${D.editing ? "\u6539\u597D\u4E86" : "\u6539"}</button>` : ""}</div>\n    ${D.editing && canEdit ? `<input class="field" id="dSubj" type="text" value="${esc(subj)}" aria-label="\u4E3B\u9898"><textarea class="field draft" id="dBody" style="margin-top:8px" aria-label="\u6B63\u6587">${esc(body)}</textarea><div class="hint" style="margin-top:6px">{\u9AD4\u9A57\u78BC}\u3001{\u6B21\u6578} \u8FD9\u7C7B\u5360\u4F4D\u7531\u7CFB\u7EDF\u5728\u540C\u610F\u540E\u586B\u5165\u771F\u5B9E\u7684\u7801\u548C\u65E5\u671F\u3002</div>`\n      : `<div class="mpaper"><b>${esc(subj)}</b>${esc(body)}</div>`}`;\n}\nfunction cardHtml(c) {\n  const flow = stepsOf(c);\n  const decideBox = c.kind === "other" || c.kind === "unmatched" || c.kind === "bounce"\n    ? `<label class="label" for="dDecide" style="margin-top:12px">${c.kind === "other" ? "\u4F60\u7684\u51B3\u5B9A\uFF08\u4EA4\u7ED9 agent\uFF0C\u5B83\u7167\u8FD9\u4E2A\u8D77\u8349\u56DE\u4FE1\uFF0C\u56DE\u4FE1\u8FD8\u4F1A\u518D\u7ED9\u4F60\u770B\uFF09" : "\u4E0D\u540C\u610F agent \u7684\u5224\u65AD\uFF1F\u5199\u7ED9\u5B83\uFF08\u6BD4\u5982\uFF1A\u662F\u300C\u6797\u6797\u592B\u59BB\u300D\u7684\u7ECF\u7EAA\u4EBA\uFF09"}</label><textarea class="field" id="dDecide" rows="2"></textarea>` : "";\n  const main = `<div class="mhead"><div class="mwho"><span class="tag ${c.status === "unknown" || c.status === "failed" ? "red" : KIND_CLS[c.kind] || ""}">${c.status === "unknown" ? "\u7ED3\u679C\u4E0D\u660E" : c.status === "failed" ? "\u5931\u8D25" : KINDS[c.kind] || c.kind}</span><span>${ago(c.created_at)}</span></div>\n      <h1 class="mheadline">${esc(headOf(c))}</h1><div class="mfacts">${factsHtml(c)}</div></div>\n    ${c.status === "unknown" ? `<div class="sec"><div class="panel red"><span><b>\u7ED3\u679C\u4E0D\u660E\uFF1A</b>${esc(c.result || "")}\u3002\u7CFB\u7EDF\u4E0D\u4F1A\u81EA\u52A8\u91CD\u505A\uFF0C\u53BB ${esc(c.mailbox || "\u90AE\u7BB1")} \u7684\u300C\u5DF2\u53D1\u9001\u300D\u91CC\u770B\u4E00\u773C\u518D\u9009\u3002</span></div></div>` : ""}\n    ${contextHtml(c)}\n    <div class="mplan"><div class="mplan-l">agent \u5EFA\u8BAE</div><div class="mplan-t">${esc(planOf(c))}</div>\n      ${flow.length ? `<div class="mflow">\u540C\u610F\u540E\uFF1A${esc(flow.join(" \u2192 "))}</div>` : ""}${c.why && c.why !== planOf(c) ? `<div class="mwhy">\u7406\u7531\uFF1A${esc(c.why)}</div>` : ""}\n      ${decideBox}${c.to_addr ? `<div style="margin-top:12px">${letterHtml(c, c.status === "pending" ? "\u8981\u53D1\u7684\u4FE1" : "\u5F53\u65F6\u8981\u53D1\u7684\u4FE1")}</div>` : ""}</div>\n    ${modePanel(c)}`;\n  const side = `<aside class="mside" aria-label="KOL \u8D44\u6599"><h2>${esc(c.kol_name || c.in_from || "\u4E0D\u5728\u5E93\u91CC")}</h2>${kolRowsHtml(c)}${c.kol_id ? `<a href="#kol/${c.kol_id}">\u6253\u5F00 KOL \u8BE6\u60C5 \u2192</a>` : ""}</aside>`;\n  return `<div class="mwrap"><div class="mmain">${main}</div>${side}</div>` + barHtml(c);\n}\nfunction barHtml(c) {\n  if (c.status === "unknown") return `<div class="dbar"><button class="btn primary" type="button" data-resolve="${c.id}" data-happened="1">\u90AE\u7BB1\u91CC\u6709\uFF0C\u5DF2\u53D1\u51FA</button><button class="btn" type="button" data-resolve="${c.id}" data-happened="0">\u6CA1\u53D1\u51FA\uFF0C\u91CD\u65B0\u5BA1</button></div>`;\n  if (c.status === "failed") return `<div class="dbar"><button class="btn primary" type="button" data-act="redo">\u8BA9 agent \u91CD\u65B0\u8D77\u8349</button><button class="btn quiet" type="button" data-act="reject">\u4E0D\u505A\u4E86</button><span class="sp"></span><span class="hint">\u91CD\u65B0\u8D77\u8349\u4F1A\u51FA\u4E00\u5F20\u65B0\u5361</span></div>`;\n  if (c.to_addr) {\n    const e = D.edits[c.id], edited = e && (e.subject !== (c.subject ?? "") || e.body !== (c.body ?? ""));\n    return `<div class="dbar"><button class="btn primary" type="button" data-act="approve">${S.paused ? "\u540C\u610F\uFF08\u6682\u505C\u4E2D\uFF0C\u5148\u6392\u961F\uFF09" : edited ? "\u6309\u6211\u6539\u7684\u53D1\u51FA" : "\u540C\u610F\u5E76\u53D1\u51FA"} <span class="key">A</span></button>\n      <button class="btn" type="button" data-act="revise">\u8BA9\u5B83\u6539 <span class="key">R</span></button><button class="btn quiet" type="button" data-act="reject">\u4E0D\u505A\u4E86 <span class="key">X</span></button>\n      <span class="sp"></span><span class="hint">5 \u79D2\u5185\u53EF\u64A4\u9500 \xB7 J / K \u4E0A\u4E0B\u5207\u6362</span></div>`;\n  }\n  const ok = { unmatched: c.action?.match_kol_id ? "\u8BB0\u5230\u8FD9\u4F4D\u540D\u4E0B" : "\u540C\u610F\uFF0C\u4E0D\u5904\u7406", bounce: c.action?.bounce === "close" ? "\u540C\u610F\u7ED3\u6848\uFF1A\u90AE\u7BB1\u65E0\u6548" : "\u540C\u610F\uFF0C\u89E3\u9664\u62E6\u622A", no_reply: "\u540C\u610F\uFF0C\u4E0D\u56DE", close: "\u540C\u610F\u7ED3\u6848", legacy: "\u5DF2\u5904\u7406" }[c.kind] || "\u540C\u610F";\n  const no = { unmatched: "\u4E0D\u662F KOL \u7684\u4FE1\uFF0C\u5FFD\u7565", bounce: "\u5148\u653E\u7740", no_reply: "\u8FD8\u662F\u56DE\u4E00\u5C01\uFF08\u8BA9 agent \u5199\uFF09", close: "\u518D\u7B49\u7B49" }[c.kind] || "\u4E0D\u505A\u4E86";\n  return `<div class="dbar">${c.kind === "other" ? "" : `<button class="btn primary" type="button" data-act="approve">${ok} <span class="key">A</span></button>`}\n    ${c.kind === "other" || c.kind === "unmatched" || c.kind === "bounce" ? `<button class="btn ${c.kind === "other" ? "primary" : ""}" type="button" data-act="decide">\u6309\u6211\u5199\u7684\u4EA4\u7ED9 agent</button>` : ""}\n    <button class="btn quiet" type="button" data-act="${c.kind === "no_reply" ? "noreply-answer" : "reject"}">${no} <span class="key">X</span></button><span class="sp"></span><span class="hint">5 \u79D2\u5185\u53EF\u64A4\u9500</span></div>`;\n}\nfunction groupHtml(g) {\n  const ms = g.members, on = ms.filter((x) => !D.gOff[x.id]);\n  const plans = {};\n  ms.forEach((x) => { const k = planOf(x).split(/[\uFF0C,\uFF1B]/)[0]; plans[k] = (plans[k] || 0) + 1; });\n  const head = { code_expiry: "\u8FD9\u51E0\u4F4D\u7684\u4F53\u9A8C\u7801\u5FEB\u5230\u671F\u6216\u5DF2\u7528\u5B8C\uFF0Cagent \u6BCF\u4F4D\u5199\u597D\u4E86\u4E00\u5C01\u4FE1", checkin: "\u8FD9\u51E0\u4F4D\u8FC7\u4E86\u7EA6\u5B9A\u65E5\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50\uFF0Cagent \u6BCF\u4F4D\u5199\u597D\u4E86\u4E00\u5C01\u95EE\u5019", no_reply: "\u8FD9\u51E0\u5C01\u6765\u4FE1\u4E0D\u9700\u8981\u56DE", close: "\u8FD9\u51E0\u4F4D\u5EFA\u8BAE\u7ED3\u6848" }[g.kind];\n  return `<div class="mhead"><div class="mwho"><span class="tag ${KIND_CLS[g.kind] || ""}">${BATCHABLE[g.kind]}</span><b>${ms.length} \u4F4D</b></div><h1 class="mheadline">${head}</h1>\n      <div class="mfacts"><span class="mfact">agent \u5EFA\u8BAE\uFF1A${esc(Object.entries(plans).map(([k, n]) => `${n} \u4F4D${k}`).join("\uFF1B"))}</span></div></div>\n    ${ms.map((x) => {\n      const open = D.peek === x.id, t = threadOf(x);\n      return `<div class="g2row ${D.gOff[x.id] ? "off" : ""}"><input type="checkbox" data-goff="${x.id}" ${D.gOff[x.id] ? "" : "checked"} aria-label="${esc(x.kol_name || "")}">\n        <div><a class="g2name" href="#kol/${x.kol_id}">${esc(x.kol_name || "")}</a><div class="g2sub">${esc(factsOf(x).map((f) => f.t).join(" \xB7 "))}</div></div>\n        <div>${esc(headOf(x))}</div><div class="g2plan">${esc(planOf(x))}</div><button class="link" type="button" data-peek="${x.id}">${open ? "\u6536\u8D77" : "\u5C55\u5F00"}</button>\n        ${open ? `<div class="g2x"><div><div class="label">\u6765\u5F80 \xB7 \u6700\u8FD1 ${Math.min(3, t.length)} \u5C01\uFF08\u5171 ${x.thread_total || t.length} \u5C01\uFF09</div>${t.slice(-3).map((m) => msgHtml(x, m)).join("") || \'<div class="hint">\u8FD8\u6CA1\u6709\u6765\u5F80</div>\'}</div>\n          <div>${x.to_addr ? `<div class="label">\u8981\u53D1\u7684\u4FE1 \xB7 ${esc(x.mailbox || "")} \u2192 ${esc(x.to_addr)}</div><div class="mpaper"><b>${esc(x.subject || "")}</b>${esc(x.body || "")}</div>` : `<div class="label">\u540C\u610F\u540E</div><div>${esc(stepsOf(x).join(" \u2192 "))}</div>`}${x.why ? `<div class="hint" style="margin-top:6px">\u7406\u7531\uFF1A${esc(x.why)}</div>` : ""}</div>\n          <div style="flex:0 1 220px"><div class="label">\u8D44\u6599</div>${kolRowsHtml(x)}<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px"><a href="#kol/${x.kol_id}">\u6253\u5F00 KOL \u8BE6\u60C5 \u2192</a><button class="link" type="button" data-gsingle="${x.id}" style="text-align:left">\u5355\u72EC\u5904\u7406\u8FD9\u4F4D\uFF08\u6539\u4FE1\u3001\u8BA9\u5B83\u6539\uFF09</button></div></div></div>` : ""}</div>`;\n    }).join("")}\n    <div class="dbar"><button class="btn primary" type="button" data-act="gapprove" ${on.length ? "" : "disabled"}>${S.paused ? `\u540C\u610F\u8FD9 ${on.length} \u4F4D\uFF08\u6682\u505C\u4E2D\uFF0C\u5148\u6392\u961F\uFF09` : `\u540C\u610F\u8FD9 ${on.length} \u4F4D`} <span class="key">A</span></button>\n      <button class="btn quiet" type="button" data-act="greject">\u8FD9\u6279\u90FD\u4E0D\u505A <span class="key">X</span></button><span class="sp"></span><span class="hint">\u53BB\u6389\u52FE\u7684\u4EBA\u7559\u5728\u961F\u5217\u91CC\u5355\u72EC\u5904\u7406 \xB7 5 \u79D2\u5185\u53EF\u64A4\u9500</span></div>`;\n}\nlet cards = [], drafting = [], done = [];\nasync function loadCards() {\n  const [pending, problems, dr, dn] = await Promise.all([api("/cards?view=pending"), api("/cards?view=problems"), api("/cards?view=drafting"), api("/cards?view=done")]);\n  const all = problems.concat(pending.filter((p) => !problems.some((x) => x.id === p.id)));\n  all.forEach((c) => (c.group = groupOf(c)));\n  // \u51FA\u95EE\u9898\u7684\u56FA\u5B9A\u5728\u6700\u4E0A\u9762\uFF0C\u6309\u610F\u89C1\u6539\u597D\u7684\u63A5\u7740\uFF0C\u5FEB\u5230\u671F\u548C\u8FC7\u4E86\u7EA6\u5B9A\u65E5\u7684\u518D\u63A5\u7740\uFF0C\u5176\u4F59\u6309\u5148\u6765\u540E\u5230\u3002\n  const rest = all.filter((c) => c.group !== "problem" && !c.feedback);\n  cards = all.filter((c) => c.group === "problem").concat(all.filter((c) => c.group !== "problem" && c.feedback), rest.filter(urgent), rest.filter((c) => !urgent(c)));\n  drafting = dr.filter((d) => !d.parent_id);\n  done = dn.filter((d) => !d.parent_id);\n}\n// Queue entries: a card, or a batch of same-kind cards when two or more wait.\nfunction entriesOf(list) {\n  const n = {};\n  list.forEach((c) => { const k = batchKey(c); if (k) n[k] = (n[k] || 0) + 1; });\n  const seen = {}, out = [];\n  for (const c of list) {\n    const k = batchKey(c);\n    if (k && n[k] >= 2) { if (!seen[k]) { seen[k] = true; out.push({ key: "g:" + k, kind: k, members: list.filter((x) => batchKey(x) === k) }); } }\n    else out.push({ key: String(c.id), card: c });\n  }\n  return out;\n}\nfunction itemHtml(e) {\n  if (e.members) return `<button class="item q1 urgent ${e.key === D.sel ? "on" : ""}" type="button" data-sel="${e.key}"><span class="tag ${KIND_CLS[e.kind] || ""}">${BATCHABLE[e.kind]}</span><span class="iname">${e.members.length} \u4F4D</span><span class="qask">${esc([...new Set(e.members.map((x) => planOf(x).split(/[\uFF0C,\uFF1B]/)[0]))].join(" \xB7 "))}</span></button>`;\n  const c = e.card, bad = c.group === "problem";\n  return `<button class="item q1 ${bad ? "bad" : urgent(c) ? "urgent" : ""} ${e.key === D.sel ? "on" : ""}" type="button" data-sel="${e.key}"><span class="tag ${c.status === "unknown" || c.status === "failed" ? "red" : KIND_CLS[c.kind] || ""}">${c.status === "unknown" ? "\u7ED3\u679C\u4E0D\u660E" : c.status === "failed" ? "\u5931\u8D25" : c.feedback ? "\u5DF2\u6309\u610F\u89C1\u6539" : KINDS[c.kind] || c.kind}</span><span class="iname">${esc(c.kol_name || c.in_from || c.title || "")}</span><span class="qask">${esc(askOf(c))}</span></button>`;\n}\nasync function renderDecide(m, reload = true) {\n  if (reload) await loadCards();\n  if (route[1]) { D.sel = String(route[1]); history.replaceState(null, "", "#decide"); }\n  const visible = entriesOf(D.filter === "all" ? cards : cards.filter((c) => c.group === D.filter));\n  const allEntries = entriesOf(cards);\n  // A single card the operator picked out of a batch is shown on its own.\n  let cur = allEntries.find((e) => e.key === D.sel) || (cards.some((c) => String(c.id) === D.sel) ? { key: D.sel, card: cards.find((c) => String(c.id) === D.sel) } : null);\n  if (!cur) { cur = visible[0] || allEntries[0] || null; D.sel = cur?.key ?? null; D.ctx = false; D.editing = false; }\n  const unknown = cards.filter((c) => c.status === "unknown");\n  let h = "";\n  if (unknown.length) {\n    const u = unknown[0];\n    h += `<div class="alert" role="alert"><span style="flex:1;min-width:240px"><b>${unknown.length} \u4EF6\u4E8B\u8981\u4F60\u786E\u8BA4\uFF1A</b>${esc(u.kol_name || "")}\u300C${esc(u.title || "")}\u300D${esc(u.result || "\u7ED3\u679C\u4E0D\u660E")}\u3002\u7CFB\u7EDF\u4E0D\u4F1A\u81EA\u52A8\u91CD\u505A\uFF0C\u8BF7\u5230 ${esc(u.mailbox || "\u90AE\u7BB1")} \u7684\u300C\u5DF2\u53D1\u9001\u300D\u91CC\u770B\u4E00\u773C\u3002</span>\n      <button class="btn" type="button" data-resolve="${u.id}" data-happened="1">\u90AE\u7BB1\u91CC\u6709\uFF0C\u5DF2\u53D1\u51FA</button><button class="btn" type="button" data-resolve="${u.id}" data-happened="0">\u6CA1\u53D1\u51FA\uFF0C\u91CD\u65B0\u5BA1</button></div>`;\n  }\n  if (D.alertDone) h += `<div class="okbar"><span class="sp">${esc(D.alertDone)}</span><button class="link" type="button" data-hideok>\u77E5\u9053\u4E86</button></div>`;\n  const count = (g) => (g === "done" ? done.length : g === "all" ? cards.length : cards.filter((c) => c.group === g).length);\n  h += `<div class="dbody"><section class="queue" aria-label="\u5F85\u4F60\u51B3\u5B9A"><div class="qchips" role="group" aria-label="\u6309\u8981\u4F60\u505A\u4EC0\u4E48">${GROUPS.map(([k, v]) => `<button class="qchip ${D.filter === k ? "on" : ""}" type="button" data-filter="${k}" aria-pressed="${D.filter === k}">${v} ${count(k)}</button>`).join("")}</div>`;\n  if (D.filter === "done") {\n    h += `<div class="qhead">\u6700\u8FD1 3 \u5929\u5904\u7406\u8FC7\u7684 \xB7 5 \u79D2\u5185\u53EF\u4EE5\u64A4\u9500\uFF0C\u4E4B\u540E\u53BB KOL \u8BE6\u60C5\u91CC\u770B</div>` + (done.map((d) => `<div class="ghost"><span class="tag ${d.status === "done" ? "green" : ""}">${{ done: "\u505A\u5B8C", rejected: "\u4E0D\u505A", superseded: "\u88AB\u53D6\u4EE3", dropped: "\u5254\u6389" }[d.status] || d.status}</span><span class="sp">${esc(d.kol_name || d.title || "")}${d.result ? " \xB7 " + esc(d.result) : ""}</span><span class="itime">${when(d.done_at)}</span></div>`).join("") || `<div class="empty">\u8FD8\u6CA1\u6709</div>`);\n  } else {\n    h += visible.map(itemHtml).join("");\n    if (!visible.length) h += `<div class="empty"><span>${cards.length ? "\u8FD9\u4E00\u7C7B\u90FD\u5904\u7406\u5B8C\u4E86" : "\u73B0\u5728\u6CA1\u6709\u8981\u4F60\u51B3\u5B9A\u7684\u4E8B"}</span>${cards.length ? `<button class="link" type="button" data-filter="all">\u770B\u5168\u90E8</button>` : ""}</div>`;\n    if (drafting.length) h += `<div class="qhead">agent \u6B63\u5728\u5199\uFF08${drafting.length}\uFF09\xB7 \u5199\u597D\u4F1A\u81EA\u52A8\u6392\u8FDB\u6765</div>` + drafting.map((d) => `<div class="ghost"><span class="tag">${d.feedback ? "\u6309\u610F\u89C1\u6539" : KINDS[d.kind] || "\u8D77\u8349"}</span><span class="sp">${esc(d.kol_name || d.title || "")}</span><span class="itime">${ago(d.updated_at || d.created_at)}</span></div>`).join("");\n  }\n  const c = cur?.card;\n  const detail = !cur ? `<div class="empty" style="padding:120px 24px"><span class="big">\u90FD\u5904\u7406\u5B8C\u4E86</span><span>\u65B0\u6765\u4FE1\u4F1A\u5728\u51E0\u79D2\u5185\u51FA\u73B0\u5728\u8FD9\u91CC\uFF1B\u6BCF\u5929\u65E9\u4E0A\u6392\u597D\u4E0B\u4E00\u6279\u9080\u7EA6\u548C\u50AC\u4FE1\u3002</span></div>`\n    : cur.members ? groupHtml(cur) : c.items ? batchHtml(c) : c.kind === "template" ? templateHtml(c) : c.kind === "discovery" ? discoveryHtml(c) : cardHtml(c);\n  h += `</section><article class="detail" aria-label="\u8BE6\u60C5">${detail}</article></div>`;\n  m.innerHTML = h;\n  wireDecide(m, cur, visible);\n}\nfunction stepsOf(c) {\n  const a = c.action || {}, s = [];\n  const code = a.code;\n  if (code) {\n    if (code.type === "trial_create") s.push(`\u5728 TAFU \u5EFA\u4F53\u9A8C\u7801 ${code.code}\uFF0C${code.maxUses} \u6B21\uFF0C${code.days} \u5929`);\n    else if (code.type === "trial_extend") s.push(`\u5728 TAFU \u628A ${code.code} \u5EF6\u671F ${code.days} \u5929${code.addUses ? `\uFF0C\u52A0 ${code.addUses} \u6B21` : ""}`);\n    else s.push(`\u5728 TAFU \u5F00\u6D3B\u52A8\u7801 ${code.code}\uFF08${code.market || ""}\uFF0C\u7C89\u4E1D ${100 - (code.percentOff || 0)}% \u4EF7\uFF09\uFF0C\u8054\u7CFB\u90AE\u7BB1 ${code.contact || ""}`);\n  }\n  if (c.to_addr) s.push(`${code ? "\u628A\u7801\u3001\u6B21\u6570\u3001\u5230\u671F\u65E5\u586B\u8FDB\u4FE1\u91CC\uFF0C" : ""}\u4ECE ${c.mailbox || "\u53D1\u4FE1\u90AE\u7BB1"} ${c.in_reply_to ? "\u63A5\u7740\u539F\u90AE\u4EF6\u4E32" : ""}\u53D1\u7ED9 ${c.to_addr}`);\n  const x = a.after || {};\n  const after = [];\n  if (x.close_reason) after.push(`\u7ED3\u6848\uFF08${x.close_reason}\uFF09`); else if (x.stage) after.push(`\u9636\u6BB5\u6539\u4E3A\u300C${STAGES[x.stage] || x.stage}\u300D`);\n  if (x.never_contact) after.push("\u8BBE\u4E3A\u6C38\u4E0D\u8054\u7CFB");\n  if (x.publish_due_at) after.push(`\u7EA6\u5B9A\u53D1\u5E03 ${String(x.publish_due_at).slice(0, 10)}`);\n  if (x.next_followup_days != null && !x.close_reason) after.push(`${x.next_followup_days} \u5929\u540E\u63D0\u9192\u8DDF\u8FDB`);\n  if (after.length) s.push(after.join("\uFF0C"));\n  if (c.kind === "unmatched") s.push(a.match_kol_id ? `\u628A\u8FD9\u5C01\u4FE1\u8BB0\u5230 KOL #${a.match_kol_id} \u540D\u4E0B\uFF0Cagent \u7167\u5E38\u8D77\u8349\u56DE\u4FE1` : "\u8FD9\u5C01\u4FE1\u4E0D\u7528\u5904\u7406\uFF0C\u4EE5\u540E\u540C\u4E00\u53D1\u4EF6\u4EBA\u7684\u4FE1\u4E5F\u4E0D\u518D\u51FA\u5361");\n  if (c.kind === "bounce") s.push(a.bounce === "close" ? "\u8FD9\u4F4D KOL \u7ED3\u6848\uFF08\u9000\u4FE1\u6216\u90AE\u7BB1\u65E0\u6548\uFF09\uFF0C\u539F\u90AE\u7BB1\u4E0D\u518D\u7528" : "\u53EA\u89E3\u9664\u5BF9\u8FD9\u4E2A\u5730\u5740\u7684\u62E6\u622A");\n  if (c.kind === "no_reply") s.push("\u8FD9\u5C01\u6765\u4FE1\u6807\u4E3A\u4E0D\u7528\u56DE\uFF0C\u9636\u6BB5\u4E0D\u53D8");\n  return s;\n}\nfunction headHtml(c) {\n  const badges = [c.kol_stage ? STAGES[c.kol_stage] : "", c.kol_platform ? `${c.kol_platform}${c.kol_followers ? " \xB7 " + fans(c.kol_followers) + "\u7C89" : ""}` : ""].filter(Boolean);\n  return `<div class="dhead"><h1 class="h1">${esc(c.kol_name || c.title || "")}${badges.map((b) => `<span class="tag">${esc(b)}</span>`).join("")}<span class="tag ${KIND_CLS[c.kind] || ""}">${KINDS[c.kind] || c.kind}</span></h1>\n    <div class="meta">${c.to_addr ? `${esc(c.mailbox || "")} \u2192 ${esc(c.to_addr)}` : esc(c.in_from || "")}${c.kol_id ? ` \xB7 <a href="#kol/${c.kol_id}">\u770B\u5168\u90E8\u8D44\u6599\u548C\u6765\u5F80</a>` : ""}</div>\n    ${c.why ? `<div class="why"><b>agent\uFF1A</b>${esc(c.why)}</div>` : ""}\n    ${c.status === "failed" ? `<div class="panel red" style="margin-top:10px"><span><b>\u540C\u610F\u540E\u6CA1\u505A\u6210\uFF1A</b>${esc(c.result || "")}\u3002\u4FE1\u6CA1\u6709\u53D1\u51FA\u3002</span></div>` : ""}\n    ${c.status === "unknown" ? `<div class="panel red" style="margin-top:10px"><span><b>\u7ED3\u679C\u4E0D\u660E\uFF1A</b>${esc(c.result || "")}\u3002\u7CFB\u7EDF\u4E0D\u4F1A\u81EA\u52A8\u91CD\u505A\u3002</span></div>` : ""}\n    ${c.feedback ? `<div class="edited">\u5DF2\u6309\u4F60\u7684\u610F\u89C1\u6539\u8FC7\uFF1A\u300C${esc(c.feedback)}\u300D</div>` : ""}</div>`;\n}\nfunction modePanel(c) {\n  if (D.mode === "revise") {\n    const chips = ["\u66F4\u77ED\u4E00\u70B9", "\u8BED\u6C14\u66F4\u53E3\u8BED", "\u5148\u522B\u63D0\u7801", "\u7528\u7E41\u4F53\u53F0\u6E7E\u8BF4\u6CD5"];\n    return `<div class="sec"><div class="panel"><label class="label" style="margin:0" for="revNote">\u544A\u8BC9 agent \u54EA\u91CC\u8981\u6539\uFF08\u5B83\u4F1A\u91CD\u5199\u8FD9\u5F20\u5361\uFF0C\u539F\u5361\u5148\u6536\u8D77\uFF09</label>\n      <div class="row">${chips.map((x) => `<button class="pill ${D.revOn[x] ? "on" : ""}" type="button" data-revchip="${esc(x)}">${esc(x)}</button>`).join("")}</div>\n      <textarea class="field" id="revNote" rows="2" placeholder="\u6BD4\u5982\uFF1A\u522B\u5148\u95EE\u5E74\u9F84\uFF0C\u5148\u8BF4\u600E\u4E48\u7528\u7801"></textarea>\n      <div class="row"><button class="btn primary" type="button" data-act="revise-send">\u4EA4\u7ED9 agent \u6539</button><button class="btn" type="button" data-act="mode-close">\u53D6\u6D88</button><span class="hint">\u6539\u597D\u7684\u5361\u56DE\u5230\u961F\u5217\u6700\u4E0A\u9762</span></div></div></div>`;\n  }\n  if (D.mode === "reject") {\n    const opts = c.to_addr ? [["leave", "\u4E0D\u56DE\uFF0C\u5C31\u653E\u7740", "\u4E0D\u53D1\u4FE1\uFF0C\u9636\u6BB5\u4E0D\u53D8\uFF1B\u5979\u518D\u6765\u4FE1\u4F1A\u7167\u5E38\u51FA\u5361"], ["self", "\u6211\u81EA\u5DF1\u5728\u90AE\u7BB1\u91CC\u56DE", "\u4F60\u56DE\u4E86\u4EE5\u540E\uFF0C\u6536\u4FE1\u65F6\u4F1A\u81EA\u52A8\u8BB0\u8FDB\u6765\u5F80"], ["close", "\u4E0D\u56DE\uFF0C\u5E76\u628A\u8FD9\u4F4D\u7ED3\u6848", "\u7ED3\u6848\u539F\u56E0\u9009\u300C\u62D2\u7EDD\u300D\uFF0C\u4EE5\u540E\u4E0D\u518D\u6392\u5979"]]\n      : [["leave", "\u4E0D\u505A", "\u8FD9\u5F20\u5361\u6536\u8D77"]];\n    return `<div class="sec"><div class="panel red"><div class="label" style="margin:0">\u4E0D\u505A\u8FD9\u5F20\u5361\uFF0C\u7136\u540E\u5462\uFF1F</div>${opts.map(([k, l, hint]) => `<button class="radio ${D.rej === k ? "on" : ""}" type="button" data-rej="${k}"><span><b>${l}</b><br><span class="hint">${hint}</span></span></button>`).join("")}\n      <div class="row"><button class="btn danger" type="button" data-act="reject-send">\u786E\u5B9A\u4E0D\u505A</button><button class="btn" type="button" data-act="mode-close">\u53D6\u6D88</button><span class="hint">5 \u79D2\u5185\u53EF\u4EE5\u64A4\u9500</span></div></div></div>`;\n  }\n  return "";\n}\nfunction batchHtml(c) {\n  const off = D.batchOff[c.id] || {};\n  const keep = c.items.filter((i) => !off[i.id]);\n  const byBox = {};\n  keep.forEach((i) => { if (i.to_addr) byBox[(i.mailbox || "").toLowerCase()] = (byBox[(i.mailbox || "").toLowerCase()] || 0) + 1; });\n  const sends = keep.filter((i) => i.to_addr).length;\n  const quota = (U.mailboxes || []).filter((b) => b.enabled).map((b) => ({ label: `${b.address} \u4ECA\u5929${b.warmup_from ? "\uFF08\u9884\u70ED\u4E2D\uFF09" : ""}`, used: b.used + (byBox[b.address.toLowerCase()] || 0), limit: b.limit_today }))\n    .concat([{ label: "\u9879\u76EE\u4ECA\u5929\uFF08\u6309\u4EBA\u6570\uFF09", used: U.contacted + sends, limit: U.dailyLimit }]);\n  const over = quota.some((q) => q.used > q.limit);\n  const curId = D.batchCur[c.id] ?? c.items[0]?.id;\n  const ci = c.items.find((i) => i.id === curId) || c.items[0];\n  const label = (i) => (i.kind === "close" ? "\u7ED3\u6848" : i.kind === "followup" ? (/2/.test(i.title || "") ? "\u50AC 2" : "\u50AC 1") : KINDS[i.kind] || i.kind);\n  return headHtml(c) + `<div class="sec" style="padding-top:12px"><div class="quota">${quota.map((q) => `<div class="q ${q.used > q.limit ? "over" : ""}"><div class="meta">${esc(q.label)}</div><b>${q.used}</b> <span class="meta">/ ${q.limit} \u4EBA \xB7 ${q.used > q.limit ? `\u8D85\u4E86 ${q.used - q.limit} \u4EBA\uFF0C\u8D85\u51FA\u7684\u4E0D\u4F1A\u53D1` : `\u53D1\u5B8C\u5269 ${q.limit - q.used}`}</span><div class="track"><div class="fill ${q.used > q.limit ? "over" : ""}" style="width:${Math.min(100, Math.round((q.used / Math.max(1, q.limit)) * 100))}%"></div></div></div>`).join("")}</div></div>\n    <div class="cols"><div class="col" style="flex:1 1 440px"><div class="label">\u540D\u5355 \xB7 \u53D6\u6D88\u52FE\u9009\u5C31\u4E0D\u53D1 \xB7 \u70B9\u540D\u5B57\u770B\u8FD9\u4E2A\u4EBA\u4F1A\u6536\u5230\u7684\u4FE1</div><div class="gbox">\n      <div class="grow head"><span><input type="checkbox" aria-label="\u5168\u9009" data-ball ${keep.length === c.items.length ? "checked" : ""}></span><span>KOL</span><span>\u90AE\u7BB1</span><span>\u505A\u4EC0\u4E48</span><span>\u4ECE\u54EA\u53D1</span></div>\n      ${c.items.map((i) => `<div class="grow ${off[i.id] ? "off" : ""} ${i.id === ci?.id ? "cur" : ""}"><span><input type="checkbox" data-bitem="${i.id}" aria-label="\u53D1\u7ED9 ${esc(i.kol_name || "")}" ${off[i.id] ? "" : "checked"}></span><span><button class="rowbtn" type="button" data-bcur="${i.id}">${esc(i.kol_name || "")}</button>${off[i.id] ? `<span class="sub">\u5254\u6389\u4E86 \xB7 \u7559\u5728\u5E93\u91CC\uFF0C\u4E0B\u6B21\u8FD8\u4F1A\u6392</span>` : ""}</span><span class="snip">${esc(i.to_addr || "\u2014")}</span><span><span class="tag">${esc(label(i))}</span></span><span class="sub">${esc((i.mailbox || "").split("@")[0])}${i.mailbox ? "@" : "\u2014"}</span></div>`).join("")}\n    </div></div><div class="col" style="flex:1 1 360px"><div class="label">\u300C${esc(ci?.kol_name || "")}\u300D${ci?.to_addr ? "\u4F1A\u6536\u5230\u7684\u4FE1" : "\uFF1A\u4E0D\u53D1\u4FE1"}</div><div class="preview">${ci?.to_addr ? `<b>${esc(ci.subject || "")}</b>\\n\\n${esc(ci.body || "")}` : esc(ci?.why || ci?.title || "")}</div></div></div>\n    ${modePanel(c)}<div class="dbar"><button class="btn primary" type="button" data-act="approve" ${over || !keep.length ? "disabled" : ""}>${over ? "\u989D\u5EA6\u8D85\u4E86\uFF0C\u5148\u5254\u6389\u51E0\u4E2A" : `\u540C\u610F\uFF0C${sends ? `\u53D1\u51FA ${sends} \u5C01` : ""}${keep.length - sends ? `${sends ? "\u3001" : ""}\u7ED3\u6848 ${keep.length - sends} \u4EBA` : ""}`} <span class="key">A</span></button>\n      <button class="btn quiet" type="button" data-act="reject">\u8FD9\u6279\u4E0D\u53D1\u4E86 <span class="key">X</span></button><span class="sp"></span><span class="hint">\u6BCF\u5C01\u53D1\u524D\u8FD8\u4F1A\u518D\u67E5\u989D\u5EA6\u3001\u51B7\u5374\u3001\u6C38\u4E0D\u8054\u7CFB\u3001\u9000\u4FE1\u548C\u90AE\u7BB1\u57DF\u540D\uFF1B\u53D1\u9001\u8FDB\u5EA6\u5728\u300C\u8BB0\u5F55\u300D\u91CC</span></div>`;\n}\nfunction templateHtml(c) {\n  const d = c.draft || {}, cur = c.current;\n  return headHtml(c) + `<div class="cols"><div class="col"><div class="label">${cur ? "\u73B0\u5728\u5728\u7528\uFF08\u6279\u51C6\u524D\u7167\u5E38\u53D1\u8FD9\u4E00\u7248\uFF09" : "\u65B0\u6A21\u677F"}</div><div class="preview">${cur ? `<b>${esc(cur.subject || "")}</b>\\n\\n${esc(cur.body || "")}` : "\uFF08\u4EE5\u524D\u6CA1\u6709\uFF09"}</div></div>\n    <div class="col"><div class="label">\u65B0\u7248 \xB7 ${esc(d.purpose || "")} \xB7 ${esc(d.language || "")}</div><div class="preview">${`<b>${esc(d.subject || "")}</b>\\n\\n${esc(d.body || "")}`}</div></div></div>\n    ${modePanel(c)}<div class="dbar"><button class="btn primary" type="button" data-act="approve">\u6279\u51C6\uFF0C\u6362\u6210\u65B0\u7248 <span class="key">A</span></button><button class="btn" type="button" data-act="revise">\u8BA9\u5B83\u6539 <span class="key">R</span></button>\n    <a class="btn" href="#settings/tpl">\u6211\u81EA\u5DF1\u6539</a><button class="btn quiet" type="button" data-act="reject">\u4E0D\u6362\u4E86 <span class="key">X</span></button><span class="sp"></span><span class="hint">\u5DF2\u6392\u8FDB\u5361\u7247\u91CC\u7684\u4FE1\u4E0D\u53D7\u5F71\u54CD</span></div>`;\n}\nfunction discoveryHtml(c) {\n  const list = c.action?.candidates || [], off = D.candOff[c.id] || {};\n  const n = list.filter((_, i) => !off[i]).length;\n  return headHtml(c) + `<div class="sec" style="padding-top:12px"><div class="label">\u52FE\u7740\u7684\u5165\u5E93\uFF08\u300C\u672A\u8054\u7CFB\u300D\uFF09\uFF0C\u4E4B\u540E\u6392\u8FDB\u9080\u7EA6\u6279</div>\n    ${list.slice(0, 300).map((x, i) => `<label class="cand"><input type="checkbox" data-cand="${i}" ${off[i] ? "" : "checked"}><b style="font-weight:500;flex:0 0 200px"><a href="${esc(x.url || "#")}" target="_blank" rel="noopener">${esc(x.name || x.handle)}</a></b><span class="meta" style="flex:0 0 70px">${fans(x.followers)}</span><span class="sp" style="color:#5F5E58">${esc((x.bio || "").slice(0, 80))}</span><span class="meta">${esc(x.email || "\u6CA1\u90AE\u7BB1")}</span></label>`).join("")}</div>\n    <div class="dbar"><button class="btn primary" type="button" data-act="approve" ${n ? "" : "disabled"}>\u540C\u610F\uFF0C\u5165\u5E93 ${n} \u4F4D <span class="key">A</span></button><button class="btn quiet" type="button" data-act="reject">\u4E00\u4E2A\u90FD\u4E0D\u8981 <span class="key">X</span></button><span class="sp"></span><span class="hint">\u5E93\u91CC\u5DF2\u6709\u7684\u4F1A\u81EA\u52A8\u8DF3\u8FC7</span></div>`;\n}\nfunction wireDecide(m, entry, visible) {\n  $$("[data-filter]", m).forEach((b) => (b.onclick = () => { D.filter = b.dataset.filter; D.mode = null; render(); }));\n  $$("[data-sel]", m).forEach((b) => (b.onclick = () => { D.sel = b.dataset.sel; D.mode = null; D.revOn = {}; D.rej = "leave"; D.ctx = false; D.editing = false; D.peek = null; render(); }));\n  $$("[data-resolve]", m).forEach((b) => (b.onclick = () => act(() => api(`/cards/${b.dataset.resolve}/resolve`, { happened: b.dataset.happened === "1" }), () => {\n    D.alertDone = b.dataset.happened === "1" ? "\u5DF2\u8BB0\u4E3A\u53D1\u51FA\uFF1A\u8FD9\u5C01\u4FE1\u8BB0\u8FDB\u6765\u5F80\uFF0C\u540E\u9762\u7684\u6B65\u9AA4\u7167\u5E38\u505A\u3002" : null;\n    return b.dataset.happened === "1" ? "\u5DF2\u8BB0\u4E3A\u53D1\u51FA" : "\u5DF2\u8BB0\u4E3A\u6CA1\u53D1\u51FA\uFF0C\u5361\u7247\u56DE\u5230\u961F\u5217\u91CD\u65B0\u5BA1\uFF08\u7801\u5EFA\u8FC7\u7684\u4E0D\u4F1A\u518D\u5EFA\uFF09";\n  })));\n  const hk = $("[data-hideok]", m); if (hk) hk.onclick = () => { D.alertDone = null; render(); };\n  if (!entry) return;\n  const next = () => { const i = visible.findIndex((e) => e.key === entry.key); const n = visible[i + 1] || visible[i - 1]; D.sel = n ? n.key : null; D.mode = null; D.ctx = false; D.editing = false; D.peek = null; };\n  const go = (k) => { const i = visible.findIndex((e) => e.key === entry.key); const n = visible[k === "j" ? i + 1 : i - 1]; if (n) { D.sel = n.key; D.mode = null; D.ctx = false; D.editing = false; D.peek = null; render(); } };\n  if (entry.members) {\n    const ms = entry.members;\n    $$("[data-goff]", m).forEach((cb) => (cb.onchange = () => { D.gOff[cb.dataset.goff] = !cb.checked; render(); }));\n    $$("[data-peek]", m).forEach((b) => (b.onclick = () => { const id = Number(b.dataset.peek); D.peek = D.peek === id ? null : id; render(); }));\n    $$("[data-gsingle]", m).forEach((b) => (b.onclick = () => { D.sel = b.dataset.gsingle; D.editing = true; D.peek = null; render(); }));\n    const A = {\n      gapprove: async () => {\n        const on = ms.filter((x) => !D.gOff[x.id]);\n        if (!on.length) return;\n        await Promise.all(on.map((x) => api(`/cards/${x.id}/approve`, { hash: x.hash })));\n        next(); dropCards(on.map((x) => x.id));\n        toast(`\u5DF2\u540C\u610F ${on.length} \u4F4D\uFF0C5 \u79D2\u540E${S.paused ? "\u6392\u961F\uFF08\u6682\u505C\u4E2D\uFF09" : "\u5F00\u59CB\u6267\u884C"}`, { undo: () => Promise.all(on.map((x) => api(`/cards/${x.id}/undo`, {}))), after: `\u5DF2\u540C\u610F ${on.length} \u4F4D` });\n        refresh();\n      },\n      greject: async () => {\n        await Promise.all(ms.map((x) => api(`/cards/${x.id}/reject`, { note: "\u6574\u6279\u4E0D\u505A" })));\n        next(); dropCards(ms.map((x) => x.id));\n        toast(`\u8FD9\u6279 ${ms.length} \u4F4D\u90FD\u4E0D\u505A`, { undo: () => Promise.all(ms.map((x) => api(`/cards/${x.id}/undo`, {}))) });\n        refresh();\n      },\n    };\n    $$("[data-act]", m).forEach((b) => (b.onclick = () => (A[b.dataset.act] ? Promise.resolve(A[b.dataset.act]()).catch((e) => toast("\u6CA1\u6210\u529F\uFF1A" + e.message)) : null)));\n    decideKeys = (k) => { if (k === "a") $(\'[data-act="gapprove"]\', m)?.click(); else if (k === "x") $(\'[data-act="greject"]\', m)?.click(); else if (k === "j" || k === "k") go(k); };\n    return;\n  }\n  const cur = entry.card;\n  const subj = $("#dSubj"), body = $("#dBody");\n  const onEdit = () => { D.edits[cur.id] = { subject: subj.value, body: body.value }; const ed = subj.value !== (cur.subject ?? "") || body.value !== (cur.body ?? ""); $("#dEdited").hidden = !ed; const a = $(\'[data-act="approve"]\'); if (a && !S.paused) a.firstChild.textContent = ed ? "\u6309\u6211\u6539\u7684\u53D1\u51FA " : "\u540C\u610F\u5E76\u53D1\u51FA "; };\n  if (subj) { subj.oninput = onEdit; body.oninput = onEdit; }\n  $$("[data-revchip]", m).forEach((b) => (b.onclick = () => { D.revOn[b.dataset.revchip] = !D.revOn[b.dataset.revchip]; b.classList.toggle("on"); }));\n  $$("[data-rej]", m).forEach((b) => (b.onclick = () => { D.rej = b.dataset.rej; $$("[data-rej]", m).forEach((x) => x.classList.toggle("on", x === b)); }));\n  $$("[data-bitem]", m).forEach((cb) => (cb.onchange = () => { (D.batchOff[cur.id] ||= {})[cb.dataset.bitem] = !cb.checked; render(); }));\n  const ball = $("[data-ball]", m); if (ball) ball.onchange = () => { D.batchOff[cur.id] = {}; if (!ball.checked) cur.items.forEach((i) => (D.batchOff[cur.id][i.id] = true)); render(); };\n  $$("[data-bcur]", m).forEach((b) => (b.onclick = () => { D.batchCur[cur.id] = Number(b.dataset.bcur); render(); }));\n  $$("[data-cand]", m).forEach((cb) => (cb.onchange = () => { (D.candOff[cur.id] ||= {})[cb.dataset.cand] = !cb.checked; render(); }));\n  const undo = () => api(`/cards/${cur.id}/undo`, {});\n  const A = {\n    ctx: () => { D.ctx = !D.ctx; render(); },\n    edit: () => { D.editing = !D.editing; render(); },\n    approve: async () => {\n      let hash = cur.hash;\n      const e = D.edits[cur.id];\n      if (e && (e.subject !== (cur.subject ?? "") || e.body !== (cur.body ?? ""))) {\n        await api(`/cards/${cur.id}/edit`, { subject: e.subject, body: e.body });\n        hash = (await api("/cards?view=pending")).find((x) => x.id === cur.id)?.hash;\n      }\n      if (cur.kind === "discovery" && Object.values(D.candOff[cur.id] || {}).some(Boolean)) {\n        const off = D.candOff[cur.id];\n        await api(`/cards/${cur.id}/edit`, { action: { ...cur.action, candidates: cur.action.candidates.filter((_, i) => !off[i]) } });\n        hash = (await api("/cards?view=pending")).find((x) => x.id === cur.id)?.hash;\n      }\n      const drop = Object.entries(D.batchOff[cur.id] || {}).filter(([, v]) => v).map(([k]) => Number(k));\n      await api(`/cards/${cur.id}/approve`, { hash, drop });\n      delete D.edits[cur.id];\n      const name = cur.kol_name || cur.title || "";\n      next();\n      dropCards([cur.id]);\n      toast(`\u5DF2\u540C\u610F\u300C${name}\u300D\uFF0C5 \u79D2\u540E${S.paused ? "\u6392\u961F\uFF08\u6682\u505C\u4E2D\uFF09" : "\u5F00\u59CB\u6267\u884C"}`, { undo, after: S.paused ? `\u5DF2\u540C\u610F\u300C${name}\u300D\uFF0C\u6682\u505C\u4E2D\uFF0C\u6062\u590D\u53D1\u9001\u540E\u53D1\u51FA` : `\u5DF2\u540C\u610F\u300C${name}\u300D\uFF0C\u6B63\u5728\u6267\u884C` });\n      refresh();\n    },\n    revise: () => { D.mode = D.mode === "revise" ? null : "revise"; render(); },\n    reject: () => { if (cur.to_addr || cur.items || cur.kind === "template" || cur.kind === "discovery") { D.mode = D.mode === "reject" ? null : "reject"; render(); } else A["reject-send"](); },\n    "mode-close": () => { D.mode = null; render(); },\n    resetdraft: () => { delete D.edits[cur.id]; render(); },\n    "revise-send": async () => {\n      const note = Object.keys(D.revOn).filter((k) => D.revOn[k]).concat($("#revNote").value.trim() ? [$("#revNote").value.trim()] : []).join("\uFF1B");\n      if (!note) return toast("\u5148\u8BF4\u4E00\u53E5\u54EA\u91CC\u8981\u6539");\n      await api(`/cards/${cur.id}/revise`, { feedback: note });\n      D.revOn = {}; next(); dropCards([cur.id]);\n      toast(`\u5DF2\u4EA4\u7ED9 agent \u6539\u300C${cur.kol_name || cur.title || ""}\u300D\uFF0C\u6539\u597D\u56DE\u5230\u6700\u4E0A\u9762`); refresh();\n    },\n    "reject-send": async () => {\n      const note = { leave: "\u4E0D\u505A\u4E86", self: "\u8FD0\u8425\u81EA\u5DF1\u5728\u90AE\u7BB1\u56DE", close: "\u4E0D\u56DE\u5E76\u7ED3\u6848" }[D.rej] || "\u4E0D\u505A\u4E86";\n      await api(`/cards/${cur.id}/reject`, { note });\n      if (D.rej === "close" && cur.kol_id) await api(`/kols/${cur.kol_id}`, { fields: { stage: "closed", close_reason: "\u62D2\u7EDD", whose_turn: "none", next_followup_at: null } });\n      const name = cur.kol_name || cur.title || ""; next(); D.rej = "leave"; dropCards([cur.id]);\n      toast(`\u4E0D\u505A\u300C${name}\u300D`, { undo }); refresh();\n    },\n    decide: async () => {\n      const t = $("#dDecide").value.trim();\n      if (!t) return toast("\u5148\u5199\u4E00\u53E5\u4F60\u7684\u51B3\u5B9A");\n      await api(`/cards/${cur.id}/revise`, { feedback: t });\n      next(); dropCards([cur.id]); toast("\u5DF2\u4EA4\u7ED9 agent\uFF0C\u7167\u4F60\u7684\u51B3\u5B9A\u91CD\u65B0\u8D77\u8349"); refresh();\n    },\n    "noreply-answer": async () => {\n      await api(`/cards/${cur.id}/revise`, { feedback: "\u8FD0\u8425\u8981\u56DE\u8FD9\u5C01\u4FE1\uFF1A\u8BF7\u8D77\u8349\u4E00\u5C01\u56DE\u4FE1" });\n      next(); dropCards([cur.id]); toast("\u5DF2\u4EA4\u7ED9 agent \u8D77\u8349\u56DE\u4FE1"); refresh();\n    },\n    redo: async () => {\n      await api(`/cards/${cur.id}/reject`, { note: "\u5931\u8D25\u540E\u8BA9 agent \u91CD\u65B0\u8D77\u8349" });\n      await api("/ask", { text: `KOL #${cur.kol_id}\uFF08${cur.kol_name}\uFF09\u7684\u5361\u7247 #${cur.id}\u300C${cur.title}\u300D\u540C\u610F\u540E\u6CA1\u505A\u6210\uFF1A${cur.result}\u3002\u8BF7\u907F\u5F00\u8FD9\u4E2A\u95EE\u9898\u91CD\u65B0\u8D77\u8349\u4E00\u5F20\u5361\u3002` });\n      next(); dropCards([cur.id]); toast("\u5DF2\u4EA4\u7ED9 agent \u91CD\u65B0\u8D77\u8349"); refresh();\n    },\n  };\n  $$("[data-act]", m).forEach((b) => (b.onclick = () => (A[b.dataset.act] ? Promise.resolve(A[b.dataset.act]()).catch((e) => toast("\u6CA1\u6210\u529F\uFF1A" + e.message)) : null)));\n  decideKeys = (k) => {\n    if (k === "a") $(\'[data-act="approve"]\', m)?.click();\n    else if (k === "r") $(\'[data-act="revise"]\', m)?.click();\n    else if (k === "x") $(\'[data-act="reject"]\', m)?.click();\n    else if (k === "j" || k === "k") go(k);\n  };\n}\n// The cards just handled leave the queue at once; the fresh list follows from the refresh.\nfunction dropCards(ids) {\n  cards = cards.filter((c) => !ids.includes(c.id));\n  if (route[0] === "decide") renderDecide($("#main"), false);\n}\nlet decideKeys = null;\ndocument.addEventListener("keydown", (e) => {\n  if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing || e.target.matches("input, textarea, select") || $("#modal").innerHTML) return;\n  const k = e.key.toLowerCase();\n  if (k === "z" && undoFn) { e.preventDefault(); return undoFn(); }\n  if (route[0] === "decide" && decideKeys && "arxjk".includes(k)) { e.preventDefault(); decideKeys(k); }\n});\n\n// ---------- KOL \u5217\u8868 ----------\nconst K = { stage: "", flag: "", q: "", sort: "recent", page: 0, sel: {}, exp: null, expData: {}, menu: false };\nconst FLAGS = [["us", "\u8F6E\u5230\u6211\u4EEC", "warn"], ["expiry", "\u7801 3 \u5929\u5185\u5230\u671F", "warn"], ["late", "\u8FC7\u4E86\u7EA6\u5B9A\u65E5", "warn"], ["bounce", "\u9000\u4FE1\u672A\u5904\u7406", "bad"], ["posted", "\u53D1\u4E86\u5E16\u5B50", ""]];\nlet krows = [];\nasync function renderKols(m) {\n  const [counts, rows] = await Promise.all([api("/kols/counts"), api(`/kols?q=${encodeURIComponent(K.q)}&stage=${K.stage}&flag=${K.flag}&sort=${K.sort}&page=${K.page}`)]);\n  krows = rows;\n  const total = Object.values(counts.stages).reduce((a, b) => a + b, 0);\n  const selRows = rows.filter((r) => K.sel[r.id]);\n  m.innerHTML = `<div class="wrap"><div class="ltitle"><h1 class="h1">KOL</h1><span class="meta">\u672C\u9879\u76EE ${total.toLocaleString()} \u4F4D \xB7 \u4ECA\u5929\u5DF2\u8054\u7CFB ${U.contacted ?? 0} / ${U.dailyLimit ?? "?"} \u4EBA</span><span class="sp"></span>\n    <input class="field" style="width:240px" type="search" id="kq" placeholder="\u641C\u540D\u5B57\u3001\u8D26\u53F7\u3001\u90AE\u7BB1" value="${esc(K.q)}" aria-label="\u641C KOL">\n    <button class="btn" type="button" id="kAdd">\u624B\u52A8\u52A0\u4E00\u4F4D</button><a class="btn primary" href="#find">\u627E\u65B0\u7684\u4EBA\u2026</a></div>\n    <div class="lstrip" role="group" aria-label="\u6309\u9636\u6BB5"><button class="chip ${!K.stage ? "on" : ""}" type="button" data-stage="">\u5168\u90E8 <b>${total.toLocaleString()}</b></button>\n      ${Object.entries(STAGES).map(([k, v]) => `<button class="chip ${K.stage === k ? "on" : ""}" type="button" data-stage="${k}">${v} <b>${(counts.stages[k] || 0).toLocaleString()}</b></button>`).join("")}</div>\n    <div class="lfilters"><span class="meta">\u8981\u6CE8\u610F\u7684\uFF1A</span>${FLAGS.map(([k, v, c]) => `<button class="chip ${K.flag === k ? "on" : c}" type="button" data-flag="${k}" aria-pressed="${K.flag === k}">${v} <b>${counts.flags[k] || 0}</b></button>`).join("")}\n      <span class="sp"></span><select class="sel" id="kSort" aria-label="\u6392\u5E8F"><option value="recent">\u6700\u8FD1\u6765\u5F80\u5728\u524D</option><option value="wait">\u8F6E\u5230\u6211\u4EEC\u6700\u4E45\u5728\u524D</option><option value="fans">\u7C89\u4E1D\u591A\u5728\u524D</option></select></div>\n    <div class="lbox"><div class="lscroll"><div>\n      <div class="lg head"><span><input type="checkbox" aria-label="\u5168\u9009\u8FD9\u9875" id="kAll" ${rows.length && rows.every((r) => K.sel[r.id]) ? "checked" : ""}></span><span>KOL</span><span style="text-align:right">\u7C89\u4E1D</span><span>\u9636\u6BB5 \xB7 \u8F6E\u5230\u8C01</span><span>\u6700\u8FD1\u6765\u5F80\uFF08\u70B9\u5F00\u770B\uFF09</span><span>\u4E0B\u4E00\u6B65</span><span>\u7801</span><span>\u53D1\u5E03</span><span></span></div>\n      ${rows.map(kolRow).join("") || `<div class="empty"><span>\u6CA1\u6709\u7B26\u5408\u7684 KOL</span><button class="link" type="button" id="kClear">\u6E05\u6389\u7B5B\u9009</button></div>`}\n    </div></div><div class="lfoot"><span>${rows.length} \u4F4D${rows.length === 50 ? "\uFF08\u8FD9\u4E00\u9875\uFF09" : ""}</span><span class="sp"></span>${K.page ? `<button class="btn sm" type="button" id="kPrev">\u4E0A\u4E00\u9875</button>` : ""}${rows.length === 50 ? `<button class="btn sm" type="button" id="kNext">\u4E0B\u4E00\u9875</button>` : ""}</div></div>\n    ${selRows.length ? `<div class="bulk" role="region" aria-label="\u6279\u91CF\u64CD\u4F5C" style="position:sticky"><b>\u5DF2\u9009 ${selRows.length} \u4F4D</b><span class="sp"></span>\n      <button class="btn" type="button" id="bDraft">\u8BA9 agent \u5404\u8D77\u8349\u4E00\u5C01</button><button class="btn" type="button" id="bStage">\u6539\u9636\u6BB5\u2026</button><button class="btn" type="button" id="bHold">\u6682\u7F13</button><button class="btn" type="button" id="bClear">\u53D6\u6D88\u9009\u62E9</button>\n      ${K.menu ? `<div class="pop" role="menu">${["replied", "trial", "report_seen", "publish_agreed", "published", "partner", "on_hold"].map((k) => `<button type="button" role="menuitem" data-setstage="${k}">\u6539\u4E3A\u300C${STAGES[k]}\u300D</button>`).join("")}</div>` : ""}</div>` : ""}\n    <p class="hint">\u70B9\u540D\u5B57\u8FDB\u8BE6\u60C5\u3002\u6279\u91CF\u8D77\u8349\u7684\u4FE1\u7167\u6837\u8FDB\u300C\u5F85\u4F60\u51B3\u5B9A\u300D\uFF0C\u5728\u90A3\u91CC\u4E00\u5C01\u5C01\u540C\u610F\uFF1B\u8FD9\u9875\u4E0D\u76F4\u63A5\u53D1\u4FE1\u3002\u6709\u90AE\u7BB1\u3001\u6CA1\u8054\u7CFB\u8FC7\u7684\u4EBA\u6BCF\u5929\u65E9\u4E0A\u4F1A\u81EA\u52A8\u6392\u8FDB\u9080\u7EA6\u6279\u3002</p></div>`;\n  $("#kSort").value = K.sort;\n  wireKols(m, rows, selRows);\n}\nfunction kolRow(r) {\n  const last = r.last_message;\n  const trial = (r.codes || []).filter((c) => c.kind === "trial").pop(), partner = (r.codes || []).find((c) => c.kind === "partner");\n  const code = partner ? `<span class="sub">\u6D3B\u52A8\u7801 ${esc(partner.code)}</span><span style="font-weight:500">${partner.paid_orders ?? 0} \u5355</span>`\n    : trial ? `<span class="sub">\u4F53\u9A8C\u7801 ${esc(trial.code)}</span><span class="mini"><i style="width:${trial.max_uses ? Math.min(100, Math.round(((trial.used || 0) / trial.max_uses) * 100)) : 0}%"></i></span><span class="sub">${trial.used ?? "?"}/${trial.max_uses ?? "?"} \u6B21${trial.expires_at ? " \xB7 " + md(trial.expires_at) + " \u5230\u671F" : ""}</span>` : `<span class="sub">\u2014</span>`;\n  const posts = r.posts || [];\n  const p0 = posts[0], view = (p) => { const m = p?.metrics || {}; const k = ["30", "7", "3", "1"].find((d) => m[d]?.views != null); return k ? `\u7B2C ${k} \u5929 ${num(m[k].views)} \u64AD\u653E` : ""; };\n  const post = posts.length ? `<span style="display:block;font-weight:500">${posts.length} \u6761 \xB7 ${esc(p0.format || p0.platform || "\u5E16\u5B50")} ${md(p0.published_at)}</span><span class="sub">${view(p0)}</span>`\n    : r.flag_late ? `<span class="late">\u903E\u671F\u672A\u53D1</span>` : `<span class="sub">\u2014</span>`;\n  const flags = [r.flag_bounce ? ["bad", "\u9000\u4FE1\u672A\u5904\u7406"] : null, r.flag_expiry ? ["warn", "\u7801\u5FEB\u5230\u671F"] : null, r.flag_late ? ["warn", "\u8FC7\u4E86\u7EA6\u5B9A\u65E5"] : null, r.open_card ? ["warn", "\u6709\u5361\u7B49\u4F60\u51B3\u5B9A"] : null].filter(Boolean);\n  const turn = r.stage === "closed" ? (r.close_reason ? "\u7ED3\u6848\uFF1A" + r.close_reason : "") : r.whose_turn === "us" ? `\u8F6E\u5230\u6211\u4EEC${r.last_inbound_at ? " \xB7 " + ago(r.last_inbound_at).replace(" \u524D", "") : ""}` : r.whose_turn === "kol" ? "\u8F6E\u5230 KOL" : "";\n  const open = K.exp === r.id;\n  return `<div class="lg ${K.sel[r.id] ? "sel" : ""}"><span><input type="checkbox" data-ksel="${r.id}" aria-label="\u9009 ${esc(r.name)}" ${K.sel[r.id] ? "checked" : ""}></span>\n    <span class="who"><span class="av" aria-hidden="true">${esc((r.name || "?").slice(0, 1))}</span><span style="min-width:0"><a class="lname" href="#kol/${r.id}">${esc(r.name)}</a>${r.never_contact ? \' <span class="tag dark">\u6C38\u4E0D\u8054\u7CFB</span>\' : ""}<span class="sub">${esc([r.handle, r.platform, r.market].filter(Boolean).join(" \xB7 "))}</span></span></span>\n    <span style="text-align:right;font-variant-numeric:tabular-nums">${fans(r.followers)}</span>\n    <span><span class="tag ${STAGE_CLS[r.stage] || ""}">${STAGES[r.stage]}</span><span class="turn ${r.whose_turn === "us" && r.stage !== "closed" ? "us" : ""}">${esc(turn)}</span></span>\n    <button class="cell" type="button" data-kexp="${r.id}" aria-expanded="${open}"><span class="sub">${last ? `${when(last.at)} ${last.direction === "in" ? "\u6536" : "\u53D1"}` : "\u2014"}</span><span class="snip">${esc(last?.text || last?.subject || "")}</span></button>\n    <span>${flags.map(([c, t]) => `<span class="flag ${c}">${t}</span>`).join("")}<span style="display:block">${esc(r.next_step || "")}</span></span>\n    <span>${code}</span>\n    <button class="cell" type="button" data-kexp="${r.id}">${post}</button>\n    <button class="chev" type="button" data-kexp="${r.id}" aria-label="\u5C55\u5F00 ${esc(r.name)}" aria-expanded="${open}">${open ? "\u6536\u8D77" : "\u5C55\u5F00"}</button></div>\n    ${open ? expHtml(r) : ""}`;\n}\nfunction expHtml(r) {\n  const d = K.expData[r.id];\n  if (!d) return `<div class="exp"><span class="meta">\u8BFB\u53D6\u4E2D\u2026</span></div>`;\n  const msgs = d.messages.slice(0, 4).reverse();\n  const codeLines = d.codes.flatMap((c) => c.kind === "trial"\n    ? [[`\u4F53\u9A8C\u7801 ${c.code}`, `${c.used ?? "?"}/${c.max_uses ?? "?"} \u6B21${c.expires_at ? " \xB7 " + md(c.expires_at) + (new Date(c.expires_at) < new Date() ? " \u5DF2\u8FC7\u671F" : " \u5230\u671F") : ""}`]]\n    : [[`\u6D3B\u52A8\u7801 ${c.code}`, c.ref_link ? "\u6709\u4E13\u5C5E\u8FDE\u7ED3" : ""], ["\u8BBF\u5BA2", num(c.visitors)], ["\u4ED8\u6B3E\u5355", c.paid_orders ?? "\u2014"], ["\u9000\u6B3E", c.refunded_orders ?? "\u2014"]]);\n  const posts = d.posts.slice().reverse();\n  const cardOpen = d.cards.find((c) => ["pending", "unknown", "failed"].includes(c.status));\n  return `<div class="exp"><section class="pane" style="flex:1.4 1 360px" aria-label="\u6765\u5F80"><div class="label">\u6765\u5F80 \xB7 \u6700\u8FD1 ${msgs.length} \u5C01</div>\n      ${msgs.map((x) => `<div class="msg ${x.direction}"><span class="sub">${x.direction === "in" ? esc(d.kol.name) : x.direction === "out" ? esc(x.mailbox || "\u6211\u4EEC") : "\u8BB0\u5F55"} \xB7 ${when(x.at)}${x.bounce ? " \xB7 \u9000\u4FE1" : ""}</span>${esc((x.summary || x.body || x.subject || "").slice(0, 400))}</div>`).join("") || `<div class="sub">\u8FD8\u6CA1\u6709\u6765\u5F80</div>`}\n      ${cardOpen ? `<a class="flag warn" href="#decide/${cardOpen.id}" style="display:inline-block;margin-top:6px;text-decoration:none">\u5F85\u4F60\u51B3\u5B9A\u91CC\u6709 1 \u5F20\u5361 \u2192</a>` : ""}\n      <div class="row" style="margin-top:8px"><button class="btn sm" type="button" data-kdraft="${r.id}">\u8BA9 agent \u8D77\u8349\u4E00\u5C01</button><a href="#kol/${r.id}" style="font-size:13px">\u6253\u5F00\u8BE6\u60C5\uFF08\u5168\u90E8\u6765\u5F80\u3001\u8D44\u6599\u3001\u8BB0\u5F55\uFF09\u2192</a></div></section>\n    <section class="pane" style="flex:1 1 220px" aria-label="\u7801\u548C\u6210\u4EA4"><div class="label">\u7801\u548C\u6210\u4EA4</div>${codeLines.map(([k, v]) => `<div class="kv"><span class="sub">${esc(k)}</span><b>${esc(v)}</b></div>`).join("") || `<div class="sub">\u8FD8\u6CA1\u53D1\u7801</div>`}</section>\n    <section class="pane" style="flex:1.4 1 320px" aria-label="\u53D1\u5E03"><div class="label">\u53D1\u5E03 \xB7 \u6BCF\u5929\u81EA\u52A8\u627E\u542B\u300C${esc(S.settings?.postKeyword || "\u54C1\u724C\u8BCD")}\u300D\u7684\u5E16\u5B50</div>\n      ${posts.map((p) => `<div class="post"><div class="row" style="justify-content:space-between"><a href="${esc(p.url)}" target="_blank" rel="noopener" style="font-weight:500">${esc(p.format || p.platform || "\u5E16\u5B50")} \xB7 ${md(p.published_at)}</a>${p.link_placed ? \'<span class="sub">\u653E\u4E86\u8FDE\u7ED3</span>\' : ""}</div>\n        <div class="metrics">${["1", "3", "7", "30"].map((k) => `<span><b>${p.metrics?.[k]?.views != null ? num(p.metrics[k].views) : "\u2014"}</b><i>\u7B2C ${k} \u5929</i></span>`).join("")}</div>${p.metrics?.["3"]?.engagement != null ? `<span class="sub">\u7B2C 3 \u5929\u4E92\u52A8 ${num(p.metrics["3"].engagement)}</span>` : ""}</div>`).join("")\n      || `<div class="sub">${r.stage === "publish_agreed" ? (r.flag_late ? "\u7EA6\u597D\u7684\u65E5\u5B50\u8FC7\u4E86\u8FD8\u6CA1\u627E\u5230" : "\u7EA6\u597D\u4E86\uFF0C\u5230\u65F6\u6BCF\u5929\u627E") : "\u8FD8\u6CA1\u6709\u5E16\u5B50"}</div>`}</section></div>`;\n}\nfunction wireKols(m, rows, selRows) {\n  let t; $("#kq").oninput = (e) => { K.q = e.target.value; K.page = 0; clearTimeout(t); t = setTimeout(() => render().then(() => { const q = $("#kq"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }), 300); };\n  $$("[data-stage]", m).forEach((b) => (b.onclick = () => { K.stage = b.dataset.stage; K.page = 0; render(); }));\n  $$("[data-flag]", m).forEach((b) => (b.onclick = () => { K.flag = K.flag === b.dataset.flag ? "" : b.dataset.flag; K.page = 0; render(); }));\n  $("#kSort").onchange = (e) => { K.sort = e.target.value; render(); };\n  $("#kAll").onchange = (e) => { rows.forEach((r) => (K.sel[r.id] = e.target.checked)); render(); };\n  $$("[data-ksel]", m).forEach((cb) => (cb.onchange = () => { K.sel[cb.dataset.ksel] = cb.checked; K.menu = false; render(); }));\n  $$("[data-kexp]", m).forEach((b) => (b.onclick = async () => {\n    const id = Number(b.dataset.kexp);\n    K.exp = K.exp === id ? null : id;\n    render();\n    if (K.exp && !K.expData[id]) { K.expData[id] = await api(`/kols/${id}`); render(); }\n  }));\n  $$("[data-kdraft]", m).forEach((b) => (b.onclick = () => askDraft([rows.find((r) => r.id === Number(b.dataset.kdraft))])));\n  const c = $("#kClear"); if (c) c.onclick = () => { Object.assign(K, { stage: "", flag: "", q: "", page: 0 }); render(); };\n  const pv = $("#kPrev"); if (pv) pv.onclick = () => { K.page--; render(); };\n  const nx = $("#kNext"); if (nx) nx.onclick = () => { K.page++; render(); };\n  $("#kAdd").onclick = addKolModal;\n  if (!selRows.length) return;\n  $("#bClear").onclick = () => { K.sel = {}; K.menu = false; render(); };\n  $("#bDraft").onclick = () => askDraft(selRows);\n  $("#bStage").onclick = () => { K.menu = !K.menu; render(); };\n  $$("[data-setstage]", m).forEach((b) => (b.onclick = () => act(async () => { for (const r of selRows) await api(`/kols/${r.id}`, { fields: { stage: b.dataset.setstage } }); K.sel = {}; K.menu = false; }, `${selRows.length} \u4F4D\u6539\u4E3A\u300C${STAGES[b.dataset.setstage]}\u300D\u3002\u6539\u9636\u6BB5\u4E0D\u4F1A\u53D1\u4FE1`)));\n  $("#bHold").onclick = () => act(async () => { for (const r of selRows) await api(`/kols/${r.id}`, { fields: { stage: "on_hold" } }); K.sel = {}; }, `${selRows.length} \u4F4D\u6682\u7F13\uFF1A\u4E0D\u6392\u9080\u7EA6\u3001\u4E0D\u50AC\u4FE1\uFF0C\u6765\u4FE1\u7167\u5E38\u51FA\u5361`);\n}\nfunction askDraft(list) {\n  modal(`<h2>\u7ED9 ${list.length === 1 ? esc(list[0].name) : list.length + " \u4F4D"}${list.length > 1 ? "\u5404" : ""}\u8D77\u8349\u4E00\u5C01</h2><label class="label" for="dNote" style="margin:0">\u60F3\u8BF4\u4EC0\u4E48</label>\n    <textarea class="field" id="dNote" rows="3" placeholder="\u6BD4\u5982\uFF1A\u95EE\u4E00\u4E0B\u6700\u8FD1\u6709\u6CA1\u6709\u7A7A\u770B\u62A5\u544A\uFF0C\u987A\u4FBF\u8BF4 11 \u6708\u6709\u65B0\u529F\u80FD"></textarea>\n    <div class="hint">agent \u6309\u6BCF\u4E2A\u4EBA\u7684\u6765\u5F80\u5404\u5199\u4E00\u5C01\uFF0C\u5199\u597D\u540E\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A\uFF1B\u53EA\u6709\u4F60\u540C\u610F\u4E86\u624D\u4F1A\u53D1\u3002</div>\n    <div class="row"><button class="btn primary" type="button" id="dGo">\u4EA4\u7ED9 agent</button><button class="btn" type="button" id="dNo">\u53D6\u6D88</button></div>`, () => {\n    $("#dNo").onclick = closeModal;\n    $("#dGo").onclick = () => {\n      const what = $("#dNote").value.trim();\n      if (!what) return toast("\u5148\u5199\u4E00\u53E5\u60F3\u8BF4\u4EC0\u4E48");\n      closeModal();\n      act(() => api("/ask", { text: `\u7ED9\u8FD9\u4E9B KOL \u5404\u8D77\u8349\u4E00\u5C01\u4FE1\uFF08draft_mail\uFF0Ckind=mail\uFF09\uFF0C\u8FD0\u8425\u8981\u8BF4\u7684\u662F\uFF1A${what}\\n${list.map((r) => `- KOL #${r.id} ${r.name}`).join("\\n")}` }), "\u5DF2\u4EA4\u7ED9 agent\uFF0C\u5199\u597D\u7684\u4FE1\u4F1A\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A");\n      K.sel = {};\n    };\n  });\n}\nfunction addKolModal() {\n  modal(`<h2>\u624B\u52A8\u52A0\u4E00\u4F4D</h2>\n    <label class="label" style="margin:0">\u540D\u5B57<input class="field" id="aName" type="text"></label>\n    <label class="label" style="margin:0">\u8D26\u53F7\u94FE\u63A5<input class="field" id="aUrl" type="url" placeholder="https://www.instagram.com/\u2026"></label>\n    <label class="label" style="margin:0">\u90AE\u7BB1<input class="field" id="aMail" type="email" placeholder="\u53EF\u4EE5\u5148\u7A7A\u7740"></label>\n    <div class="row"><label class="label" style="margin:0;flex:1">\u5E73\u53F0<select class="field" id="aPlat"><option>Instagram</option><option>YouTube</option><option>TikTok</option><option>Threads</option><option>\u5176\u4ED6</option></select></label>\n      <label class="label" style="margin:0;flex:1">\u9080\u7EA6\u65B9\u5411<select class="field" id="aAngle"><option value="">\u81EA\u52A8\u5224\u65AD</option><option>\u4EB2\u5B50</option><option>\u4F34\u4FA3</option><option>\u804C\u573A</option><option>\u81EA\u6211\u63A2\u7D22</option></select></label></div>\n    <div class="hint">\u52A0\u8FDB\u6765\u662F\u300C\u672A\u8054\u7CFB\u300D\uFF0C\u6709\u90AE\u7BB1\u7684\u4F1A\u6392\u8FDB\u4E4B\u540E\u7684\u9080\u7EA6\u6279\u3002</div>\n    <div class="row"><button class="btn primary" type="button" id="aGo">\u52A0\u5165</button><button class="btn" type="button" id="aNo">\u53D6\u6D88</button></div>`, () => {\n    $("#aNo").onclick = closeModal;\n    $("#aGo").onclick = async () => {\n      const name = $("#aName").value.trim(); if (!name) return toast("\u5148\u586B\u540D\u5B57");\n      const url = $("#aUrl").value.trim(), email = $("#aMail").value.trim();\n      const dup = await api(`/kols?q=${encodeURIComponent(email || url.replace(/\\/$/, "").split("/").pop() || name)}`);\n      if (dup.length && (email || url) && !confirm(`\u5E93\u91CC\u5DF2\u7ECF\u6709\u300C${dup[0].name}\u300D\uFF0C\u8FD8\u8981\u52A0\u5417\uFF1F`)) return;\n      closeModal();\n      act(() => api("/tool/kol_add", { name, url: url || undefined, email: email || undefined, platform: $("#aPlat").value, handle: url ? url.replace(/\\/$/, "").split("/").pop() : undefined, invite_angle: $("#aAngle").value || undefined, source_batch: "\u624B\u52A8\u52A0\u7684" }), "\u5DF2\u52A0\u5165\u300C\u672A\u8054\u7CFB\u300D");\n    };\n  });\n}\n\n// ---------- KOL \u8BE6\u60C5 ----------\nconst KD = { tab: "mail", dirty: {}, editNext: false };\nasync function renderKol(m, id) {\n  const [d, logs] = await Promise.all([api(`/kols/${id}`), KD.tab === "log" ? api(`/log?kol=${id}&days=3650`) : Promise.resolve([])]);\n  const k = d.kol, closed = k.stage === "closed";\n  const msgs = d.messages.slice().reverse();\n  const trial = d.codes.filter((c) => c.kind === "trial"), partner = d.codes.filter((c) => c.kind === "partner");\n  const f = (key, label, type = "text") => `<label>${label}<input class="field" type="${type}" data-kf="${key}" value="${esc(type === "date" && k[key] ? String(k[key]).slice(0, 10) : k[key] ?? "")}"></label>`;\n  m.innerHTML = `<div class="wrap"><a href="#kols" style="font-size:13px">\u2190 KOL \u5217\u8868</a>\n    <div class="khead"><div class="kav" aria-hidden="true">${esc((k.name || "?").slice(0, 1))}</div><div style="flex:1;min-width:240px"><h1 class="h1" style="font-size:24px">${esc(k.name)}</h1>\n      <div class="meta">${k.url ? `<a href="${esc(k.url)}" target="_blank" rel="noopener">${esc(k.handle || k.url)}</a>` : esc(k.handle || "")} \xB7 ${esc(k.platform || "")} \xB7 ${fans(k.followers)}\u7C89${k.market ? " \xB7 " + esc(k.market) : ""}${k.invite_angle ? " \xB7 " + esc(k.invite_angle) : ""}${k.source_batch ? ` \xB7 \u6765\u81EA\u300C${esc(k.source_batch)}\u300D` : ""}</div></div>\n      <span class="tag ${STAGE_CLS[k.stage] || ""}">${STAGES[k.stage]}</span>${k.whose_turn && !closed ? `<span class="tag">${k.whose_turn === "us" ? "\u8F6E\u5230\u6211\u4EEC" : k.whose_turn === "kol" ? "\u8F6E\u5230 KOL" : ""}</span>` : ""}${k.never_contact ? \'<span class="tag dark">\u6C38\u4E0D\u8054\u7CFB</span>\' : ""}</div>\n    ${closed || k.never_contact ? `<div class="knext" style="background:var(--soft);border-color:var(--line)"><b>${k.never_contact ? "\u6C38\u4E0D\u8054\u7CFB" : `\u5DF2\u7ED3\u6848\uFF08${esc(k.close_reason || "")}\uFF09`}</b><span class="sp" style="min-width:200px">${k.never_contact ? "\u672C\u9879\u76EE\u4E0D\u4F1A\u518D\u7ED9\u5979\u53D1\u4FE1\u3002\u5979\u6765\u4FE1\u53EA\u4F1A\u51FA\u63D0\u9192\u5361\u3002" : "\u4E0D\u518D\u6392\u9080\u7EA6\u548C\u50AC\u4FE1\uFF1B\u5979\u6765\u4FE1\u4F1A\u81EA\u52A8\u91CD\u65B0\u6253\u5F00\u3002"}</span><button class="btn" type="button" id="kReopen">\u91CD\u65B0\u6253\u5F00</button></div>` : ""}\n    ${!closed ? `<div class="knext"><b>\u4E0B\u4E00\u6B65</b>${KD.editNext ? `<input class="field" id="kNextIn" style="flex:1;min-width:200px" value="${esc(k.next_step || "")}"><button class="btn primary" type="button" id="kNextSave">\u4FDD\u5B58</button>` : `<span class="sp" style="min-width:200px">${esc(k.next_step || "\u8FD8\u6CA1\u5199")}</span><button class="btn" type="button" id="kNextEdit">\u6539</button>`}</div>` : ""}\n    <div class="kcols"><section class="kmain" aria-label="\u8BE6\u60C5"><div class="tabs" role="tablist">${[["mail", `\u6765\u5F80 ${d.messages.length}`], ["cards", `\u5361\u7247 ${d.cards.length}`], ["profile", "\u8D44\u6599"], ["log", "\u8BB0\u5F55"]].map(([t, l]) => `<button class="tab ${KD.tab === t ? "on" : ""}" type="button" role="tab" aria-selected="${KD.tab === t}" data-ktab="${t}">${l}</button>`).join("")}</div>\n      ${KD.tab === "mail" ? `<div class="thread">${msgs.map((x) => `<div class="tmsg ${x.direction}"><div class="sub">${x.direction === "in" ? esc(k.name) : x.direction === "out" ? esc(x.mailbox || "\u6211\u4EEC") : "\u8BB0\u5F55"} \xB7 ${when(x.at)}${x.bounce ? " \xB7 \u9000\u4FE1" : ""}${x.pending ? " \xB7 \u5F85\u5904\u7406" : ""}</div>${x.subject ? `<b>${esc(x.subject)}</b>\\n` : ""}${esc(x.body || x.summary || "")}${x.quoted ? `<details><summary class="hint">\u770B\u5F15\u7528\u7684\u65E7\u90AE\u4EF6</summary><div class="meta">${esc(x.quoted)}</div></details>` : ""}</div>`).join("") || \'<div class="meta">\u8FD8\u6CA1\u6709\u6765\u5F80</div>\'}\n        <div class="tmsg note">\u4F60\u5728\u98DE\u4E66\u90AE\u7BB1\u91CC\u76F4\u63A5\u56DE\u7684\u4FE1\uFF0C\u6536\u4FE1\u65F6\u4E5F\u4F1A\u81EA\u52A8\u8BB0\u8FDB\u6765</div></div>\n        <div class="compose"><div class="row"><b style="font-size:14px">\u5199\u4FE1</b><span class="meta">${k.never_contact ? "\u6C38\u4E0D\u8054\u7CFB\uFF1A\u4E0D\u80FD\u7ED9\u5979\u53D1\u4FE1" : "\u63A5\u7740\u6700\u8FD1\u7684\u6765\u5F80\u56DE\u590D \xB7 \u4F60\u70B9\u53D1\u51FA\u5C31\u7B97\u540C\u610F\uFF0C5 \u79D2\u5185\u53EF\u64A4\u9500"}</span></div>\n          <input class="field" id="cSubj" type="text" placeholder="\u4E3B\u9898\uFF08\u7559\u7A7A = \u63A5\u7740\u6700\u8FD1\u7684\u6765\u5F80\u56DE\u590D\uFF09"><textarea class="field" id="cBody" rows="4" placeholder="\u81EA\u5DF1\u5199\uFF0C\u6216\u8005\u8BA9 agent \u8D77\u8349"></textarea>\n          <div class="row"><button class="btn primary" type="button" id="cSend" ${k.never_contact ? "disabled" : ""}>\u53D1\u51FA</button><button class="btn" type="button" id="cAsk">\u8BA9 agent \u8D77\u8349</button></div></div>` : ""}\n      ${KD.tab === "cards" ? `<div class="thread">${d.cards.map((c) => `<div class="crow"><span class="tag ${c.status === "done" ? "green" : c.status === "pending" ? "amber" : c.status === "failed" || c.status === "unknown" ? "red" : ""}">${{ pending: "\u7B49\u4F60\u51B3\u5B9A", done: "\u505A\u5B8C", rejected: "\u4E0D\u505A", superseded: "\u88AB\u53D6\u4EE3", dropped: "\u5254\u6389", failed: "\u5931\u8D25", unknown: "\u7ED3\u679C\u4E0D\u660E", drafting: "agent \u5728\u5199", approved: "\u6392\u961F\u53D1", running: "\u6B63\u5728\u505A" }[c.status] || c.status}</span><span class="sp">${esc(KINDS[c.kind] || c.kind)} \xB7 ${esc(c.title || "")}${c.result ? " \xB7 " + esc(c.result) : ""}</span><span class="meta">${when(c.created_at)}</span>${["pending", "unknown", "failed"].includes(c.status) ? `<a href="#decide/${c.id}">\u53BB\u51B3\u5B9A</a>` : ""}</div>`).join("") || \'<div class="meta">\u8FD8\u6CA1\u6709\u5361\u7247</div>\'}</div>` : ""}\n      ${KD.tab === "profile" ? `<div class="thread"><div class="dl" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[["\u5E73\u53F0", k.platform], ["\u8D26\u53F7", k.handle], ["\u7C89\u4E1D", k.followers?.toLocaleString()], ["\u5730\u533A", k.market], ["\u8BED\u8A00", k.language], ["\u9080\u7EA6\u65B9\u5411", k.invite_angle], ["\u90AE\u7BB1", k.email], ["\u5907\u7528\u90AE\u7BB1", k.other_emails], ["\u7EA7\u522B", k.level], ["\u5185\u5BB9", k.content_type], ["\u6765\u6E90", k.source_batch], ["\u5176\u4ED6\u8D26\u53F7", k.other_accounts]].map(([l, v]) => `<label>${l}<span class="field">${esc(v ?? "\u2014")}</span></label>`).join("")}</div>\n        ${k.notes ? `<div class="meta" style="white-space:pre-wrap">\u5907\u6CE8\uFF1A${esc(k.notes)}</div>` : ""}${k.legacy_followup || k.legacy_profile ? `<div class="hint">\u4ECE\u65E7\u98DE\u4E66\u8868\u5BFC\u5165</div>` : ""}</div>` : ""}\n      ${KD.tab === "log" ? `<div class="thread">${logs.map((l) => `<div class="crow"><span class="meta" style="width:110px">${when(l.at)}</span><span class="sp ${l.bad ? "late" : ""}">${esc(l.summary)}</span></div>`).join("") || \'<div class="meta">\u8FD8\u6CA1\u6709\u8BB0\u5F55</div>\'}</div>` : ""}\n    </section>\n    <aside class="kside"><div class="card"><h2 class="h2">\u72B6\u6001</h2><div class="dl">\n      <label>\u9636\u6BB5<select class="field" data-kf="stage">${Object.entries(STAGES).filter(([s]) => s !== "closed" || closed).map(([s, v]) => `<option value="${s}" ${k.stage === s ? "selected" : ""}>${v}</option>`).join("")}</select></label>\n      ${f("salutation", "\u79F0\u547C")}${f("publish_due_at", "\u7EA6\u5B9A\u53D1\u5E03", "date")}${f("next_followup_at", "\u4E0B\u6B21\u8DDF\u8FDB", "date")}${f("email", "\u90AE\u7BB1", "email")}${f("demand", "\u5BF9\u65B9\u8981\u6C42")}${f("mailbox", "\u8054\u7CFB\u7528\u7684\u90AE\u7BB1")}${f("level", "\u7EA7\u522B")}</div>\n      <div class="row" id="kDirty" style="margin-top:10px" hidden><button class="btn primary" type="button" id="kSave">\u4FDD\u5B58</button><button class="btn" type="button" id="kDiscard">\u653E\u5F03\u6539\u52A8</button><span class="hint">\u6539\u9636\u6BB5\u4E0D\u4F1A\u53D1\u4FE1</span></div>\n      <div class="row" style="margin-top:10px">${!closed ? `<button class="btn quiet" type="button" id="kClose">\u7ED3\u6848\u2026</button>` : ""}<button class="btn quiet" type="button" id="kNever">${k.never_contact ? "\u53D6\u6D88\u6C38\u4E0D\u8054\u7CFB" : "\u6C38\u4E0D\u8054\u7CFB\u2026"}</button></div></div>\n    <div class="card"><h2 class="h2">\u7801</h2>${trial.map((c) => `<div class="meta">\u4F53\u9A8C\u7801 ${esc(c.code)}${c.expires_at ? " \xB7 " + md(c.expires_at) + (new Date(c.expires_at) < new Date() ? " \u5DF2\u8FC7\u671F" : " \u5230\u671F") : ""}</div><div><span class="big">${c.used ?? "?"}</span> <span class="meta">/ ${c.max_uses ?? "?"} \u6B21\u5DF2\u7528</span></div><div class="track"><div class="fill" style="width:${c.max_uses ? Math.min(100, Math.round(((c.used || 0) / c.max_uses) * 100)) : 0}%"></div></div>`).join("")}\n      ${partner.map((c) => `<div class="meta" style="margin-top:10px">\u6D3B\u52A8\u7801 ${esc(c.code)}${c.ref_link ? ` \xB7 <a href="${esc(c.ref_link)}" target="_blank" rel="noopener">\u4E13\u5C5E\u8FDE\u7ED3</a>` : ""}${c.ledger_link ? ` \xB7 <a href="${esc(c.ledger_link)}" target="_blank" rel="noopener">\u5728 TAFU \u540E\u53F0\u67E5\u770B</a>` : ""}</div><div class="row" style="gap:20px;margin-top:4px"><span><span class="big">${num(c.visitors)}</span> <span class="meta">\u8BBF\u5BA2</span></span><span><span class="big">${c.paid_orders ?? "\u2014"}</span> <span class="meta">\u4ED8\u6B3E\u5355</span></span><span><span class="big">${c.refunded_orders ?? "\u2014"}</span> <span class="meta">\u9000\u6B3E</span></span></div>${c.synced_at ? `<div class="meta">${when(c.synced_at)} \u540C\u6B65\u81EA TAFU</div>` : ""}`).join("")}\n      ${d.codes.length ? "" : \'<div class="meta">\u8FD8\u6CA1\u53D1\u7801</div>\'}<div class="row" style="margin-top:8px"><button class="btn sm" type="button" id="kCode">${trial.length ? "\u5EF6\u671F\u6216\u52A0\u6B21\u6570\u2026" : "\u53D1\u4F53\u9A8C\u7801\u2026"}</button></div></div>\n    <div class="card"><h2 class="h2">\u53D1\u5E03</h2>${d.posts.length ? `<table class="t"><thead><tr><th scope="col">\u5E16\u5B50</th><th scope="col">\u7B2C 1 \u5929</th><th scope="col">\u7B2C 3 \u5929</th><th scope="col">\u7B2C 7 \u5929</th><th scope="col">\u7B2C 30 \u5929</th></tr></thead><tbody>${d.posts.map((p) => `<tr><td><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.format || "\u5E16\u5B50")} \xB7 ${md(p.published_at)}</a></td>${["1", "3", "7", "30"].map((n) => `<td>${p.metrics?.[n]?.views != null ? num(p.metrics[n].views) : "\u2014"}</td>`).join("")}</tr>`).join("")}</tbody></table><div class="hint" style="margin-top:4px">\u64AD\u653E\u6570</div>`\n      : `<div class="meta">${k.stage === "publish_agreed" ? `\u7EA6\u597D ${md(k.publish_due_at)} \u53D1\uFF0C\u8FD8\u6CA1\u627E\u5230\u5E16\u5B50\uFF08\u6BCF\u5929\u627E\u4E00\u6B21\uFF09` : "\u8FD8\u6CA1\u6709\u5E16\u5B50"}</div>`}</div></aside></div></div>`;\n  wireKol(m, k);\n}\nfunction wireKol(m, k) {\n  $$("[data-ktab]", m).forEach((b) => (b.onclick = () => { KD.tab = b.dataset.ktab; render(); }));\n  const ne = $("#kNextEdit"); if (ne) ne.onclick = () => { KD.editNext = true; render(); };\n  const ns = $("#kNextSave"); if (ns) ns.onclick = () => { KD.editNext = false; act(() => api(`/kols/${k.id}`, { fields: { next_step: $("#kNextIn").value.trim() || null } }), "\u4E0B\u4E00\u6B65\u5DF2\u4FDD\u5B58\uFF0Cagent \u4E4B\u540E\u8D77\u8349\u4F1A\u53C2\u8003"); };\n  const ro = $("#kReopen"); if (ro) ro.onclick = () => act(() => api(`/kols/${k.id}`, { fields: { stage: "replied", close_reason: null, never_contact: false, never_reason: null } }), "\u5DF2\u91CD\u65B0\u6253\u5F00\uFF0C\u9636\u6BB5\u56DE\u5230\u300C\u5DF2\u56DE\u590D\u300D");\n  const inputs = $$("[data-kf]", m);\n  const changed = () => { const o = {}; inputs.forEach((el) => { const old = el.type === "date" && k[el.dataset.kf] ? String(k[el.dataset.kf]).slice(0, 10) : k[el.dataset.kf] ?? ""; if (el.value.trim() !== String(old)) o[el.dataset.kf] = el.value.trim() || null; }); return o; };\n  inputs.forEach((el) => (el.oninput = el.onchange = () => ($("#kDirty").hidden = !Object.keys(changed()).length)));\n  $("#kSave").onclick = () => act(() => api(`/kols/${k.id}`, { fields: changed() }), "\u5DF2\u4FDD\u5B58\u3002\u6539\u9636\u6BB5\u4E0D\u53D1\u4FE1");\n  $("#kDiscard").onclick = () => render();\n  const cl = $("#kClose"); if (cl) cl.onclick = () => {\n    let reason = "";\n    modal(`<h2>\u7ED3\u6848\uFF1A${esc(k.name)}</h2><div class="label" style="margin:0">\u539F\u56E0</div><div class="row">${CLOSE.map((r) => `<button class="pill" type="button" data-reason="${r}">${r}</button>`).join("")}</div>\n      <textarea class="field" id="cNote" rows="2" placeholder="\u5907\u6CE8\uFF08\u53EF\u4E0D\u586B\uFF09"></textarea>\n      <div class="steps"><div class="step"><span class="n">1</span><span>\u9636\u6BB5\u6539\u4E3A\u300C\u7ED3\u6848\u300D\uFF0C\u4E0D\u518D\u6392\u9080\u7EA6\u548C\u50AC\u4FE1</span></div><div class="step"><span class="n">2</span><span>\u5979\u4EE5\u540E\u6765\u4FE1\u4F1A\u81EA\u52A8\u91CD\u65B0\u6253\u5F00\uFF0C\u5E76\u51FA\u56DE\u4FE1\u5361</span></div></div>\n      <div class="row"><button class="btn danger" type="button" id="cGo" disabled>\u7ED3\u6848</button><button class="btn" type="button" id="cNo">\u53D6\u6D88</button><span class="hint">\u4E0D\u53D1\u4FE1</span></div>`, (el) => {\n      $$("[data-reason]", el).forEach((b) => (b.onclick = () => { reason = b.dataset.reason; $$("[data-reason]", el).forEach((x) => x.classList.toggle("on", x === b)); $("#cGo").disabled = false; }));\n      $("#cNo").onclick = closeModal;\n      $("#cGo").onclick = () => { const note = $("#cNote").value.trim(); closeModal(); act(() => api(`/kols/${k.id}`, { fields: { stage: "closed", close_reason: reason, whose_turn: "none", next_followup_at: null, ...(note ? { notes: [k.notes, note].filter(Boolean).join("\\n") } : {}) } }), `\u5DF2\u7ED3\u6848\uFF08${reason}\uFF09`); };\n    });\n  };\n  $("#kNever").onclick = () => {\n    if (k.never_contact) return act(() => api(`/kols/${k.id}`, { fields: { never_contact: false, never_reason: null } }), "\u5DF2\u53D6\u6D88\u6C38\u4E0D\u8054\u7CFB");\n    const mails = [k.email, ...(k.other_emails || "").split(/[\\s,\uFF0C\u3001;\uFF1B]+/)].filter(Boolean);\n    modal(`<h2>\u6C38\u4E0D\u8054\u7CFB\uFF1A${esc(k.name)}</h2><div>\u6BD4\u7ED3\u6848\u66F4\u4E25\uFF1A\u672C\u9879\u76EE\u4EE5\u540E<b>\u4E0D\u4F1A\u518D\u5F80\u5979\u7684\u4EFB\u4F55\u90AE\u7BB1\u53D1\u4FE1</b>\uFF08${esc(mails.join("\u3001") || "\u6CA1\u6709\u90AE\u7BB1")}\uFF09\uFF0C\u4E5F\u5305\u62EC\u7528\u8FD9\u4E9B\u90AE\u7BB1\u7684\u5176\u4ED6 KOL \u8BB0\u5F55\u3002</div>\n      <div class="steps"><div class="step"><span class="n">1</span><span>\u6807\u8BB0\u6C38\u4E0D\u8054\u7CFB\uFF0C\u9636\u6BB5\u6539\u4E3A\u7ED3\u6848</span></div><div class="step"><span class="n">2</span><span>\u8FD8\u6CA1\u53D1\u51FA\u7684\u4FE1\u5728\u53D1\u51FA\u524D\u4F1A\u88AB\u6321\u4E0B</span></div><div class="step"><span class="n">3</span><span>\u5979\u6765\u4FE1\u7167\u5E38\u8BB0\u5F55</span></div></div>\n      <label class="row" style="font-size:14px"><input type="checkbox" id="nOk"> \u5979\u8981\u6C42\u4E0D\u518D\u8054\u7CFB\uFF0C\u6216\u8005\u786E\u5B9E\u4E0D\u8BE5\u518D\u8054\u7CFB</label>\n      <div class="row"><button class="btn danger" type="button" id="nGo" disabled>\u8BBE\u4E3A\u6C38\u4E0D\u8054\u7CFB</button><button class="btn" type="button" id="nNo">\u53D6\u6D88</button><span class="hint">\u4E4B\u540E\u53EF\u4EE5\u5728\u8FD9\u91CC\u53D6\u6D88</span></div>`, () => {\n      $("#nOk").onchange = (e) => ($("#nGo").disabled = !e.target.checked);\n      $("#nNo").onclick = closeModal;\n      $("#nGo").onclick = () => { closeModal(); act(() => api(`/kols/${k.id}`, { fields: { never_contact: true, never_reason: "\u8FD0\u8425\u6807\u8BB0", stage: "closed", close_reason: k.close_reason || "\u62D2\u7EDD", whose_turn: "none", next_followup_at: null } }), "\u5DF2\u8BBE\u4E3A\u6C38\u4E0D\u8054\u7CFB"); };\n    });\n  };\n  const send = $("#cSend");\n  if (send) send.onclick = async () => {\n    const body = $("#cBody").value.trim(); if (!body) return toast("\u5148\u5199\u6B63\u6587");\n    try {\n      const card = await api(`/kols/${k.id}/mail`, { subject: $("#cSubj").value.trim() || undefined, body });\n      toast("5 \u79D2\u540E\u53D1\u51FA\uFF08\u53D1\u524D\u7167\u6837\u68C0\u67E5\u989D\u5EA6\u3001\u6682\u505C\u548C\u9000\u4FE1\uFF09", { undo: () => api(`/cards/${card.id}/undo`, {}).then(() => api(`/cards/${card.id}/reject`, { note: "\u8FD0\u8425\u64A4\u9500" })), after: "\u5DF2\u6392\u597D\uFF0C\u51E0\u79D2\u540E\u53D1\u51FA" });\n      render();\n    } catch (e) { toast("\u6CA1\u6210\u529F\uFF1A" + e.message); }\n  };\n  const ask = $("#cAsk"); if (ask) ask.onclick = () => askDraft([{ id: k.id, name: k.name }]);\n  $("#kCode").onclick = () => askDraft([{ id: k.id, name: k.name }]);\n}\n\n// ---------- \u627E\u65B0\u7684\u4EBA ----------\nconst F = { plat: "instagram", mode: "kw", busy: false, result: null };\nfunction renderFind(m) {\n  m.innerHTML = `<div class="wrap" style="max-width:960px"><a href="#kols" style="font-size:13px">\u2190 KOL \u5217\u8868</a><h1 class="h1" style="margin:8px 0 14px">\u627E\u65B0\u7684\u4EBA</h1>\n    <section class="card"><div class="row" style="justify-content:space-between">\n      <div class="seg" role="group" aria-label="\u5E73\u53F0">${[["instagram", "Instagram"], ["youtube", "YouTube"], ["tiktok", "TikTok"]].map(([k, v]) => `<button type="button" class="${F.plat === k ? "on" : ""}" data-plat="${k}">${v}</button>`).join("")}</div>\n      <div class="seg" role="group" aria-label="\u65B9\u5F0F">${[["kw", "\u6309\u5173\u952E\u8BCD"], ["seed", "\u627E\u76F8\u4F3C\u8D26\u53F7"], ["handles", "\u67E5\u8FD9\u4E9B\u8D26\u53F7\u7684\u90AE\u7BB1"]].map(([k, v]) => `<button type="button" class="${F.mode === k ? "on" : ""}" data-mode="${k}" ${k === "seed" && F.plat !== "instagram" ? "disabled" : ""}>${v}</button>`).join("")}</div></div>\n      <div class="fgrid">\n        ${F.mode === "kw" ? `<label class="full">\u5173\u952E\u8BCD\uFF08\u4E00\u884C\u4E00\u4E2A\uFF0C\u6BCF\u4E2A\u5404\u641C\u4E00\u6B21\uFF09<textarea class="field" id="fK" rows="3" placeholder="\u89AA\u5B50\u65E5\u5E38&#10;\u80B2\u5152"></textarea></label>` : ""}\n        ${F.mode === "seed" ? `<label class="full">\u53C2\u8003\u8D26\u53F7\uFF08\u4E00\u884C\u4E00\u4E2A\uFF0C\u627E\u548C\u5B83\u4EEC\u76F8\u4F3C\u7684\u8D26\u53F7\uFF09<textarea class="field" id="fS" rows="3" placeholder="@someone"></textarea></label>` : ""}\n        ${F.mode === "handles" ? `<label class="full">\u8FD9\u4E9B\u8D26\u53F7\uFF08\u4E00\u884C\u4E00\u4E2A\uFF0C\u53EA\u67E5\u516C\u5F00\u90AE\u7BB1\uFF09<textarea class="field" id="fH" rows="4"></textarea></label>` : ""}\n        ${F.mode !== "handles" ? `<label>\u5927\u7EA6\u8981\u591A\u5C11\u4EBA<span class="unit"><input class="field" type="number" id="fT" value="50"><span class="meta">\u4EBA</span></span></label>\n          <label>\u7C89\u4E1D\u6570<span class="unit"><input class="field" type="number" id="fMin" placeholder="\u6700\u5C11" aria-label="\u6700\u5C11"><span class="meta">\u5230</span><input class="field" type="number" id="fMax" placeholder="\u6700\u591A" aria-label="\u6700\u591A"></span></label>` : ""}\n        <label>\u6700\u591A\u82B1<span class="unit"><input class="field" type="number" id="fB" value="5"><span class="meta">\u7F8E\u5143\uFF08Apify\uFF09\uFF0C\u5230\u4E86\u5C31\u505C</span></span></label>\n        <label>\u8FD9\u6279\u53EB<input class="field" type="text" id="fBatch" placeholder="\u9ED8\u8BA4\uFF1A\u5E73\u53F0 + \u65E5\u671F"></label>\n        ${F.plat === "youtube" ? `<label class="full" style="flex-direction:row;align-items:center;gap:8px;font-weight:400;font-size:14px;color:var(--ink)"><input type="checkbox" id="fY"> \u4E5F\u67E5 YouTube \u9690\u85CF\u7684\u5546\u52A1\u90AE\u7BB1\uFF08\u627E\u5230\u4E00\u4E2A\u7EA6 12 \u7F8E\u5206\uFF09</label>` : ""}\n      </div>\n      <div class="hint" style="margin-top:10px">\u5730\u533A\u548C\u8BED\u8A00\u6309\u8BBE\u7F6E\u91CC\u7684\u300C\u627E\u4EBA\u300D\u3002\u5E93\u91CC\u5DF2\u7ECF\u6709\u7684\u8D26\u53F7\u4F1A\u81EA\u52A8\u8DF3\u8FC7\uFF0C\u4E0D\u91CD\u590D\u82B1\u94B1\u3002</div>\n      <div class="row" style="margin-top:14px"><button class="btn primary" type="button" id="fGo" ${F.busy ? "disabled" : ""}>${F.busy ? "\u6B63\u5728\u627E\u2026\u53EF\u80FD\u8981\u51E0\u5206\u949F" : "\u5F00\u59CB\u627E"}</button>${F.busy ? \'<span class="spin"></span>\' : ""}<span class="hint">\u627E\u5230\u7684\u4EBA\u76F4\u63A5\u8FDB\u5E93\uFF0C\u662F\u300C\u672A\u8054\u7CFB\u300D\uFF0C\u4E4B\u540E\u6392\u8FDB\u9080\u7EA6\u6279</span></div>\n      ${F.result ? `<div class="okbar" style="margin:14px 0 0">${esc(F.result)}<span class="sp"></span><a href="#kols">\u53BB KOL \u5217\u8868\u770B</a></div>` : ""}</section>\n    <section class="card" style="margin-top:16px"><h2 class="h2">\u4E0D\u60F3\u586B\u8868\uFF1F\u4EA4\u7ED9 agent</h2><div class="row"><input class="field" id="fAsk" style="flex:1;min-width:260px" type="text" placeholder="\u6BD4\u5982\uFF1A\u627E 30 \u4E2A\u53F0\u6E7E\u7684\u4EB2\u5B50\u535A\u4E3B\uFF0C\u7C89\u4E1D 1\u201310 \u4E07\uFF0C\u8981\u6709\u90AE\u7BB1"><button class="btn" type="button" id="fAskGo">\u4EA4\u7ED9 agent</button></div>\n      <div class="hint" style="margin-top:6px">agent \u4F1A\u81EA\u5DF1\u5B9A\u5173\u952E\u8BCD\u53BB\u627E\uFF0C\u7ED3\u679C\u53D8\u6210\u4E00\u5F20\u300C\u627E\u5230\u7684\u4EBA\u300D\u5361\u7247\uFF0C\u4F60\u5728\u5F85\u4F60\u51B3\u5B9A\u91CC\u52FE\u9009\u540C\u610F\u540E\u624D\u8FDB\u5E93\u3002</div></section></div>`;\n  $$("[data-plat]", m).forEach((b) => (b.onclick = () => { F.plat = b.dataset.plat; if (F.plat !== "instagram" && F.mode === "seed") F.mode = "kw"; renderFind(m); }));\n  $$("[data-mode]", m).forEach((b) => (b.onclick = () => { F.mode = b.dataset.mode; renderFind(m); }));\n  const lines = (id) => ($(id)?.value || "").split(/[\\n,\uFF0C]/).map((s) => s.trim()).filter(Boolean);\n  $("#fGo").onclick = async () => {\n    F.busy = true; F.result = null; renderFind(m);\n    try {\n      const r = await api("/find", { platform: F.plat, keywords: lines("#fK"), seeds: lines("#fS"), handles: lines("#fH"), target: Number($("#fT")?.value) || undefined,\n        minFollowers: Number($("#fMin")?.value) || undefined, maxFollowers: Number($("#fMax")?.value) || undefined, youtubeHidden: !!$("#fY")?.checked, budget: Number($("#fB").value) || 5, batch: $("#fBatch").value.trim() || undefined });\n      F.result = `\u627E\u5230 ${r.found} \u4F4D\uFF08${r.withEmail} \u4F4D\u6709\u90AE\u7BB1\uFF09\uFF0C\u5165\u5E93 ${r.added} \u4F4D\uFF0C\u82B1\u4E86\u7EA6 $${r.spentUsd}${r.stoppedEarly ? "\uFF1B" + r.stoppedEarly : ""}`;\n    } catch (e) { F.result = null; toast("\u6CA1\u627E\u6210\uFF1A" + e.message); }\n    F.busy = false; if (route[0] === "find") renderFind($("#main"));\n  };\n  $("#fAskGo").onclick = () => { const t = $("#fAsk").value.trim(); if (!t) return toast("\u5148\u5199\u8981\u627E\u4EC0\u4E48\u4EBA"); act(() => api("/ask", { text: `\u627E\u4EBA\uFF1A${t}\u3002\u7528 find_people\uFF0C\u7ED3\u679C\u505A\u6210\u300C\u8FD9\u6279\u8981\u4E0D\u8981\u5165\u5E93\u300D\u7684\u5361\u7247\u3002` }), "\u5DF2\u4EA4\u7ED9 agent \u53BB\u627E\uFF0C\u7ED3\u679C\u4F1A\u4F5C\u4E3A\u5361\u7247\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A"); };\n}\n\n// ---------- \u8BB0\u5F55 ----------\nconst L = { q: "", bad: false, days: 2, open: {}, more: [] };\nasync function renderLog(m) {\n  const [rows, jobs] = await Promise.all([api(`/log?q=${encodeURIComponent(L.q)}&bad=${L.bad ? 1 : ""}&days=${L.days}`), api("/jobs")]);\n  const all = rows.concat(L.more);\n  const running = jobs.filter((j) => j.status === "running"), queued = jobs.filter((j) => j.status === "queued"), stuck = jobs.filter((j) => j.status === "stuck");\n  const days = [];\n  for (const r of all) { const k = new Date(r.at).toDateString(); let d = days.find((x) => x.k === k); if (!d) days.push((d = { k, label: when(r.at).split(" ")[0] + " \xB7 " + `${new Date(r.at).getMonth() + 1} \u6708 ${new Date(r.at).getDate()} \u65E5`, rows: [] })); d.rows.push(r); }\n  m.innerHTML = `<div class="wrap" style="max-width:1180px"><div class="ltitle"><h1 class="h1">\u8BB0\u5F55</h1><span class="meta">\u53D1\u751F\u8FC7\u7684\u6BCF\u4E00\u4EF6\u4E8B\uFF0C\u4E00\u6761\u4E00\u6761\u6309\u65F6\u95F4\u6392</span></div>\n    <div class="stats">${[["\u4ECA\u5929\u6765\u4FE1", U.incoming], ["\u4ECA\u5929\u8054\u7CFB\u7684\u4EBA", U.contacted], ["\u4F60\u540C\u610F\u7684", U.approved], ["\u8BA9\u5B83\u6539\u7684", U.revised], ["\u53D1\u51FA\u7684\u4FE1", U.sent], ["\u51FA\u9519", U.errors]].map(([l, v], i) => `<div class="statb"><b ${i === 5 && v ? \'style="color:var(--bad)"\' : ""}>${v ?? 0}</b><span>${l}</span></div>`).join("")}</div>\n    ${running.length || queued.length ? `<div class="now" role="status"><span class="spin" aria-hidden="true"></span><span class="sp" style="min-width:240px"><b>agent \u6B63\u5728\u5199\uFF1A</b>${running.map((j) => esc(jobName(j))).join("\u3001") || "\u2014"}${queued.length ? ` \xB7 \u6392\u961F ${queued.length} \u4EF6` : ""}</span><span class="meta">\u5199\u597D\u7684\u5361\u4F1A\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A</span></div>` : ""}\n    ${stuck.map((j) => `<div class="alert" style="margin:0 0 14px" role="alert"><span class="sp" style="min-width:240px"><b>agent \u5361\u4F4F\u4E86\uFF1A</b>${esc(jobName(j))}${j.error ? " \xB7 " + esc(j.error) : ""}</span>${j.kol_id ? `<a class="btn sm" href="#kol/${j.kol_id}">\u770B\u539F\u4FE1</a>` : ""}<button class="btn sm" type="button" data-retry="${j.id}">\u539F\u6837\u518D\u8BD5\u4E00\u6B21</button>${j.session_id ? `<button class="btn sm" type="button" data-copy="${esc(resumeCmd(j))}">\u590D\u5236\u63A5\u7740\u804A\u7684\u547D\u4EE4</button>` : ""}</div>`).join("")}\n    <div class="lfilters"><input class="field" style="width:240px" type="search" id="lq" placeholder="\u641C KOL \u540D\u5B57\u6216\u5185\u5BB9" value="${esc(L.q)}"><select class="sel" id="ld"><option value="2">\u4ECA\u5929\u548C\u6628\u5929</option><option value="7">\u6700\u8FD1 7 \u5929</option><option value="30">\u6700\u8FD1 30 \u5929</option></select>\n      <label class="row" style="font-size:13px"><input type="checkbox" id="lb" ${L.bad ? "checked" : ""}> \u53EA\u770B\u51FA\u9519\u7684</label></div>\n    <div class="rbox">${days.map((d) => `<div class="rday">${esc(d.label)}</div>${d.rows.map((r) => `<div class="rrow ${r.bad ? "bad" : ""}"><span class="rtime">${pad(new Date(r.at).getHours())}:${pad(new Date(r.at).getMinutes())}</span>\n      <span>${esc(r.summary)}${r.detail ? ` <button class="link" type="button" data-lopen="${r.id}">${L.open[r.id] ? "\u6536\u8D77" : "\u8BE6\u60C5"}</button>` : ""}</span>\n      <span class="rlinks">${r.kol_id ? `<a href="#kol/${r.kol_id}">${esc(r.kol_name || "KOL")}</a>` : ""}${r.proposal_id ? `<a href="#decide/${r.proposal_id}">\u770B\u5361\u7247</a>` : ""}</span>\n      ${L.open[r.id] ? `<div class="rdetail">${esc(typeof r.detail === "string" ? r.detail : JSON.stringify(r.detail, null, 2))}</div>` : ""}</div>`).join("")}`).join("") || \'<div class="empty">\u6CA1\u6709\u7B26\u5408\u7684\u8BB0\u5F55</div>\'}\n      ${all.length >= 200 ? `<div class="rday" style="border-bottom:0;text-align:center"><button class="link" type="button" id="lMore">\u518D\u5F80\u524D\u770B</button></div>` : ""}</div></div>`;\n  $("#ld").value = String(L.days);\n  let t; $("#lq").oninput = (e) => { L.q = e.target.value; L.more = []; clearTimeout(t); t = setTimeout(() => render().then(() => { const q = $("#lq"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }), 300); };\n  $("#ld").onchange = (e) => { L.days = Number(e.target.value); L.more = []; render(); };\n  $("#lb").onchange = (e) => { L.bad = e.target.checked; L.more = []; render(); };\n  $$("[data-lopen]", m).forEach((b) => (b.onclick = () => { L.open[b.dataset.lopen] = !L.open[b.dataset.lopen]; render(); }));\n  $$("[data-retry]", m).forEach((b) => (b.onclick = () => act(() => api(`/jobs/${b.dataset.retry}/retry`, {}), "\u91CD\u65B0\u6392\u961F\u4E86")));\n  $$("[data-copy]", m).forEach((b) => (b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "\u5DF2\u590D\u5236\u547D\u4EE4"; } catch { prompt("\u590D\u5236\u8FD9\u6761\u547D\u4EE4\uFF1A", b.dataset.copy); } }));\n  const mo = $("#lMore"); if (mo) mo.onclick = async () => { const last = all[all.length - 1]; L.more = L.more.concat(await api(`/log?q=${encodeURIComponent(L.q)}&bad=${L.bad ? 1 : ""}&days=3650&before=${last.id}`)); render(); };\n}\nconst JOBS = { reply: "\u5199\u56DE\u4FE1", revise: "\u6309\u610F\u89C1\u6539", unmatched: "\u770B\u5BF9\u4E0D\u4E0A\u4EBA\u7684\u6765\u4FE1", bounce: "\u770B\u9000\u4FE1", code_expiry: "\u7801\u5230\u671F", checkin: "\u95EE\u53D1\u5E03", template: "\u6539\u6A21\u677F", ask: "\u4F60\u4EA4\u4EE3\u7684\u4E8B" };\nconst jobName = (j) => `${JOBS[j.kind] || j.kind}${j.kol_id ? ` \xB7 KOL #${j.kol_id}` : ""}`;\nconst resumeCmd = (j) => (j.agent === "codex" ? `cd ~/.kolpick/agent && codex exec resume ${j.session_id}` : `cd ~/.kolpick/agent && claude --resume ${j.session_id}`);\n\n// ---------- \u8BBE\u7F6E ----------\nconst SECTIONS = [["send", "\u53D1\u4FE1\u548C\u989D\u5EA6", ["dailyLimit", "perMinute", "cooldownDays", "bounceRate", "bounceWindowDays", "bounceMinSent", "timezone"]],\n  ["follow", "\u50AC\u4FE1\u548C\u7ED3\u6848", ["followup1Days", "followup2Days", "closeDays", "noFollowupLevels", "noFollowupDemands", "noFollowupChannels", "followupFrom"]],\n  ["codes", "\u4F53\u9A8C\u7801\u548C\u6D3B\u52A8\u7801", ["trialUses", "trialDays", "trialUnusedDays", "trialExpiryDays", "partnerDiscount", "partnerMarkets", "partnerMarketDefault"]],\n  ["tpl", "\u6A21\u677F", []], ["posts", "\u627E\u4EBA\u548C\u627E\u5E16\u5B50", ["findCountry", "findLanguage", "postKeyword", "postLookbackDays"]], ["auto", "\u81EA\u52A8\u8FD0\u884C", []], ["local", "\u8FD9\u53F0\u7535\u8111", ["dataApiUrl", "feishuWebhook"]]];\nconst ST = { dirty: {}, editTpl: null };\nasync function renderSettings(m) {\n  const sec = route[1] || "send";\n  const [s, local, templates, mach] = await Promise.all([api("/tool/settings_get", {}), api("/local"), api("/tool/templates", {}), sec === "local" ? api("/setup") : null]);\n  const val = (v) => (Array.isArray(v) ? v.join("\u3001") : v && typeof v === "object" ? Object.entries(v).map(([a, b]) => `${a}=${b}`).join("\u3001") : v ?? "");\n  const field = (k) => `<label>${esc(s.labels[k] || k)}<input class="field" type="text" data-s="${k}" value="${esc(ST.dirty[k] ?? val(s.settings[k]))}"></label>`;\n  const usageBy = Object.fromEntries((U.mailboxes || []).map((b) => [b.address, b]));\n  const autoRows = [["inbox", "\u6536\u4FE1\u76D1\u542C", "\u6BCF\u4E2A\u53D1\u4FE1\u90AE\u7BB1\u5B9E\u65F6\u6536\u4FE1\uFF1B\u65AD\u4E86\u81EA\u52A8\u6539\u4E3A\u6BCF 2 \u5206\u949F\u8865\u6536", "\u5173\u6389\u540E\u4E0D\u518D\u5B9E\u65F6\u6536\u4FE1\uFF0C\u53EA\u80FD\u624B\u52A8\u300C\u73B0\u5728\u6536\u4E00\u6B21\u300D"],\n    ["schedule", "\u5B9A\u65F6\u4EFB\u52A1", "\u6BCF\u5929\uFF1A\u6392\u9080\u7EA6\u548C\u50AC\u4FE1\u3001\u540C\u6B65\u7801\u7528\u91CF\u3001\u7801\u5230\u671F\u548C\u7EA6\u597D\u6CA1\u53D1\u3001\u627E\u5E16\u5B50\u3001\u6293\u6570\u636E", "\u5173\u6389\u540E\u65E9\u4E0A\u4E0D\u4F1A\u81EA\u52A8\u6392\u6279"],\n    ["agent", "\u540E\u53F0 agent", "\u6765\u4FE1\u3001\u8BA9\u5B83\u6539\u3001\u7801\u5230\u671F\u3001\u95EE\u53D1\u5E03\uFF0C\u81EA\u52A8\u4EA4\u7ED9 agent \u8D77\u8349", "\u5173\u6389\u540E\u6765\u4FE1\u53EA\u8BB0\u5F55\uFF0C\u4E0D\u8D77\u8349"]];\n  const body = {\n    send: `<div class="meta">\u989D\u5EA6\u6309\u4EBA\u6570\u7B97\uFF1A\u540C\u4E00\u4E2A\u4EBA\u4E00\u5929\u91CC\u591A\u53D1\u4E00\u5C01\u4E0D\u518D\u5360\u989D\u5EA6\u3002</div><div class="sgrid">${SECTIONS[0][2].map(field).join("")}</div>\n      <div style="overflow-x:auto;margin-top:12px;border:1px solid var(--line2);border-radius:10px"><table class="mb"><thead><tr><th>\u53D1\u4FE1\u90AE\u7BB1</th><th>\u542F\u7528</th><th>\u4ECA\u5929</th><th>\u6BCF\u5929\u4E0A\u9650</th><th>\u9884\u70ED\u5F00\u59CB</th><th>\u8D77\u6B65</th><th>\u6BCF\u5929\u52A0</th><th></th></tr></thead><tbody>\n      ${s.mailboxes.map((b) => `<tr data-mb="${esc(b.address)}"><td>${esc(b.address)}</td><td><button class="sw ${b.enabled ? "on" : ""}" type="button" role="switch" aria-checked="${b.enabled}" aria-label="\u542F\u7528 ${esc(b.address)}" data-mtoggle></button></td><td>${usageBy[b.address] ? `${usageBy[b.address].used} / ${usageBy[b.address].limit_today}` : "\u2014"}</td>\n        <td><input class="field" style="width:80px" type="number" data-m="daily_limit" value="${b.daily_limit}"></td><td><input class="field" type="date" data-m="warmup_from" value="${b.warmup_from ? String(b.warmup_from).slice(0, 10) : ""}"></td><td><input class="field" style="width:70px" type="number" data-m="warmup_start" value="${b.warmup_start ?? ""}"></td><td><input class="field" style="width:70px" type="number" data-m="warmup_step" value="${b.warmup_step ?? ""}"></td><td><button class="btn sm" type="button" data-msave>\u4FDD\u5B58</button></td></tr>`).join("")}</tbody></table></div>\n      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="mAdd">\u52A0\u4E00\u4E2A\u53D1\u4FE1\u90AE\u7BB1</button><span class="meta">\u90AE\u7BB1\u8981\u5148\u5728\u98DE\u4E66\u90AE\u7BB1\u91CC\u5F00\u597D\uFF0C\u5E76\u8BA9 lark-cli \u6709\u6743\u9650${S.env !== "prod" ? "\uFF1B\u6D4B\u8BD5\u5E93\u53EA\u5728\u7ED9\u6D4B\u8BD5\u5730\u5740\u53D1\u4FE1\u65F6\u624D\u542F\u7528" : ""}</span></div>`,\n    follow: `<div class="meta">\u6BCF\u5929\u65E9\u4E0A\u626B\u4E00\u6B21\uFF0C\u6392\u6210\u300C\u4E00\u6279\u300D\u7ED9\u4F60\u770B\u3002\u5217\u8868\u7528\u987F\u53F7\u9694\u5F00\u3002</div><div class="sgrid">${SECTIONS[1][2].map(field).join("")}</div>`,\n    codes: `<div class="meta">agent \u8D77\u8349\u53D1\u7801\u7684\u4FE1\u65F6\u7528\u8FD9\u4E9B\u9ED8\u8BA4\u503C\uFF1B\u6BCF\u5F20\u5361\u4E0A\u4F60\u8FD8\u80FD\u770B\u5230\u5177\u4F53\u6570\u5B57\u518D\u540C\u610F\u3002\u5E02\u573A\u5199\u6210 \u53F0\u6E7E=TW\u3001\u9999\u6E2F=HK\u3002</div><div class="sgrid">${SECTIONS[2][2].map(field).join("")}</div>`,\n    tpl: `<div class="meta">\u6539\u5728\u7528\u7684\u6A21\u677F\u53EA\u5B58\u6210\u65B0\u7248\uFF0C\u5728\u300C\u5F85\u4F60\u51B3\u5B9A\u300D\u91CC\u5BF9\u6BD4\u540E\u6279\u51C6\u624D\u6362\uFF1B\u5DF2\u6392\u8FDB\u5361\u7247\u91CC\u7684\u4FE1\u4E0D\u53D7\u5F71\u54CD\u3002</div>\n      ${templates.map((t) => `<div class="srow"><b>${esc(t.name)}<span class="meta" style="display:block;font-weight:400">${esc(t.purpose)} \xB7 ${esc((t.subject || "").slice(0, 50))}</span></b><span class="tag ${t.status === "active" ? "green" : t.status === "draft" ? "amber" : ""}">${t.status === "active" ? "\u5728\u7528" : t.status === "draft" ? (t.draft_of ? "\u65B0\u7248\u5F85\u6279\u51C6" : "\u8349\u7A3F") : "\u505C\u7528"}</span><button class="btn sm" type="button" data-tedit="${t.id}">${ST.editTpl === t.id ? "\u6536\u8D77" : "\u6539"}</button></div>${ST.editTpl === t.id ? tplEditor(t) : ""}`).join("")}\n      <div class="srow"><b>\u65B0\u6A21\u677F</b><button class="btn sm" type="button" data-tedit="new">${ST.editTpl === "new" ? "\u6536\u8D77" : "\u65B0\u5EFA"}</button></div>${ST.editTpl === "new" ? tplEditor({ purpose: "\u5176\u4ED6" }) : ""}\n      <div class="row" style="margin-top:12px"><input class="field" id="tAsk" style="flex:1;min-width:260px" type="text" placeholder="\u6216\u8005\u8BF4\u600E\u4E48\u6539\uFF0C\u6BD4\u5982\uFF1A\u9080\u7EA6\u4FE1\u518D\u77ED\u4E00\u70B9\uFF1B\u6216\u8005\uFF1A\u65B0\u5199\u4E00\u4E2A\u300C\u50AC\u53D1\u5E03\u300D\u6A21\u677F"><button class="btn" type="button" id="tAskGo">\u4EA4\u7ED9 agent</button></div>`,\n    posts: `<div class="sgrid">${SECTIONS[4][2].map(field).join("")}</div><div class="meta" style="margin-top:10px">\u627E\u5E16\u5B50\uFF1A\u6BCF\u5929\u770B\u300C\u5DF2\u7EA6\u53D1\u5E03 / \u5DF2\u53D1\u5E03 / \u5408\u4F5C\u4E2D\u300D\u7684\u4EBA\u6700\u8FD1\u7684\u5E16\u5B50\uFF0C\u542B\u8FD9\u4E2A\u8BCD\u5C31\u8BB0\u4E0B\uFF0C\u7B2C 1/3/7/30 \u5929\u5404\u6293\u4E00\u6B21\u6570\u636E\u3002</div>`,\n    auto: `<div class="meta">\u5173\u6389\u53EA\u662F\u4E0D\u81EA\u52A8\u505A\uFF1B\u624B\u52A8\u70B9\u7167\u6837\u80FD\u505A\u3002\u300C\u6682\u505C\u6240\u6709\u53D1\u9001\u300D\u5728\u9875\u9762\u9876\u90E8\uFF0C\u548C\u8FD9\u91CC\u65E0\u5173\u3002</div>${autoRows.map(([k, l, on, off]) => `<div class="srow"><b>${l}<span class="meta" style="display:block;font-weight:400">${local.auto[k] ? on : off}</span></b><button class="sw ${local.auto[k] ? "on" : ""}" type="button" role="switch" aria-checked="${!!local.auto[k]}" aria-label="${l}" data-auto="${k}"></button></div>`).join("")}\n      <div class="row" style="margin-top:12px">${Object.entries(S.dailyNames || {}).map(([k, v]) => `<button class="btn sm" type="button" data-daily="${k}">\u73B0\u5728\u8DD1\uFF1A${v}${S.daily?.[k] ? `\uFF08\u4E0A\u6B21 ${when(S.daily[k].at)}${S.daily[k].ok ? "" : "\uFF0C\u51FA\u9519"}\uFF09` : ""}</button>`).join("")}<button class="btn sm" type="button" id="inboxNow">\u73B0\u5728\u6536\u4E00\u6B21\u4FE1</button></div>`,\n    local: `<div class="label" style="margin-top:4px">\u6536\u53D1\u4FE1\u548C agent</div><div id="mTools">${mach ? toolsHtml(mach) : ""}</div>\n      <div class="label" style="margin-top:18px">\u6570\u636E\u5E93\u548C\u5BC6\u94A5</div><div class="meta">\u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF0C\u9875\u9762\u91CC\u4E0D\u663E\u793A\u539F\u503C\uFF1B\u7C98\u8D34\u65B0\u7684\u503C\u5C31\u66FF\u6362\u3002</div><div id="mKeys">${mach ? keysHtml(mach) : ""}</div>\n      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="mkSave">\u4FDD\u5B58</button></div>\n      <div class="label" style="margin-top:18px">\u8FD0\u884C</div>\n      <div class="srow"><b>\u5F00\u673A\u81EA\u52A8\u542F\u52A8<span class="meta" style="display:block;font-weight:400">${local.login ? "\u5F00\u673A\u5C31\u5728\u540E\u53F0\u8DD1\uFF0C\u56DE\u4FE1\u548C\u8D77\u8349\u4E0D\u7528\u7B49\u4F60\u6253\u5F00\uFF1B\u5D29\u6E83\u4E86\u4F1A\u81EA\u52A8\u91CD\u542F" : "\u53EA\u5728\u4F60\u70B9 kolpick.app \u65F6\u8FD0\u884C\uFF1B\u6253\u5F00\u540E\u624D\u5F00\u59CB\u6536\u4FE1\u548C\u8D77\u8349"}</span></b><button class="sw ${local.login ? "on" : ""}" type="button" role="switch" aria-checked="${!!local.login}" aria-label="\u5F00\u673A\u81EA\u52A8\u542F\u52A8" id="loginSw"></button></div>\n      <div class="srow"><b>\u5173\u95ED kolpick<span class="meta" style="display:block;font-weight:400">\u505C\u4E0B\u6536\u4FE1\u3001agent \u548C\u5B9A\u65F6\u4EFB\u52A1\uFF0C\u9000\u51FA\u670D\u52A1\uFF0C\u4EC0\u4E48\u90FD\u4E0D\u5360\u3002\u6B63\u5728\u53D1\u7684\u4FE1\u4F1A\u5148\u53D1\u5B8C\u3002\u4E0B\u6B21\u70B9 kolpick.app \u518D\u6253\u5F00\u3002</span></b><button class="btn sm" type="button" id="quitBtn">\u5173\u95ED</button></div>\n      <div class="sgrid" style="margin-top:12px"><label>\u540E\u53F0 agent<select class="field" id="agKind"><option value="claude">Claude\uFF08claude -p\uFF09</option><option value="codex">Codex\uFF08codex exec\uFF09</option></select></label>\n        <label>\u547D\u4EE4\u8DEF\u5F84\uFF08\u7559\u7A7A = \u9ED8\u8BA4\uFF09<input class="field" type="text" id="agBin" value="${esc(local.agent.bin || "")}"></label><label>\u989D\u5916\u53C2\u6570\uFF08\u7A7A\u683C\u9694\u5F00\uFF09<input class="field" type="text" id="agArgs" value="${esc((local.agent.args || []).join(" "))}"></label>\n        <label>\u540C\u65F6\u505A\u51E0\u4EF6\uFF08\u540C\u4E00\u4F4D KOL \u7684\u4E8B\u603B\u662F\u4E00\u4EF6\u4E00\u4EF6\u505A\uFF09<input class="field" type="number" min="1" max="10" id="agPar" value="${local.agent.parallel || 3}"></label>\n        <label>\u5F53\u524D\u6570\u636E\u5E93<span class="field">${local.env === "prod" ? "\u6B63\u5F0F\u5E93 kolpick_prod" : "\u6D4B\u8BD5\u5E93 kolpick_test"}</span></label><label>\u7ED9 Claude / Codex \u7528\u7684 MCP<span class="field">${esc(local.mcpUrl)}</span></label>\n        ${SECTIONS[6][2].map(field).join("")}</div>\n      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="agSave">\u4FDD\u5B58 agent \u8BBE\u7F6E</button><span class="meta">\u5207\u6362\u6570\u636E\u5E93\uFF1A\u5728\u7EC8\u7AEF\u8FD0\u884C <code>kolpick db use test</code> \u6216 <code>kolpick db use prod</code>\uFF0C\u518D\u5728\u4E0A\u9762\u300C\u5173\u95ED kolpick\u300D\uFF0C\u70B9 kolpick.app \u91CD\u65B0\u6253\u5F00</span></div>`,\n  };\n  m.innerHTML = `<div class="wrap"><div class="swrap"><nav class="smenu" aria-label="\u8BBE\u7F6E\u5206\u7EC4">${SECTIONS.map(([k, v]) => `<a class="${sec === k ? "on" : ""}" href="#settings/${k}">${v}</a>`).join("")}</nav>\n    <div class="scontent"><section class="card"><h2 class="h2">${SECTIONS.find(([k]) => k === sec)?.[1] || ""}</h2>${body[sec] || ""}</section></div></div></div>\n    ${Object.keys(ST.dirty).length ? `<div class="savebar" role="status"><span>\u6709\u6539\u52A8\u6CA1\u4FDD\u5B58</span><button class="btn" type="button" id="sDiscard">\u653E\u5F03</button><button class="btn primary" type="button" id="sSave">\u4FDD\u5B58</button></div>` : ""}`;\n  if ($("#agKind")) $("#agKind").value = local.agent.kind;\n  $$("[data-s]", m).forEach((el) => (el.oninput = () => { if (el.value === String(val(s.settings[el.dataset.s]))) delete ST.dirty[el.dataset.s]; else ST.dirty[el.dataset.s] = el.value; const has = Object.keys(ST.dirty).length; if (!!$(".savebar") !== !!has) renderSettings(m).then(() => { const x = $(`[data-s="${el.dataset.s}"]`); x.focus(); x.setSelectionRange(x.value.length, x.value.length); }); }));\n  const sv = $("#sSave"); if (sv) sv.onclick = () => act(async () => { for (const [key, value] of Object.entries(ST.dirty)) await api("/tool/settings_set", { key, value }); ST.dirty = {}; }, "\u5DF2\u4FDD\u5B58\uFF0C\u7ACB\u523B\u751F\u6548\uFF1B\u6392\u961F\u4E2D\u7684\u4FE1\u4E5F\u6309\u65B0\u89C4\u5219\u68C0\u67E5");\n  const sd = $("#sDiscard"); if (sd) sd.onclick = () => { ST.dirty = {}; render(); };\n  $$("[data-mtoggle]", m).forEach((b) => (b.onclick = () => {\n    const addr = b.closest("tr").dataset.mb, on = !b.classList.contains("on");\n    act(() => api("/tool/mailbox_set", { address: addr, enabled: on }), on ? `\u5DF2\u542F\u7528 ${addr}` : `\u5DF2\u505C\u7528 ${addr}\uFF1A\u6392\u5728\u5B83\u540D\u4E0B\u8FD8\u6CA1\u53D1\u7684\u4FE1\u4F1A\u505C\u4F4F\uFF0C\u5B83\u7167\u5E38\u6536\u4FE1`);\n  }));\n  $$("[data-msave]", m).forEach((b) => (b.onclick = () => {\n    const tr = b.closest("tr"), g = (k) => tr.querySelector(`[data-m="${k}"]`).value;\n    act(() => api("/tool/mailbox_set", { address: tr.dataset.mb, daily_limit: Number(g("daily_limit")), warmup_from: g("warmup_from") || undefined, warmup_start: g("warmup_start") ? Number(g("warmup_start")) : undefined, warmup_step: g("warmup_step") ? Number(g("warmup_step")) : undefined }), "\u90AE\u7BB1\u5DF2\u4FDD\u5B58");\n  }));\n  const ma = $("#mAdd"); if (ma) ma.onclick = () => modal(`<h2>\u52A0\u4E00\u4E2A\u53D1\u4FE1\u90AE\u7BB1</h2><label class="label" style="margin:0">\u5730\u5740<input class="field" id="nbA" type="email" placeholder="team@tafu.me"></label><label class="label" style="margin:0">\u6BCF\u5929\u4E0A\u9650<input class="field" id="nbL" type="number" value="50"></label>\n    <label class="row" style="font-size:14px"><input type="checkbox" id="nbW" checked> \u9884\u70ED\uFF1A\u4ECE\u6BCF\u5929 10 \u4EBA\u5F00\u59CB\uFF0C\u6BCF\u5929\u52A0 5\uFF0C\u76F4\u5230\u4E0A\u9650</label><div class="hint">\u52A0\u597D\u540E\u5148\u662F\u505C\u7528\u7684\uFF1B\u786E\u8BA4\u5B83\u80FD\u6536\u53D1\u540E\u518D\u6253\u5F00\u3002</div>\n    <div class="row"><button class="btn primary" type="button" id="nbGo">\u52A0\u4E0A</button><button class="btn" type="button" id="nbNo">\u53D6\u6D88</button></div>`, () => {\n    $("#nbNo").onclick = closeModal;\n    $("#nbGo").onclick = () => { const a = $("#nbA").value.trim(); if (!a) return toast("\u5148\u586B\u5730\u5740"); closeModal(); act(() => api("/tool/mailbox_set", { address: a, enabled: false, daily_limit: Number($("#nbL").value) || 50, ...($("#nbW").checked ? { warmup_from: new Date().toISOString().slice(0, 10), warmup_start: 10, warmup_step: 5 } : {}) }), `\u5DF2\u52A0\u4E0A ${a}\uFF08\u505C\u7528\u4E2D\uFF09`); };\n  });\n  $$("[data-tedit]", m).forEach((b) => (b.onclick = () => { const v = b.dataset.tedit === "new" ? "new" : Number(b.dataset.tedit); ST.editTpl = ST.editTpl === v ? null : v; render(); }));\n  const ts = $("#tSave"); if (ts) ts.onclick = () => { const t = templates.find((x) => x.id === ST.editTpl) || {}; act(() => api("/templates", { template_id: t.id, name: $("#tn").value, purpose: $("#tp").value, language: $("#tl").value, subject: $("#ts").value, body: $("#tb").value, why: "\u8FD0\u8425\u81EA\u5DF1\u6539\u7684" }), "\u5DF2\u5B58\u6210\u65B0\u7248\uFF0C\u53BB\u5F85\u4F60\u51B3\u5B9A\u91CC\u5BF9\u6BD4\u540E\u6279\u51C6", { link: ["\u53BB\u5BF9\u6BD4", "#decide"] }).then(() => (ST.editTpl = null)); };\n  const tc = $("#tCancel"); if (tc) tc.onclick = () => { ST.editTpl = null; render(); };\n  const ta = $("#tAskGo"); if (ta) ta.onclick = () => { const f = $("#tAsk").value.trim(); if (!f) return toast("\u5148\u8BF4\u600E\u4E48\u6539"); act(() => api("/templates/ask", { feedback: f }), "\u5DF2\u4EA4\u7ED9 agent\uFF0C\u65B0\u7248\u4F1A\u4F5C\u4E3A\u6A21\u677F\u5BF9\u6BD4\u5361\u51FA\u73B0\u5728\u5F85\u4F60\u51B3\u5B9A"); };\n  $$("[data-auto]", m).forEach((b) => (b.onclick = () => act(() => api("/local", { auto: { [b.dataset.auto]: !local.auto[b.dataset.auto] } }), "\u5DF2\u4FDD\u5B58")));\n  $$("[data-daily]", m).forEach((b) => (b.onclick = () => { b.disabled = true; act(() => api(`/daily/${b.dataset.daily}`, {}), (r) => (r?.ok === false ? "\u51FA\u9519\uFF1A" + (r.note || "") : "\u8DD1\u5B8C\u4E86")); }));\n  const ib = $("#inboxNow"); if (ib) ib.onclick = () => act(() => api("/inbox", {}), (r) => (Array.isArray(r) ? r.map((x) => `${x.mailbox}\uFF1A\u65B0 ${x.recorded} \u5C01`).join("\uFF1B") || "\u6CA1\u6709\u65B0\u4FE1" : "\u6536\u5B8C\u4E86"));\n  const ls = $("#loginSw"); if (ls) ls.onclick = () => act(() => api("/login", { on: !local.login }), local.login ? "\u5DF2\u5173\u95ED\u5F00\u673A\u81EA\u52A8\u542F\u52A8\uFF0C\u73B0\u5728\u8FD9\u6B21\u7167\u5E38\u8FD0\u884C" : "\u5DF2\u6253\u5F00\u5F00\u673A\u81EA\u52A8\u542F\u52A8\uFF0C\u4E0B\u6B21\u5F00\u673A\u751F\u6548");\n  const qb = $("#quitBtn"); if (qb) qb.onclick = () => modal(`<h2>\u5173\u95ED kolpick\uFF1F</h2><p style="margin:0">\u6536\u4FE1\u3001agent \u8D77\u8349\u548C\u5B9A\u65F6\u4EFB\u52A1\u90FD\u4F1A\u505C\u4E0B\uFF0C\u51B3\u7B56\u53F0\u4E5F\u6253\u4E0D\u5F00\uFF0C\u76F4\u5230\u4F60\u518D\u70B9 kolpick.app\u3002${S.counts?.jobs ? `<br><b>agent \u8FD8\u6709 ${S.counts.jobs} \u4EF6\u4E8B\u6CA1\u505A\u5B8C</b>\uFF0C\u4E0B\u6B21\u6253\u5F00\u4F1A\u63A5\u7740\u505A\u3002` : ""}</p>\n    <div class="row"><button class="btn danger" type="button" id="qGo">\u5173\u95ED</button><button class="btn" type="button" id="qNo">\u53D6\u6D88</button></div>`, () => {\n    $("#qNo").onclick = closeModal;\n    $("#qGo").onclick = async () => { closeModal(); closedByYou = true; try { await api("/quit", {}); } catch {} $("#closed").hidden = false; };\n  });\n  if (mach) {\n    const redraw = (st) => { $("#mTools").innerHTML = toolsHtml(st); wireMachine($("#mTools"), redraw, saved); };\n    const saved = (r) => { apiCache = new Map(); toast(r.dbChanged ? "\u5DF2\u4FDD\u5B58\u3002\u6570\u636E\u5E93\u6362\u4E86\uFF1A\u5173\u95ED kolpick \u518D\u70B9 kolpick.app \u6253\u5F00\u540E\u751F\u6548" : "\u5DF2\u4FDD\u5B58\uFF0C\u7ACB\u523B\u751F\u6548", { long: r.dbChanged }); render(); };\n    wireMachine(m, redraw, saved);\n  }\n  const ag = $("#agSave"); if (ag) ag.onclick = () => act(() => api("/local", { agent: { kind: $("#agKind").value, bin: $("#agBin").value.trim(), args: $("#agArgs").value.trim() ? $("#agArgs").value.trim().split(/\\s+/) : [], parallel: Number($("#agPar").value) || 3 } }), "\u5DF2\u4FDD\u5B58");\n}\nfunction tplEditor(t) {\n  return `<div class="panel" style="margin:4px 0 10px"><div class="sgrid" style="margin:0"><label>\u540D\u5B57<input class="field" id="tn" value="${esc(t.name || "")}"></label><label>\u7528\u9014<select class="field" id="tp">${["\u9080\u7EA6", "\u50AC\u4FE1 1", "\u50AC\u4FE1 2", "\u53D1\u4F53\u9A8C\u7801", "\u4F53\u9A8C\u7801\u5EF6\u671F", "\u4F53\u9A8C\u8DDF\u8FDB", "\u4F53\u9A8C\u672A\u7528", "\u4F53\u9A8C\u5230\u671F", "\u53D1\u6D3B\u52A8\u7801", "\u53D1\u5E03\u786E\u8BA4", "\u5176\u4ED6"].map((p) => `<option ${t.purpose === p ? "selected" : ""}>${p}</option>`).join("")}</select></label><label>\u8BED\u8A00<input class="field" id="tl" value="${esc(t.language || "")}"></label></div>\n    <input class="field" id="ts" value="${esc(t.subject || "")}" placeholder="\u4E3B\u9898"><textarea class="field" id="tb" rows="8">${esc(t.body || "")}</textarea>\n    <div class="hint">\u53EF\u7528\u5360\u4F4D\uFF1A{\u7A31\u547C}{\u9AD4\u9A57\u78BC}{\u6B21\u6578}{\u5230\u671F\u65E5}{\u6D3B\u52D5\u78BC}{\u5C08\u5C6C\u9023\u7D50}{\u5E33\u672C\u9023\u7D50}{\u7C89\u7D72\u6298\u6263}</div>\n    <div class="row"><button class="btn primary" type="button" id="tSave">\u5B58\u6210\u65B0\u7248\uFF0C\u53BB\u5BF9\u6BD4</button><button class="btn" type="button" id="tCancel">\u53D6\u6D88</button></div></div>`;\n}\n\n// ---------- \u8FD9\u53F0\u7535\u8111\uFF1A\u6570\u636E\u5E93\u3001\u5BC6\u94A5\u548C\u672C\u673A\u5DE5\u5177\uFF08\u7B2C\u4E00\u6B21\u8BBE\u7F6E\u548C\u300C\u8BBE\u7F6E \u2192 \u8FD9\u53F0\u7535\u8111\u300D\u5171\u7528\uFF09 ----------\n// \u503C\u53EA\u5B58\u5728\u672C\u673A\uFF1B\u9875\u9762\u53EA\u77E5\u9053\u586B\u6CA1\u586B\uFF0C\u4ECE\u4E0D\u663E\u793A\u539F\u503C\u3002\nconst MKEYS = [["testDb", "\u6D4B\u8BD5\u5E93\u8FDE\u63A5\u4E32", "postgres://\u2026"], ["prodDb", "\u6B63\u5F0F\u5E93\u8FDE\u63A5\u4E32", "postgres://\u2026"], ["dataApi", "TAFU \u6570\u636E\u63A5\u53E3\u5BC6\u94A5", ""],\n  ["trial", "TAFU \u4F53\u9A8C\u7801\u5BC6\u94A5", ""], ["partner", "TAFU \u6D3B\u52A8\u7801\u5BC6\u94A5", ""], ["apify", "Apify token", "\u627E\u4EBA\u548C\u67E5\u90AE\u7BB1\u7528"]];\nconst MTOOLS = [["lark", "lark-cli", true], ["larkApp", "\u98DE\u4E66\u5E94\u7528", true], ["larkAuth", "\u98DE\u4E66\u6536\u53D1\u4FE1\u6388\u6743", true], ["claude", "Claude \u8BA2\u9605", "claude"], ["codex", "Codex", "codex"]];\nfunction keysHtml(st) {\n  const must = st.env === "prod" ? "prodDb" : "testDb";\n  return MKEYS.map(([k, label, ph]) => {\n    const has = st.filled[k];\n    const tag = has ? `<span class="tag green">\u5DF2\u586B</span>` : k === must ? `<span class="tag red">\u5FC5\u586B</span>` : k.endsWith("Db") ? `<span class="tag">\u4E0A\u7EBF\u65F6\u518D\u586B</span>` : `<span class="tag">\u53EF\u4EE5\u5148\u7A7A\u7740</span>`;\n    return `<div class="mrow"><b>${label}${tag}</b><input class="field" type="password" autocomplete="off" spellcheck="false" data-mk="${k}" placeholder="${has ? "\u5DF2\u586B\uFF1B\u7C98\u8D34\u65B0\u7684\u5C31\u66FF\u6362" : esc(ph || "\u7C98\u8D34\u7BA1\u7406\u5458\u7ED9\u7684\u503C")}"></div>`;\n  }).join("") + `<div class="hint" style="margin-top:6px">\u8FDE\u63A5\u4E32\u548C\u5BC6\u94A5\u627E\u7BA1\u7406\u5458\u8981\u3002\u5BC6\u94A5\u7A7A\u7740\u4E5F\u80FD\u5148\u7528\uFF0C\u7528\u5230\u65F6\u4F1A\u63D0\u793A\u6765\u8FD9\u91CC\u586B\u3002</div>`;\n}\nfunction toolsHtml(st) {\n  return MTOOLS.map(([k, label, need]) => {\n    const c = st.checks[k];\n    const required = need === true || need === st.agent;\n    const tag = c.ok ? `<span class="tag green">\u597D\u4E86</span>` : required ? `<span class="tag amber">\u8981\u5904\u7406</span>` : `<span class="tag">\u53EF\u9009</span>`;\n    let fix = "";\n    if (!c.ok && c.fix) fix = `<code>${esc(c.fix)}</code><button class="btn sm" type="button" data-copy="${esc(c.fix)}">\u590D\u5236</button><span class="hint">\u7C98\u8D34\u5230\u300C\u7EC8\u7AEF\u300D\u8FD0\u884C\uFF0C\u505A\u5B8C\u70B9\u300C\u91CD\u65B0\u68C0\u67E5\u300D</span>`;\n    if (!c.ok && k === "larkApp" && st.checks.lark.ok) fix = `<input class="field" style="max-width:220px" id="laId" placeholder="App ID\uFF08cli_ \u5F00\u5934\uFF09" autocomplete="off"><input class="field" style="max-width:220px" type="password" id="laSec" placeholder="App Secret" autocomplete="off"><button class="btn sm" type="button" id="laGo">\u4FDD\u5B58</button>`;\n    if (!c.ok && k === "larkAuth" && st.checks.larkApp.ok && !/\u7B49\u4F60/.test(c.note)) fix = `<button class="btn sm primary" type="button" id="lgGo">\u53BB\u98DE\u4E66\u6388\u6743</button><span class="hint">\u4F1A\u6253\u5F00\u98DE\u4E66\u7684\u6388\u6743\u9875\uFF0C\u70B9\u540C\u610F\u540E\u8FD9\u91CC\u81EA\u5DF1\u53D8\u7EFF</span>`;\n    return `<div class="mrow"><b>${label}${tag}</b><span class="meta">${esc(c.note)}</span>${fix ? `<div class="mfix">${fix}</div>` : ""}</div>`;\n  }).join("") + `<div class="row" style="margin-top:8px"><button class="btn sm" type="button" id="mCheck">\u91CD\u65B0\u68C0\u67E5</button></div>`;\n}\nlet loginPoll = null;\n// Wires both blocks inside el; redraw(st) draws them again with fresh status.\nfunction wireMachine(el, redraw, onSaved) {\n  $$("[data-copy]", el).forEach((b) => (b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast("\u5DF2\u590D\u5236\uFF0C\u7C98\u8D34\u5230\u7EC8\u7AEF\u8FD0\u884C"); } catch { toast("\u590D\u5236\u4E0D\u4E86\uFF0C\u624B\u52A8\u9009\u4E2D\u590D\u5236"); } }));\n  const ck = $("#mCheck", el); if (ck) ck.onclick = async () => { ck.disabled = true; ck.textContent = "\u68C0\u67E5\u4E2D\u2026"; try { redraw(await apiFetch("/setup")); } catch (e) { toast("\u6CA1\u68C0\u67E5\u6210\uFF1A" + e.message); } };\n  const la = $("#laGo", el); if (la) la.onclick = async () => {\n    la.disabled = true;\n    try { redraw(await apiFetch("/setup/lark-app", { appId: $("#laId").value, secret: $("#laSec").value })); toast("\u98DE\u4E66\u5E94\u7528\u914D\u597D\u4E86"); } catch (e) { la.disabled = false; toast("\u6CA1\u6210\u529F\uFF1A" + e.message); }\n  };\n  const lg = $("#lgGo", el); if (lg) lg.onclick = async () => {\n    lg.disabled = true;\n    const w = window.open("about:blank", "_blank");\n    try {\n      const r = await apiFetch("/setup/lark-login", {});\n      if (w) w.location = r.url; else toast("\u6D4F\u89C8\u5668\u62E6\u4F4F\u4E86\u65B0\u7A97\u53E3\uFF1A\u5141\u8BB8\u5F39\u51FA\u7A97\u53E3\u540E\u518D\u70B9\u4E00\u6B21", { long: true });\n      clearInterval(loginPoll);\n      const started = Date.now();\n      loginPoll = setInterval(async () => {\n        if (Date.now() - started > 600000) return clearInterval(loginPoll);\n        const st = await apiFetch("/setup").catch(() => null);\n        if (st && !/\u7B49\u4F60/.test(st.checks.larkAuth.note)) { clearInterval(loginPoll); redraw(st); toast(st.checks.larkAuth.ok ? "\u98DE\u4E66\u6388\u6743\u597D\u4E86" : "\u6388\u6743\u6CA1\u5B8C\u6210\uFF1A" + st.checks.larkAuth.note, { long: true }); }\n      }, 3000);\n      redraw(await apiFetch("/setup"));\n    } catch (e) { if (w) w.close(); lg.disabled = false; toast("\u6CA1\u6210\u529F\uFF1A" + e.message); }\n  };\n  const ks = $("#mkSave", el); if (ks) ks.onclick = async () => {\n    const b = {};\n    $$("[data-mk]", el).forEach((i) => { if (i.value.trim()) b[i.dataset.mk] = i.value.trim(); });\n    if (!Object.keys(b).length && !onSaved.always) return toast("\u6CA1\u6709\u8981\u4FDD\u5B58\u7684\uFF1A\u5728\u6846\u91CC\u7C98\u8D34\u65B0\u7684\u503C");\n    ks.disabled = true; ks.textContent = b.testDb || b.prodDb ? "\u8BD5\u8FDE\u6570\u636E\u5E93\u2026" : "\u4FDD\u5B58\u4E2D\u2026";\n    try { const r = await apiFetch("/setup", b); onSaved(r); } catch (e) { ks.disabled = false; ks.textContent = "\u4FDD\u5B58"; toast("\u6CA1\u4FDD\u5B58\uFF1A" + e.message, { long: true }); }\n  };\n}\n\n// \u7B2C\u4E00\u6B21\u8BBE\u7F6E\uFF1A\u8FD9\u53F0\u7535\u8111\u8FD8\u6CA1\u6709\u6570\u636E\u5E93\u65F6\uFF0C\u53EA\u663E\u793A\u8FD9\u4E00\u9875\u3002\nasync function renderSetup(st) {\n  document.body.classList.add("setup");\n  $("#env").textContent = "\u7B2C\u4E00\u6B21\u8BBE\u7F6E"; $("#env").className = "env";\n  const m = $("#main");\n  if (!st) { m.innerHTML = `<div class="wrap su"><div class="card meta">\u6B63\u5728\u68C0\u67E5\u8FD9\u53F0\u7535\u8111\u2026</div></div>`; st = await apiFetch("/setup"); }\n  m.innerHTML = `<div class="wrap su"><div><h1>\u6B22\u8FCE\u4F7F\u7528 kolpick</h1><p class="meta" style="margin:6px 0 0">\u8FD9\u53F0\u7535\u8111\u8FD8\u6CA1\u8BBE\u7F6E\u597D\u3002\u7167\u4E0B\u9762\u505A\u4E00\u904D\uFF0C\u4FDD\u5B58\u540E\u76F4\u63A5\u8FDB\u5165\u51B3\u7B56\u53F0\u3002\u586B\u7684\u4E1C\u897F\u53EA\u5B58\u5728\u8FD9\u53F0\u7535\u8111\u4E0A\uFF0C\u4EE5\u540E\u5728\u300C\u8BBE\u7F6E \u2192 \u8FD9\u53F0\u7535\u8111\u300D\u91CC\u80FD\u66FF\u6362\u3002</p></div>\n    <section class="card" id="suTools"><h2 class="h2">1. \u6536\u53D1\u4FE1\u548C agent</h2>${toolsHtml(st)}</section>\n    <section class="card" id="suKeys"><h2 class="h2">2. \u6570\u636E\u5E93\u548C\u5BC6\u94A5</h2>${keysHtml(st)}<div class="row" style="margin-top:14px"><button class="btn primary" type="button" id="mkSave">\u4FDD\u5B58\uFF0C\u8FDB\u5165\u51B3\u7B56\u53F0</button></div></section></div>`;\n  const redraw = (s2) => { $("#suTools").innerHTML = `<h2 class="h2">1. \u6536\u53D1\u4FE1\u548C agent</h2>${toolsHtml(s2)}`; wireMachine($("#suTools"), redraw, saved); };\n  const saved = async (r) => {\n    if (!r.ready) return renderSetup(r);\n    m.innerHTML = `<div class="wrap su"><div class="card empty"><span class="big">\u8BBE\u7F6E\u597D\u4E86\uFF0C\u6B63\u5728\u542F\u52A8\u2026</span><span>\u7B2C\u4E00\u6B21\u8FDE\u6570\u636E\u5E93\u8981\u51E0\u79D2\u3002</span></div></div>`;\n    for (let i = 0; i < 120; i++) {\n      await new Promise((ok) => setTimeout(ok, 1000));\n      const l = await fetch("/api/local").then((x) => x.json()).catch(() => null);\n      if (l && !l.setup) return location.reload();\n    }\n    toast("\u542F\u52A8\u592A\u4E45\u4E86\uFF1A\u5173\u6389\u8FD9\u4E2A\u7A97\u53E3\uFF0C\u518D\u70B9 kolpick.app", { long: true });\n  };\n  saved.always = true;\n  wireMachine(m, redraw, saved);\n}\n\n// ---------- \u542F\u52A8 ----------\nlet started = false;\nasync function start() {\n  const l = await fetch("/api/local").then((x) => x.json()).catch(() => null);\n  if (l?.setup) return renderSetup().catch((e) => toast("\u51FA\u9519\u4E86\uFF1A" + e.message, { long: true }));\n  if (started) return;\n  started = true;\n  refresh();\n  setInterval(() => {\n    if (document.hidden || offline || $("#modal").innerHTML) return;\n    if (document.activeElement?.matches("textarea, input, select")) return;\n    if (route[0] === "settings" && Object.keys(ST.dirty).length) return;\n    refresh();\n  }, 15000);\n}\nstart();\n</script>\n</body>\n</html>\n';
 
 // src/kolpick/server.ts
 var JOB_FORBIDDEN = /* @__PURE__ */ new Set(["settings_set", "mailbox_set", "pause_sending", "kol_update", "kol_add"]);
@@ -104382,6 +104534,58 @@ async function body(req) {
 function send(res, status, data) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
   res.end(JSON.stringify(data));
+}
+async function setupApi(cfg, path3, b2) {
+  if (path3 === "/setup/lark-app") {
+    await larkApp(String(b2?.appId ?? ""), String(b2?.secret ?? ""));
+    return setupStatus(cfg);
+  }
+  if (path3 === "/setup/lark-login") return larkLogin();
+  const r = await saveSetup(cfg, b2 ?? {});
+  return { ...r, ...await setupStatus(cfg) };
+}
+async function serveSetup(cfg, onReady) {
+  const server = http.createServer((req, res) => void (async () => {
+    const url2 = new URL(req.url ?? "/", "http://127.0.0.1");
+    const origin = req.headers.origin;
+    if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) return send(res, 403, { error: "forbidden" });
+    if (url2.pathname === "/" && req.method === "GET") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      res.end(console_default);
+      return;
+    }
+    const path3 = url2.pathname.replace(/^\/api/, "");
+    if (req.method === "POST" && req.headers["content-type"]?.split(";")[0] !== "application/json") return send(res, 415, { error: "json only" });
+    try {
+      if (req.method === "GET" && path3 === "/local") return send(res, 200, { setup: true, env: cfg.env });
+      if (req.method === "GET" && path3 === "/setup") return send(res, 200, await setupStatus(cfg));
+      if (req.method === "POST" && path3 === "/quit") {
+        send(res, 200, { ok: true });
+        setTimeout(() => process.exit(0), 300);
+        return;
+      }
+      if (req.method === "POST" && path3.startsWith("/setup")) {
+        const r = await setupApi(cfg, path3, await body(req));
+        send(res, 200, r);
+        if (path3 === "/setup" && ready(cfg)) {
+          server.close();
+          server.closeAllConnections();
+          onReady().catch((err) => {
+            console.error("\u542F\u52A8\u5931\u8D25\uFF1A", err);
+            process.exit(1);
+          });
+        }
+        return;
+      }
+      send(res, 503, { error: "\u8FD9\u53F0\u7535\u8111\u8FD8\u6CA1\u8BBE\u7F6E\u597D", setup: true });
+    } catch (err) {
+      send(res, 400, { error: String(err?.message ?? err) });
+    }
+  })());
+  await new Promise((resolve, reject2) => {
+    server.once("error", reject2);
+    server.listen(cfg.port, "127.0.0.1", () => resolve());
+  });
 }
 var DAILY = {
   followups: (ctx, p) => scanFollowups(ctx, p),
@@ -104691,8 +104895,15 @@ var App = class {
         return this.status.tasks[path3.split("/")[2]];
       case "POST /inbox":
         return this.catchUpNow(p);
+      case "GET /setup":
+        return setupStatus(ctx.cfg);
+      case "POST /setup":
+        return setupApi(ctx.cfg, path3, b2);
+      case "POST /setup/lark-app":
+      case "POST /setup/lark-login":
+        return setupApi(ctx.cfg, path3, b2);
       case "GET /local":
-        return { env: ctx.cfg.env, agent: ctx.cfg.agent, auto: ctx.cfg.auto, project: ctx.cfg.project, mcpUrl: this.mcpUrl, login: loginStart() };
+        return { setup: false, env: ctx.cfg.env, agent: ctx.cfg.agent, auto: ctx.cfg.auto, project: ctx.cfg.project, mcpUrl: this.mcpUrl, login: loginStart() };
       case "POST /login":
         return { login: setLoginStart(!!b2.on) };
       case "POST /quit": {
@@ -104813,11 +105024,11 @@ var HELP = `kolpick <\u547D\u4EE4>
 
   open                            \u6253\u5F00\u51B3\u7B56\u53F0\uFF08\u6D4F\u89C8\u5668\uFF09
   serve                           \u5728\u524D\u53F0\u8FD0\u884C\u672C\u673A\u670D\u52A1\uFF08\u51B3\u7B56\u53F0 + MCP + \u6536\u4FE1 + \u5B9A\u65F6\u4EFB\u52A1\uFF09
-  install                         \u5B89\u88C5\uFF1A\u540E\u53F0\u670D\u52A1\u5F00\u673A\u81EA\u542F\uFF0C\u6CE8\u518C\u5230\u672C\u673A Claude Code \u548C Codex
+  install                         \u5B89\u88C5\uFF1A\u653E\u597D kolpick.app\uFF0C\u6CE8\u518C\u5230\u672C\u673A Claude Code \u548C Codex\uFF0C\u7136\u540E\u6253\u5F00\u5B83
   uninstall | restart             \u505C\u6389\u5E76\u79FB\u9664 / \u91CD\u542F\u540E\u53F0\u670D\u52A1
   setup [--from-kol-ops] [--test-db URL] [--prod-db URL] [--apify-token T]
         [--data-key K] [--trial-key K] [--partner-key K] [--project tafu]
-                                  \u4FDD\u5B58\u672C\u673A\u914D\u7F6E\uFF08\u53EA\u5B58\u5728 ~/.kolpick/config.json\uFF09
+                                  \u4FDD\u5B58\u672C\u673A\u914D\u7F6E\uFF08\u53EA\u5B58\u5728 ~/.kolpick/config.json\uFF1B\u4E5F\u53EF\u4EE5\u5728\u51B3\u7B56\u53F0\u91CC\u586B\uFF09
   tools                           \u5217\u51FA\u6240\u6709\u5DE5\u5177
   tool <\u540D\u5B57> ['{"\u53C2\u6570":...}']      \u8FD0\u884C\u4E00\u4E2A\u5DE5\u5177\uFF0C\u7ED3\u679C\u6253\u5370\u6210 JSON
   db migrate | db use test|prod   \u5EFA\u8868\u5347\u7EA7 / \u5207\u6362\u5F53\u524D\u6570\u636E\u5E93
@@ -104843,19 +105054,25 @@ async function main(argv) {
   const project2 = flag(argv, "--project") ?? cfg.project;
   switch (group) {
     case "serve": {
-      const db = connect(databaseUrl());
-      await migrate(db);
-      const app = new App(makeCtx(db));
-      await app.start();
-      console.log(`kolpick \u5DF2\u542F\u52A8\uFF1Ahttp://127.0.0.1:${cfg.port}\uFF08${cfg.env === "prod" ? "\u6B63\u5F0F\u5E93" : "\u6D4B\u8BD5\u5E93"}\uFF09`);
-      const stop = async () => {
-        await app.stop();
-        await db.end();
-        process.exit(0);
+      const startApp = async () => {
+        const db = connect(databaseUrl());
+        await migrate(db);
+        const app = new App(makeCtx(db));
+        await app.start();
+        console.log(`kolpick \u5DF2\u542F\u52A8\uFF1Ahttp://127.0.0.1:${cfg.port}\uFF08${loadConfig().env === "prod" ? "\u6B63\u5F0F\u5E93" : "\u6D4B\u8BD5\u5E93"}\uFF09`);
+        const stop = async () => {
+          await app.stop();
+          await db.end();
+          process.exit(0);
+        };
+        app.onQuit = stop;
+        process.on("SIGINT", stop);
+        process.on("SIGTERM", stop);
       };
-      app.onQuit = stop;
-      process.on("SIGINT", stop);
-      process.on("SIGTERM", stop);
+      if (ready(cfg)) return startApp();
+      fromKolOps(cfg);
+      await serveSetup(cfg, startApp);
+      console.log(`kolpick \u7B49\u7B2C\u4E00\u6B21\u8BBE\u7F6E\uFF1Ahttp://127.0.0.1:${cfg.port}`);
       return;
     }
     case "open": {
@@ -104876,18 +105093,7 @@ async function main(argv) {
       return;
     case "setup": {
       const args = [cmd, ...rest].filter((x) => x !== void 0);
-      if (args.includes("--from-kol-ops")) {
-        const old = join4(homedir3(), ".kol-ops", "projects.json");
-        if (existsSync3(old)) {
-          const o = JSON.parse(readFileSync3(old, "utf8"));
-          for (const [name, v] of Object.entries(o.projects ?? {})) {
-            if (name.endsWith("-test")) continue;
-            cfg.keys[name] = { dataApi: v.dataApiKey, trial: v.trialKey, partner: v.partnerKey };
-          }
-        }
-        const token = join4(homedir3(), ".kol-ops", "apify-token");
-        if (existsSync3(token)) cfg.apifyToken = readFileSync3(token, "utf8").trim();
-      }
+      if (args.includes("--from-kol-ops")) fromKolOps(cfg);
       if (flag(args, "--test-db")) cfg.databases.test = flag(args, "--test-db");
       if (flag(args, "--prod-db")) cfg.databases.prod = flag(args, "--prod-db");
       if (flag(args, "--apify-token")) cfg.apifyToken = flag(args, "--apify-token");
@@ -104897,7 +105103,7 @@ async function main(argv) {
       if (flag(args, "--trial-key")) keys.trial = flag(args, "--trial-key");
       if (flag(args, "--partner-key")) keys.partner = flag(args, "--partner-key");
       saveConfig(cfg);
-      console.log(`\u5DF2\u4FDD\u5B58 ${join4(home(), "config.json")}\uFF1A\u6570\u636E\u5E93 ${Object.keys(cfg.databases).join("\u3001") || "\u672A\u914D"}\uFF0C\u5F53\u524D ${cfg.env}\uFF0C\u9879\u76EE ${cfg.project}\uFF0CApify ${cfg.apifyToken ? "\u6709" : "\u65E0"}\uFF0C\u63A5\u53E3\u5BC6\u94A5 ${Object.entries(cfg.keys[cfg.project] ?? {}).filter(([, v]) => v).map(([k]) => k).join("\u3001") || "\u65E0"}`);
+      console.log(`\u5DF2\u4FDD\u5B58 ${join5(home(), "config.json")}\uFF1A\u6570\u636E\u5E93 ${Object.keys(cfg.databases).join("\u3001") || "\u672A\u914D"}\uFF0C\u5F53\u524D ${cfg.env}\uFF0C\u9879\u76EE ${cfg.project}\uFF0CApify ${cfg.apifyToken ? "\u6709" : "\u65E0"}\uFF0C\u63A5\u53E3\u5BC6\u94A5 ${Object.entries(cfg.keys[cfg.project] ?? {}).filter(([, v]) => v).map(([k]) => k).join("\u3001") || "\u65E0"}`);
       return;
     }
     case "tools":
@@ -104928,7 +105134,7 @@ async function main(argv) {
     case "import":
       if (cmd === "export") {
         if (!rest[0]) throw new Error("\u7528\u6CD5\uFF1Akolpick import export <\u98DE\u4E66 base token> [\u76EE\u5F55]");
-        const dir = rest[1] ?? join4(home(), "snapshots", `feishu-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 16).replace(/[:T]/g, "-")}`);
+        const dir = rest[1] ?? join5(home(), "snapshots", `feishu-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 16).replace(/[:T]/g, "-")}`);
         await exportBase(rest[0], dir);
         console.log(`\u5DF2\u5BFC\u51FA\u5230 ${dir}`);
         return;
@@ -104936,7 +105142,7 @@ async function main(argv) {
       if (cmd === "load" || cmd === "counts") {
         await withDb(async (db) => {
           if (cmd === "load") {
-            const dir = rest[0]?.replace(/^~/, homedir3());
+            const dir = rest[0]?.replace(/^~/, homedir4());
             if (!dir) throw new Error("\u7528\u6CD5\uFF1Akolpick import load <\u5FEB\u7167\u76EE\u5F55>");
             await migrate(db);
             const keep2 = rest.includes("--keep-mailboxes");

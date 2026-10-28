@@ -50,7 +50,7 @@ export async function findPeople(ctx: Ctx, p: Project, input: FindInput, o: { di
     maxSpend: input.budget ?? 5, country: p.settings.findCountry || DEFAULT_PARAMS.country, language: p.settings.findLanguage || DEFAULT_PARAMS.language,
   };
   const token = process.env.APIFY_TOKEN || ctx.cfg.apifyToken;
-  if (!o.run && !token) throw new Error("这台电脑没有 Apify token（kolpick setup）");
+  if (!o.run && !token) throw new Error("这台电脑没有 Apify token：在决策台「设置 → 这台电脑」里填");
   const run = o.run ?? new ApifyRunner(token!, params.maxSpend, new MemoryLedger());
   const result = await discover(run, params, skip);
   const candidates: Candidate[] = result.creators.filter((c) => !c.status.startsWith("filtered")).map(({ creator: c }) => ({

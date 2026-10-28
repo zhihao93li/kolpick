@@ -59,6 +59,6 @@ export function saveConfig(c: LocalConfig): void {
 
 export function databaseUrl(c: LocalConfig = loadConfig()): string {
   const url = process.env.KOLPICK_DATABASE_URL || c.databases[c.env];
-  if (!url) throw new Error(`还没配置${c.env === "prod" ? "正式" : "测试"}数据库：运行 kolpick setup`);
+  if (!url) throw new Error(`还没配置${c.env === "prod" ? "正式" : "测试"}数据库：打开 kolpick.app 照页面设置`);
   return url;
 }

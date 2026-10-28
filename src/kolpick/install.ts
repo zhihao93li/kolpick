@@ -132,6 +132,16 @@ export function install(): string[] {
     const r = tryRun("codex", ["mcp", "add", "kolpick", "--url", url]);
     out.push(r.startsWith("失败") ? `Codex 注册失败：${r}` : "已注册到 Codex");
   } else out.push("没找到 codex 命令，跳过 Codex");
+  // An older copy still running would keep answering with old code: close it the way「关闭 kolpick」does.
+  const base = `http://127.0.0.1:${cfg.port}`;
+  if (!tryRun("curl", ["-s", "-o", "/dev/null", "--max-time", "1", `${base}/api/local`]).startsWith("失败")) {
+    tryRun("curl", ["-s", "--max-time", "40", "-X", "POST", "-H", "content-type: application/json", "-d", "{}", `${base}/api/quit`]);
+    tryRun("sh", ["-c", `for i in $(seq 60); do curl -s -o /dev/null --max-time 1 ${base}/api/local || exit 0; sleep 0.5; done`]);
+    out.push("已关掉正在运行的旧版本");
+  }
+  // Opening the app finishes the job: an unset computer lands on the setup page.
+  const opened = tryRun("open", [appDir()]);
+  out.push(opened.startsWith("失败") ? `打开 kolpick.app 失败：${opened}` : "已打开 kolpick.app：还没设置过的话，照页面做完第一次设置");
   return out;
 }
 

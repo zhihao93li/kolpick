@@ -7,7 +7,7 @@ import http from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { continueJob, runJobs } from "./agent.js";
-import { saveConfig } from "./config.js";
+import { saveConfig, type LocalConfig } from "./config.js";
 import { addLog, dayOf, project, type Ctx, type Project } from "./ctx.js";
 import { one } from "./db/db.js";
 import { findPeople } from "./discover.js";
@@ -19,6 +19,7 @@ import { catchUp, recordOne, Watcher } from "./inbox.js";
 import { scanFollowups, scanForAgent } from "./outreach.js";
 import { findPosts, postMetrics, syncCodes } from "./posts.js";
 import { approve, editProposal, groupHash, proposeMail, reject, requestRevision, Stale, undo } from "./proposals.js";
+import { larkApp, larkLogin, ready, saveSetup, setupStatus } from "./setup.js";
 import { draftTemplate } from "./templates.js";
 import { callTool, kolDetail, TOOLS } from "./tools.js";
 import { kolCounts, kolList, logList, usage } from "./views.js";
@@ -62,6 +63,65 @@ async function body(req: http.IncomingMessage): Promise<any> {
 function send(res: http.ServerResponse, status: number, data: unknown): void {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
   res.end(JSON.stringify(data));
+}
+
+/** Saving values, the Feishu app and the Feishu sign-in: the same in the setup page and in「这台电脑」. */
+async function setupApi(cfg: LocalConfig, path: string, b: any): Promise<unknown> {
+  if (path === "/setup/lark-app") {
+    await larkApp(String(b?.appId ?? ""), String(b?.secret ?? ""));
+    return setupStatus(cfg);
+  }
+  if (path === "/setup/lark-login") return larkLogin();
+  const r = await saveSetup(cfg, b ?? {});
+  return { ...r, ...(await setupStatus(cfg)) };
+}
+
+/**
+ * Before this computer has a database: only the console page and the setup API answer. Once the operator saves a
+ * working database, this steps aside and onReady starts the real service on the same port.
+ */
+export async function serveSetup(cfg: LocalConfig, onReady: () => Promise<void>): Promise<void> {
+  const server = http.createServer((req, res) => void (async () => {
+    const url = new URL(req.url ?? "/", "http://127.0.0.1");
+    const origin = req.headers.origin;
+    if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) return send(res, 403, { error: "forbidden" });
+    if (url.pathname === "/" && req.method === "GET") {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      res.end(PAGE);
+      return;
+    }
+    const path = url.pathname.replace(/^\/api/, "");
+    if (req.method === "POST" && req.headers["content-type"]?.split(";")[0] !== "application/json") return send(res, 415, { error: "json only" });
+    try {
+      if (req.method === "GET" && path === "/local") return send(res, 200, { setup: true, env: cfg.env });
+      if (req.method === "GET" && path === "/setup") return send(res, 200, await setupStatus(cfg));
+      if (req.method === "POST" && path === "/quit") {
+        send(res, 200, { ok: true });
+        setTimeout(() => process.exit(0), 300);
+        return;
+      }
+      if (req.method === "POST" && path.startsWith("/setup")) {
+        const r = await setupApi(cfg, path, await body(req));
+        send(res, 200, r);
+        if (path === "/setup" && ready(cfg)) {
+          server.close();
+          server.closeAllConnections();
+          onReady().catch((err) => {
+            console.error("启动失败：", err);
+            process.exit(1);
+          });
+        }
+        return;
+      }
+      send(res, 503, { error: "这台电脑还没设置好", setup: true });
+    } catch (err: any) {
+      send(res, 400, { error: String(err?.message ?? err) });
+    }
+  })());
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(cfg.port, "127.0.0.1", () => resolve());
+  });
 }
 
 /** Daily jobs: name → what runs. */
@@ -381,8 +441,15 @@ export class App {
         return this.status.tasks[path.split("/")[2]];
       case "POST /inbox":
         return this.catchUpNow(p);
+      case "GET /setup":
+        return setupStatus(ctx.cfg);
+      case "POST /setup":
+        return setupApi(ctx.cfg, path, b);
+      case "POST /setup/lark-app":
+      case "POST /setup/lark-login":
+        return setupApi(ctx.cfg, path, b);
       case "GET /local":
-        return { env: ctx.cfg.env, agent: ctx.cfg.agent, auto: ctx.cfg.auto, project: ctx.cfg.project, mcpUrl: this.mcpUrl, login: loginStart() };
+        return { setup: false, env: ctx.cfg.env, agent: ctx.cfg.agent, auto: ctx.cfg.auto, project: ctx.cfg.project, mcpUrl: this.mcpUrl, login: loginStart() };
       case "POST /login":
         return { login: setLoginStart(!!b.on) };
       case "POST /quit": {

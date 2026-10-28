@@ -8,21 +8,13 @@ KOL 外联工具：找人和公开邮箱、发邀约、收信、审核后发信�
 
 ## 安装新版 kolpick（Mac，试用）
 
-不需要插件，也不动 `stable`：下载 `main` 上打包好的 `bin/kolpick.mjs` 装到本机。先准备好 Node 22+、Chrome、登录了自己订阅的 `claude`、登录好的 `lark-cli`（`codex` 可选，装了一起注册）。
+在「终端」里粘贴这一行（需要 Node 22 以上）：
 
 ```bash
-mkdir -p ~/kolpick-install && curl -fL -o ~/kolpick-install/kolpick.mjs https://raw.githubusercontent.com/zhihao93li/kolpick/main/bin/kolpick.mjs
-node ~/kolpick-install/kolpick.mjs install
-~/.kolpick/bin/kolpick setup --from-kol-ops --test-db '<测试库连接串>' --prod-db '<正式库连接串>'
-~/.kolpick/bin/kolpick db migrate
+curl -fL -o /tmp/kolpick.mjs https://raw.githubusercontent.com/zhihao93li/kolpick/main/bin/kolpick.mjs && node /tmp/kolpick.mjs install
 ```
 
-- `install` 把 kolpick 放进 `~/.kolpick/bin`，在「应用程序」放一个 kolpick.app，并注册到 Claude Code 和 Codex。
-- `setup --from-kol-ops` 从旧版配置导入接口密钥和 Apify；数据库连接串找管理员要。配置和密钥只存在 `~/.kolpick/config.json`。
-- 默认用测试库，测试库的发信邮箱都停用，不会真的发信。
-- 双击 kolpick.app 启动并打开决策台。「设置 → 这台电脑」里可以关闭 kolpick、打开开机自动启动（默认关）、改同时做几件。
-- 同一个库同时只让一台电脑开着 kolpick。
-- 升级：重新下载 `kolpick.mjs` 再跑一次 `install`，然后在决策台关闭 kolpick、重新打开 App。
+装好会自动打开 kolpick.app，照「第一次设置」页面做完就能用：填数据库连接串和密钥（找管理员要），并检查飞书、Claude、Codex 是否就绪。以后在「设置 → 这台电脑」里替换。升级：再跑一次这一行。
 
 ## 代码结构
 

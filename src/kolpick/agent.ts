@@ -21,7 +21,7 @@ export interface AgentRun {
 export type AgentExec = (o: { prompt: string; mcpUrl: string; resume?: string; cmd: AgentCommand }) => Promise<AgentRun>;
 
 /** The agent runs with a clean environment: no API keys or session markers leaking in from wherever kolpick was started. */
-function cleanEnv(): NodeJS.ProcessEnv {
+export function cleanEnv(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (/^(ANTHROPIC_|CLAUDE_CODE_|CLAUDECODE$|CLAUDE_AGENT_SDK|OPENAI_BASE_URL$)/.test(k)) continue;
