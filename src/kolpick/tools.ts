@@ -163,11 +163,11 @@ export const TOOLS: Tool[] = [
     input: {
       kol_id: z.number(), kind: z.enum(["reply", "mail", "followup", "code_expiry", "checkin"]), body: z.string(),
       subject: z.string().optional(), to: z.string().optional(), mailbox: z.string().optional(), in_reply_to: z.number().optional(),
-      proposal_id: z.number().optional(), title: z.string().optional(), why: z.string().optional(), code, after,
+      proposal_id: z.number().optional(), title: z.string().optional(), plan: z.string().optional(), why: z.string().optional(), code, after,
     },
     run: async (a, c) => proposeMail(c.ctx, c.p, {
       kind: a.kind, kolId: a.kol_id, body: a.body, subject: a.subject, to: a.to, mailbox: a.mailbox, inReplyTo: a.in_reply_to,
-      proposalId: a.proposal_id, title: a.title, why: a.why, action: { code: a.code, after: a.after }, who: c.who,
+      proposalId: a.proposal_id, title: a.title, plan: a.plan, why: a.why, action: { code: a.code, after: a.after }, who: c.who,
     }),
   },
   {
@@ -175,7 +175,7 @@ export const TOOLS: Tool[] = [
     description: "提一个不发信的决定给运营：unmatched 对不上人的来信（match_kol_id 写是谁，不写=不用处理）、bounce 退信（bounce: close 结案 / clear 只解除拦截）、"
       + "no_reply 这封来信不用回、close 结案（after.close_reason）、other 其他。",
     input: {
-      kind: z.enum(["unmatched", "bounce", "no_reply", "close", "other"]), title: z.string(), why: z.string().optional(),
+      kind: z.enum(["unmatched", "bounce", "no_reply", "close", "other"]), title: z.string(), plan: z.string().optional(), why: z.string().optional(),
       kol_id: z.number().optional(), message_id: z.number().optional(), match_kol_id: z.number().optional(),
       bounce: z.enum(["close", "clear"]).optional(), after,
     },
@@ -186,7 +186,7 @@ export const TOOLS: Tool[] = [
         action.bounce = a.bounce;
         if (a.bounce === "close") action.after = { close_reason: "退信或邮箱无效", ...(a.after ?? {}) };
       }
-      return proposeDecision(c.ctx, c.p, { kind: a.kind, title: a.title, why: a.why, kolId: a.kol_id ?? null, inReplyTo: a.message_id, action, who: c.who });
+      return proposeDecision(c.ctx, c.p, { kind: a.kind, title: a.title, plan: a.plan, why: a.why, kolId: a.kol_id ?? null, inReplyTo: a.message_id, action, who: c.who });
     },
   },
   {

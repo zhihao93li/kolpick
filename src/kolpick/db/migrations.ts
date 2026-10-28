@@ -268,4 +268,8 @@ export const MIGRATIONS: string[] = [
     primary key (project_id, key)
   );
   `,
+  `
+  -- A card says what happened (title), what the agent suggests (plan) and why (why).
+  alter table proposals add column plan text;
+  `,
 ];

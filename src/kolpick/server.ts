@@ -428,10 +428,26 @@ export class App {
       : view === "done" ? "status in ('done','rejected','superseded','dropped') and done_at > now() - interval '3 days'"
       : "status = 'pending' and parent_id is null";
     const rows = await db.query<any>(
-      `select pr.*, k.name as kol_name, k.stage as kol_stage, k.handle as kol_handle, k.platform as kol_platform, k.followers as kol_followers, m.subject as in_subject, m.body as in_body, m.from_addr as in_from, m.at as in_at
+      `select pr.*, k.name as kol_name, k.stage as kol_stage, k.handle as kol_handle, k.platform as kol_platform, k.followers as kol_followers,
+              k.email as kol_email, k.url as kol_url, k.market as kol_market, k.publish_due_at as kol_publish_due_at, m.subject as in_subject, m.body as in_body, m.from_addr as in_from, m.at as in_at
        from proposals pr left join kols k on k.id = pr.kol_id left join messages m on m.id = pr.in_reply_to
        where pr.project_id = $1 and pr.${where} order by pr.id ${view === "done" ? "desc" : "asc"} limit 200`, [p.id]);
+    // What each card needs around it: the KOL's recent mail (each side's own words, oldest first) and codes, fetched for all cards at once.
+    const kolIds = view === "pending" || view === "problems" ? [...new Set(rows.map((r) => r.kol_id).filter(Boolean))] : [];
+    const recent = kolIds.length ? await db.query<any>(
+      `select * from (select kol_id, direction, mailbox, subject, body, summary, at, bounce, count(*) over (partition by kol_id)::int as total,
+                             row_number() over (partition by kol_id order by at desc) as n
+                      from messages where kol_id = any($1) and direction <> 'note') x where n <= 10 order by at`, [kolIds]) : [];
+    const codes = kolIds.length ? await db.query<any>(
+      "select kol_id, kind, code, used, max_uses, expires_at, visitors, paid_orders from codes where kol_id = any($1) order by created_at", [kolIds]) : [];
     for (const r of rows) {
+      if (r.kol_id && kolIds.length) {
+        const mine = recent.filter((x) => x.kol_id === r.kol_id);
+        r.thread = mine.map((x) => ({ direction: x.direction, mailbox: x.mailbox, subject: x.subject, at: x.at, bounce: x.bounce,
+          text: (x.body ? splitMail(String(x.body)).own : x.summary || x.subject || "").slice(0, 1200) }));
+        r.thread_total = mine[0]?.total ?? 0;
+        r.codes = codes.filter((x) => x.kol_id === r.kol_id);
+      }
       if (r.kind === "invite_batch" || r.kind === "followup_group") {
         r.items = await db.query("select pr.*, k.name as kol_name from proposals pr left join kols k on k.id = pr.kol_id where pr.parent_id = $1 and pr.status = 'pending' order by pr.id", [r.id]);
         r.hash = groupHash(r.items);

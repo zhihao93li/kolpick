@@ -238,6 +238,39 @@ table.mb th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;pa
 table.mb td{padding:8px 10px;border-bottom:1px solid #F3F1EC}
 .savebar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px 10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.15);z-index:30}
 @media (max-width:760px){.sgrid,.fgrid{grid-template-columns:minmax(0,1fr)}.col+.col{border-left:0;border-top:1px solid var(--line2)}.queue{position:static;max-height:none}}
+.q1{display:flex;gap:8px;align-items:center;padding:11px 14px}
+.q1 .iname{flex:none;max-width:140px}
+.qask{flex:1;min-width:0;font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qn{font-size:11px;font-weight:700;background:var(--ink);color:#fff;border-radius:99px;padding:0 7px;line-height:18px}
+.item.urgent{box-shadow:inset 3px 0 0 #D97706}.item.bad{box-shadow:inset 3px 0 0 var(--bad)}.item.on{box-shadow:inset 3px 0 0 var(--accent)}
+.mwrap{display:flex;flex-wrap:wrap;align-items:stretch;flex:1}
+.mmain{flex:999 1 480px;min-width:0;display:flex;flex-direction:column}
+.mside{flex:1 1 220px;max-width:280px;border-left:1px solid var(--line2);padding:20px 18px;font-size:13px;display:flex;flex-direction:column;gap:10px;background:#FCFBF9;border-radius:0 12px 0 0}
+.mside h2{font-size:15px;margin:0}
+.mkv{display:flex;flex-direction:column;gap:1px;word-break:break-all}.mkv span{font-size:12px;color:var(--muted)}
+.mhead{padding:20px 24px 16px}
+.mwho{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}.mwho b{color:var(--ink)}
+.mheadline{font-size:21px;line-height:1.4;font-weight:700;margin:8px 0 10px}
+.mfacts{display:flex;gap:6px;flex-wrap:wrap}
+.mfact{font-size:13px;background:var(--bg);border-radius:6px;padding:2px 9px;color:#4A4944}.mfact.warn{background:var(--warn-bg);color:var(--warn)}
+.mctx{margin:0 24px 16px}
+.mctx-h{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.mmsg{padding:8px 12px;border-radius:10px;background:var(--bg);margin-bottom:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:240px;overflow:auto}
+.mmsg.we{background:var(--panel);border:1px solid var(--line2)}.mmsg .hint{display:block;margin-bottom:2px}
+.mplan{margin:0 24px 16px;padding:14px 16px;background:var(--accent-bg2);border:1px solid #DCE3FA;border-radius:12px}
+.mplan-l{font-size:12px;font-weight:500;color:var(--accent-ink);margin-bottom:4px}
+.mplan-t{font-size:16px;font-weight:500}
+.mflow{margin-top:6px;font-size:13px;color:var(--sub)}
+.mwhy{margin-top:6px;font-size:12px;color:var(--sub)}
+.mletter-h{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:6px}
+.mpaper{border:1px solid var(--line);border-radius:10px;padding:14px 18px;white-space:pre-wrap;word-break:break-word;line-height:1.75;font-size:14px;max-height:320px;overflow:auto;background:var(--panel)}
+.mpaper b{display:block;margin-bottom:8px}
+.g2row{display:grid;grid-template-columns:24px minmax(0,160px) minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 24px;border-top:1px solid var(--line2);font-size:14px}
+.g2row.off{opacity:.45}
+.g2name{font-weight:500;color:var(--ink);text-decoration:none}.g2name:hover{text-decoration:underline;color:var(--accent-ink)}
+.g2sub{font-size:12px;color:var(--muted);margin-top:2px}
+.g2plan{color:var(--accent-ink)}
+.g2x{grid-column:1/6;display:flex;flex-wrap:wrap;gap:16px;padding:12px 0 4px 36px}.g2x>div{flex:1 1 260px;min-width:0}
 </style>
 </head>
 <body>
@@ -388,36 +421,175 @@ async function render() {
 window.onhashchange = () => { closeModal(); render(); };
 
 // ---------- 待你决定 ----------
-const D = { filter: "all", sel: null, mode: null, rej: "leave", revOn: {}, edits: {}, batchOff: {}, batchCur: {}, candOff: {}, alertDone: null };
+// 先看懂发生了什么：队列一行一条，同类做法相同的合成一批；单张卡是 发生了什么 → 上下文 → agent 建议 → 操作，右边是 KOL 资料。
+const D = { filter: "all", sel: null, mode: null, rej: "leave", revOn: {}, edits: {}, batchOff: {}, batchCur: {}, candOff: {}, alertDone: null, ctx: false, editing: false, gOff: {}, peek: null };
 const GROUPS = [["all", "全部"], ["problem", "出问题了"], ["mail", "回一封信"], ["batch", "发一批"], ["decide", "要你拍板"], ["done", "已处理"]];
+// Kinds whose cards merge into one batch when two or more are waiting.
+const BATCHABLE = { code_expiry: "码到期", checkin: "问发布", no_reply: "不用回", close: "建议结案" };
 function groupOf(c) {
   if (c.status === "unknown" || c.status === "failed" || c.kind === "unmatched" || c.kind === "bounce") return "problem";
   if (c.kind === "invite_batch" || c.kind === "followup_group") return "batch";
   if (c.to_addr && !c.items) return "mail";
   return "decide";
 }
-function subOf(c) {
-  if (c.status === "unknown") return "结果不明：" + (c.result || "要你确认");
+const batchKey = (c) => (c.group !== "problem" && c.status === "pending" && !c.items && !c.feedback && BATCHABLE[c.kind] ? c.kind : null);
+const urgent = (c) => c.kind === "code_expiry" || c.kind === "checkin";
+function headOf(c) {
+  if (c.status === "unknown") return "这封信发出去没有，不确定";
+  if (c.status === "failed") return "同意后没做成：" + (c.result || "");
+  if (c.items) return c.title || KINDS[c.kind];
+  if (c.title && c.title !== c.kol_name) return c.title;
+  return (c.why || "").split(/[。！？\n]/)[0] || KINDS[c.kind] || c.kind;
+}
+// What the agent suggests; cards drafted before plan existed get a short one from their action.
+function planOf(c) {
+  if (c.plan) return c.plan;
+  const a = c.action || {}, code = a.code, x = a.after || {};
+  if (code?.type === "trial_extend") return `延期 ${code.days} 天${c.to_addr ? "，回信告诉对方" : ""}`;
+  if (code?.type === "trial_create") return `发体验码（${code.maxUses} 次、${code.days} 天）`;
+  if (code) return `开活动码 ${code.code}`;
+  if (c.to_addr) return x.close_reason ? `回信收尾，然后结案（${x.close_reason}）` : c.kind === "checkin" ? "写信问发布进度" : c.kind === "code_expiry" ? "不延期，写一封收尾信" : c.kind === "followup" ? "催一封" : "回一封信";
+  if (c.kind === "no_reply") return "不回";
+  if (c.kind === "close") return `结案（${x.close_reason || "无回应"}）`;
+  if (c.kind === "bounce") return a.bounce === "close" ? "结案：邮箱无效" : "解除对这个地址的拦截";
+  if (c.kind === "unmatched") return a.match_kol_id ? `记到 KOL #${a.match_kol_id} 名下，让 agent 起草回信` : "不是 KOL 的信，不用处理";
+  return stepsOf(c)[0] || c.why || "";
+}
+function askOf(c) {
+  if (c.status === "unknown") return "结果不明，去邮箱确认";
   if (c.status === "failed") return "没做成：" + (c.result || "");
-  if (c.items) return `${c.items.length} 项 · ${c.title || ""}`;
-  return c.title && c.title !== c.kol_name ? c.title : (c.why || "").slice(0, 60);
+  if (c.items) return `${c.items.length} 项`;
+  return c.plan ? `${headOf(c)} → ${c.plan}` : headOf(c);
+}
+function daysTo(t) { return Math.round((new Date(t) - Date.now()) / 86400000); }
+function factsOf(c) {
+  const f = [];
+  for (const k of c.codes || []) {
+    if (k.kind === "partner") { f.push({ t: `活动码 ${k.code} · 访客 ${k.visitors ?? 0} · 付款 ${k.paid_orders ?? 0}` }); continue; }
+    let t = `${k.code} 用了 ${k.used ?? 0}/${k.max_uses ?? "?"}`, warn = false;
+    if (k.expires_at) { const d = daysTo(k.expires_at); warn = d <= 3; t += d < 0 ? ` · ${when(k.expires_at)} 已过期` : d === 0 ? " · 今天到期" : ` · ${d} 天后到期`; }
+    f.push({ t, warn });
+  }
+  if (c.kol_publish_due_at && c.kind === "checkin") { const d = -daysTo(c.kol_publish_due_at); if (d > 0) f.push({ t: `过约定日 ${d} 天`, warn: true }); }
+  if (c.in_at) f.push({ t: `来信 ${ago(c.in_at)}` });
+  if (c.feedback) f.push({ t: `已按你的意见改过：「${c.feedback}」`, warn: true });
+  return f;
+}
+const factsHtml = (c) => factsOf(c).map((x) => `<span class="mfact ${x.warn ? "warn" : ""}">${esc(x.t)}</span>`).join("");
+function kolRows(c) {
+  return [["平台 · 粉丝", [c.kol_platform, c.kol_followers ? fans(c.kol_followers) + " 粉" : ""].filter(Boolean).join(" · ")], ["阶段", STAGES[c.kol_stage] || ""],
+    ["邮箱", c.kol_email || c.to_addr || c.in_from || ""], ["市场", c.kol_market || ""],
+    ...(c.codes || []).map((k) => ["码", `${k.code}（${k.kind === "partner" ? "活动码" : "体验码"}）${k.kind === "partner" ? "" : ` ${k.used ?? 0}/${k.max_uses ?? "?"}`}${k.expires_at ? " · 到 " + when(k.expires_at) : ""}`])]
+    .filter(([, v]) => v);
+}
+const kolRowsHtml = (c) => kolRows(c).map(([k, v]) => `<div class="mkv"><span>${esc(k)}</span>${esc(v)}</div>`).join("");
+function threadOf(c) {
+  if (c.thread?.length) return c.thread;
+  return c.in_own ? [{ direction: "in", at: c.in_at, text: c.in_own }] : [];
+}
+const msgHtml = (c, x) => `<div class="mmsg ${x.direction === "out" ? "we" : ""}"><span class="hint">${x.direction === "out" ? `我们${x.mailbox ? "（" + esc(x.mailbox) + "）" : ""}` : esc(c.kol_name || c.in_from || "对方")} · ${when(x.at)}${x.bounce ? " · 退信" : ""}</span>${x.subject && x.direction === "out" && !x.text ? esc(x.subject) : esc(x.text || "")}</div>`;
+function contextHtml(c) {
+  const t = threadOf(c);
+  if (!t.length) return "";
+  const older = t.slice(0, -1), last = t[t.length - 1], total = c.thread_total || t.length;
+  return `<div class="mctx"><div class="mctx-h"><span class="label" style="margin:0">上下文 · 来往 ${total} 封</span><span class="sp"></span>${older.length ? `<button class="link" type="button" data-act="ctx">${D.ctx ? "收起更早的" : `展开更早的 ${older.length} 封`}</button>` : ""}</div>
+    ${D.ctx ? older.map((x) => msgHtml(c, x)).join("") + (total > t.length && c.kol_id ? `<div class="hint" style="margin-bottom:6px">更早的 ${total - t.length} 封在 <a href="#kol/${c.kol_id}">KOL 详情</a></div>` : "") : ""}
+    ${msgHtml(c, last).replace('</span>', '（最近一封）</span>')}</div>`;
+}
+function letterHtml(c, label = "要发的信") {
+  const e = D.edits[c.id] || {}, subj = e.subject ?? c.subject ?? "", body = e.body ?? c.body ?? "";
+  const edited = subj !== (c.subject ?? "") || body !== (c.body ?? "");
+  const canEdit = c.status === "pending";
+  return `<div class="mletter-h"><span>${label} · ${esc(c.mailbox || "")} → ${esc(c.to_addr || "")}</span><span class="edited" id="dEdited" style="margin:0" ${edited ? "" : "hidden"}>你改过</span><span class="sp"></span>
+    ${canEdit && D.editing && edited ? `<button class="link" type="button" data-act="resetdraft">恢复 agent 的版本</button>` : ""}${canEdit ? `<button class="link" type="button" data-act="edit">${D.editing ? "改好了" : "改"}</button>` : ""}</div>
+    ${D.editing && canEdit ? `<input class="field" id="dSubj" type="text" value="${esc(subj)}" aria-label="主题"><textarea class="field draft" id="dBody" style="margin-top:8px" aria-label="正文">${esc(body)}</textarea><div class="hint" style="margin-top:6px">{體驗碼}、{次數} 这类占位由系统在同意后填入真实的码和日期。</div>`
+      : `<div class="mpaper"><b>${esc(subj)}</b>${esc(body)}</div>`}`;
+}
+function cardHtml(c) {
+  const flow = stepsOf(c);
+  const decideBox = c.kind === "other" || c.kind === "unmatched" || c.kind === "bounce"
+    ? `<label class="label" for="dDecide" style="margin-top:12px">${c.kind === "other" ? "你的决定（交给 agent，它照这个起草回信，回信还会再给你看）" : "不同意 agent 的判断？写给它（比如：是「林林夫妻」的经纪人）"}</label><textarea class="field" id="dDecide" rows="2"></textarea>` : "";
+  const main = `<div class="mhead"><div class="mwho"><span class="tag ${c.status === "unknown" || c.status === "failed" ? "red" : KIND_CLS[c.kind] || ""}">${c.status === "unknown" ? "结果不明" : c.status === "failed" ? "失败" : KINDS[c.kind] || c.kind}</span><span>${ago(c.created_at)}</span></div>
+      <h1 class="mheadline">${esc(headOf(c))}</h1><div class="mfacts">${factsHtml(c)}</div></div>
+    ${c.status === "unknown" ? `<div class="sec"><div class="panel red"><span><b>结果不明：</b>${esc(c.result || "")}。系统不会自动重做，去 ${esc(c.mailbox || "邮箱")} 的「已发送」里看一眼再选。</span></div></div>` : ""}
+    ${contextHtml(c)}
+    <div class="mplan"><div class="mplan-l">agent 建议</div><div class="mplan-t">${esc(planOf(c))}</div>
+      ${flow.length ? `<div class="mflow">同意后：${esc(flow.join(" → "))}</div>` : ""}${c.why && c.why !== planOf(c) ? `<div class="mwhy">理由：${esc(c.why)}</div>` : ""}
+      ${decideBox}${c.to_addr ? `<div style="margin-top:12px">${letterHtml(c, c.status === "pending" ? "要发的信" : "当时要发的信")}</div>` : ""}</div>
+    ${modePanel(c)}`;
+  const side = `<aside class="mside" aria-label="KOL 资料"><h2>${esc(c.kol_name || c.in_from || "不在库里")}</h2>${kolRowsHtml(c)}${c.kol_id ? `<a href="#kol/${c.kol_id}">打开 KOL 详情 →</a>` : ""}</aside>`;
+  return `<div class="mwrap"><div class="mmain">${main}</div>${side}</div>` + barHtml(c);
+}
+function barHtml(c) {
+  if (c.status === "unknown") return `<div class="dbar"><button class="btn primary" type="button" data-resolve="${c.id}" data-happened="1">邮箱里有，已发出</button><button class="btn" type="button" data-resolve="${c.id}" data-happened="0">没发出，重新审</button></div>`;
+  if (c.status === "failed") return `<div class="dbar"><button class="btn primary" type="button" data-act="redo">让 agent 重新起草</button><button class="btn quiet" type="button" data-act="reject">不做了</button><span class="sp"></span><span class="hint">重新起草会出一张新卡</span></div>`;
+  if (c.to_addr) {
+    const e = D.edits[c.id], edited = e && (e.subject !== (c.subject ?? "") || e.body !== (c.body ?? ""));
+    return `<div class="dbar"><button class="btn primary" type="button" data-act="approve">${S.paused ? "同意（暂停中，先排队）" : edited ? "按我改的发出" : "同意并发出"} <span class="key">A</span></button>
+      <button class="btn" type="button" data-act="revise">让它改 <span class="key">R</span></button><button class="btn quiet" type="button" data-act="reject">不做了 <span class="key">X</span></button>
+      <span class="sp"></span><span class="hint">5 秒内可撤销 · J / K 上下切换</span></div>`;
+  }
+  const ok = { unmatched: c.action?.match_kol_id ? "记到这位名下" : "同意，不处理", bounce: c.action?.bounce === "close" ? "同意结案：邮箱无效" : "同意，解除拦截", no_reply: "同意，不回", close: "同意结案", legacy: "已处理" }[c.kind] || "同意";
+  const no = { unmatched: "不是 KOL 的信，忽略", bounce: "先放着", no_reply: "还是回一封（让 agent 写）", close: "再等等" }[c.kind] || "不做了";
+  return `<div class="dbar">${c.kind === "other" ? "" : `<button class="btn primary" type="button" data-act="approve">${ok} <span class="key">A</span></button>`}
+    ${c.kind === "other" || c.kind === "unmatched" || c.kind === "bounce" ? `<button class="btn ${c.kind === "other" ? "primary" : ""}" type="button" data-act="decide">按我写的交给 agent</button>` : ""}
+    <button class="btn quiet" type="button" data-act="${c.kind === "no_reply" ? "noreply-answer" : "reject"}">${no} <span class="key">X</span></button><span class="sp"></span><span class="hint">5 秒内可撤销</span></div>`;
+}
+function groupHtml(g) {
+  const ms = g.members, on = ms.filter((x) => !D.gOff[x.id]);
+  const plans = {};
+  ms.forEach((x) => { const k = planOf(x).split(/[，,；]/)[0]; plans[k] = (plans[k] || 0) + 1; });
+  const head = { code_expiry: "这几位的体验码快到期或已用完，agent 每位写好了一封信", checkin: "这几位过了约定日还没找到帖子，agent 每位写好了一封问候", no_reply: "这几封来信不需要回", close: "这几位建议结案" }[g.kind];
+  return `<div class="mhead"><div class="mwho"><span class="tag ${KIND_CLS[g.kind] || ""}">${BATCHABLE[g.kind]}</span><b>${ms.length} 位</b></div><h1 class="mheadline">${head}</h1>
+      <div class="mfacts"><span class="mfact">agent 建议：${esc(Object.entries(plans).map(([k, n]) => `${n} 位${k}`).join("；"))}</span></div></div>
+    ${ms.map((x) => {
+      const open = D.peek === x.id, t = threadOf(x);
+      return `<div class="g2row ${D.gOff[x.id] ? "off" : ""}"><input type="checkbox" data-goff="${x.id}" ${D.gOff[x.id] ? "" : "checked"} aria-label="${esc(x.kol_name || "")}">
+        <div><a class="g2name" href="#kol/${x.kol_id}">${esc(x.kol_name || "")}</a><div class="g2sub">${esc(factsOf(x).map((f) => f.t).join(" · "))}</div></div>
+        <div>${esc(headOf(x))}</div><div class="g2plan">${esc(planOf(x))}</div><button class="link" type="button" data-peek="${x.id}">${open ? "收起" : "展开"}</button>
+        ${open ? `<div class="g2x"><div><div class="label">来往 · 最近 ${Math.min(3, t.length)} 封（共 ${x.thread_total || t.length} 封）</div>${t.slice(-3).map((m) => msgHtml(x, m)).join("") || '<div class="hint">还没有来往</div>'}</div>
+          <div>${x.to_addr ? `<div class="label">要发的信 · ${esc(x.mailbox || "")} → ${esc(x.to_addr)}</div><div class="mpaper"><b>${esc(x.subject || "")}</b>${esc(x.body || "")}</div>` : `<div class="label">同意后</div><div>${esc(stepsOf(x).join(" → "))}</div>`}${x.why ? `<div class="hint" style="margin-top:6px">理由：${esc(x.why)}</div>` : ""}</div>
+          <div style="flex:0 1 220px"><div class="label">资料</div>${kolRowsHtml(x)}<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px"><a href="#kol/${x.kol_id}">打开 KOL 详情 →</a><button class="link" type="button" data-gsingle="${x.id}" style="text-align:left">单独处理这位（改信、让它改）</button></div></div></div>` : ""}</div>`;
+    }).join("")}
+    <div class="dbar"><button class="btn primary" type="button" data-act="gapprove" ${on.length ? "" : "disabled"}>${S.paused ? `同意这 ${on.length} 位（暂停中，先排队）` : `同意这 ${on.length} 位`} <span class="key">A</span></button>
+      <button class="btn quiet" type="button" data-act="greject">这批都不做 <span class="key">X</span></button><span class="sp"></span><span class="hint">去掉勾的人留在队列里单独处理 · 5 秒内可撤销</span></div>`;
 }
 let cards = [], drafting = [], done = [];
 async function loadCards() {
   const [pending, problems, dr, dn] = await Promise.all([api("/cards?view=pending"), api("/cards?view=problems"), api("/cards?view=drafting"), api("/cards?view=done")]);
   const all = problems.concat(pending.filter((p) => !problems.some((x) => x.id === p.id)));
   all.forEach((c) => (c.group = groupOf(c)));
-  // 出问题的固定在最上面，按意见改好的接着，其余按先来后到。
-  cards = all.filter((c) => c.group === "problem").concat(all.filter((c) => c.group !== "problem" && c.feedback), all.filter((c) => c.group !== "problem" && !c.feedback));
+  // 出问题的固定在最上面，按意见改好的接着，快到期和过了约定日的再接着，其余按先来后到。
+  const rest = all.filter((c) => c.group !== "problem" && !c.feedback);
+  cards = all.filter((c) => c.group === "problem").concat(all.filter((c) => c.group !== "problem" && c.feedback), rest.filter(urgent), rest.filter((c) => !urgent(c)));
   drafting = dr.filter((d) => !d.parent_id);
   done = dn.filter((d) => !d.parent_id);
 }
+// Queue entries: a card, or a batch of same-kind cards when two or more wait.
+function entriesOf(list) {
+  const n = {};
+  list.forEach((c) => { const k = batchKey(c); if (k) n[k] = (n[k] || 0) + 1; });
+  const seen = {}, out = [];
+  for (const c of list) {
+    const k = batchKey(c);
+    if (k && n[k] >= 2) { if (!seen[k]) { seen[k] = true; out.push({ key: "g:" + k, kind: k, members: list.filter((x) => batchKey(x) === k) }); } }
+    else out.push({ key: String(c.id), card: c });
+  }
+  return out;
+}
+function itemHtml(e) {
+  if (e.members) return `<button class="item q1 urgent ${e.key === D.sel ? "on" : ""}" type="button" data-sel="${e.key}"><span class="tag ${KIND_CLS[e.kind] || ""}">${BATCHABLE[e.kind]}</span><span class="iname">${e.members.length} 位</span><span class="qask">${esc([...new Set(e.members.map((x) => planOf(x).split(/[，,；]/)[0]))].join(" · "))}</span></button>`;
+  const c = e.card, bad = c.group === "problem";
+  return `<button class="item q1 ${bad ? "bad" : urgent(c) ? "urgent" : ""} ${e.key === D.sel ? "on" : ""}" type="button" data-sel="${e.key}"><span class="tag ${c.status === "unknown" || c.status === "failed" ? "red" : KIND_CLS[c.kind] || ""}">${c.status === "unknown" ? "结果不明" : c.status === "failed" ? "失败" : c.feedback ? "已按意见改" : KINDS[c.kind] || c.kind}</span><span class="iname">${esc(c.kol_name || c.in_from || c.title || "")}</span><span class="qask">${esc(askOf(c))}</span></button>`;
+}
 async function renderDecide(m) {
   await loadCards();
-  if (route[1]) { D.sel = Number(route[1]); history.replaceState(null, "", "#decide"); }
-  const visible = D.filter === "all" ? cards : cards.filter((c) => c.group === D.filter);
-  if (!cards.some((c) => c.id === D.sel)) D.sel = (visible[0] || cards[0])?.id ?? null;
-  const cur = cards.find((c) => c.id === D.sel);
+  if (route[1]) { D.sel = String(route[1]); history.replaceState(null, "", "#decide"); }
+  const visible = entriesOf(D.filter === "all" ? cards : cards.filter((c) => c.group === D.filter));
+  const allEntries = entriesOf(cards);
+  // A single card the operator picked out of a batch is shown on its own.
+  let cur = allEntries.find((e) => e.key === D.sel) || (cards.some((c) => String(c.id) === D.sel) ? { key: D.sel, card: cards.find((c) => String(c.id) === D.sel) } : null);
+  if (!cur) { cur = visible[0] || allEntries[0] || null; D.sel = cur?.key ?? null; D.ctx = false; D.editing = false; }
   const unknown = cards.filter((c) => c.status === "unknown");
   let h = "";
   if (unknown.length) {
@@ -431,11 +603,14 @@ async function renderDecide(m) {
   if (D.filter === "done") {
     h += `<div class="qhead">最近 3 天处理过的 · 5 秒内可以撤销，之后去 KOL 详情里看</div>` + (done.map((d) => `<div class="ghost"><span class="tag ${d.status === "done" ? "green" : ""}">${{ done: "做完", rejected: "不做", superseded: "被取代", dropped: "剔掉" }[d.status] || d.status}</span><span class="sp">${esc(d.kol_name || d.title || "")}${d.result ? " · " + esc(d.result) : ""}</span><span class="itime">${when(d.done_at)}</span></div>`).join("") || `<div class="empty">还没有</div>`);
   } else {
-    h += visible.map((c) => `<button class="item ${c.id === D.sel ? "on" : ""}" type="button" data-sel="${c.id}"><div class="itop"><span class="tag ${c.status === "unknown" || c.status === "failed" ? "red" : KIND_CLS[c.kind] || ""}">${c.status === "unknown" ? "结果不明" : c.status === "failed" ? "失败" : c.feedback ? "已按意见改" : KINDS[c.kind] || c.kind}</span><span class="iname">${esc(c.kol_name || c.title || "")}</span><span class="itime">${ago(c.created_at)}</span></div><div class="isub">${esc(subOf(c))}</div></button>`).join("");
+    h += visible.map(itemHtml).join("");
     if (!visible.length) h += `<div class="empty"><span>${cards.length ? "这一类都处理完了" : "现在没有要你决定的事"}</span>${cards.length ? `<button class="link" type="button" data-filter="all">看全部</button>` : ""}</div>`;
     if (drafting.length) h += `<div class="qhead">agent 正在写（${drafting.length}）· 写好会自动排进来</div>` + drafting.map((d) => `<div class="ghost"><span class="tag">${d.feedback ? "按意见改" : KINDS[d.kind] || "起草"}</span><span class="sp">${esc(d.kol_name || d.title || "")}</span><span class="itime">${ago(d.updated_at || d.created_at)}</span></div>`).join("");
   }
-  h += `</section><article class="detail" aria-label="卡片详情">${cur ? detailHtml(cur) : `<div class="empty" style="padding:120px 24px"><span class="big">都处理完了</span><span>新来信会在几秒内出现在这里；每天早上排好下一批邀约和催信。</span></div>`}</article></div>`;
+  const c = cur?.card;
+  const detail = !cur ? `<div class="empty" style="padding:120px 24px"><span class="big">都处理完了</span><span>新来信会在几秒内出现在这里；每天早上排好下一批邀约和催信。</span></div>`
+    : cur.members ? groupHtml(cur) : c.items ? batchHtml(c) : c.kind === "template" ? templateHtml(c) : c.kind === "discovery" ? discoveryHtml(c) : cardHtml(c);
+  h += `</section><article class="detail" aria-label="详情">${detail}</article></div>`;
   m.innerHTML = h;
   wireDecide(m, cur, visible);
 }
@@ -468,48 +643,6 @@ function headHtml(c) {
     ${c.status === "failed" ? `<div class="panel red" style="margin-top:10px"><span><b>同意后没做成：</b>${esc(c.result || "")}。信没有发出。</span></div>` : ""}
     ${c.status === "unknown" ? `<div class="panel red" style="margin-top:10px"><span><b>结果不明：</b>${esc(c.result || "")}。系统不会自动重做。</span></div>` : ""}
     ${c.feedback ? `<div class="edited">已按你的意见改过：「${esc(c.feedback)}」</div>` : ""}</div>`;
-}
-function inboundHtml(c) {
-  return c.in_own || c.in_quoted ? `<div class="label">来信 · ${esc(c.in_from || "")} · ${when(c.in_at)}${c.in_subject ? " · " + esc(c.in_subject) : ""}</div><div class="bubble">${esc(c.in_own || "（只有引用的旧邮件，没写新内容）")}</div>${c.in_quoted ? `<details style="margin-top:8px"><summary class="hint">看引用的旧邮件</summary><div class="bubble" style="margin-top:6px;font-size:13px;color:var(--muted)">${esc(c.in_quoted)}</div></details>` : ""}`
-    : `<div class="label">情况</div><div class="bubble">${esc(c.why || c.title || "")}</div>`;
-}
-function stepsHtml(c, lead = "同意后会依次做（任何一步失败就停下，不做后面的）") {
-  const s = stepsOf(c);
-  return s.length ? `<div class="steps"><div class="label" style="margin:0">${lead}</div>${s.map((t, i) => `<div class="step"><span class="n">${i + 1}</span><span>${esc(t)}</span></div>`).join("")}</div>` : "";
-}
-function detailHtml(c) {
-  if (c.status === "unknown") {
-    return headHtml(c) + `<div class="cols"><div class="col">${inboundHtml(c)}</div><div class="col"><div class="label">当时要发的信</div><div class="preview">${esc(c.subject || "")}\n\n${esc(c.body || "")}</div></div></div>
-      <div class="dbar"><button class="btn primary" type="button" data-resolve="${c.id}" data-happened="1">邮箱里有，已发出</button><button class="btn" type="button" data-resolve="${c.id}" data-happened="0">没发出，重新审</button><span class="sp"></span><span class="hint">去 ${esc(c.mailbox || "")} 的「已发送」里看一眼再选</span></div>`;
-  }
-  if (c.status === "failed") {
-    return headHtml(c) + `<div class="cols"><div class="col">${inboundHtml(c)}</div><div class="col"><div class="label">没发出的信</div><div class="preview">${esc(c.subject || "")}\n\n${esc(c.body || "")}</div></div></div><div class="sec">${stepsHtml(c, "当时要做的")}</div>
-      <div class="dbar"><button class="btn primary" type="button" data-act="redo">让 agent 重新起草</button><button class="btn quiet" type="button" data-act="reject">不做了</button><span class="sp"></span><span class="hint">重新起草会出一张新卡</span></div>`;
-  }
-  if (c.items) return batchHtml(c);
-  if (c.kind === "template") return templateHtml(c);
-  if (c.kind === "discovery") return discoveryHtml(c);
-  if (c.to_addr) {
-    const e = D.edits[c.id] || {}, subj = e.subject ?? c.subject ?? "", body = e.body ?? c.body ?? "";
-    const edited = subj !== (c.subject ?? "") || body !== (c.body ?? "");
-    return headHtml(c) + `<div class="cols"><div class="col">${inboundHtml(c)}</div><div class="col">
-      <label class="label" for="dSubj">回信草稿 · 直接在这里改，同意时按你改的发</label><input class="field" id="dSubj" type="text" value="${esc(subj)}">
-      <textarea class="field draft" id="dBody" style="margin-top:8px" aria-label="正文">${esc(body)}</textarea>
-      <div class="row" id="dEdited" style="margin-top:6px" ${edited ? "" : "hidden"}><span class="edited" style="margin:0">你改过草稿</span><button class="link" type="button" data-act="resetdraft">恢复 agent 的版本</button></div>
-      <div class="hint" style="margin-top:6px">{體驗碼}、{次數} 这类占位由系统在同意后填入真实的码和日期。</div></div></div>
-      <div class="sec">${stepsHtml(c)}</div>${modePanel(c)}
-      <div class="dbar"><button class="btn primary" type="button" data-act="approve">${S.paused ? "同意（暂停中，先排队）" : edited ? "按我改的发出" : "同意并发出"} <span class="key">A</span></button>
-      <button class="btn" type="button" data-act="revise">让它改 <span class="key">R</span></button><button class="btn quiet" type="button" data-act="reject">不做了 <span class="key">X</span></button>
-      <span class="sp"></span><span class="hint">同意后 5 秒内可撤销 · J / K 上下切换</span></div>`;
-  }
-  // 不发信的决定：对不上人、退信、不用回、建议结案、其他、旧审核单
-  const ok = { unmatched: c.action?.match_kol_id ? "记到这位名下" : "同意，不处理", bounce: c.action?.bounce === "close" ? "同意结案：邮箱无效" : "同意，解除拦截", no_reply: "同意，不回", close: "同意结案", legacy: "已处理" }[c.kind] || "同意";
-  const no = { unmatched: "不是 KOL 的信，忽略", bounce: "先放着", no_reply: "还是回一封（让 agent 写）", close: "再等等" }[c.kind] || "不做了";
-  return headHtml(c) + `<div class="cols"><div class="col">${inboundHtml(c)}</div><div class="col">${stepsHtml(c, "这张卡不发信。同意后：")}
-    ${c.kind === "other" || c.kind === "unmatched" || c.kind === "bounce" ? `<label class="label" for="dDecide" style="margin-top:14px">${c.kind === "other" ? "你的决定（交给 agent，它照这个起草回信，回信还会再给你看）" : "不同意 agent 的判断？写给它（比如：是「林林夫妻」的经纪人）"}</label><textarea class="field" id="dDecide" rows="3"></textarea>` : ""}</div></div>
-    ${modePanel(c)}<div class="dbar">${c.kind === "other" ? "" : `<button class="btn primary" type="button" data-act="approve">${ok} <span class="key">A</span></button>`}
-    ${c.kind === "other" || c.kind === "unmatched" || c.kind === "bounce" ? `<button class="btn ${c.kind === "other" ? "primary" : ""}" type="button" data-act="decide">按我写的交给 agent</button>` : ""}
-    <button class="btn quiet" type="button" data-act="${c.kind === "no_reply" ? "noreply-answer" : "reject"}">${no} <span class="key">X</span></button><span class="sp"></span><span class="hint">5 秒内可撤销</span></div>`;
 }
 function modePanel(c) {
   if (D.mode === "revise") {
@@ -561,16 +694,43 @@ function discoveryHtml(c) {
     ${list.slice(0, 300).map((x, i) => `<label class="cand"><input type="checkbox" data-cand="${i}" ${off[i] ? "" : "checked"}><b style="font-weight:500;flex:0 0 200px"><a href="${esc(x.url || "#")}" target="_blank" rel="noopener">${esc(x.name || x.handle)}</a></b><span class="meta" style="flex:0 0 70px">${fans(x.followers)}</span><span class="sp" style="color:#5F5E58">${esc((x.bio || "").slice(0, 80))}</span><span class="meta">${esc(x.email || "没邮箱")}</span></label>`).join("")}</div>
     <div class="dbar"><button class="btn primary" type="button" data-act="approve" ${n ? "" : "disabled"}>同意，入库 ${n} 位 <span class="key">A</span></button><button class="btn quiet" type="button" data-act="reject">一个都不要 <span class="key">X</span></button><span class="sp"></span><span class="hint">库里已有的会自动跳过</span></div>`;
 }
-function wireDecide(m, cur, visible) {
+function wireDecide(m, entry, visible) {
   $$("[data-filter]", m).forEach((b) => (b.onclick = () => { D.filter = b.dataset.filter; D.mode = null; render(); }));
-  $$("[data-sel]", m).forEach((b) => (b.onclick = () => { D.sel = Number(b.dataset.sel); D.mode = null; D.revOn = {}; D.rej = "leave"; render(); }));
+  $$("[data-sel]", m).forEach((b) => (b.onclick = () => { D.sel = b.dataset.sel; D.mode = null; D.revOn = {}; D.rej = "leave"; D.ctx = false; D.editing = false; D.peek = null; render(); }));
   $$("[data-resolve]", m).forEach((b) => (b.onclick = () => act(() => api(`/cards/${b.dataset.resolve}/resolve`, { happened: b.dataset.happened === "1" }), () => {
     D.alertDone = b.dataset.happened === "1" ? "已记为发出：这封信记进来往，后面的步骤照常做。" : null;
     return b.dataset.happened === "1" ? "已记为发出" : "已记为没发出，卡片回到队列重新审（码建过的不会再建）";
   })));
   const hk = $("[data-hideok]", m); if (hk) hk.onclick = () => { D.alertDone = null; render(); };
-  if (!cur) return;
-  const next = () => { const i = visible.findIndex((c) => c.id === cur.id); const n = visible[i + 1] || visible[i - 1]; D.sel = n ? n.id : null; D.mode = null; };
+  if (!entry) return;
+  const next = () => { const i = visible.findIndex((e) => e.key === entry.key); const n = visible[i + 1] || visible[i - 1]; D.sel = n ? n.key : null; D.mode = null; D.ctx = false; D.editing = false; D.peek = null; };
+  const go = (k) => { const i = visible.findIndex((e) => e.key === entry.key); const n = visible[k === "j" ? i + 1 : i - 1]; if (n) { D.sel = n.key; D.mode = null; D.ctx = false; D.editing = false; D.peek = null; render(); } };
+  if (entry.members) {
+    const ms = entry.members;
+    $$("[data-goff]", m).forEach((cb) => (cb.onchange = () => { D.gOff[cb.dataset.goff] = !cb.checked; render(); }));
+    $$("[data-peek]", m).forEach((b) => (b.onclick = () => { const id = Number(b.dataset.peek); D.peek = D.peek === id ? null : id; render(); }));
+    $$("[data-gsingle]", m).forEach((b) => (b.onclick = () => { D.sel = b.dataset.gsingle; D.editing = true; D.peek = null; render(); }));
+    const A = {
+      gapprove: async () => {
+        const on = ms.filter((x) => !D.gOff[x.id]);
+        if (!on.length) return;
+        for (const x of on) await api(`/cards/${x.id}/approve`, { hash: x.hash });
+        next();
+        toast(`已同意 ${on.length} 位，5 秒后${S.paused ? "排队（暂停中）" : "开始执行"}`, { undo: () => Promise.all(on.map((x) => api(`/cards/${x.id}/undo`, {}))), after: `已同意 ${on.length} 位` });
+        refresh();
+      },
+      greject: async () => {
+        for (const x of ms) await api(`/cards/${x.id}/reject`, { note: "整批不做" });
+        next();
+        toast(`这批 ${ms.length} 位都不做`, { undo: () => Promise.all(ms.map((x) => api(`/cards/${x.id}/undo`, {}))) });
+        refresh();
+      },
+    };
+    $$("[data-act]", m).forEach((b) => (b.onclick = () => (A[b.dataset.act] ? Promise.resolve(A[b.dataset.act]()).catch((e) => toast("没成功：" + e.message)) : null)));
+    decideKeys = (k) => { if (k === "a") $('[data-act="gapprove"]', m)?.click(); else if (k === "x") $('[data-act="greject"]', m)?.click(); else if (k === "j" || k === "k") go(k); };
+    return;
+  }
+  const cur = entry.card;
   const subj = $("#dSubj"), body = $("#dBody");
   const onEdit = () => { D.edits[cur.id] = { subject: subj.value, body: body.value }; const ed = subj.value !== (cur.subject ?? "") || body.value !== (cur.body ?? ""); $("#dEdited").hidden = !ed; const a = $('[data-act="approve"]'); if (a && !S.paused) a.firstChild.textContent = ed ? "按我改的发出 " : "同意并发出 "; };
   if (subj) { subj.oninput = onEdit; body.oninput = onEdit; }
@@ -582,6 +742,8 @@ function wireDecide(m, cur, visible) {
   $$("[data-cand]", m).forEach((cb) => (cb.onchange = () => { (D.candOff[cur.id] ||= {})[cb.dataset.cand] = !cb.checked; render(); }));
   const undo = () => api(`/cards/${cur.id}/undo`, {});
   const A = {
+    ctx: () => { D.ctx = !D.ctx; render(); },
+    edit: () => { D.editing = !D.editing; render(); },
     approve: async () => {
       let hash = cur.hash;
       const e = D.edits[cur.id];
@@ -641,7 +803,7 @@ function wireDecide(m, cur, visible) {
     if (k === "a") $('[data-act="approve"]', m)?.click();
     else if (k === "r") $('[data-act="revise"]', m)?.click();
     else if (k === "x") $('[data-act="reject"]', m)?.click();
-    else if (k === "j" || k === "k") { const i = visible.findIndex((c) => c.id === cur.id); const n = visible[k === "j" ? i + 1 : i - 1]; if (n) { D.sel = n.id; D.mode = null; render(); } }
+    else if (k === "j" || k === "k") go(k);
   };
 }
 let decideKeys = null;

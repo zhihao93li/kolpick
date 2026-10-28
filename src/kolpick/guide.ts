@@ -21,7 +21,7 @@ export const GUIDE = `kolpick：TAFU 等项目的 KOL 外联工具。你是运�
 - 延期：code={type:"trial_extend", code, days}，正文写 {到期日}。开活动码：code={type:"partner_create", code, market, percentOff, partnerName, contact}，正文写 {活動碼}{專屬連結}{帳本連結}{粉絲折扣}；contact 只能是这位 KOL 的联系邮箱。
 - 发完要改 KOL 状态的写 after：拒绝就 {close_reason:"拒绝"}（结案原因：无回应、题材不符、只接固定费、宗教信仰、隐私、档期、拒绝、回复后失联、退信或邮箱无效、作废、其他），要求不再联系加 never_contact:true；约好发布写 {stage:"publish_agreed", publish_due_at}；下次跟进写 next_followup_days。
 - 不用回的来信（谢谢、自动回复）用 draft_decision(kind:"no_reply", message_id) 让运营确认，不要硬写一封。
-- why 写一两句给运营看的理由，不写长篇。
+- 每张卡写三句给运营看：title 一句话说发生了什么（运营第一眼看的，如「Joyce 最近忙还没用，主动来信想延长」）；plan 一句话说你建议怎么做（如「延期 14 天，回信告诉她新期限」）；why 一两句理由。都不写长篇，不要把 KOL 名字当 title。
 
 ## 表（query 用）
 kols（KOL 和跟进：stage new/invited/replied/trial/report_seen/publish_agreed/published/partner/on_hold/closed，whose_turn，email，mailbox，last_contact_at，last_inbound_at…）、

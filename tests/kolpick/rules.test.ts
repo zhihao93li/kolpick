@@ -321,4 +321,11 @@ describe("review fixes", () => {
     expect(own).toBe("可以幫我延長嗎？ 謝謝🙏");
     expect(quoted).toBe("<hello@tafu.me>於 2026年10月19日週一，下午12:07寫道：\nJoyce 您好\n\n发件人：\"商务合作\" <hello@tafu.me>\n时间：2026年10月11日\n體驗碼：applemany_u\n\n祝順心");
   });
+
+  it("a card keeps what happened, what the agent suggests and why", async () => {
+    const w = await world();
+    const k = await addKol(w, { email: "deer@gmail.com" });
+    const { id } = await proposeMail(w.ctx, w.p, { kind: "mail", kolId: k, subject: "Hi", body: "hello", title: "她想延期", plan: "延期 7 天", why: "她说过忙" });
+    expect(await card(w, id)).toMatchObject({ title: "她想延期", plan: "延期 7 天", why: "她说过忙" });
+  });
 });

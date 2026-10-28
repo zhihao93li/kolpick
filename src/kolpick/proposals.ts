@@ -111,6 +111,7 @@ export interface MailDraft {
   kind: string;
   kolId: number;
   title?: string;
+  plan?: string;
   why?: string;
   mailbox?: string;
   to?: string;
@@ -162,16 +163,16 @@ export async function proposeMail(ctx: Ctx, p: Project, d: MailDraft): Promise<{
     if (d.proposalId) {
       const r = await ctx.db.query(
         `update proposals set kind=$3, title=$4, why=$5, mailbox=$6, to_addr=$7, subject=$8, body=$9, action=$10, content_hash=$11,
-           status='pending', approved_hash=null, approved_at=null, updated_at=now()
+           plan=$13, status='pending', approved_hash=null, approved_at=null, updated_at=now()
          where id = $1 and project_id = $2 and kol_id = $12 and status in ('drafting', 'pending') returning id`,
-        [d.proposalId, p.id, d.kind, title, d.why ?? null, mailbox, to, subject, body, JSON.stringify(action), hash, kol.id]);
+        [d.proposalId, p.id, d.kind, title, d.why ?? null, mailbox, to, subject, body, JSON.stringify(action), hash, kol.id, d.plan ?? null]);
       if (!r.length) throw new Error(`卡片 ${d.proposalId} 不是这位 KOL 的待写草稿（可能已经处理过）`);
       return { id: d.proposalId };
     }
     const r = await one<{ id: number }>(ctx.db,
-      `insert into proposals (project_id, parent_id, kind, status, kol_id, title, why, mailbox, to_addr, subject, body, in_reply_to, action, content_hash)
-       values ($1, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning id`,
-      [p.id, d.parentId ?? null, d.kind, kol.id, title, d.why ?? null, mailbox, to, subject, body, d.inReplyTo ?? null, JSON.stringify(action), hash]);
+      `insert into proposals (project_id, parent_id, kind, status, kol_id, title, why, mailbox, to_addr, subject, body, in_reply_to, action, content_hash, plan)
+       values ($1, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning id`,
+      [p.id, d.parentId ?? null, d.kind, kol.id, title, d.why ?? null, mailbox, to, subject, body, d.inReplyTo ?? null, JSON.stringify(action), hash, d.plan ?? null]);
     await addLog(ctx, p, { kind: "proposal", who: d.who ?? "agent", kolId: kol.id, proposalId: r!.id, summary: `起草「${title}」待审核` });
     return r!;
   } catch (err: any) {
@@ -185,12 +186,12 @@ export async function proposeMail(ctx: Ctx, p: Project, d: MailDraft): Promise<{
 }
 
 /** A card without a mail: a decision for the operator (unmatched sender, bounce, template, discovery, close…). */
-export async function proposeDecision(ctx: Ctx, p: Project, d: { kind: string; title: string; why?: string; kolId?: number | null; action: ProposalAction; parentId?: number; inReplyTo?: number; who?: string }): Promise<{ id: number }> {
+export async function proposeDecision(ctx: Ctx, p: Project, d: { kind: string; title: string; plan?: string; why?: string; kolId?: number | null; action: ProposalAction; parentId?: number; inReplyTo?: number; who?: string }): Promise<{ id: number }> {
   const hash = contentHash({ action: d.action });
   const r = await one<{ id: number }>(ctx.db,
-    `insert into proposals (project_id, parent_id, kind, status, kol_id, title, why, in_reply_to, action, content_hash)
-     values ($1, $2, $3, 'pending', $4, $5, $6, $7, $8, $9) returning id`,
-    [p.id, d.parentId ?? null, d.kind, d.kolId ?? null, d.title, d.why ?? null, d.inReplyTo ?? null, JSON.stringify(d.action), hash]);
+    `insert into proposals (project_id, parent_id, kind, status, kol_id, title, why, in_reply_to, action, content_hash, plan)
+     values ($1, $2, $3, 'pending', $4, $5, $6, $7, $8, $9, $10) returning id`,
+    [p.id, d.parentId ?? null, d.kind, d.kolId ?? null, d.title, d.why ?? null, d.inReplyTo ?? null, JSON.stringify(d.action), hash, d.plan ?? null]);
   await addLog(ctx, p, { kind: "proposal", who: d.who ?? "agent", kolId: d.kolId ?? null, proposalId: r!.id, summary: `提出「${d.title}」待决定` });
   return r!;
 }
