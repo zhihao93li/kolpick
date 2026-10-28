@@ -62,6 +62,7 @@ export async function main(argv: string[]): Promise<void> {
         await db.end();
         process.exit(0);
       };
+      app.onQuit = stop;
       process.on("SIGINT", stop);
       process.on("SIGTERM", stop);
       return;

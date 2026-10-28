@@ -11,6 +11,7 @@ import { saveConfig } from "./config.js";
 import { addLog, dayOf, project, type Ctx, type Project } from "./ctx.js";
 import { one } from "./db/db.js";
 import { findPeople } from "./discover.js";
+import { loginStart, setLoginStart } from "./install.js";
 import { splitMail } from "./mail.js";
 import { recoverAfterCrash, resolveUnknown, runApproved } from "./execute.js";
 import { GUIDE } from "./guide.js";
@@ -81,6 +82,8 @@ export class App {
   private server?: http.Server;
   private agentWorkers = 0;
   private execRunning = false;
+  /** What「关闭 kolpick」does: set by whoever started the service. */
+  onQuit?: () => Promise<void>;
 
   constructor(public ctx: Ctx) {}
 
@@ -379,7 +382,15 @@ export class App {
       case "POST /inbox":
         return this.catchUpNow(p);
       case "GET /local":
-        return { env: ctx.cfg.env, agent: ctx.cfg.agent, auto: ctx.cfg.auto, project: ctx.cfg.project, mcpUrl: this.mcpUrl };
+        return { env: ctx.cfg.env, agent: ctx.cfg.agent, auto: ctx.cfg.auto, project: ctx.cfg.project, mcpUrl: this.mcpUrl, login: loginStart() };
+      case "POST /login":
+        return { login: setLoginStart(!!b.on) };
+      case "POST /quit": {
+        // A mail being sent finishes first, so nothing is left half done.
+        for (let i = 0; this.execRunning && i < 60; i++) await new Promise((r) => setTimeout(r, 500));
+        setTimeout(() => void this.onQuit?.(), 300);
+        return { ok: true };
+      }
       case "POST /local": {
         if (b.agent) ctx.cfg.agent = { kind: b.agent.kind === "codex" ? "codex" : "claude", bin: b.agent.bin || undefined, args: Array.isArray(b.agent.args) ? b.agent.args : undefined,
           parallel: Number(b.agent.parallel) >= 1 ? Math.min(10, Math.floor(Number(b.agent.parallel))) : ctx.cfg.agent.parallel };

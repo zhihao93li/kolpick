@@ -290,7 +290,12 @@ table.mb td{padding:8px 10px;border-bottom:1px solid #F3F1EC}
     <span>通常是电脑刚开机、刚睡醒，或者服务正在重启。每 5 秒自动重连一次（已试 <span id="tries">0</span> 次）。</span>
     <span>连不上的时候什么都不会发；恢复后会自动补收这段时间的信。</span>
     <button class="btn primary" id="retry" type="button">现在重连</button>
-    <span class="hint">一分钟还不行：在终端运行 <code>kolpick restart</code>。</span></div>
+    <span class="hint">一分钟还不行：点「应用程序」里的 kolpick.app 重新打开。</span></div>
+</div>
+<div id="closed" class="offline" hidden>
+  <div class="empty"><span class="big">kolpick 已关闭</span>
+    <span>收信、agent 起草和定时任务都停了，不占资源。这段时间的来信会在下次打开时补收。</span>
+    <span>要再用：点「应用程序」里的 kolpick.app（或 Dock 上的图标）。这个窗口可以关掉了。</span></div>
 </div>
 <script>
 const $ = (s, el = document) => el.querySelector(s);
@@ -370,8 +375,9 @@ function modal(html, wire) {
 const closeModal = () => ($("#modal").innerHTML = "");
 
 let offline = false, tries = 0, retryTimer = null;
+let closedByYou = false;
 function goOffline() {
-  if (offline) return;
+  if (offline || closedByYou) return;
   offline = true; $("#offline").hidden = false;
   retryTimer = setInterval(tryBack, 5000);
 }
@@ -1145,12 +1151,14 @@ async function renderSettings(m) {
     auto: `<div class="meta">关掉只是不自动做；手动点照样能做。「暂停所有发送」在页面顶部，和这里无关。</div>${autoRows.map(([k, l, on, off]) => `<div class="srow"><b>${l}<span class="meta" style="display:block;font-weight:400">${local.auto[k] ? on : off}</span></b><button class="sw ${local.auto[k] ? "on" : ""}" type="button" role="switch" aria-checked="${!!local.auto[k]}" aria-label="${l}" data-auto="${k}"></button></div>`).join("")}
       <div class="row" style="margin-top:12px">${Object.entries(S.dailyNames || {}).map(([k, v]) => `<button class="btn sm" type="button" data-daily="${k}">现在跑：${v}${S.daily?.[k] ? `（上次 ${when(S.daily[k].at)}${S.daily[k].ok ? "" : "，出错"}）` : ""}</button>`).join("")}<button class="btn sm" type="button" id="inboxNow">现在收一次信</button></div>`,
     local: `<div class="meta">数据库连接、接口密钥、Apify token 只存在这台电脑上，页面里不显示；改要在终端里运行 <code>kolpick setup</code>。</div>
-      <div class="sgrid"><label>后台 agent<select class="field" id="agKind"><option value="claude">Claude（claude -p）</option><option value="codex">Codex（codex exec）</option></select></label>
+      <div class="srow"><b>开机自动启动<span class="meta" style="display:block;font-weight:400">${local.login ? "开机就在后台跑，回信和起草不用等你打开；崩溃了会自动重启" : "只在你点 kolpick.app 时运行；打开后才开始收信和起草"}</span></b><button class="sw ${local.login ? "on" : ""}" type="button" role="switch" aria-checked="${!!local.login}" aria-label="开机自动启动" id="loginSw"></button></div>
+      <div class="srow"><b>关闭 kolpick<span class="meta" style="display:block;font-weight:400">停下收信、agent 和定时任务，退出服务，什么都不占。正在发的信会先发完。下次点 kolpick.app 再打开。</span></b><button class="btn sm" type="button" id="quitBtn">关闭</button></div>
+      <div class="sgrid" style="margin-top:12px"><label>后台 agent<select class="field" id="agKind"><option value="claude">Claude（claude -p）</option><option value="codex">Codex（codex exec）</option></select></label>
         <label>命令路径（留空 = 默认）<input class="field" type="text" id="agBin" value="${esc(local.agent.bin || "")}"></label><label>额外参数（空格隔开）<input class="field" type="text" id="agArgs" value="${esc((local.agent.args || []).join(" "))}"></label>
         <label>同时做几件（同一位 KOL 的事总是一件一件做）<input class="field" type="number" min="1" max="10" id="agPar" value="${local.agent.parallel || 3}"></label>
         <label>当前数据库<span class="field">${local.env === "prod" ? "正式库 kolpick_prod" : "测试库 kolpick_test"}</span></label><label>给 Claude / Codex 用的 MCP<span class="field">${esc(local.mcpUrl)}</span></label>
         ${SECTIONS[6][2].map(field).join("")}</div>
-      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="agSave">保存 agent 设置</button><span class="meta">切换数据库：在终端运行 <code>kolpick db use test</code> 或 <code>kolpick db use prod</code>，再 <code>kolpick restart</code></span></div>`,
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="agSave">保存 agent 设置</button><span class="meta">切换数据库：在终端运行 <code>kolpick db use test</code> 或 <code>kolpick db use prod</code>，再在上面「关闭 kolpick」，点 kolpick.app 重新打开</span></div>`,
   };
   m.innerHTML = `<div class="wrap"><div class="swrap"><nav class="smenu" aria-label="设置分组">${SECTIONS.map(([k, v]) => `<a class="${sec === k ? "on" : ""}" href="#settings/${k}">${v}</a>`).join("")}</nav>
     <div class="scontent"><section class="card"><h2 class="h2">${SECTIONS.find(([k]) => k === sec)?.[1] || ""}</h2>${body[sec] || ""}</section></div></div></div>
@@ -1180,6 +1188,12 @@ async function renderSettings(m) {
   $$("[data-auto]", m).forEach((b) => (b.onclick = () => act(() => api("/local", { auto: { [b.dataset.auto]: !local.auto[b.dataset.auto] } }), "已保存")));
   $$("[data-daily]", m).forEach((b) => (b.onclick = () => { b.disabled = true; act(() => api(`/daily/${b.dataset.daily}`, {}), (r) => (r?.ok === false ? "出错：" + (r.note || "") : "跑完了")); }));
   const ib = $("#inboxNow"); if (ib) ib.onclick = () => act(() => api("/inbox", {}), (r) => (Array.isArray(r) ? r.map((x) => `${x.mailbox}：新 ${x.recorded} 封`).join("；") || "没有新信" : "收完了"));
+  const ls = $("#loginSw"); if (ls) ls.onclick = () => act(() => api("/login", { on: !local.login }), local.login ? "已关闭开机自动启动，现在这次照常运行" : "已打开开机自动启动，下次开机生效");
+  const qb = $("#quitBtn"); if (qb) qb.onclick = () => modal(`<h2>关闭 kolpick？</h2><p style="margin:0">收信、agent 起草和定时任务都会停下，决策台也打不开，直到你再点 kolpick.app。${S.counts?.jobs ? `<br><b>agent 还有 ${S.counts.jobs} 件事没做完</b>，下次打开会接着做。` : ""}</p>
+    <div class="row"><button class="btn danger" type="button" id="qGo">关闭</button><button class="btn" type="button" id="qNo">取消</button></div>`, () => {
+    $("#qNo").onclick = closeModal;
+    $("#qGo").onclick = async () => { closeModal(); closedByYou = true; try { await api("/quit", {}); } catch {} $("#closed").hidden = false; };
+  });
   const ag = $("#agSave"); if (ag) ag.onclick = () => act(() => api("/local", { agent: { kind: $("#agKind").value, bin: $("#agBin").value.trim(), args: $("#agArgs").value.trim() ? $("#agArgs").value.trim().split(/\s+/) : [], parallel: Number($("#agPar").value) || 3 } }), "已保存");
 }
 function tplEditor(t) {
