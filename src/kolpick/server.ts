@@ -79,7 +79,7 @@ export class App {
   private watchers: Watcher[] = [];
   private timers: NodeJS.Timeout[] = [];
   private server?: http.Server;
-  private agentRunning = false;
+  private agentWorkers = 0;
   private execRunning = false;
 
   constructor(public ctx: Ctx) {}
@@ -193,15 +193,21 @@ export class App {
   }
 
   async kickAgent(p: Project): Promise<void> {
-    if (this.agentRunning || !this.ctx.cfg.auto.agent) return;
-    this.agentRunning = true;
-    try {
-      await runJobs(this.ctx, p, this.mcpUrl);
-    } catch (err) {
-      this.note("agent", err);
-    } finally {
-      this.agentRunning = false;
-    }
+    if (!this.ctx.cfg.auto.agent) return;
+    const more = (this.ctx.cfg.agent.parallel ?? 3) - this.agentWorkers;
+    if (more <= 0) return;
+    // Each worker frees its slot as soon as it runs out of work it may take.
+    const worker = async () => {
+      this.agentWorkers++;
+      try {
+        await runJobs(this.ctx, p, this.mcpUrl, undefined, 20, 1);
+      } catch (err) {
+        this.note("agent", err);
+      } finally {
+        this.agentWorkers--;
+      }
+    };
+    await Promise.all(Array.from({ length: more }, worker));
   }
 
   /** Runs each daily job once per project day; a day missed while closed is made up on the next run. */
@@ -367,7 +373,8 @@ export class App {
       case "GET /local":
         return { env: ctx.cfg.env, agent: ctx.cfg.agent, auto: ctx.cfg.auto, project: ctx.cfg.project, mcpUrl: this.mcpUrl };
       case "POST /local": {
-        if (b.agent) ctx.cfg.agent = { kind: b.agent.kind === "codex" ? "codex" : "claude", bin: b.agent.bin || undefined, args: Array.isArray(b.agent.args) ? b.agent.args : undefined };
+        if (b.agent) ctx.cfg.agent = { kind: b.agent.kind === "codex" ? "codex" : "claude", bin: b.agent.bin || undefined, args: Array.isArray(b.agent.args) ? b.agent.args : undefined,
+          parallel: Number(b.agent.parallel) >= 1 ? Math.min(10, Math.floor(Number(b.agent.parallel))) : ctx.cfg.agent.parallel };
         if (b.auto) {
           const wasInbox = ctx.cfg.auto.inbox;
           ctx.cfg.auto = { ...ctx.cfg.auto, ...b.auto };

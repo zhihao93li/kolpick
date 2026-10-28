@@ -142,37 +142,56 @@ async function reserveReplyCard(ctx: Ctx, p: Project, job: any): Promise<number 
   return r!.id;
 }
 
+// Claims go one at a time within this process, so two workers never both take a job for the same KOL.
+let claiming: Promise<unknown> = Promise.resolve();
+function claimJob(ctx: Ctx, p: Project): Promise<any> {
+  const r = claiming.then(() => one<any>(ctx.db,
+    `update agent_jobs set status='running', started_at=now() where id = (
+       select j.id from agent_jobs j where j.project_id=$1 and j.status='queued'
+         and (j.kol_id is null or not exists (select 1 from agent_jobs r where r.kol_id = j.kol_id and r.status = 'running'))
+       order by j.id limit 1 for update skip locked) returning *`, [p.id]));
+  claiming = r.catch(() => {});
+  return r;
+}
+
 /**
- * Runs queued jobs one after another until none are left. Returns how many ran. A job the agent leaves without
- * calling job_done or job_stuck is marked stuck, and an empty card it was meant to fill is withdrawn.
+ * Runs queued jobs with `parallel` workers until none are left; a KOL's jobs still run one after another. Returns how
+ * many ran. A job the agent leaves without calling job_done or job_stuck is marked stuck, and an empty card it was
+ * meant to fill is withdrawn.
  */
-export async function runJobs(ctx: Ctx, p: Project, mcpUrl: string, exec: AgentExec = runAgent, max = 20): Promise<number> {
+export async function runJobs(ctx: Ctx, p: Project, mcpUrl: string, exec: AgentExec = runAgent, max = 20, parallel = 1): Promise<number> {
   let ran = 0;
-  while (ran < max) {
-    const job = await one<any>(ctx.db,
-      "update agent_jobs set status='running', started_at=now() where id = (select id from agent_jobs where project_id=$1 and status='queued' order by id limit 1 for update skip locked) returning *", [p.id]);
-    if (!job) break;
-    ran++;
-    try {
-      job.proposal_id = await reserveReplyCard(ctx, p, job);
-      if (job.proposal_id) await ctx.db.query("update agent_jobs set proposal_id=$2 where id=$1", [job.id, job.proposal_id]);
-      const prompt = await promptFor(ctx, p, job);
-      const res = await exec({ prompt, mcpUrl: `${mcpUrl}?who=agent-job-${job.id}`, cmd: ctx.cfg.agent });
-      await ctx.db.query("update agent_jobs set agent=$2, session_id=$3, output=coalesce(output, $4) where id=$1", [job.id, ctx.cfg.agent.kind, res.sessionId, res.output.slice(0, 4000)]);
-      const after = await one<any>(ctx.db, "select status from agent_jobs where id=$1", [job.id]);
-      if (after?.status === "running") {
-        await ctx.db.query("update agent_jobs set status='stuck', error=$2, finished_at=now() where id=$1",
-          [job.id, res.ok ? "agent 结束了但没说做完（没调用 job_done）" : `agent 出错：${res.output.slice(0, 500)}`]);
-      }
-    } catch (err: any) {
-      await ctx.db.query("update agent_jobs set status='stuck', error=$2, finished_at=now() where id=$1", [job.id, String(err?.message ?? err)]);
+  const worker = async () => {
+    while (ran < max) {
+      const job = await claimJob(ctx, p);
+      if (!job) return;
+      ran++;
+      await runJob(ctx, p, mcpUrl, exec, job);
     }
-    // A reply card the agent never filled goes away, so it doesn't block the KOL's mail slot.
-    if (job.proposal_id) await ctx.db.query("update proposals set status='dropped', result='agent 没写成', done_at=now() where id=$1 and status='drafting' and body = ''", [job.proposal_id]);
-    const final = await one<any>(ctx.db, "select status, error, output from agent_jobs where id=$1", [job.id]);
-    if (final?.status === "stuck") await addLog(ctx, p, { kind: "agent_stuck", who: "agent", kolId: job.kol_id, summary: `后台任务 #${job.id}（${job.kind}）卡住：${final.error}` });
-  }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, parallel) }, worker));
   return ran;
+}
+
+async function runJob(ctx: Ctx, p: Project, mcpUrl: string, exec: AgentExec, job: any): Promise<void> {
+  try {
+    job.proposal_id = await reserveReplyCard(ctx, p, job);
+    if (job.proposal_id) await ctx.db.query("update agent_jobs set proposal_id=$2 where id=$1", [job.id, job.proposal_id]);
+    const prompt = await promptFor(ctx, p, job);
+    const res = await exec({ prompt, mcpUrl: `${mcpUrl}?who=agent-job-${job.id}`, cmd: ctx.cfg.agent });
+    await ctx.db.query("update agent_jobs set agent=$2, session_id=$3, output=coalesce(output, $4) where id=$1", [job.id, ctx.cfg.agent.kind, res.sessionId, res.output.slice(0, 4000)]);
+    const after = await one<any>(ctx.db, "select status from agent_jobs where id=$1", [job.id]);
+    if (after?.status === "running") {
+      await ctx.db.query("update agent_jobs set status='stuck', error=$2, finished_at=now() where id=$1",
+        [job.id, res.ok ? "agent 结束了但没说做完（没调用 job_done）" : `agent 出错：${res.output.slice(0, 500)}`]);
+    }
+  } catch (err: any) {
+    await ctx.db.query("update agent_jobs set status='stuck', error=$2, finished_at=now() where id=$1", [job.id, String(err?.message ?? err)]);
+  }
+  // A reply card the agent never filled goes away, so it doesn't block the KOL's mail slot.
+  if (job.proposal_id) await ctx.db.query("update proposals set status='dropped', result='agent 没写成', done_at=now() where id=$1 and status='drafting' and body = ''", [job.proposal_id]);
+  const final = await one<any>(ctx.db, "select status, error, output from agent_jobs where id=$1", [job.id]);
+  if (final?.status === "stuck") await addLog(ctx, p, { kind: "agent_stuck", who: "agent", kolId: job.kol_id, summary: `后台任务 #${job.id}（${job.kind}）卡住：${final.error}` });
 }
 
 /** Continue a job's session with a new instruction (the console's "接着聊"). */

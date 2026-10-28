@@ -144,6 +144,31 @@ describe("background agent", () => {
     expect(await one<any>(w.db, "select status, session_id from agent_jobs")).toEqual({ status: "done", session_id: "s-1" });
   });
 
+  it("runs jobs side by side, but a KOL's jobs one after another", async () => {
+    const w = await world();
+    const a = await addKol(w, { email: "a@gmail.com" });
+    const b = await addKol(w, { email: "b@gmail.com" });
+    const c = await addKol(w, { email: "c@gmail.com" });
+    for (const k of [a, a, b, c]) await w.db.query("insert into agent_jobs (project_id, kind, kol_id) values ($1, 'checkin', $2)", [w.p.id, k]);
+    let now = 0, most = 0;
+    const busy = new Set<number>();
+    const exec: AgentExec = async (o) => {
+      const job = Number(/#(\d+)/.exec(o.prompt)![1]);
+      const { kol_id } = (await one<any>(w.db, "select kol_id from agent_jobs where id = $1", [job]))!;
+      expect(busy.has(kol_id)).toBe(false);
+      busy.add(kol_id);
+      most = Math.max(most, ++now);
+      await new Promise((r) => setTimeout(r, 30));
+      await callTool(w.ctx, "job_done", { job_id: job }, "agent", "t");
+      busy.delete(kol_id);
+      now--;
+      return { ok: true, sessionId: `s-${job}`, output: "ok" };
+    };
+    expect(await runJobs(w.ctx, w.p, "http://x/mcp", exec, 20, 3)).toBe(4);
+    expect(most).toBe(3);
+    expect((await w.db.query<any>("select status from agent_jobs")).every((j) => j.status === "done")).toBe(true);
+  });
+
   it("a job the agent leaves unfinished is stuck, and its empty card goes away", async () => {
     const w = await world();
     const k = await addKol(w, { email: "deer@gmail.com" });

@@ -20,6 +20,8 @@ export interface AgentCommand {
   bin?: string;
   /** Extra arguments, e.g. ["--model", "opus"]. */
   args?: string[];
+  /** How many background jobs run at once; defaults to 3. */
+  parallel?: number;
 }
 
 export interface LocalConfig {

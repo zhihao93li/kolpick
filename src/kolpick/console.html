@@ -968,6 +968,7 @@ async function renderSettings(m) {
     local: `<div class="meta">数据库连接、接口密钥、Apify token 只存在这台电脑上，页面里不显示；改要在终端里运行 <code>kolpick setup</code>。</div>
       <div class="sgrid"><label>后台 agent<select class="field" id="agKind"><option value="claude">Claude（claude -p）</option><option value="codex">Codex（codex exec）</option></select></label>
         <label>命令路径（留空 = 默认）<input class="field" type="text" id="agBin" value="${esc(local.agent.bin || "")}"></label><label>额外参数（空格隔开）<input class="field" type="text" id="agArgs" value="${esc((local.agent.args || []).join(" "))}"></label>
+        <label>同时做几件（同一位 KOL 的事总是一件一件做）<input class="field" type="number" min="1" max="10" id="agPar" value="${local.agent.parallel || 3}"></label>
         <label>当前数据库<span class="field">${local.env === "prod" ? "正式库 kolpick_prod" : "测试库 kolpick_test"}</span></label><label>给 Claude / Codex 用的 MCP<span class="field">${esc(local.mcpUrl)}</span></label>
         ${SECTIONS[6][2].map(field).join("")}</div>
       <div class="row" style="margin-top:12px"><button class="btn" type="button" id="agSave">保存 agent 设置</button><span class="meta">切换数据库：在终端运行 <code>kolpick db use test</code> 或 <code>kolpick db use prod</code>，再 <code>kolpick restart</code></span></div>`,
@@ -1000,7 +1001,7 @@ async function renderSettings(m) {
   $$("[data-auto]", m).forEach((b) => (b.onclick = () => act(() => api("/local", { auto: { [b.dataset.auto]: !local.auto[b.dataset.auto] } }), "已保存")));
   $$("[data-daily]", m).forEach((b) => (b.onclick = () => { b.disabled = true; act(() => api(`/daily/${b.dataset.daily}`, {}), (r) => (r?.ok === false ? "出错：" + (r.note || "") : "跑完了")); }));
   const ib = $("#inboxNow"); if (ib) ib.onclick = () => act(() => api("/inbox", {}), (r) => (Array.isArray(r) ? r.map((x) => `${x.mailbox}：新 ${x.recorded} 封`).join("；") || "没有新信" : "收完了"));
-  const ag = $("#agSave"); if (ag) ag.onclick = () => act(() => api("/local", { agent: { kind: $("#agKind").value, bin: $("#agBin").value.trim(), args: $("#agArgs").value.trim() ? $("#agArgs").value.trim().split(/\s+/) : [] } }), "已保存");
+  const ag = $("#agSave"); if (ag) ag.onclick = () => act(() => api("/local", { agent: { kind: $("#agKind").value, bin: $("#agBin").value.trim(), args: $("#agArgs").value.trim() ? $("#agArgs").value.trim().split(/\s+/) : [], parallel: Number($("#agPar").value) || 3 } }), "已保存");
 }
 function tplEditor(t) {
   return `<div class="panel" style="margin:4px 0 10px"><div class="sgrid" style="margin:0"><label>名字<input class="field" id="tn" value="${esc(t.name || "")}"></label><label>用途<select class="field" id="tp">${["邀约", "催信 1", "催信 2", "发体验码", "体验码延期", "体验跟进", "体验未用", "体验到期", "发活动码", "发布确认", "其他"].map((p) => `<option ${t.purpose === p ? "selected" : ""}>${p}</option>`).join("")}</select></label><label>语言<input class="field" id="tl" value="${esc(t.language || "")}"></label></div>
