@@ -119,22 +119,27 @@ async function tryDb(url: string, current: boolean, projectName: string): Promis
 }
 
 /**
- * Saves what the operator typed; empty fields keep what is there. Database URLs are tried first. Returns whether the
- * database in use changed, which takes effect the next time kolpick opens.
+ * Saves what the operator typed; empty fields keep what is there. `env` picks the database to use. Database URLs are
+ * tried first. In the running service (`live` false) the database in use doesn't change until kolpick opens again,
+ * so the service keeps reporting the one it is connected to; dbChanged says a reopen is needed.
  */
-export async function saveSetup(cfg: LocalConfig, b: Record<string, unknown>): Promise<{ dbChanged: boolean }> {
+export async function saveSetup(cfg: LocalConfig, b: Record<string, unknown>, live = true): Promise<{ dbChanged: boolean }> {
   const val = (k: string) => (typeof b[k] === "string" && (b[k] as string).trim() ? (b[k] as string).trim() : undefined);
+  const env = b.env === "prod" || b.env === "test" ? b.env : cfg.env;
   const dbs = { test: val("testDb"), prod: val("prodDb") };
-  for (const env of ["test", "prod"] as const) if (dbs[env]) await tryDb(dbs[env]!, env === cfg.env, cfg.project);
-  const dbChanged = !!dbs[cfg.env] && dbs[cfg.env] !== cfg.databases[cfg.env];
-  for (const env of ["test", "prod"] as const) if (dbs[env]) cfg.databases[env] = dbs[env];
+  if (!dbs[env] && !cfg.databases[env] && !process.env.KOLPICK_DATABASE_URL) throw new Error(`先填${env === "prod" ? "正式" : "测试"}库的连接串`);
+  for (const e of ["test", "prod"] as const) if (dbs[e]) await tryDb(dbs[e]!, e === env, cfg.project);
+  // Switching to a database saved earlier: it has to work too.
+  if (env !== cfg.env && !dbs[env] && cfg.databases[env]) await tryDb(cfg.databases[env]!, true, cfg.project);
+  const dbChanged = env !== cfg.env || (!!dbs[env] && dbs[env] !== cfg.databases[env]);
+  for (const e of ["test", "prod"] as const) if (dbs[e]) cfg.databases[e] = dbs[e];
   const keys = (cfg.keys[cfg.project] ??= {});
   if (val("dataApi")) keys.dataApi = val("dataApi");
   if (val("trial")) keys.trial = val("trial");
   if (val("partner")) keys.partner = val("partner");
   if (val("apify")) cfg.apifyToken = val("apify");
-  if (!ready(cfg)) throw new Error(`先填${cfg.env === "prod" ? "正式" : "测试"}库的连接串`);
-  saveConfig(cfg);
+  if (live) cfg.env = env;
+  saveConfig({ ...cfg, env });
   return { dbChanged };
 }
 

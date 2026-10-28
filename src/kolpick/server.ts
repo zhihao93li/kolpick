@@ -66,13 +66,13 @@ function send(res: http.ServerResponse, status: number, data: unknown): void {
 }
 
 /** Saving values, the Feishu app and the Feishu sign-in: the same in the setup page and in「这台电脑」. */
-async function setupApi(cfg: LocalConfig, path: string, b: any): Promise<unknown> {
+async function setupApi(cfg: LocalConfig, path: string, b: any, live: boolean): Promise<unknown> {
   if (path === "/setup/lark-app") {
     await larkApp(String(b?.appId ?? ""), String(b?.secret ?? ""));
     return setupStatus(cfg);
   }
   if (path === "/setup/lark-login") return larkLogin();
-  const r = await saveSetup(cfg, b ?? {});
+  const r = await saveSetup(cfg, b ?? {}, live);
   return { ...r, ...(await setupStatus(cfg)) };
 }
 
@@ -101,7 +101,7 @@ export async function serveSetup(cfg: LocalConfig, onReady: () => Promise<void>)
         return;
       }
       if (req.method === "POST" && path.startsWith("/setup")) {
-        const r = await setupApi(cfg, path, await body(req));
+        const r = await setupApi(cfg, path, await body(req), true);
         send(res, 200, r);
         if (path === "/setup" && ready(cfg)) {
           server.close();
@@ -444,10 +444,10 @@ export class App {
       case "GET /setup":
         return setupStatus(ctx.cfg);
       case "POST /setup":
-        return setupApi(ctx.cfg, path, b);
+        return setupApi(ctx.cfg, path, b, false);
       case "POST /setup/lark-app":
       case "POST /setup/lark-login":
-        return setupApi(ctx.cfg, path, b);
+        return setupApi(ctx.cfg, path, b, false);
       case "GET /local":
         return { setup: false, env: ctx.cfg.env, agent: ctx.cfg.agent, auto: ctx.cfg.auto, project: ctx.cfg.project, mcpUrl: this.mcpUrl, login: loginStart() };
       case "POST /login":

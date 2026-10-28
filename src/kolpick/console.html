@@ -1170,7 +1170,7 @@ async function renderSettings(m) {
         <label>同时做几件（同一位 KOL 的事总是一件一件做）<input class="field" type="number" min="1" max="10" id="agPar" value="${local.agent.parallel || 3}"></label>
         <label>当前数据库<span class="field">${local.env === "prod" ? "正式库 kolpick_prod" : "测试库 kolpick_test"}</span></label><label>给 Claude / Codex 用的 MCP<span class="field">${esc(local.mcpUrl)}</span></label>
         ${SECTIONS[6][2].map(field).join("")}</div>
-      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="agSave">保存 agent 设置</button><span class="meta">切换数据库：在终端运行 <code>kolpick db use test</code> 或 <code>kolpick db use prod</code>，再在上面「关闭 kolpick」，点 kolpick.app 重新打开</span></div>`,
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="agSave">保存 agent 设置</button><span class="meta">切换数据库在上面「用哪个库」</span></div>`,
   };
   m.innerHTML = `<div class="wrap"><div class="swrap"><nav class="smenu" aria-label="设置分组">${SECTIONS.map(([k, v]) => `<a class="${sec === k ? "on" : ""}" href="#settings/${k}">${v}</a>`).join("")}</nav>
     <div class="scontent"><section class="card"><h2 class="h2">${SECTIONS.find(([k]) => k === sec)?.[1] || ""}</h2>${body[sec] || ""}</section></div></div></div>
@@ -1226,10 +1226,10 @@ const MKEYS = [["testDb", "测试库连接串", "postgres://…"], ["prodDb", "�
   ["trial", "TAFU 体验码密钥", ""], ["partner", "TAFU 活动码密钥", ""], ["apify", "Apify token", "找人和查邮箱用"]];
 const MTOOLS = [["lark", "lark-cli", true], ["larkApp", "飞书应用", true], ["larkAuth", "飞书收发信授权", true], ["claude", "Claude 订阅", "claude"], ["codex", "Codex", "codex"]];
 function keysHtml(st) {
-  const must = st.env === "prod" ? "prodDb" : "testDb";
-  return MKEYS.map(([k, label, ph]) => {
+  const envRow = `<div class="mrow"><b>用哪个库</b><select class="field" data-env data-cur="${st.env}" style="font-family:inherit"><option value="test" ${st.env === "test" ? "selected" : ""}>测试库：试用，测试库的发信邮箱都停用</option><option value="prod" ${st.env === "prod" ? "selected" : ""}>正式库：真实 KOL，会真的发信</option></select></div>`;
+  return envRow + MKEYS.map(([k, label, ph]) => {
     const has = st.filled[k];
-    const tag = has ? `<span class="tag green">已填</span>` : k === must ? `<span class="tag red">必填</span>` : k.endsWith("Db") ? `<span class="tag">上线时再填</span>` : `<span class="tag">可以先空着</span>`;
+    const tag = has ? `<span class="tag green">已填</span>` : k === "testDb" ? `<span class="tag" data-need="test">用测试库时必填</span>` : k === "prodDb" ? `<span class="tag" data-need="prod">用正式库时必填</span>` : `<span class="tag">可以先空着</span>`;
     return `<div class="mrow"><b>${label}${tag}</b><input class="field" type="password" autocomplete="off" spellcheck="false" data-mk="${k}" placeholder="${has ? "已填；粘贴新的就替换" : esc(ph || "粘贴管理员给的值")}"></div>`;
   }).join("") + `<div class="hint" style="margin-top:6px">连接串和密钥找管理员要。密钥空着也能先用，用到时会提示来这里填。</div>`;
 }
@@ -1270,10 +1270,17 @@ function wireMachine(el, redraw, onSaved) {
       redraw(await apiFetch("/setup"));
     } catch (e) { if (w) w.close(); lg.disabled = false; toast("没成功：" + e.message); }
   };
+  const envSel = $("[data-env]", el);
+  const markNeed = () => $$("[data-need]", el).forEach((t) => (t.className = "tag" + (t.dataset.need === envSel.value ? " red" : "")));
+  if (envSel) { envSel.onchange = markNeed; markNeed(); }
   const ks = $("#mkSave", el); if (ks) ks.onclick = async () => {
     const b = {};
     $$("[data-mk]", el).forEach((i) => { if (i.value.trim()) b[i.dataset.mk] = i.value.trim(); });
+    const switching = envSel && envSel.value !== envSel.dataset.cur;
+    if (switching) b.env = envSel.value;
     if (!Object.keys(b).length && !onSaved.always) return toast("没有要保存的：在框里粘贴新的值");
+    if (switching && !onSaved.always && !confirm(`换成${b.env === "prod" ? "正式库（真实 KOL，会真的发信）" : "测试库"}？保存后关闭 kolpick 再打开才换过去。`)) return;
+    if (onSaved.always && envSel) b.env = envSel.value;
     ks.disabled = true; ks.textContent = b.testDb || b.prodDb ? "试连数据库…" : "保存中…";
     try { const r = await apiFetch("/setup", b); onSaved(r); } catch (e) { ks.disabled = false; ks.textContent = "保存"; toast("没保存：" + e.message, { long: true }); }
   };

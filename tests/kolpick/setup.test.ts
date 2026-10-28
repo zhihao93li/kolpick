@@ -38,6 +38,13 @@ describe("setting up this computer", () => {
     expect(saved.apifyToken).toBe("tok");
   });
 
+  it("won't switch to a database that has no URL", async () => {
+    const cfg = loadConfig();
+    cfg.databases.test = "postgres://y";
+    await expect(saveSetup(cfg, { env: "prod" })).rejects.toThrow(/正式库/);
+    expect(cfg.env).toBe("test");
+  });
+
   it("takes old kol-ops keys only when there are some and only for what is missing", () => {
     const cfg = loadConfig();
     fromKolOps(cfg);
