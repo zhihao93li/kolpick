@@ -4,7 +4,25 @@ KOL 外联工具：找人和公开邮箱、发邀约、收信、审核后发信�
 
 现状（2026-10-27）：正式项目还由旧版插件 kol-ops 跑在飞书多维表格上；新版按 design.md 重新设计数据库后一次切换，旧版代码和说明届时一起替换。
 
-安装和使用说明见 [plugins/kol-ops/README.md](plugins/kol-ops/README.md)。
+旧版插件的安装和使用说明见 [plugins/kol-ops/README.md](plugins/kol-ops/README.md)。
+
+## 安装新版 kolpick（Mac，试用）
+
+不需要插件，也不动 `stable`：下载 `main` 上打包好的 `bin/kolpick.mjs` 装到本机。先准备好 Node 22+、Chrome、登录了自己订阅的 `claude`、登录好的 `lark-cli`（`codex` 可选，装了一起注册）。
+
+```bash
+mkdir -p ~/kolpick-install && curl -fL -o ~/kolpick-install/kolpick.mjs https://raw.githubusercontent.com/zhihao93li/kolpick/main/bin/kolpick.mjs
+node ~/kolpick-install/kolpick.mjs install
+~/.kolpick/bin/kolpick setup --from-kol-ops --test-db '<测试库连接串>' --prod-db '<正式库连接串>'
+~/.kolpick/bin/kolpick db migrate
+```
+
+- `install` 把 kolpick 放进 `~/.kolpick/bin`，在「应用程序」放一个 kolpick.app，并注册到 Claude Code 和 Codex。
+- `setup --from-kol-ops` 从旧版配置导入接口密钥和 Apify；数据库连接串找管理员要。配置和密钥只存在 `~/.kolpick/config.json`。
+- 默认用测试库，测试库的发信邮箱都停用，不会真的发信。
+- 双击 kolpick.app 启动并打开决策台。「设置 → 这台电脑」里可以关闭 kolpick、打开开机自动启动（默认关）、改同时做几件。
+- 同一个库同时只让一台电脑开着 kolpick。
+- 升级：重新下载 `kolpick.mjs` 再跑一次 `install`，然后在决策台关闭 kolpick、重新打开 App。
 
 ## 代码结构
 
@@ -28,7 +46,7 @@ npm run typecheck
 npm run build          # 打包新版 bin/kolpick.mjs
 ```
 
-本机试用新版：`node bin/kolpick.mjs setup --from-kol-ops --test-db <连接串> --prod-db <连接串>`，`node bin/kolpick.mjs install`（开机自启 + 注册到 Claude Code、Codex），然后 `kolpick open` 打开决策台。配置和密钥只在 `~/.kolpick/config.json`。
+改完要给运营用，记得 `npm run build` 并提交 `bin/kolpick.mjs`（运营从 `main` 上下载它安装，见上面「安装新版 kolpick」）。
 
 ## 发布
 
