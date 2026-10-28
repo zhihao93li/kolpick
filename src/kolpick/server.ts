@@ -402,19 +402,18 @@ export class App {
 
   private async state(p: Project) {
     const db = this.ctx.db;
-    const row = await one<any>(db, "select paused from projects where id = $1", [p.id]);
-    const counts = await one<any>(db,
+    const [counts, mailboxes, daily] = await Promise.all([one<any>(db,
       `select (select count(*)::int from proposals where project_id=$1 and status='pending' and parent_id is null) as pending,
               (select count(*)::int from proposals where project_id=$1 and status in ('unknown','failed') and done_at is null) as problems,
               (select count(*)::int from proposals where project_id=$1 and status='approved') as approved,
               (select count(*)::int from proposals where project_id=$1 and status='drafting') as drafting,
               (select count(*)::int from agent_jobs where project_id=$1 and status in ('queued','running')) as jobs,
               (select count(*)::int from agent_jobs where project_id=$1 and status='stuck') as stuck,
-              (select count(*)::int from messages where project_id=$1 and direction='in' and pending and kol_id is not null) as unanswered`, [p.id]);
-    const mailboxes = await db.query("select address, enabled, daily_limit from mailboxes where project_id = $1 order by id", [p.id]);
-    const daily = await db.query("select key, value from state where project_id = $1 and key like 'daily:%'", [p.id]);
+              (select count(*)::int from messages where project_id=$1 and direction='in' and pending and kol_id is not null) as unanswered`, [p.id]),
+      db.query("select address, enabled, daily_limit from mailboxes where project_id = $1 order by id", [p.id]),
+      db.query("select key, value from state where project_id = $1 and key like 'daily:%'", [p.id])]);
     return {
-      project: p.name, env: this.ctx.cfg.env, paused: row?.paused, settings: p.settings, counts, mailboxes, status: this.status,
+      project: p.name, env: this.ctx.cfg.env, paused: p.paused, settings: p.settings, counts, mailboxes, status: this.status,
       daily: Object.fromEntries(daily.map((d: any) => [d.key.slice(6), d.value])), dailyNames: DAILY_NAMES, auto: this.ctx.cfg.auto, agent: this.ctx.cfg.agent,
     };
   }
@@ -434,12 +433,11 @@ export class App {
        where pr.project_id = $1 and pr.${where} order by pr.id ${view === "done" ? "desc" : "asc"} limit 200`, [p.id]);
     // What each card needs around it: the KOL's recent mail (each side's own words, oldest first) and codes, fetched for all cards at once.
     const kolIds = view === "pending" || view === "problems" ? [...new Set(rows.map((r) => r.kol_id).filter(Boolean))] : [];
-    const recent = kolIds.length ? await db.query<any>(
+    const [recent, codes] = kolIds.length ? await Promise.all([db.query<any>(
       `select * from (select kol_id, direction, mailbox, subject, body, summary, at, bounce, count(*) over (partition by kol_id)::int as total,
                              row_number() over (partition by kol_id order by at desc) as n
-                      from messages where kol_id = any($1) and direction <> 'note') x where n <= 10 order by at`, [kolIds]) : [];
-    const codes = kolIds.length ? await db.query<any>(
-      "select kol_id, kind, code, used, max_uses, expires_at, visitors, paid_orders from codes where kol_id = any($1) order by created_at", [kolIds]) : [];
+                      from messages where kol_id = any($1) and direction <> 'note') x where n <= 10 order by at`, [kolIds]),
+      db.query<any>("select kol_id, kind, code, used, max_uses, expires_at, visitors, paid_orders from codes where kol_id = any($1) order by created_at", [kolIds])]) : [[], []];
     for (const r of rows) {
       if (r.kol_id && kolIds.length) {
         const mine = recent.filter((x) => x.kol_id === r.kol_id);

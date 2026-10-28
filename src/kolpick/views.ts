@@ -65,13 +65,14 @@ export async function kolList(ctx: Ctx, p: Project, o: KolQuery) {
 
 /** How many KOLs per stage and per attention chip, for the list's filters. */
 export async function kolCounts(ctx: Ctx, p: Project) {
-  const stages = await ctx.db.query<{ stage: string; n: number }>("select stage, count(*)::int as n from kols where project_id = $1 group by stage", [p.id]);
-  const flags: Record<string, number> = {};
-  for (const [name, cond] of Object.entries(KOL_FLAGS)) {
-    const r = await ctx.db.query<{ n: number }>(`select count(*)::int as n from kols k where k.project_id = $1 and ${cond}`, [p.id]);
-    flags[name] = r[0]?.n ?? 0;
-  }
-  return { stages: Object.fromEntries(stages.map((s) => [s.stage, s.n])), flags };
+  // Each chip is its own count (one combined scan is far slower), all at once alongside the stage counts.
+  const names = Object.keys(KOL_FLAGS);
+  const [stages, ...ns] = await Promise.all([
+    ctx.db.query<{ stage: string; n: number }>("select stage, count(*)::int as n from kols where project_id = $1 group by stage", [p.id]),
+    ...names.map((name) => ctx.db.query<{ n: number }>(`select count(*)::int as n from kols k where k.project_id = $1 and ${KOL_FLAGS[name]}`, [p.id])),
+  ]);
+  const flags = Object.fromEntries(names.map((name, i) => [name, (ns[i] as { n: number }[])[0]?.n ?? 0]));
+  return { stages: Object.fromEntries((stages as { stage: string; n: number }[]).map((s) => [s.stage, s.n])), flags };
 }
 
 /** Kinds of log rows that mean something went wrong. */
@@ -107,19 +108,21 @@ export async function logList(ctx: Ctx, p: Project, o: { q?: string | null; bad?
 /** Today's numbers for the top of the record and the quota bars. */
 export async function usage(ctx: Ctx, p: Project) {
   const today = dayStart(ctx.now(), p.settings.timezone);
-  const boxes = await ctx.db.query<MailboxRow & { id: number; used: number }>(
-    `select mb.*, (select count(distinct lower(m.to_addr))::int from messages m where m.project_id = mb.project_id and m.direction = 'out'
-       and lower(m.mailbox) = lower(mb.address) and m.at >= $2) as used
-     from mailboxes mb where mb.project_id = $1 order by mb.id`, [p.id, today]);
   const n = async (sql: string) => (await ctx.db.query<{ n: number }>(sql, [p.id, today]))[0]?.n ?? 0;
+  const [boxes, contacted, incoming, sent, approved, revised, errors] = await Promise.all([
+    ctx.db.query<MailboxRow & { id: number; used: number }>(
+      `select mb.*, (select count(distinct lower(m.to_addr))::int from messages m where m.project_id = mb.project_id and m.direction = 'out'
+         and lower(m.mailbox) = lower(mb.address) and m.at >= $2) as used
+       from mailboxes mb where mb.project_id = $1 order by mb.id`, [p.id, today]),
+    n("select count(distinct kol_id)::int as n from messages where project_id = $1 and direction = 'out' and at >= $2"),
+    n("select count(*)::int as n from messages where project_id = $1 and direction = 'in' and at >= $2"),
+    n("select count(*)::int as n from messages where project_id = $1 and direction = 'out' and at >= $2"),
+    n("select count(*)::int as n from log where project_id = $1 and kind = 'approve' and at >= $2"),
+    n("select count(*)::int as n from log where project_id = $1 and kind = 'revise' and at >= $2"),
+    n(`select count(*)::int as n from log where project_id = $1 and at >= $2 and kind in (${BAD_KINDS.map((k) => `'${k}'`).join(",")})`),
+  ]);
   return {
     mailboxes: boxes.map((b) => ({ ...b, limit_today: mailboxLimit(b, ctx.now(), p.settings.timezone) })),
-    contacted: await n("select count(distinct kol_id)::int as n from messages where project_id = $1 and direction = 'out' and at >= $2"),
-    dailyLimit: p.settings.dailyLimit,
-    incoming: await n("select count(*)::int as n from messages where project_id = $1 and direction = 'in' and at >= $2"),
-    sent: await n("select count(*)::int as n from messages where project_id = $1 and direction = 'out' and at >= $2"),
-    approved: await n("select count(*)::int as n from log where project_id = $1 and kind = 'approve' and at >= $2"),
-    revised: await n("select count(*)::int as n from log where project_id = $1 and kind = 'revise' and at >= $2"),
-    errors: await n(`select count(*)::int as n from log where project_id = $1 and at >= $2 and kind in (${BAD_KINDS.map((k) => `'${k}'`).join(",")})`),
+    contacted, dailyLimit: p.settings.dailyLimit, incoming, sent, approved, revised, errors,
   };
 }

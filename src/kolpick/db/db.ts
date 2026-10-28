@@ -11,7 +11,7 @@ export interface Db {
 
 export function connect(url: string): Db {
   const sql = postgres(url, {
-    max: 4, onnotice: () => {}, connect_timeout: 15,
+    max: 10, onnotice: () => {}, connect_timeout: 15,
     // JSON already turned into text goes in as it is; the driver's default would encode it a second time.
     types: { json: { to: 3802, from: [114, 3802], serialize: (v: unknown) => (typeof v === "string" ? v : JSON.stringify(v)), parse: (s: string) => JSON.parse(s) } } as any,
   });

@@ -317,7 +317,17 @@ const KINDS = { reply: "回信", mail: "主动写信", invite: "邀约", followu
   unmatched: "对不上人", bounce: "退信", no_reply: "不用回", close: "建议结案", template: "模板新版", discovery: "找到的人", legacy: "旧审核单", other: "要你拍板" };
 const KIND_CLS = { reply: "blue", mail: "blue", followup: "blue", code_expiry: "amber", checkin: "amber", invite_batch: "green", followup_group: "green", bounce: "red", other: "amber" };
 
+// GET answers are kept until something changes: a click that only changes what is shown redraws without waiting on the
+// database. Any write and every refresh start fresh.
+let apiCache = new Map();
 async function api(path, body) {
+  if (body === undefined && apiCache.has(path)) return apiCache.get(path);
+  if (body !== undefined) apiCache = new Map();
+  const p = apiFetch(path, body);
+  if (body === undefined) { apiCache.set(path, p); p.catch(() => apiCache.delete(path)); }
+  return p;
+}
+async function apiFetch(path, body) {
   let r;
   try {
     r = await fetch("/api" + path, body === undefined ? {} : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -401,9 +411,11 @@ const togglePause = () => act(() => api("/tool/pause_sending", { on: !S.paused }
 $("#pause").onclick = togglePause;
 
 async function refresh() {
-  try { [S, U] = await Promise.all([api("/state"), api("/usage")]); } catch (e) { if (offline) return; }
-  drawTop();
-  await render();
+  apiCache = new Map();
+  // The page's own data loads at the same time as the header's.
+  const head = Promise.all([api("/state"), api("/usage")]).then(([s, u]) => { S = s; U = u; drawTop(); }).catch(() => {});
+  const page = render();
+  await Promise.all([head, page]);
 }
 async function render() {
   parseRoute(); drawTop();
@@ -582,8 +594,8 @@ function itemHtml(e) {
   const c = e.card, bad = c.group === "problem";
   return `<button class="item q1 ${bad ? "bad" : urgent(c) ? "urgent" : ""} ${e.key === D.sel ? "on" : ""}" type="button" data-sel="${e.key}"><span class="tag ${c.status === "unknown" || c.status === "failed" ? "red" : KIND_CLS[c.kind] || ""}">${c.status === "unknown" ? "结果不明" : c.status === "failed" ? "失败" : c.feedback ? "已按意见改" : KINDS[c.kind] || c.kind}</span><span class="iname">${esc(c.kol_name || c.in_from || c.title || "")}</span><span class="qask">${esc(askOf(c))}</span></button>`;
 }
-async function renderDecide(m) {
-  await loadCards();
+async function renderDecide(m, reload = true) {
+  if (reload) await loadCards();
   if (route[1]) { D.sel = String(route[1]); history.replaceState(null, "", "#decide"); }
   const visible = entriesOf(D.filter === "all" ? cards : cards.filter((c) => c.group === D.filter));
   const allEntries = entriesOf(cards);
@@ -714,14 +726,14 @@ function wireDecide(m, entry, visible) {
       gapprove: async () => {
         const on = ms.filter((x) => !D.gOff[x.id]);
         if (!on.length) return;
-        for (const x of on) await api(`/cards/${x.id}/approve`, { hash: x.hash });
-        next();
+        await Promise.all(on.map((x) => api(`/cards/${x.id}/approve`, { hash: x.hash })));
+        next(); dropCards(on.map((x) => x.id));
         toast(`已同意 ${on.length} 位，5 秒后${S.paused ? "排队（暂停中）" : "开始执行"}`, { undo: () => Promise.all(on.map((x) => api(`/cards/${x.id}/undo`, {}))), after: `已同意 ${on.length} 位` });
         refresh();
       },
       greject: async () => {
-        for (const x of ms) await api(`/cards/${x.id}/reject`, { note: "整批不做" });
-        next();
+        await Promise.all(ms.map((x) => api(`/cards/${x.id}/reject`, { note: "整批不做" })));
+        next(); dropCards(ms.map((x) => x.id));
         toast(`这批 ${ms.length} 位都不做`, { undo: () => Promise.all(ms.map((x) => api(`/cards/${x.id}/undo`, {}))) });
         refresh();
       },
@@ -761,6 +773,7 @@ function wireDecide(m, entry, visible) {
       delete D.edits[cur.id];
       const name = cur.kol_name || cur.title || "";
       next();
+      dropCards([cur.id]);
       toast(`已同意「${name}」，5 秒后${S.paused ? "排队（暂停中）" : "开始执行"}`, { undo, after: S.paused ? `已同意「${name}」，暂停中，恢复发送后发出` : `已同意「${name}」，正在执行` });
       refresh();
     },
@@ -772,30 +785,30 @@ function wireDecide(m, entry, visible) {
       const note = Object.keys(D.revOn).filter((k) => D.revOn[k]).concat($("#revNote").value.trim() ? [$("#revNote").value.trim()] : []).join("；");
       if (!note) return toast("先说一句哪里要改");
       await api(`/cards/${cur.id}/revise`, { feedback: note });
-      D.revOn = {}; next();
+      D.revOn = {}; next(); dropCards([cur.id]);
       toast(`已交给 agent 改「${cur.kol_name || cur.title || ""}」，改好回到最上面`); refresh();
     },
     "reject-send": async () => {
       const note = { leave: "不做了", self: "运营自己在邮箱回", close: "不回并结案" }[D.rej] || "不做了";
       await api(`/cards/${cur.id}/reject`, { note });
       if (D.rej === "close" && cur.kol_id) await api(`/kols/${cur.kol_id}`, { fields: { stage: "closed", close_reason: "拒绝", whose_turn: "none", next_followup_at: null } });
-      const name = cur.kol_name || cur.title || ""; next(); D.rej = "leave";
+      const name = cur.kol_name || cur.title || ""; next(); D.rej = "leave"; dropCards([cur.id]);
       toast(`不做「${name}」`, { undo }); refresh();
     },
     decide: async () => {
       const t = $("#dDecide").value.trim();
       if (!t) return toast("先写一句你的决定");
       await api(`/cards/${cur.id}/revise`, { feedback: t });
-      next(); toast("已交给 agent，照你的决定重新起草"); refresh();
+      next(); dropCards([cur.id]); toast("已交给 agent，照你的决定重新起草"); refresh();
     },
     "noreply-answer": async () => {
       await api(`/cards/${cur.id}/revise`, { feedback: "运营要回这封信：请起草一封回信" });
-      next(); toast("已交给 agent 起草回信"); refresh();
+      next(); dropCards([cur.id]); toast("已交给 agent 起草回信"); refresh();
     },
     redo: async () => {
       await api(`/cards/${cur.id}/reject`, { note: "失败后让 agent 重新起草" });
       await api("/ask", { text: `KOL #${cur.kol_id}（${cur.kol_name}）的卡片 #${cur.id}「${cur.title}」同意后没做成：${cur.result}。请避开这个问题重新起草一张卡。` });
-      next(); toast("已交给 agent 重新起草"); refresh();
+      next(); dropCards([cur.id]); toast("已交给 agent 重新起草"); refresh();
     },
   };
   $$("[data-act]", m).forEach((b) => (b.onclick = () => (A[b.dataset.act] ? Promise.resolve(A[b.dataset.act]()).catch((e) => toast("没成功：" + e.message)) : null)));
@@ -805,6 +818,11 @@ function wireDecide(m, entry, visible) {
     else if (k === "x") $('[data-act="reject"]', m)?.click();
     else if (k === "j" || k === "k") go(k);
   };
+}
+// The cards just handled leave the queue at once; the fresh list follows from the refresh.
+function dropCards(ids) {
+  cards = cards.filter((c) => !ids.includes(c.id));
+  if (route[0] === "decide") renderDecide($("#main"), false);
 }
 let decideKeys = null;
 document.addEventListener("keydown", (e) => {
